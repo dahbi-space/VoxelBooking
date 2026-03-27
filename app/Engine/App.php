@@ -44,6 +44,9 @@ final class App
         // Initialize view engine
         View::init($this->basePath . '/templates');
 
+        // Initialize locale engine
+        Locale::init($this->basePath);
+
         return $this;
     }
 

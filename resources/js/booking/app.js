@@ -10,12 +10,30 @@
  * Architecture:
  *   window.__VB_CONFIG__  → tenant config (injected by PHP)
  *   window.__VB_TS__      → page load timestamp (anti-spam)
+ *   window.__VB_I18N__    → translations for active locale
+ *   window.__VB_FMT__     → locale formatting config
  */
 
 const config = window.__VB_CONFIG__;
 const apiBase = `/api/${config.slug}`;
 const flowEl = document.getElementById('vb-book-flow');
 const appEl = document.getElementById('vb-book-app');
+
+// ── Translation Helper ──
+const i18n = window.__VB_I18N__ || {};
+const fmt  = window.__VB_FMT__  || {};
+
+/**
+ * Translate a dot-notation key with optional replacements.
+ * Falls back to the key itself if no translation exists.
+ */
+function t(key, replace = {}) {
+  let value = i18n[key] ?? key;
+  for (const [k, v] of Object.entries(replace)) {
+    value = value.replace(`:${k}`, v);
+  }
+  return value;
+}
 
 // ── Toast Notification System ──
 function showToast(message, { type = 'error', duration = 5000, action = null } = {}) {
@@ -185,8 +203,8 @@ async function stepService() {
   if (state.services.length === 0) {
     await renderStep(`
       <div class="vb-book-step-header">
-        <div class="vb-book-step-title">No services available</div>
-        <div class="vb-book-step-subtitle">This business has not configured any services yet.</div>
+        <div class="vb-book-step-title">${t('empty.no_services')}</div>
+        <div class="vb-book-step-subtitle">${t('empty.no_services_desc')}</div>
       </div>
     `);
     return;
@@ -219,7 +237,7 @@ async function stepService() {
 
   await renderStep(`
     <div class="vb-book-step-header">
-      <div class="vb-book-step-title">Choose a service</div>
+      <div class="vb-book-step-title">${t('steps.service_title')}</div>
     </div>
     <div class="vb-book-service-list" role="radiogroup" aria-label="Services">${cards}</div>
   `);
@@ -264,14 +282,14 @@ async function stepStaff() {
   const anyIsSelected = !state.selectedStaff;
   const anyCard = `
     <div class="vb-book-staff-card${anyIsSelected ? ' is-selected' : ''}" data-book-staff="" role="radio" tabindex="0"
-         aria-checked="${anyIsSelected}" aria-label="Any available">
+         aria-checked="${anyIsSelected}" aria-label="${t('staff.any_available')}">
       <div class="vb-book-staff-avatar">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
           <path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
       </div>
-      <div class="vb-book-staff-name">Any available</div>
+      <div class="vb-book-staff-name">${t('staff.any_available')}</div>
     </div>
   `;
 
@@ -293,13 +311,13 @@ async function stepStaff() {
 
   // Show back link only when service step was visible (multiple services)
   const staffBackLink = state.services.length > 1
-    ? `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-service>← Change service</button></div>`
+    ? `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-service>${t('back.change_service')}</button></div>`
     : '';
 
   await renderStep(`
     <div class="vb-book-step-header">
-      <div class="vb-book-step-title">Who would you like?</div>
-      <div class="vb-book-step-subtitle">Pick a team member, or let us assign whoever is available first.</div>
+      <div class="vb-book-step-title">${t('steps.staff_title')}</div>
+      <div class="vb-book-step-subtitle">${t('steps.staff_subtitle')}</div>
     </div>
     <div class="vb-book-staff-grid" role="radiogroup" aria-label="Staff">${anyCard}${staffCards}</div>
     ${staffBackLink}
@@ -390,14 +408,14 @@ async function renderCalendar() {
   // Determine back target: go to staff if staff was a visible step, else services
   let dateBackLink = '';
   if (state.staff.length > 1) {
-    dateBackLink = `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-staff>← Change team member</button></div>`;
+    dateBackLink = `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-staff>${t('back.change_staff')}</button></div>`;
   } else if (state.services.length > 1) {
-    dateBackLink = `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-service>← Change service</button></div>`;
+    dateBackLink = `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-service>${t('back.change_service')}</button></div>`;
   }
 
   await renderStep(`
     <div class="vb-book-step-header">
-      <div class="vb-book-step-title">Pick a date</div>
+      <div class="vb-book-step-title">${t('steps.date_title')}</div>
     </div>
     <div class="vb-book-calendar" role="grid" aria-label="Calendar">
       <div class="vb-book-calendar-nav">
@@ -571,7 +589,7 @@ async function loadTimeSlots() {
 async function stepDetails() {
   const phoneField = config.require_phone ? `
     <div class="vb-book-form-group">
-      <label class="vb-book-label" for="vb-phone">Phone <span class="vb-book-required" aria-hidden="true">*</span></label>
+      <label class="vb-book-label" for="vb-phone">${t('form.phone_label')} <span class="vb-book-required" aria-hidden="true">*</span></label>
       <input class="vb-book-input" id="vb-phone" type="tel" required aria-required="true"
              value="${esc(state.customer.phone)}" placeholder="+31 6 12345678" autocomplete="tel">
     </div>
@@ -604,7 +622,7 @@ async function stepDetails() {
   if (config.requires_consent) {
     const consentLabel = config.consent_text || 'I agree to the processing of my personal data for this booking.';
     const policyLink = config.privacy_policy_url
-      ? ` <a href="${esc(config.privacy_policy_url)}" target="_blank" rel="noopener">Privacy policy</a>`
+      ? ` <a href="${esc(config.privacy_policy_url)}" target="_blank" rel="noopener">${t('form.privacy_link')}</a>`
       : '';
     consentHtml = `
       <div class="vb-book-consent">
@@ -619,29 +637,29 @@ async function stepDetails() {
 
   await renderStep(`
     <div class="vb-book-step-header">
-      <div class="vb-book-step-title">Your details</div>
-      <div class="vb-book-step-subtitle">We'll send a confirmation to your email.</div>
+      <div class="vb-book-step-title">${t('steps.details_title')}</div>
+      <div class="vb-book-step-subtitle">${t('steps.details_subtitle')}</div>
     </div>
 
     <form id="vb-details-form" novalidate>
       <div class="vb-book-form-group">
-        <label class="vb-book-label" for="vb-name">Name <span class="vb-book-required" aria-hidden="true">*</span></label>
+        <label class="vb-book-label" for="vb-name">${t('form.name_label')} <span class="vb-book-required" aria-hidden="true">*</span></label>
         <input class="vb-book-input" id="vb-name" type="text" required aria-required="true"
-               value="${esc(state.customer.name)}" placeholder="Your name" autocomplete="name"
+               value="${esc(state.customer.name)}" placeholder="${t('form.name_placeholder')}" autocomplete="name"
                data-book-focus>
       </div>
 
       <div class="vb-book-form-group">
-        <label class="vb-book-label" for="vb-email">Email <span class="vb-book-required" aria-hidden="true">*</span></label>
+        <label class="vb-book-label" for="vb-email">${t('form.email_label')} <span class="vb-book-required" aria-hidden="true">*</span></label>
         <input class="vb-book-input" id="vb-email" type="email" required aria-required="true"
-               value="${esc(state.customer.email)}" placeholder="you@example.com" autocomplete="email">
+               value="${esc(state.customer.email)}" placeholder="${t('form.email_placeholder')}" autocomplete="email">
       </div>
 
       ${phoneField}
 
       <div class="vb-book-form-group">
-        <label class="vb-book-label" for="vb-notes">Notes</label>
-        <textarea class="vb-book-textarea" id="vb-notes" placeholder="Any special requests?">${esc(state.customer.notes)}</textarea>
+        <label class="vb-book-label" for="vb-notes">${t('form.notes_label')}</label>
+        <textarea class="vb-book-textarea" id="vb-notes" placeholder="${t('form.notes_placeholder')}">${esc(state.customer.notes)}</textarea>
       </div>
 
       ${customFieldsHtml}
@@ -649,10 +667,10 @@ async function stepDetails() {
 
       <div class="vb-book-form-actions">
         <button type="submit" class="vb-book-btn vb-book-btn-primary" id="vb-to-summary">
-          <span class="vb-book-btn-text">Review booking</span>
+          <span class="vb-book-btn-text">${t('buttons.review')}</span>
         </button>
         <div class="vb-book-back-link">
-          <button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-date>← Change date or time</button>
+          <button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-date>${t('back.change_date')}</button>
         </div>
       </div>
     </form>
@@ -710,18 +728,18 @@ async function stepSummary() {
 
   const rows = [];
   if (service) {
-    rows.push({ label: 'Service', value: service.name });
+    rows.push({ label: t('summary.service_label'), value: service.name });
     if (service.price !== null) {
-      rows.push({ label: 'Price', value: service.price_label || formatPrice(service.price) });
+      rows.push({ label: t('summary.price_label'), value: service.price_label || formatPrice(service.price) });
     }
   }
   if (staff) {
-    rows.push({ label: 'With', value: staff.name });
+    rows.push({ label: t('summary.with_label'), value: staff.name });
   }
-  rows.push({ label: 'Date', value: formatDate(state.selectedDate) });
-  rows.push({ label: 'Time', value: `${slot.time} – ${slot.end_time}` });
+  rows.push({ label: t('summary.date_label'), value: formatDate(state.selectedDate) });
+  rows.push({ label: t('summary.time_label'), value: `${slot.time} – ${slot.end_time}` });
   if (service) {
-    rows.push({ label: 'Duration', value: formatDuration(service.duration_minutes) });
+    rows.push({ label: t('summary.duration_label'), value: formatDuration(service.duration_minutes) });
   }
 
   const summaryRows = rows.map(r =>
@@ -733,18 +751,18 @@ async function stepSummary() {
 
   await renderStep(`
     <div class="vb-book-step-header">
-      <div class="vb-book-step-title">Confirm your booking</div>
-      <div class="vb-book-step-subtitle">Please review the details below.</div>
+      <div class="vb-book-step-title">${t('steps.confirm_title')}</div>
+      <div class="vb-book-step-subtitle">${t('steps.confirm_subtitle')}</div>
     </div>
 
     <div class="vb-book-summary">${summaryRows}</div>
 
     <div class="vb-book-form-actions">
       <button class="vb-book-btn vb-book-btn-primary" id="vb-confirm-btn">
-        <span class="vb-book-btn-text">Confirm booking</span>
+        <span class="vb-book-btn-text">${t('buttons.confirm')}</span>
       </button>
       <div class="vb-book-back-link">
-        <button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-details>← Edit details</button>
+        <button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-details>${t('back.edit_details')}</button>
       </div>
     </div>
   `);
@@ -789,16 +807,16 @@ async function submitBooking() {
 
       if (data.error === 'slot_unavailable') {
         showToast(
-          data.message || 'This time slot was just taken.',
+          data.message || t('errors.slot_taken'),
           {
             type: 'warn',
             duration: 6000,
-            action: { label: 'Pick another time', onClick: () => stepDate() },
+            action: { label: t('buttons.pick_another_time'), onClick: () => stepDate() },
           }
         );
         setTimeout(() => stepDate(), 3000);
       } else {
-        showToast(data.message || 'Something went wrong. Please try again.', { type: 'error' });
+        showToast(data.message || t('errors.generic'), { type: 'error' });
       }
       return;
     }
@@ -808,7 +826,7 @@ async function submitBooking() {
   } catch (err) {
     btn.classList.remove('is-loading');
     btn.disabled = false;
-    showToast('A connection error occurred. Please try again.', { type: 'error', duration: 6000 });
+    showToast(t('errors.connection'), { type: 'error', duration: 6000 });
   }
 }
 
@@ -817,11 +835,11 @@ async function stepConfirmation() {
   const b = state.booking;
 
   const summaryRows = [];
-  if (b.service) summaryRows.push({ label: 'Service', value: b.service });
-  if (b.staff) summaryRows.push({ label: 'With', value: b.staff });
-  summaryRows.push({ label: 'Date', value: formatDate(b.date) });
-  summaryRows.push({ label: 'Time', value: `${b.time} – ${b.end_time}` });
-  summaryRows.push({ label: 'Duration', value: formatDuration(b.duration) });
+  if (b.service) summaryRows.push({ label: t('summary.service_label'), value: b.service });
+  if (b.staff) summaryRows.push({ label: t('summary.with_label'), value: b.staff });
+  summaryRows.push({ label: t('summary.date_label'), value: formatDate(b.date) });
+  summaryRows.push({ label: t('summary.time_label'), value: `${b.time} – ${b.end_time}` });
+  summaryRows.push({ label: t('summary.duration_label'), value: formatDuration(b.duration) });
 
   const summaryHtml = summaryRows.map(r =>
     `<div class="vb-book-summary-row">
@@ -844,7 +862,7 @@ async function stepConfirmation() {
           <path class="vb-book-checkmark-check" d="M20 33 L28 41 L44 25"/>
         </svg>
       </div>
-      <div class="vb-book-confirm-heading">Booking confirmed</div>
+      <div class="vb-book-confirm-heading">${t('confirmed.heading')}</div>
       <div class="vb-book-confirm-ref">${b.id}</div>
 
       <div class="vb-book-confirm-summary">
@@ -853,7 +871,7 @@ async function stepConfirmation() {
 
       <div class="vb-book-confirm-actions">
         <a href="${gcalUrl}" target="_blank" rel="noopener" class="vb-book-btn vb-book-btn-secondary">
-          <span class="vb-book-btn-text">Add to Google Calendar</span>
+          <span class="vb-book-btn-text">${t('buttons.add_to_calendar')}</span>
         </a>
       </div>
     </div>
@@ -881,8 +899,8 @@ async function init() {
   } else {
     await renderStep(`
       <div class="vb-book-step-header">
-        <div class="vb-book-step-title">Coming soon</div>
-        <div class="vb-book-step-subtitle">This booking pattern is not yet available.</div>
+        <div class="vb-book-step-title">${t('empty.coming_soon')}</div>
+        <div class="vb-book-step-subtitle">${t('empty.coming_soon_desc')}</div>
       </div>
     `);
   }

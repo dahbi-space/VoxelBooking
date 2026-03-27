@@ -6,6 +6,7 @@ namespace App\Controllers\Booking;
 
 use App\Engine\Database;
 use App\Engine\BrandColorHelper;
+use App\Engine\Locale;
 use App\Engine\Request;
 use App\Engine\Response;
 use App\Middleware\CsrfMiddleware;
@@ -44,22 +45,29 @@ final class BookingPageController
         $brandTokens = BrandColorHelper::derive($tenant['brand_color'] ?? '#2563EB');
         $brandStyle = BrandColorHelper::inlineStyle($tenant['brand_color'] ?? '#2563EB');
 
+        // Set locale from tenant preference
+        Locale::setLocale($tenant['locale'] ?? 'en');
+
         // Build tenant config for the JavaScript app
         $tenantConfig = [
             'slug'             => $tenant['slug'],
             'name'             => $tenant['name'],
             'timezone'         => $tenant['timezone'],
-            'locale'           => $tenant['locale'],
+            'locale'           => Locale::getLocale(),
             'currency'         => $tenant['currency'],
             'booking_pattern'  => $tenant['booking_pattern'],
             'require_phone'    => (bool) $tenant['require_phone'],
             'requires_consent' => (bool) $tenant['requires_consent'],
-            'consent_text'     => $tenant['consent_text'] ?: 'I agree to the processing of my personal data for this booking.',
+            'consent_text'     => $tenant['consent_text'] ?: __('booking.form.consent_default'),
             'privacy_policy_url' => $tenant['privacy_policy_url'] ?: null,
             'custom_fields'    => json_decode($tenant['custom_fields'] ?? '[]', true) ?: [],
             'brand_color'      => $tenant['brand_color'],
             'brand_text'       => $brandTokens['brand_text'],
         ];
+
+        // Inject translations and formatting config for JS
+        $translations = Locale::getTranslationsForDomain('booking');
+        $formatting   = Locale::getFormattingConfig();
 
         // Generate CSRF token
         $csrfToken = CsrfMiddleware::generateToken();

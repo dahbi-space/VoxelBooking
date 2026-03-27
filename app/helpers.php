@@ -8,6 +8,7 @@ declare(strict_types=1);
  * Available in all templates and controllers via Composer autoload.
  */
 
+use App\Engine\Locale;
 use App\Engine\View;
 
 /**
@@ -46,4 +47,67 @@ function app_url(string $path = ''): string
 function asset(string $path): string
 {
     return app_url('assets/' . ltrim($path, '/'));
+}
+
+// ════════════════════════════════════════════════════════════════
+// Translation & Formatting Helpers
+// ════════════════════════════════════════════════════════════════
+
+/**
+ * Translate a key with optional replacements.
+ *
+ * @param string $key     Dot-notation: 'booking.steps.service_title'
+ * @param array  $replace Placeholder replacements: ['name' => 'John']
+ */
+function __(string $key, array $replace = []): string
+{
+    return Locale::translate($key, $replace);
+}
+
+/**
+ * Pluralize a translation key based on count.
+ */
+function __p(string $key, int $count, array $replace = []): string
+{
+    return Locale::plural($key, $count, $replace);
+}
+
+/**
+ * Format a number according to the active locale.
+ */
+function __n(float $value, int $decimals = 0): string
+{
+    return Locale::number($value, $decimals);
+}
+
+/**
+ * Format a currency value according to the active locale.
+ */
+function __c(float $value, string $currency): string
+{
+    return Locale::currency($value, $currency);
+}
+
+/**
+ * Format a date (short) according to the active locale.
+ */
+function __d(\DateTimeInterface $dt): string
+{
+    return Locale::date($dt);
+}
+
+/**
+ * Format a date (long) according to the active locale.
+ */
+function __dl(\DateTimeInterface $dt): string
+{
+    return Locale::dateLong($dt);
+}
+
+/**
+ * Format a time according to the active locale.
+ */
+function __t(\DateTimeInterface $dt): string
+{
+    return Locale::time($dt);
 }

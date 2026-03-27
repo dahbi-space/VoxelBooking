@@ -58,6 +58,8 @@
         window.__VB_CONFIG__ = <?= json_encode($tenantConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
         window.__VB_CSRF__ = <?= json_encode($csrfToken) ?>;
         window.__VB_TS__ = Date.now();
+        window.__VB_I18N__ = <?= json_encode($translations, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+        window.__VB_FMT__ = <?= json_encode($formatting, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     </script>
     <script type="module" src="/assets/js/booking.js"></script>
 </body>
