@@ -51,8 +51,8 @@ return [
         `embed_button_position` ENUM('bottom-right','bottom-left') NOT NULL DEFAULT 'bottom-right',
         `embed_button_label` VARCHAR(50) NOT NULL DEFAULT 'Book Now',
         `status` ENUM('active','paused','archived') NOT NULL DEFAULT 'active',
-        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),
         UNIQUE KEY `tenants_slug_unique` (`slug`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",

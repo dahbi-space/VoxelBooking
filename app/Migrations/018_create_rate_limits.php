@@ -14,7 +14,7 @@ return [
         `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         `ip` VARCHAR(45) NOT NULL,
         `endpoint_group` VARCHAR(50) NOT NULL,
-        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),
         INDEX `rate_limits_lookup` (`ip`, `endpoint_group`, `created_at`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",

@@ -25,8 +25,8 @@ return [
         `is_virtual` TINYINT(1) NOT NULL DEFAULT 0,
         `sort_order` INT NOT NULL DEFAULT 0,
         `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),
         KEY `services_tenant_active_idx` (`tenant_id`, `is_active`, `sort_order`),
         CONSTRAINT `services_tenant_fk` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE

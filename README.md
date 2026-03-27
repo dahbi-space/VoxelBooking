@@ -53,6 +53,18 @@ The app serves via Laravel Herd (or any PHP server) at the domain matching the d
 mysql -u root --host=127.0.0.1 --port=3309 -e "CREATE DATABASE IF NOT EXISTS voxelbooking;"
 ```
 
+### Schema Refresh During Development
+
+The migration files are the source of truth during development. When the data model changes, refresh the local database from scratch instead of adding compatibility layers around stale tables.
+
+```bash
+mysql -u root --host=127.0.0.1 --port=3309 -e "DROP DATABASE IF EXISTS voxelbooking; CREATE DATABASE voxelbooking;"
+```
+
+Then rerun the installer or your local migration bootstrap against the empty database.
+
+VoxelBooking standardizes on `DATETIME` for persisted date-time columns. Do not introduce new `TIMESTAMP` columns in migrations or schema docs.
+
 ### Testing
 
 ```bash

@@ -20,6 +20,24 @@ use PHPUnit\Framework\TestCase;
  */
 final class MailerTest extends TestCase
 {
+    /**
+     * @param array<string, string> $config
+     */
+    private function setMailerConfig(array $config): void
+    {
+        $property = new \ReflectionProperty(Mailer::class, 'configCache');
+        $property->setValue(null, array_merge([
+            'smtp_host' => '',
+            'smtp_port' => '',
+            'smtp_username' => '',
+            'smtp_password' => '',
+            'smtp_encryption' => '',
+            'mail_from_address' => '',
+            'mail_from_name' => '',
+            'mail_transport' => 'smtp',
+        ], $config));
+    }
+
     protected function setUp(): void
     {
         Mailer::clearConfigCache();
@@ -126,8 +144,11 @@ final class MailerTest extends TestCase
      */
     public function testSendWithNoSmtpReturnsFailure(): void
     {
-        // This test relies on the settings table having no smtp_host configured
-        // or the database not being connected (both produce the same result)
+        $this->setMailerConfig([
+            'mail_transport' => 'smtp',
+            'smtp_host' => '',
+        ]);
+
         $result = Mailer::send(
             'test@example.com',
             'Test Subject',
@@ -144,7 +165,11 @@ final class MailerTest extends TestCase
      */
     public function testIsConfiguredReturnsFalseWhenEmpty(): void
     {
-        // Without DB or with empty settings, should return false
+        $this->setMailerConfig([
+            'mail_transport' => 'smtp',
+            'smtp_host' => '',
+        ]);
+
         $this->assertFalse(Mailer::isConfigured());
     }
 
@@ -153,10 +178,19 @@ final class MailerTest extends TestCase
      */
     public function testClearConfigCacheWorks(): void
     {
-        // After clearing, the next call should re-query the database
-        Mailer::clearConfigCache();
+        $this->setMailerConfig([
+            'mail_transport' => 'smtp',
+            'smtp_host' => 'smtp.example.com',
+        ]);
 
-        // Should not throw — just returns not-configured state
+        $this->assertTrue(Mailer::isConfigured());
+
+        Mailer::clearConfigCache();
+        $this->setMailerConfig([
+            'mail_transport' => 'smtp',
+            'smtp_host' => '',
+        ]);
+
         $this->assertFalse(Mailer::isConfigured());
     }
 }

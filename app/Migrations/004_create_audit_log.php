@@ -29,7 +29,7 @@ return [
         `details` JSON NULL DEFAULT NULL,
         `ip_address` VARCHAR(45) NULL DEFAULT NULL,
         `request_id` CHAR(36) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',
-        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),
         KEY `audit_log_tenant_created` (`tenant_id`, `created_at`),
         KEY `audit_log_actor` (`actor_type`, `actor_id`),

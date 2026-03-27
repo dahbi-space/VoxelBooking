@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Migration 006: Create bookings table.
+ * Migration 020: Create bookings table.
  *
  * Per PRD §IV (data model) — per-tenant booking records.
  * Consent fields (consent_given_at, consent_text_shown) are GDPR evidence
@@ -28,16 +28,16 @@ return [
         `notes` TEXT NULL DEFAULT NULL,
         `internal_notes` TEXT NULL DEFAULT NULL,
         `custom_field_data` JSON NULL DEFAULT NULL,
-        `consent_given_at` TIMESTAMP NULL DEFAULT NULL,
+        `consent_given_at` DATETIME NULL DEFAULT NULL,
         `consent_text_shown` VARCHAR(500) NULL DEFAULT NULL,
         `customer_timezone` VARCHAR(100) NULL DEFAULT NULL,
-        `confirmation_sent_at` TIMESTAMP NULL DEFAULT NULL,
-        `reminder_sent_at` TIMESTAMP NULL DEFAULT NULL,
-        `cancelled_at` TIMESTAMP NULL DEFAULT NULL,
+        `confirmation_sent_at` DATETIME NULL DEFAULT NULL,
+        `reminder_sent_at` DATETIME NULL DEFAULT NULL,
+        `cancelled_at` DATETIME NULL DEFAULT NULL,
         `cancellation_reason` VARCHAR(255) NULL DEFAULT NULL,
         `source` ENUM('web','admin','api','embed') NOT NULL DEFAULT 'web',
-        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),
         KEY `bookings_tenant_pattern_status_idx` (`tenant_id`, `booking_pattern`, `status`),
         KEY `bookings_tenant_status_start_idx` (`tenant_id`, `status`, `start_datetime`),

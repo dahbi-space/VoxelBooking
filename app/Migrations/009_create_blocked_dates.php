@@ -18,7 +18,7 @@ return [
         `start_date` DATE NOT NULL,
         `end_date` DATE NOT NULL,
         `reason` VARCHAR(255) NULL DEFAULT NULL,
-        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),
         KEY `blocked_dates_tenant_idx` (`tenant_id`, `start_date`, `end_date`),
         KEY `blocked_dates_staff_idx` (`staff_id`, `start_date`, `end_date`),
