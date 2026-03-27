@@ -151,11 +151,7 @@ VoxelBooking is built with a privacy-by-design architecture. The following descr
 
 **Operator deletion queue.** The admin deletion queue (`/admin/deletion-queue`) displays all pending customer deletion requests. The operator can confirm (triggers `CustomerAnonymizer` to permanently remove PII) or dismiss (clears the request, retains data). Both decisions are audit-logged with the operator's identity. The queue uses a no-JS two-step confirmation pattern to prevent accidental anonymization.
 
-### Planned controls (not yet implemented)
-
-The following controls are specified but do not exist in the codebase yet:
-
-- **SMTP integration** — `Engine/Mailer.php` for email delivery and privacy request notifications
+**SMTP mailer.** The `Mailer` engine wraps PHPMailer, loads SMTP configuration from the settings table, and logs all send attempts to `email_log`. SMTP credentials are never logged — error messages are automatically redacted. Privacy-specific methods send export acknowledgments, deletion request confirmations, and operator notifications. If SMTP is unconfigured, no outbound connections are made and emails fail gracefully. The `sendTest()` method allows operators to verify their SMTP configuration from the admin panel.
 
 ### What operators should know
 
