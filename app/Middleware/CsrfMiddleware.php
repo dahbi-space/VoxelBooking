@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Middleware;
 
+use App\Engine\Auth;
 use App\Engine\Request;
 use App\Engine\Response;
 
@@ -37,8 +38,13 @@ final class CsrfMiddleware
         }
 
         // Ensure session is started for CSRF verification
+        // Admin routes use Auth::startSession() for consistent session naming
         if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
+            if (str_starts_with($request->path(), '/admin') || str_starts_with($request->path(), '/auth/')) {
+                Auth::startSession();
+            } else {
+                session_start();
+            }
         }
 
         $sessionToken = $_SESSION['_csrf_token'] ?? '';
@@ -65,6 +71,8 @@ final class CsrfMiddleware
     public static function generateToken(): string
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
+            // Prefer Auth session for admin context; caller should ensure
+            // session is started before calling this in admin routes.
             session_start();
         }
 

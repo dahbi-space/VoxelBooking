@@ -40,3 +40,4 @@ docs/superpowers/
 .phpunit.result.cache
 .phpunit.cache/
 coverage/
+storage/sessions/

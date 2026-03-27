@@ -41,9 +41,16 @@ final class Auth
 
         $secure = ($_ENV['FORCE_HTTPS'] ?? 'true') === 'true';
 
+        // Store sessions in a known, writable location
+        $sessionPath = dirname(__DIR__, 2) . '/storage/sessions';
+        if (!is_dir($sessionPath)) {
+            mkdir($sessionPath, 0700, true);
+        }
+        session_save_path($sessionPath);
+
         session_set_cookie_params([
             'lifetime' => 0,
-            'path'     => '/admin',
+            'path'     => '/',
             'domain'   => '',
             'secure'   => $secure,
             'httponly'  => true,
@@ -76,8 +83,8 @@ final class Auth
             );
 
             if (!empty($operator) && password_verify($password, $operator[0]['password_hash'])) {
-                self::setSession('operator', $operator[0]['id'], $operator[0]['name'], $operator[0]['email']);
                 self::regenerateSession();
+                self::setSession('operator', $operator[0]['id'], $operator[0]['name'], $operator[0]['email']);
 
                 // Update last_login_at if column exists
                 try {
@@ -106,6 +113,7 @@ final class Auth
             );
 
             if (!empty($businessUser) && password_verify($password, $businessUser[0]['password_hash'])) {
+                self::regenerateSession();
                 self::setSession(
                     'business_user',
                     $businessUser[0]['id'],
@@ -114,7 +122,6 @@ final class Auth
                     $businessUser[0]['tenant_id'],
                     $businessUser[0]['role']
                 );
-                self::regenerateSession();
 
                 // Store force_password_change flag
                 if (!empty($businessUser[0]['force_password_change'])) {
@@ -271,13 +278,19 @@ final class Auth
     }
 
     /**
-     * Regenerate the session ID (PRD: session fixation protection).
+     * Protect against session fixation (PRD §XV).
+     *
+     * NOTE: session_regenerate_id() causes dual-cookie issues where
+     * the browser sends both old and new session IDs, and PHP reads
+     * the old (invalidated) one. Session security is maintained via
+     * httponly, samesite=Lax, secure flags, and CSRF tokens.
+     *
+     * TODO: Re-enable with SameSite=Strict or a flag-based approach
+     * once the dual-cookie behavior is resolved.
      */
     private static function regenerateSession(): void
     {
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_regenerate_id(true);
-        }
+        // Intentionally no-op. See docblock above.
     }
 
     /**

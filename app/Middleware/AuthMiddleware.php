@@ -32,6 +32,9 @@ final class AuthMiddleware
 
     public function handle(Request $request, callable $next): Response
     {
+        // Ensure session is started before checking auth state
+        Auth::startSession();
+
         // Not authenticated → redirect to login
         if (!Auth::check()) {
             return Response::redirect('/admin/login');
