@@ -59,8 +59,11 @@ return function (Router $router): void {
 
             // Settings (operator-only — AuthMiddleware enforces this)
             $router->get('/admin/settings', \App\Controllers\Admin\SettingsController::class, 'general');
+            $router->post('/admin/settings', \App\Controllers\Admin\SettingsController::class, 'saveGeneral');
             $router->get('/admin/settings/account', \App\Controllers\Admin\SettingsController::class, 'account');
+            $router->post('/admin/settings/account', \App\Controllers\Admin\SettingsController::class, 'saveAccount');
             $router->get('/admin/settings/email', \App\Controllers\Admin\SettingsController::class, 'email');
+            $router->post('/admin/settings/email', \App\Controllers\Admin\SettingsController::class, 'saveEmail');
             $router->get('/admin/settings/cron', \App\Controllers\Admin\SettingsController::class, 'cron');
             $router->get('/admin/settings/logs', \App\Controllers\Admin\SettingsController::class, 'logs');
 

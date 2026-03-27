@@ -6,6 +6,8 @@ namespace App\Engine;
 
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
+use App\Engine\Auth;
+use App\Engine\Version;
 
 /**
  * Thin wrapper around nikic/FastRoute.
@@ -122,6 +124,21 @@ final class Router
     {
         if ($request->isJson()) {
             return Response::json(['error' => 'not_found', 'message' => 'Not found'], 404);
+        }
+
+        // Admin routes render 404 inside the admin shell
+        if (str_starts_with($request->path(), '/admin')) {
+            try {
+                Auth::startSession();
+                return View::response('admin.errors.404', [
+                    'user'      => Auth::user(),
+                    'version'   => Version::get(),
+                    'pageTitle' => '404',
+                    'csrfToken' => \App\Middleware\CsrfMiddleware::generateToken(),
+                ], 404);
+            } catch (\Throwable) {
+                // Fall through to standalone
+            }
         }
 
         try {

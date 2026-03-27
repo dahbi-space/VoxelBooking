@@ -9,8 +9,8 @@ namespace App\Engine;
  *
  * Per PRD §XV Security:
  * - login() checks operators table first, then business_users (with is_active = 1)
- * - Sessions use secure, httponly, samesite=lax cookies scoped to /admin
- * - Session ID regenerated on login via session_regenerate_id(true)
+ * - Sessions use secure, httponly, samesite=lax cookies (path=/)
+ * - Session ID regenerated on login to prevent fixation
  * - Sessions expire after 8 hours of inactivity (server-side check)
  *
  * Session keys:
@@ -280,17 +280,26 @@ final class Auth
     /**
      * Protect against session fixation (PRD §XV).
      *
-     * NOTE: session_regenerate_id() causes dual-cookie issues where
-     * the browser sends both old and new session IDs, and PHP reads
-     * the old (invalidated) one. Session security is maintained via
-     * httponly, samesite=Lax, secure flags, and CSRF tokens.
-     *
-     * TODO: Re-enable with SameSite=Strict or a flag-based approach
-     * once the dual-cookie behavior is resolved.
+     * Regenerates the session ID after successful authentication.
+     * Preserves CSRF token so the post-login redirect still works.
+     * Requires Auth::startSession() to have been called first
+     * (enforced by CsrfMiddleware for POST /admin/login).
      */
     private static function regenerateSession(): void
     {
-        // Intentionally no-op. See docblock above.
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return;
+        }
+
+        // Preserve the CSRF token across regeneration
+        $csrfToken = $_SESSION['_csrf_token'] ?? null;
+
+        session_regenerate_id(true);
+
+        // Restore CSRF token so subsequent forms still validate
+        if ($csrfToken !== null) {
+            $_SESSION['_csrf_token'] = $csrfToken;
+        }
     }
 
     /**

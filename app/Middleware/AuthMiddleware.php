@@ -88,11 +88,13 @@ final class AuthMiddleware
         }
 
         try {
-            return View::response('errors.403', [
-                'user' => Auth::user(),
+            return View::response('admin.errors.403', [
+                'user'      => Auth::user(),
+                'version'   => \App\Engine\Version::get(),
+                'pageTitle' => '403',
+                'csrfToken' => \App\Middleware\CsrfMiddleware::generateToken(),
             ], 403);
         } catch (\Throwable) {
-            // Template may not exist yet during early development
             return Response::html('<h1>403 Forbidden</h1><p>Access denied.</p>', 403);
         }
     }

@@ -24,12 +24,15 @@ final class AuthController
      */
     public function showLogin(Request $request): Response
     {
+        // Start session before checking auth state (GET requests don't
+        // pass through CsrfMiddleware's session startup path)
+        Auth::startSession();
+
         // Already authenticated → redirect to admin
         if (Auth::check()) {
             return $this->redirectAfterLogin();
         }
 
-        Auth::startSession();
         $csrfToken = CsrfMiddleware::generateToken();
 
         $error = $_SESSION['login_error'] ?? null;
