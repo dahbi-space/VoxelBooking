@@ -105,7 +105,7 @@ final class DeletionQueueController
                 $customerId,
                 [
                     'email_hash'   => AuditLog::hashEmail($customer['email']),
-                    'operator'     => Auth::user()['email'] ?? 'unknown',
+                    'operator_email' => Auth::user()['email'] ?? 'unknown',
                     'requested_at' => $customer['deletion_requested_at'],
                 ],
                 $customer['tenant_id'],
@@ -168,7 +168,7 @@ final class DeletionQueueController
                 $customerId,
                 [
                     'email_hash'   => AuditLog::hashEmail($customer['email']),
-                    'operator'     => Auth::user()['email'] ?? 'unknown',
+                    'operator_email' => Auth::user()['email'] ?? 'unknown',
                     'reason'       => $reason ?: 'No reason provided',
                     'requested_at' => $customer['deletion_requested_at'],
                 ],

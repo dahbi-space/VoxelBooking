@@ -9,6 +9,7 @@ use App\Engine\CustomerAnonymizer;
 use App\Engine\Database;
 use App\Engine\DataExporter;
 use App\Engine\Logger;
+use App\Engine\Mailer;
 use App\Engine\Request;
 use App\Engine\Response;
 use App\Engine\View;
@@ -144,6 +145,13 @@ final class PrivacyController
             actorId: $customer['id'],
         );
 
+        // Send export acknowledgment email (best-effort, does not block download)
+        Mailer::sendExportAcknowledgment(
+            $customer['email'],
+            $tenant['name'],
+            $tenant['id'],
+        );
+
         $filename = 'voxelbooking-data-' . date('Y-m-d') . '.json';
 
         $response = Response::json(json_decode($json, true));
@@ -158,12 +166,14 @@ final class PrivacyController
      * Sets the deletion_requested_at timestamp on the customer record.
      * The operator reviews pending requests in the admin deletion queue
      * and confirms or rejects each request.
+     *
+     * Only emits an audit event if a row was actually changed (idempotent).
      */
     private function handleDeletionRequest(array $customer, array $tenant, string $slug): Response
     {
         try {
             // Mark customer as pending deletion with proper state column
-            Database::execute(
+            $affectedRows = Database::execute(
                 'UPDATE `customers` SET
                     `deletion_requested_at` = NOW(),
                     `updated_at` = NOW()
@@ -171,15 +181,33 @@ final class PrivacyController
                 [$customer['id']]
             );
 
-            AuditLog::log(
-                'privacy.deletion_requested',
-                'customer',
-                $customer['id'],
-                ['email_prefix' => AuditLog::hashEmail($customer['email'])],
-                $tenant['id'],
-                actorType: 'customer',
-                actorId: $customer['id'],
-            );
+            // Only audit-log if the request was newly recorded
+            if ($affectedRows > 0) {
+                AuditLog::log(
+                    'privacy.deletion_requested',
+                    'customer',
+                    $customer['id'],
+                    ['email_prefix' => AuditLog::hashEmail($customer['email'])],
+                    $tenant['id'],
+                    actorType: 'customer',
+                    actorId: $customer['id'],
+                );
+
+                // Send deletion acknowledgment to customer (best-effort)
+                Mailer::sendDeletionAcknowledgment(
+                    $customer['email'],
+                    $tenant['name'],
+                    $tenant['id'],
+                );
+
+                // Notify the operator about the new deletion request (best-effort)
+                Mailer::notifyOperatorDeletionRequest(
+                    $customer['name'],
+                    $customer['email'],
+                    $tenant['name'],
+                    $tenant['id'],
+                );
+            }
         } catch (\Throwable $e) {
             Logger::error('Deletion request failed', [
                 'customer_id' => $customer['id'],

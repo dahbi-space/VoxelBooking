@@ -237,15 +237,108 @@ final class ConsentRecordingTest extends TestCase
         $this->assertSame('Export test consent.', $consentRecord['consent_text_shown']);
     }
 
+    // ── No-op audit regression tests ──
+
+    /**
+     * recordConsent on a booking that already has consent emits NO audit event.
+     *
+     * Regression: previously logged 'booking.consent_recorded' even when
+     * the UPDATE affected 0 rows (consent already captured).
+     */
+    public function testRecordConsentNoOpDoesNotEmitAuditEvent(): void
+    {
+        $ids = $this->seedTenantAndCustomer(['requires_consent' => 1, 'consent_text' => 'First consent.']);
+
+        $result = BookingService::createBooking(
+            [
+                'tenant_id' => $ids['tenant_id'],
+                'customer_id' => $ids['customer_id'],
+                'booking_pattern' => 'timeslot',
+                'start_datetime' => '2026-06-15 15:00:00',
+                'end_datetime' => '2026-06-15 15:30:00',
+            ],
+            ['requires_consent' => 1, 'consent_text' => 'First consent.', 'privacy_policy_url' => ''],
+            consentGiven: true
+        );
+        $this->cleanupIds[] = ['bookings', $result['id']];
+
+        // Count audit logs before the no-op
+        $beforeCount = $this->countAuditLogs('booking.consent_recorded', $result['id']);
+
+        // Attempt to record consent again — should be a no-op
+        BookingService::recordConsent($result['id'], [
+            'consent_text' => 'Attempted overwrite.',
+            'privacy_policy_url' => '',
+        ]);
+
+        // Count audit logs after — should not have increased
+        $afterCount = $this->countAuditLogs('booking.consent_recorded', $result['id']);
+        $this->assertSame($beforeCount, $afterCount, 'No-op recordConsent must not emit audit event');
+    }
+
+    /**
+     * recordConsent on a non-existent booking ID emits NO audit event.
+     */
+    public function testRecordConsentInvalidBookingDoesNotEmitAuditEvent(): void
+    {
+        $fakeBookingId = \App\Engine\Ulid::generate();
+
+        $beforeCount = $this->countAuditLogs('booking.consent_recorded', $fakeBookingId);
+
+        BookingService::recordConsent($fakeBookingId, [
+            'consent_text' => 'Ghost consent.',
+            'privacy_policy_url' => '',
+        ]);
+
+        $afterCount = $this->countAuditLogs('booking.consent_recorded', $fakeBookingId);
+        $this->assertSame($beforeCount, $afterCount, 'recordConsent on non-existent booking must not emit audit event');
+    }
+
+    /**
+     * Double deletion request on same customer produces only ONE audit event.
+     */
+    public function testDoubleDeletionRequestEmitsOnlyOneAuditEvent(): void
+    {
+        $ids = $this->seedTenantAndCustomer();
+
+        // First deletion request
+        Database::execute(
+            'UPDATE `customers` SET `deletion_requested_at` = NOW() WHERE `id` = ? AND `deletion_requested_at` IS NULL',
+            [$ids['customer_id']]
+        );
+
+        // Second attempt — should affect 0 rows
+        $affectedRows = Database::execute(
+            'UPDATE `customers` SET `deletion_requested_at` = NOW() WHERE `id` = ? AND `deletion_requested_at` IS NULL',
+            [$ids['customer_id']]
+        );
+
+        $this->assertSame(0, $affectedRows, 'Second deletion request must affect 0 rows');
+    }
+
     // ── Helpers ──
+
+    private function countAuditLogs(string $action, string $entityId): int
+    {
+        if (!Database::tableExists('audit_log')) {
+            return 0;
+        }
+
+        $rows = Database::query(
+            'SELECT COUNT(*) as `count` FROM `audit_log` WHERE `action` = ? AND `entity_id` = ?',
+            [$action, $entityId]
+        );
+
+        return (int) ($rows[0]['count'] ?? 0);
+    }
 
     /**
      * @return array{tenant_id: string, customer_id: string}
      */
     private function seedTenantAndCustomer(array $tenantOverrides = []): array
     {
-        $tenantId = Ulid::generate();
-        $customerId = Ulid::generate();
+        $tenantId = \App\Engine\Ulid::generate();
+        $customerId = \App\Engine\Ulid::generate();
         $slug = 'test-consent-' . substr($tenantId, -6);
 
         $defaults = [

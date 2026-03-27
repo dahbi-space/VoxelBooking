@@ -173,12 +173,16 @@ final class BookingService
      *
      * Used when consent is collected after initial booking creation
      * (e.g., admin-created bookings where consent is captured later).
+     *
+     * Only logs an audit event if the UPDATE actually changed a row.
+     * If consent already existed (WHERE consent_given_at IS NULL fails)
+     * or the booking ID is invalid, no audit event is emitted.
      */
     public static function recordConsent(string $bookingId, array $tenant): void
     {
         $consentText = self::resolveConsentText($tenant);
 
-        Database::execute(
+        $affectedRows = Database::execute(
             'UPDATE `bookings` SET
                 `consent_given_at` = NOW(),
                 `consent_text_shown` = ?,
@@ -187,12 +191,15 @@ final class BookingService
             [$consentText, $bookingId]
         );
 
-        AuditLog::log(
-            'booking.consent_recorded',
-            'booking',
-            $bookingId,
-            ['consent_text_length' => mb_strlen($consentText)],
-        );
+        // Only audit-log if a row was actually changed
+        if ($affectedRows > 0) {
+            AuditLog::log(
+                'booking.consent_recorded',
+                'booking',
+                $bookingId,
+                ['consent_text_length' => mb_strlen($consentText)],
+            );
+        }
     }
 
     /**
