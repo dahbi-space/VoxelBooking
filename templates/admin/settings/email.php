@@ -38,6 +38,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                 <label for="mail_transport" class="vb-label">Transport</label>
                 <select id="mail_transport" name="mail_transport" class="vb-input">
                     <option value="smtp" <?= ($settings['mail_transport'] ?? 'smtp') === 'smtp' ? 'selected' : '' ?>>SMTP — deliver via mail server</option>
+                    <option value="mailpit" <?= ($settings['mail_transport'] ?? '') === 'mailpit' ? 'selected' : '' ?>>Mailpit — deliver to localhost:1025 (dev/testing)</option>
                     <option value="log" <?= ($settings['mail_transport'] ?? '') === 'log' ? 'selected' : '' ?>>Log only — record to email_log, do not send</option>
                 </select>
             </div>

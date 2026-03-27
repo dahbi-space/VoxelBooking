@@ -58,7 +58,17 @@ final class Mailer
             return ['sent' => true, 'error' => null, 'log_id' => $logId];
         }
 
-        // If SMTP is not configured, log the failure and return gracefully
+        // Mailpit transport: SMTP to localhost:1025, no auth, no encryption
+        // Overrides operator SMTP settings so captured emails always appear in the Mailpit UI
+        if ($transport === 'mailpit') {
+            $config['smtp_host'] = '127.0.0.1';
+            $config['smtp_port'] = '1025';
+            $config['smtp_username'] = '';
+            $config['smtp_password'] = '';
+            $config['smtp_encryption'] = 'none';
+        }
+
+        // If SMTP is not configured (and not mailpit), log the failure and return gracefully
         if (empty($config['smtp_host'])) {
             self::logEmail($logId, $tenantId, $bookingId, $type, $to, $subject, 'failed', 'SMTP not configured');
             Logger::warning('Email not sent: SMTP not configured', ['type' => $type]);
