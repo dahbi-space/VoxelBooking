@@ -137,7 +137,9 @@ VoxelBooking is built with a privacy-by-design architecture. The following descr
 
 **Structured audit logging.** Authentication events (login, logout, failed login), settings changes, and password changes produce structured, append-only audit log entries. PII is redacted centrally: passwords and tokens are never logged, email addresses are stored as SHA-256 prefixes, and email-like detail fields are automatically hashed. The audit log is viewable read-only from the admin UI.
 
-**Consent fields on tenant schema.** Each tenant has configurable `consent_text`, `privacy_policy_url`, and `requires_consent` settings. Booking forms will collect consent evidence (exact text shown + timestamp) once the booking flow is implemented.
+**Consent fields on tenant schema.** Each tenant has configurable `consent_text`, `privacy_policy_url`, and `requires_consent` settings.
+
+**Consent evidence recording.** The `BookingService::createBooking()` method captures GDPR consent evidence: the exact `consent_text_shown` the customer agreed to (verbatim at booking time) and the `consent_given_at` timestamp. Changing the tenant's consent text does not retroactively change recorded consents. Consent records are legal-hold data and are never anonymized or deleted (GDPR Art. 7(1)). `BookingService::recordConsent()` supports post-hoc consent capture for admin-created bookings.
 
 **Customer anonymization.** The `CustomerAnonymizer` engine performs transactional PII removal: customer name → "Deleted", email → SHA-256 hash, phone/notes → NULL. Booking structure and consent evidence are preserved. The engine supports both manual anonymization and automated batch processing via the retention cron.
 
@@ -151,7 +153,6 @@ VoxelBooking is built with a privacy-by-design architecture. The following descr
 
 The following controls are specified but do not exist in the codebase yet:
 
-- **Consent evidence storage** — booking flow integration to record `consent_given_at` + `consent_text_shown`
 - **Operator deletion queue** — admin UI for reviewing and confirming customer deletion requests
 - **SMTP integration** — `Engine/Mailer.php` for email delivery
 
