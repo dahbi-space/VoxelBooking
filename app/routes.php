@@ -78,7 +78,14 @@ return function (Router $router): void {
         });
 
         // ── Public booking pages ──
-        // TODO: Phase 5 — /book/{tenant-slug} routes
+        $router->get('/book/{slug}', \App\Controllers\Booking\BookingPageController::class, 'show');
+
+        // ── Public booking API (per-tenant, no auth) ──
+        $router->get('/api/{slug}/services', \App\Controllers\Booking\BookingApiController::class, 'services');
+        $router->get('/api/{slug}/staff', \App\Controllers\Booking\BookingApiController::class, 'staff');
+        $router->get('/api/{slug}/availability', \App\Controllers\Booking\BookingApiController::class, 'availability');
+        $router->get('/api/{slug}/available-dates', \App\Controllers\Booking\BookingApiController::class, 'availableDates');
+        $router->post('/api/{slug}/bookings', \App\Controllers\Booking\BookingApiController::class, 'createBooking');
 
         // ── Privacy endpoint (GDPR data-subject rights) ──
         // No auth — customer ULID is the bearer token (128-bit entropy)

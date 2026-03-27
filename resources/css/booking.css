@@ -1,4 +1,944 @@
-/* VoxelBooking Public Booking Page Stylesheet */
+/* ═══════════════════════════════════════════════════════════════════════════
+   VoxelBooking — Public Booking Page Stylesheet
+   Per .ai/11-VoxelBooking-Visual-Design.md §3–6
+
+   Design language: radical simplicity.
+   White background. Gray text. One brand color.
+   Typography carries all hierarchy.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 @import "tailwindcss";
 
-/* Booking page design tokens and styles will be added in Phase 5 */
+/* ── Self-hosted Inter Variable ── */
+@font-face {
+  font-family: 'Inter';
+  src: url('/assets/fonts/inter-variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+  font-style: normal;
+}
+
+/* ── Design Tokens ── */
+:root {
+  /* Typography */
+  --vb-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+
+  /* Booking page palette (fixed — brand only varies) */
+  --vb-bg: #FFFFFF;
+  --vb-bg-secondary: #F9FAFB;
+  --vb-bg-tertiary: #F3F4F6;
+  --vb-text: #111827;
+  --vb-text-secondary: #6B7280;
+  --vb-text-tertiary: #9CA3AF;
+  --vb-border: #E5E7EB;
+  --vb-border-hover: #D1D5DB;
+  --vb-success: #059669;
+  --vb-success-light: #ECFDF5;
+  --vb-error: #DC2626;
+  --vb-error-light: #FEF2F2;
+
+  /* Shadows */
+  --vb-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --vb-shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07);
+
+  /* Radii */
+  --vb-radius-sm: 6px;
+  --vb-radius-md: 8px;
+  --vb-radius-lg: 10px;
+  --vb-radius-xl: 14px;
+  --vb-radius-2xl: 16px;
+  --vb-radius-full: 9999px;
+
+  /* Timing */
+  --vb-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --vb-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --vb-ease-overshoot: cubic-bezier(0.22, 1.1, 0.36, 1);
+  --vb-duration-fast: 150ms;
+  --vb-step-transition: 200ms;
+  --vb-reveal: 300ms;
+  --vb-stagger: 40ms;
+  --vb-celebration: 600ms;
+
+  /* Brand (overridden per-tenant via inline style) */
+  --vb-brand: #2563EB;
+  --vb-brand-hover: #1D4FD7;
+  --vb-brand-light: #EFF6FF;
+  --vb-brand-text: #FFFFFF;
+  --vb-brand-rgb: 37, 99, 235;
+}
+
+/* ── Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Base ── */
+body {
+  font-family: var(--vb-font-sans);
+  font-size: 0.9375rem; /* 15px — booking page base */
+  line-height: 1.5;
+  color: var(--vb-text);
+  background: var(--vb-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv02' 1, 'cv03' 1, 'cv04' 1, 'cv11' 1;
+  letter-spacing: -0.011em;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ── App Shell ── */
+.vb-book-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ── Header ── */
+.vb-book-header {
+  padding: 48px 20px 32px;
+  text-align: center;
+}
+
+.vb-book-header-inner {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.vb-book-logo {
+  height: 48px;
+  width: auto;
+  margin-bottom: 16px;
+  object-fit: contain;
+}
+
+.vb-book-business-name {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--vb-text);
+}
+
+.vb-book-business-desc {
+  font-size: 0.9375rem;
+  color: var(--vb-text-secondary);
+  margin-top: 8px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.625;
+}
+
+/* ── Flow Container ── */
+.vb-book-flow {
+  flex: 1;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 20px 48px;
+}
+
+/* ── Steps ── */
+.vb-book-step {
+  animation: vb-step-enter var(--vb-step-transition) var(--vb-ease-out) forwards;
+}
+
+.vb-book-step.is-exiting {
+  animation: vb-step-exit 150ms ease-in forwards;
+}
+
+@keyframes vb-step-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes vb-step-exit {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+
+.vb-book-step-header {
+  margin-bottom: 28px;
+}
+
+.vb-book-step-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--vb-text);
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+.vb-book-step-subtitle {
+  font-size: 0.8125rem;
+  color: var(--vb-text-secondary);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+/* ── Service Cards ── */
+.vb-book-service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vb-book-service-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border: 1px solid var(--vb-border);
+  border-radius: var(--vb-radius-xl);
+  cursor: pointer;
+  transition: border-color var(--vb-duration-fast) var(--vb-ease-out),
+              background var(--vb-duration-fast) var(--vb-ease-out),
+              box-shadow var(--vb-duration-fast) var(--vb-ease-out);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.vb-book-service-card:hover {
+  border-color: var(--vb-border-hover);
+  box-shadow: var(--vb-shadow-sm);
+}
+
+.vb-book-service-card.is-selected {
+  border: 2px solid var(--vb-brand);
+  background: var(--vb-brand-light);
+  padding: 15px 19px; /* Compensate 2px border */
+}
+
+.vb-book-service-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.vb-book-service-name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--vb-text);
+}
+
+.vb-book-service-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.8125rem;
+  color: var(--vb-text-tertiary);
+}
+
+.vb-book-service-price {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--vb-text);
+  white-space: nowrap;
+  margin-left: 16px;
+  flex-shrink: 0;
+}
+
+.vb-book-service-desc {
+  font-size: 0.8125rem;
+  color: var(--vb-text-secondary);
+  margin-top: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Staff Cards ── */
+.vb-book-staff-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.vb-book-staff-card {
+  flex: 0 0 calc(33.333% - 7px);
+  padding: 16px;
+  border: 1px solid var(--vb-border);
+  border-radius: var(--vb-radius-xl);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--vb-duration-fast) var(--vb-ease-out),
+              background var(--vb-duration-fast) var(--vb-ease-out),
+              box-shadow var(--vb-duration-fast) var(--vb-ease-out);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+@media (max-width: 640px) {
+  .vb-book-staff-card {
+    flex: 0 0 calc(50% - 5px);
+  }
+}
+
+.vb-book-staff-card:hover {
+  border-color: var(--vb-border-hover);
+  box-shadow: var(--vb-shadow-sm);
+}
+
+.vb-book-staff-card.is-selected {
+  border: 2px solid var(--vb-brand);
+  background: var(--vb-brand-light);
+  padding: 15px;
+}
+
+.vb-book-staff-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--vb-radius-full);
+  background: var(--vb-brand-light);
+  color: var(--vb-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  font-size: 0.875rem;
+  font-weight: 500;
+  overflow: hidden;
+}
+
+.vb-book-staff-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vb-book-staff-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--vb-text);
+  margin-top: 10px;
+}
+
+.vb-book-staff-title {
+  font-size: 0.75rem;
+  color: var(--vb-text-tertiary);
+  margin-top: 2px;
+}
+
+/* ── Calendar ── */
+.vb-book-calendar {
+  user-select: none;
+}
+
+.vb-book-calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.vb-book-calendar-month {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--vb-text);
+  letter-spacing: -0.025em;
+}
+
+.vb-book-calendar-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--vb-radius-full);
+  background: transparent;
+  color: var(--vb-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--vb-duration-fast) var(--vb-ease-out),
+              color var(--vb-duration-fast) var(--vb-ease-out);
+}
+
+.vb-book-calendar-btn:hover {
+  background: var(--vb-bg-secondary);
+  color: var(--vb-text);
+}
+
+.vb-book-calendar-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.vb-book-calendar-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.vb-book-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.vb-book-calendar-dayname {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--vb-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  padding: 0 0 12px;
+}
+
+.vb-book-calendar-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--vb-text);
+  border-radius: var(--vb-radius-full);
+  cursor: pointer;
+  transition: background var(--vb-duration-fast) var(--vb-ease-out),
+              color var(--vb-duration-fast) var(--vb-ease-out),
+              transform var(--vb-duration-fast) var(--vb-ease-overshoot);
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.vb-book-calendar-cell:hover:not(.is-disabled):not(.is-selected) {
+  background: var(--vb-bg-secondary);
+}
+
+.vb-book-calendar-cell.is-today:not(.is-selected) {
+  box-shadow: inset 0 0 0 1px var(--vb-border);
+}
+
+.vb-book-calendar-cell.is-disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.vb-book-calendar-cell.is-selected {
+  background: var(--vb-brand);
+  color: var(--vb-brand-text);
+  font-weight: 500;
+  transform: scale(1.02);
+}
+
+/* Availability dot beneath date */
+.vb-book-calendar-cell.has-slots::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--vb-brand);
+  opacity: 0.5;
+}
+
+.vb-book-calendar-cell.is-selected.has-slots::after {
+  background: var(--vb-brand-text);
+  opacity: 0.6;
+}
+
+.vb-book-calendar-fade {
+  animation: vb-calendar-fade 150ms var(--vb-ease-out);
+}
+
+@keyframes vb-calendar-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Time Slot Grid ── */
+.vb-book-time-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+  margin-top: 28px;
+}
+
+.vb-book-time-pill {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--vb-border);
+  border-radius: var(--vb-radius-md);
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--vb-text);
+  background: var(--vb-bg);
+  cursor: pointer;
+  transition: border-color var(--vb-duration-fast) var(--vb-ease-out),
+              background var(--vb-duration-fast) var(--vb-ease-out),
+              color var(--vb-duration-fast) var(--vb-ease-out),
+              opacity var(--vb-step-transition) var(--vb-ease-out),
+              transform var(--vb-duration-fast) var(--vb-ease-out);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  /* Stagger entrance */
+  opacity: 0;
+  transform: translateY(4px);
+  animation: vb-pill-enter var(--vb-step-transition) var(--vb-ease-out) forwards;
+}
+
+.vb-book-time-pill:hover:not(.is-selected) {
+  background: var(--vb-brand-light);
+  border-color: var(--vb-border-hover);
+}
+
+.vb-book-time-pill.is-selected {
+  background: var(--vb-brand);
+  color: var(--vb-brand-text);
+  border-color: var(--vb-brand);
+  font-weight: 500;
+}
+
+.vb-book-time-pill.is-dimmed {
+  opacity: 0.5;
+}
+
+@keyframes vb-pill-enter {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Form Inputs ── */
+.vb-book-form-group {
+  margin-bottom: 20px;
+}
+
+.vb-book-label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--vb-text-secondary);
+  margin-bottom: 8px;
+}
+
+.vb-book-required {
+  color: var(--vb-text-tertiary);
+}
+
+.vb-book-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  font-family: var(--vb-font-sans);
+  font-size: 0.9375rem;
+  color: var(--vb-text);
+  background: var(--vb-bg);
+  border: 1px solid var(--vb-border);
+  border-radius: var(--vb-radius-lg);
+  outline: none;
+  transition: border-color var(--vb-duration-fast) var(--vb-ease-out),
+              box-shadow var(--vb-duration-fast) var(--vb-ease-out);
+  letter-spacing: -0.011em;
+  font-feature-settings: 'cv02' 1, 'cv03' 1, 'cv04' 1, 'cv11' 1;
+}
+
+.vb-book-input:hover {
+  border-color: var(--vb-border-hover);
+}
+
+.vb-book-input:focus {
+  border-color: var(--vb-brand);
+  box-shadow: 0 0 0 3px rgba(var(--vb-brand-rgb), 0.15);
+}
+
+.vb-book-input.has-error {
+  border-color: var(--vb-error);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.vb-book-textarea {
+  width: 100%;
+  min-height: 96px;
+  padding: 12px 16px;
+  font-family: var(--vb-font-sans);
+  font-size: 0.9375rem;
+  color: var(--vb-text);
+  background: var(--vb-bg);
+  border: 1px solid var(--vb-border);
+  border-radius: var(--vb-radius-lg);
+  outline: none;
+  resize: vertical;
+  transition: border-color var(--vb-duration-fast) var(--vb-ease-out),
+              box-shadow var(--vb-duration-fast) var(--vb-ease-out);
+  line-height: 1.5;
+  letter-spacing: -0.011em;
+  font-feature-settings: 'cv02' 1, 'cv03' 1, 'cv04' 1, 'cv11' 1;
+}
+
+.vb-book-textarea:hover { border-color: var(--vb-border-hover); }
+.vb-book-textarea:focus {
+  border-color: var(--vb-brand);
+  box-shadow: 0 0 0 3px rgba(var(--vb-brand-rgb), 0.15);
+}
+
+.vb-book-form-error {
+  font-size: 0.75rem;
+  color: var(--vb-error);
+  margin-top: 4px;
+}
+
+.vb-book-form-hint {
+  font-size: 0.75rem;
+  color: var(--vb-text-tertiary);
+  margin-top: 4px;
+}
+
+/* ── Consent ── */
+.vb-book-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.vb-book-consent-checkbox {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  accent-color: var(--vb-brand);
+  cursor: pointer;
+}
+
+.vb-book-consent-label {
+  font-size: 0.8125rem;
+  color: var(--vb-text-secondary);
+  line-height: 1.5;
+}
+
+.vb-book-consent-label a {
+  color: var(--vb-brand);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── Buttons ── */
+.vb-book-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  padding: 0 24px;
+  font-family: var(--vb-font-sans);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border-radius: var(--vb-radius-lg);
+  border: none;
+  cursor: pointer;
+  transition: background var(--vb-duration-fast) var(--vb-ease-out),
+              transform var(--vb-duration-fast) var(--vb-ease-out),
+              box-shadow var(--vb-duration-fast) var(--vb-ease-out),
+              opacity var(--vb-duration-fast) var(--vb-ease-out);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  letter-spacing: -0.011em;
+  font-feature-settings: 'cv02' 1, 'cv03' 1, 'cv04' 1, 'cv11' 1;
+}
+
+.vb-book-btn-primary {
+  background: var(--vb-brand);
+  color: var(--vb-brand-text);
+  width: 100%;
+}
+
+.vb-book-btn-primary:hover {
+  background: var(--vb-brand-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--vb-shadow-sm);
+}
+
+.vb-book-btn-primary:active {
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+.vb-book-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.vb-book-btn-secondary {
+  background: transparent;
+  color: var(--vb-text);
+  border: 1px solid var(--vb-border);
+}
+
+.vb-book-btn-secondary:hover {
+  border-color: var(--vb-border-hover);
+  background: var(--vb-bg-secondary);
+}
+
+.vb-book-btn-ghost {
+  background: transparent;
+  color: var(--vb-brand);
+  padding: 0;
+  height: auto;
+  font-size: 0.8125rem;
+}
+
+.vb-book-btn-ghost:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Loading state */
+.vb-book-btn.is-loading {
+  pointer-events: none;
+  position: relative;
+}
+
+.vb-book-btn.is-loading .vb-book-btn-text {
+  opacity: 0;
+}
+
+.vb-book-btn.is-loading::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: vb-spin 0.6s linear infinite;
+}
+
+@keyframes vb-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Summary Card ── */
+.vb-book-summary {
+  background: var(--vb-bg-secondary);
+  border-radius: var(--vb-radius-xl);
+  padding: 24px;
+  margin-bottom: 24px;
+  animation: vb-summary-enter 250ms var(--vb-ease-out);
+}
+
+@keyframes vb-summary-enter {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.vb-book-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0;
+}
+
+.vb-book-summary-row + .vb-book-summary-row {
+  border-top: 1px solid var(--vb-border);
+}
+
+.vb-book-summary-label {
+  font-size: 0.8125rem;
+  color: var(--vb-text-secondary);
+}
+
+.vb-book-summary-value {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--vb-text);
+  text-align: right;
+}
+
+/* ── Confirmation ── */
+.vb-book-confirmation {
+  text-align: center;
+  max-width: 400px;
+  margin: 40px auto 0;
+  animation: vb-step-enter var(--vb-step-transition) var(--vb-ease-out);
+}
+
+.vb-book-checkmark-wrap {
+  margin-bottom: 24px;
+}
+
+.vb-book-checkmark {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+}
+
+.vb-book-checkmark-circle {
+  stroke: var(--vb-success);
+  stroke-width: 2;
+  fill: none;
+  stroke-dasharray: 176;
+  stroke-dashoffset: 176;
+  animation: vb-circle-draw 300ms var(--vb-ease-out) forwards;
+}
+
+.vb-book-checkmark-check {
+  stroke: var(--vb-success);
+  stroke-width: 2.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: vb-check-draw 300ms var(--vb-ease-out) 300ms forwards;
+}
+
+@keyframes vb-circle-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes vb-check-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.vb-book-confirm-scale {
+  animation: vb-confirm-scale 200ms var(--vb-ease-overshoot) 600ms forwards;
+  transform: scale(1);
+}
+
+@keyframes vb-confirm-scale {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.vb-book-confirm-heading {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--vb-text);
+  letter-spacing: -0.025em;
+  opacity: 0;
+  animation: vb-fade-in var(--vb-step-transition) var(--vb-ease-out) var(--vb-celebration) forwards;
+}
+
+.vb-book-confirm-ref {
+  font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace;
+  font-size: 0.8125rem;
+  color: var(--vb-text-tertiary);
+  margin-top: 8px;
+  opacity: 0;
+  animation: vb-fade-in var(--vb-step-transition) var(--vb-ease-out) 650ms forwards;
+}
+
+.vb-book-confirm-summary {
+  text-align: left;
+  margin-top: 24px;
+  opacity: 0;
+  animation: vb-fade-in-up var(--vb-step-transition) var(--vb-ease-out) 700ms forwards;
+}
+
+.vb-book-confirm-actions {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0;
+  animation: vb-fade-in var(--vb-step-transition) var(--vb-ease-out) 800ms forwards;
+}
+
+@keyframes vb-fade-in {
+  to { opacity: 1; }
+}
+
+@keyframes vb-fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Form Actions ── */
+.vb-book-form-actions {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vb-book-back-link {
+  text-align: center;
+}
+
+/* ── Loading ── */
+.vb-book-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.vb-book-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--vb-border);
+  border-top-color: var(--vb-brand);
+  border-radius: 50%;
+  animation: vb-spin 0.6s linear infinite;
+}
+
+/* ── Footer ── */
+.vb-book-footer {
+  padding: 32px 20px;
+  text-align: center;
+  font-size: 0.6875rem;
+  color: var(--vb-text-tertiary);
+}
+
+.vb-book-footer a {
+  color: var(--vb-text-tertiary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.vb-book-footer a:hover {
+  color: var(--vb-text-secondary);
+}
+
+/* ── No availability ── */
+.vb-book-empty {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--vb-text-tertiary);
+  font-size: 0.875rem;
+}
+
+/* ── Focus states ── */
+:focus-visible {
+  outline: 2px solid var(--vb-brand);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Mobile refinements ── */
+@media (max-width: 640px) {
+  .vb-book-header {
+    padding: 32px 20px 24px;
+  }
+
+  .vb-book-business-name {
+    font-size: 1.5rem;
+  }
+
+  .vb-book-time-grid {
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  }
+}
