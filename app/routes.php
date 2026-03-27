@@ -29,14 +29,19 @@ return function (Router $router): void {
         CsrfMiddleware::class,
     ], function (Router $router) {
 
-        // ── Health check (bypasses InstalledMiddleware internally) ──
+        // ── Health check ──
         $router->get('/health', \App\Controllers\HealthController::class, 'index');
 
         // ── Root redirect ──
         $router->get('/', \App\Controllers\HomeController::class, 'index');
 
         // ── Installation wizard ──
-        // TODO: Phase 1 — /install routes
+        $router->get('/install', \App\Controllers\Install\WizardController::class, 'show');
+        $router->post('/install/step/2', \App\Controllers\Install\WizardController::class, 'stepTwo');
+        $router->post('/install/step/3', \App\Controllers\Install\WizardController::class, 'stepThree');
+        $router->post('/install/step/4', \App\Controllers\Install\WizardController::class, 'stepFour');
+        $router->post('/install/step/5', \App\Controllers\Install\WizardController::class, 'stepFive');
+        $router->post('/install/complete', \App\Controllers\Install\WizardController::class, 'complete');
 
         // ── Admin ──
         // TODO: Phase 2 — /admin routes with AuthMiddleware
