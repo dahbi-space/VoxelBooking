@@ -73,11 +73,9 @@ final class BookingFlowTest extends TestCase
             return;
         }
 
-        // Clear rate limit records for 127.0.0.1 so the test suite starts fresh
+        // Clear ALL rate limit records so the test suite starts with a clean quota
         try {
-            Database::execute(
-                "DELETE FROM `rate_limits` WHERE `ip` = '127.0.0.1'",
-            );
+            Database::execute('TRUNCATE TABLE `rate_limits`');
         } catch (\Throwable) {
             // table may not exist
         }
@@ -98,6 +96,13 @@ final class BookingFlowTest extends TestCase
         }
         if (empty(self::$seed)) {
             $this->markTestSkipped('Test seed not available');
+        }
+
+        // Clear rate limits before each test to prevent cross-test throttling
+        try {
+            Database::execute('TRUNCATE TABLE `rate_limits`');
+        } catch (\Throwable) {
+            // best-effort
         }
     }
 

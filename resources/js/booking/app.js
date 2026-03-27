@@ -199,9 +199,11 @@ async function stepService() {
     return;
   }
 
-  const cards = state.services.map(s => `
-    <div class="vb-book-service-card" data-book-service="${s.id}" role="radio" tabindex="0"
-         aria-checked="false" aria-label="${s.name}">
+  const cards = state.services.map(s => {
+    const isSelected = state.selectedService?.id === s.id;
+    return `
+    <div class="vb-book-service-card${isSelected ? ' is-selected' : ''}" data-book-service="${s.id}" role="radio" tabindex="0"
+         aria-checked="${isSelected}" aria-label="${s.name}">
       <div class="vb-book-service-info">
         <div class="vb-book-service-name">${esc(s.name)}</div>
         <div class="vb-book-service-meta">
@@ -212,7 +214,8 @@ async function stepService() {
       </div>
       ${s.price !== null ? `<div class="vb-book-service-price">${s.price_label || formatPrice(s.price)}</div>` : ''}
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   await renderStep(`
     <div class="vb-book-step-header">
@@ -257,10 +260,11 @@ async function stepStaff() {
     return;
   }
 
-  // "Any available" + staff cards
+  // "Any available" + staff cards — restore previous selection
+  const anyIsSelected = !state.selectedStaff;
   const anyCard = `
-    <div class="vb-book-staff-card is-selected" data-book-staff="" role="radio" tabindex="0"
-         aria-checked="true" aria-label="Any available">
+    <div class="vb-book-staff-card${anyIsSelected ? ' is-selected' : ''}" data-book-staff="" role="radio" tabindex="0"
+         aria-checked="${anyIsSelected}" aria-label="Any available">
       <div class="vb-book-staff-avatar">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -271,9 +275,11 @@ async function stepStaff() {
     </div>
   `;
 
-  const staffCards = state.staff.map(s => `
-    <div class="vb-book-staff-card" data-book-staff="${s.id}" role="radio" tabindex="0"
-         aria-checked="false" aria-label="${s.name}">
+  const staffCards = state.staff.map(s => {
+    const isSelected = state.selectedStaff?.id === s.id;
+    return `
+    <div class="vb-book-staff-card${isSelected ? ' is-selected' : ''}" data-book-staff="${s.id}" role="radio" tabindex="0"
+         aria-checked="${isSelected}" aria-label="${s.name}">
       <div class="vb-book-staff-avatar">
         ${s.avatar_path
           ? `<img src="/uploads/${config.slug}/${s.avatar_path}" alt="${esc(s.name)}">`
@@ -282,7 +288,8 @@ async function stepStaff() {
       <div class="vb-book-staff-name">${esc(s.name)}</div>
       ${s.title ? `<div class="vb-book-staff-title">${esc(s.title)}</div>` : ''}
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   // Show back link only when service step was visible (multiple services)
   const staffBackLink = state.services.length > 1

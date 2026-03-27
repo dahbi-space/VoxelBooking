@@ -44,7 +44,7 @@ final class PrivacyEndpointTest extends TestCase
             require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
             EnvLoader::load(dirname(__DIR__, 2) . '/.env');
             Database::connect();
-            Database::execute("DELETE FROM `rate_limits` WHERE `ip` = '127.0.0.1'");
+            Database::execute('TRUNCATE TABLE `rate_limits`');
         } catch (\Throwable) {
             // best-effort
         }
