@@ -74,10 +74,16 @@ return function (Router $router): void {
         // ── Public booking pages ──
         // TODO: Phase 5 — /book/{tenant-slug} routes
 
+        // ── Privacy endpoint (GDPR data-subject rights) ──
+        // No auth — customer ULID is the bearer token (128-bit entropy)
+        $router->get('/book/{slug}/privacy/{customer_id}', \App\Controllers\Booking\PrivacyController::class, 'show');
+        $router->post('/book/{slug}/privacy/{customer_id}', \App\Controllers\Booking\PrivacyController::class, 'action');
+
         // ── Public API ──
         // TODO: Phase 6 — /api/{tenant-slug} routes
 
         // ── Cron ──
+        $router->get('/cron/retention', \App\Controllers\CronController::class, 'retention');
         // TODO: Phase 6 — /cron/reminders
     });
 };

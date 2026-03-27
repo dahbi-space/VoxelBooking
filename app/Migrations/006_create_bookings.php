@@ -1,0 +1,51 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Migration 006: Create bookings table.
+ *
+ * Per PRD §IV (data model) — per-tenant booking records.
+ * Consent fields (consent_given_at, consent_text_shown) are GDPR evidence
+ * and must NEVER be anonymized. Customer-facing PII fields (notes,
+ * custom_field_data) are cleared during anonymization.
+ */
+return [
+    "CREATE TABLE IF NOT EXISTS `bookings` (
+        `id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL,
+        `tenant_id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL,
+        `booking_pattern` ENUM('timeslot','resource','capacity','event') NOT NULL,
+        `service_id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NULL DEFAULT NULL,
+        `staff_id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NULL DEFAULT NULL,
+        `resource_id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NULL DEFAULT NULL,
+        `event_id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NULL DEFAULT NULL,
+        `customer_id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL,
+        `start_datetime` DATETIME NOT NULL,
+        `end_datetime` DATETIME NOT NULL,
+        `party_size` INT NOT NULL DEFAULT 1,
+        `status` ENUM('confirmed','cancelled','rescheduled','completed','no_show') NOT NULL DEFAULT 'confirmed',
+        `rescheduled_to_id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NULL DEFAULT NULL,
+        `notes` TEXT NULL DEFAULT NULL,
+        `internal_notes` TEXT NULL DEFAULT NULL,
+        `custom_field_data` JSON NULL DEFAULT NULL,
+        `consent_given_at` TIMESTAMP NULL DEFAULT NULL,
+        `consent_text_shown` VARCHAR(500) NULL DEFAULT NULL,
+        `customer_timezone` VARCHAR(100) NULL DEFAULT NULL,
+        `confirmation_sent_at` TIMESTAMP NULL DEFAULT NULL,
+        `reminder_sent_at` TIMESTAMP NULL DEFAULT NULL,
+        `cancelled_at` TIMESTAMP NULL DEFAULT NULL,
+        `cancellation_reason` VARCHAR(255) NULL DEFAULT NULL,
+        `source` ENUM('web','admin','api','embed') NOT NULL DEFAULT 'web',
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `bookings_tenant_pattern_status_idx` (`tenant_id`, `booking_pattern`, `status`),
+        KEY `bookings_tenant_status_start_idx` (`tenant_id`, `status`, `start_datetime`),
+        KEY `bookings_customer_id_idx` (`customer_id`),
+        KEY `bookings_staff_start_idx` (`staff_id`, `start_datetime`),
+        KEY `bookings_resource_start_idx` (`resource_id`, `start_datetime`),
+        KEY `bookings_event_id_idx` (`event_id`),
+        CONSTRAINT `bookings_tenant_fk` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+        CONSTRAINT `bookings_customer_fk` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+];

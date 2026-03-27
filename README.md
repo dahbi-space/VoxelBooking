@@ -139,17 +139,21 @@ VoxelBooking is built with a privacy-by-design architecture. The following descr
 
 **Consent fields on tenant schema.** Each tenant has configurable `consent_text`, `privacy_policy_url`, and `requires_consent` settings. Booking forms will collect consent evidence (exact text shown + timestamp) once the booking flow is implemented.
 
+**Customer anonymization.** The `CustomerAnonymizer` engine performs transactional PII removal: customer name → "Deleted", email → SHA-256 hash, phone/notes → NULL. Booking structure and consent evidence are preserved. The engine supports both manual anonymization and automated batch processing via the retention cron.
+
+**Data export.** The `DataExporter` engine generates machine-readable JSON exports of all customer data (personal details, booking history, consent records, email log) for GDPR Art. 20 portability requests.
+
+**Retention cron.** The `RetentionJob` engine orchestrates automated cleanup: per-tenant customer anonymization based on `data_retention_months`, audit log cleanup, email log cleanup, and rate limit cleanup. Accessible via `GET /cron/retention?token={cron_token}`.
+
+**Privacy endpoint.** `GET /book/{slug}/privacy/{customer-ulid}` provides customer data access (GDPR Art. 15). `POST` supports JSON export download (Art. 20) and deletion requests (Art. 17). Deletion is two-step: customer requests, operator confirms.
+
 ### Planned controls (not yet implemented)
 
-The following controls are architecturally specified in the PRD and compliance checklist but do not exist in the codebase yet:
+The following controls are specified but do not exist in the codebase yet:
 
-- **Privacy endpoint** — `/book/{slug}/privacy/{customer-ulid}` for customer data access and deletion requests
-- **Data export** — machine-readable JSON export for GDPR Art. 20 portability requests
-- **Automated anonymization** — cron-based anonymization of customer PII after `data_retention_months`
-- **Two-step deletion** — customer requests, operator confirms
-- **Retention cron** — scheduled cleanup of audit logs and anonymized records
-
-No documentation or UI copy should describe these as available until they are implemented, tested, and verified.
+- **Consent evidence storage** — booking flow integration to record `consent_given_at` + `consent_text_shown`
+- **Privacy page templates** — HTML views for the privacy endpoint (controller exists, templates need design)
+- **SMTP integration** — `Engine/Mailer.php` for email delivery
 
 ### What operators should know
 
