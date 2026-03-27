@@ -66,7 +66,13 @@ return function (Router $router): void {
             $router->post('/admin/settings/email', \App\Controllers\Admin\SettingsController::class, 'saveEmail');
             $router->get('/admin/settings/cron', \App\Controllers\Admin\SettingsController::class, 'cron');
             $router->get('/admin/settings/logs', \App\Controllers\Admin\SettingsController::class, 'logs');
+            // Audit log
             $router->get('/admin/settings/audit', \App\Controllers\Admin\SettingsController::class, 'audit');
+
+            // Deletion queue (GDPR Art. 17 — operator review)
+            $router->get('/admin/deletion-queue', \App\Controllers\Admin\DeletionQueueController::class, 'index');
+            $router->post('/admin/deletion-queue/confirm', \App\Controllers\Admin\DeletionQueueController::class, 'confirm');
+            $router->post('/admin/deletion-queue/dismiss', \App\Controllers\Admin\DeletionQueueController::class, 'dismiss');
 
             // TODO: Phase 3 — Tenant management routes
         });

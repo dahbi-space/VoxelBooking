@@ -29,7 +29,7 @@ use App\Middleware\CsrfMiddleware;
  * Action flow:
  * - View: shows what data is held (name, email, booking history, consent)
  * - Export: generates JSON download (GDPR Art. 20)
- * - Delete: logs a deletion request + audit trail (operator queue ⏳ planned)
+ * - Delete: logs a deletion request for operator review in admin queue
  */
 final class PrivacyController
 {
@@ -155,19 +155,19 @@ final class PrivacyController
     /**
      * Log a deletion request (Right to Erasure, GDPR Art. 17).
      *
-     * Records the request in the customer's notes and creates an audit log entry.
-     * The operator must manually process the request via the admin UI (⏳ planned).
-     * No automated erasure occurs from this action.
+     * Sets the deletion_requested_at timestamp on the customer record.
+     * The operator reviews pending requests in the admin deletion queue
+     * and confirms or rejects each request.
      */
     private function handleDeletionRequest(array $customer, array $tenant, string $slug): Response
     {
         try {
-            // Mark customer as pending deletion
+            // Mark customer as pending deletion with proper state column
             Database::execute(
                 'UPDATE `customers` SET
-                    `notes` = CONCAT(COALESCE(`notes`, \'\'), \'\n[DELETION REQUESTED: \', NOW(), \']\'),
+                    `deletion_requested_at` = NOW(),
                     `updated_at` = NOW()
-                WHERE `id` = ?',
+                WHERE `id` = ? AND `deletion_requested_at` IS NULL',
                 [$customer['id']]
             );
 

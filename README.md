@@ -149,12 +149,13 @@ VoxelBooking is built with a privacy-by-design architecture. The following descr
 
 **Privacy endpoint.** `GET /book/{slug}/privacy/{customer-ulid}` displays the customer's personal data, booking history, and consent records (GDPR Art. 15). `POST` with `action=export` returns a JSON download (Art. 20). `POST` with `action=delete` logs a deletion request and notifies the customer that the business will process it (Art. 17). The customer ULID acts as a bearer token (128-bit entropy).
 
+**Operator deletion queue.** The admin deletion queue (`/admin/deletion-queue`) displays all pending customer deletion requests. The operator can confirm (triggers `CustomerAnonymizer` to permanently remove PII) or dismiss (clears the request, retains data). Both decisions are audit-logged with the operator's identity. The queue uses a no-JS two-step confirmation pattern to prevent accidental anonymization.
+
 ### Planned controls (not yet implemented)
 
 The following controls are specified but do not exist in the codebase yet:
 
-- **Operator deletion queue** — admin UI for reviewing and confirming customer deletion requests
-- **SMTP integration** — `Engine/Mailer.php` for email delivery
+- **SMTP integration** — `Engine/Mailer.php` for email delivery and privacy request notifications
 
 ### What operators should know
 
