@@ -1,47 +1,80 @@
 <?php
-$activePage = 'settings';
+/**
+ * Cron Settings — token and status display.
+ *
+ * Variables: $user, $version, $csrfToken, $cronToken, $lastRun, $flash, $pageTitle
+ */
+$activePage = 'settings.cron';
 $activeTab = 'cron';
+
 ob_start();
+
 include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
-$cronToken = $cronToken ?? '';
-$lastRun = $lastRun ?? '';
-$flash = $flash ?? null;
-$baseUrl = $_ENV['APP_URL'] ?? 'https://your-domain.com';
 ?>
+
 <?php if ($flash): ?>
-    <div class="flash-<?= $flash['type'] === 'success' ? 'success' : 'error' ?>">
+    <div class="vb-alert vb-alert-<?= $flash['type'] === 'success' ? 'success' : 'error' ?>">
         <?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?>
     </div>
 <?php endif; ?>
 
-<div class="settings-card">
-    <h3>Cron Configuration</h3>
-    <p class="card-desc">VoxelBooking uses a single cron endpoint for booking reminders, data retention cleanup, and rate limit resets.</p>
+<div class="vb-grid" style="gap: 1.5rem; grid-template-columns: 1fr 1fr;">
+    <!-- Cron Configuration -->
+    <div class="vb-card vb-fade-in-up stagger-1">
+        <div class="vb-card-header">
+            <div class="vb-card-title">Cron Job</div>
+            <div class="vb-card-desc">Add this command to your server's crontab (every 5 minutes recommended).</div>
+        </div>
 
-    <div class="form-group">
-        <label class="form-label">Cron URL</label>
-        <input type="text" class="form-input form-input-mono" readonly value="<?= htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8') ?>/cron/run?token=<?= htmlspecialchars($cronToken, ENT_QUOTES, 'UTF-8') ?>" id="cron-url">
-        <p class="form-hint">Add this URL to your server's crontab. Run every 5 minutes.</p>
+        <div class="vb-form-group">
+            <label class="vb-label">Crontab command</label>
+            <input type="text" class="vb-input vb-input-mono" readonly value="*/5 * * * * curl -s <?= htmlspecialchars(($_ENV['APP_URL'] ?? 'https://yourdomain.com'), ENT_QUOTES, 'UTF-8') ?>/cron?token=<?= htmlspecialchars($cronToken, ENT_QUOTES, 'UTF-8') ?> > /dev/null 2>&1" onclick="this.select()">
+            <div class="vb-hint">Click to select, then copy.</div>
+        </div>
+
+        <div class="vb-form-group">
+            <label class="vb-label">Cron token</label>
+            <input type="text" class="vb-input vb-input-mono" readonly value="<?= htmlspecialchars($cronToken, ENT_QUOTES, 'UTF-8') ?>" onclick="this.select()">
+            <div class="vb-hint">Auto-generated. Keep this token secret.</div>
+        </div>
     </div>
 
-    <div class="form-group">
-        <label class="form-label">Crontab Command</label>
-        <input type="text" class="form-input form-input-mono" readonly value="*/5 * * * * curl -s '<?= htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8') ?>/cron/run?token=<?= htmlspecialchars($cronToken, ENT_QUOTES, 'UTF-8') ?>' > /dev/null 2>&1">
-        <p class="form-hint">Copy this line into your server's crontab (<code>crontab -e</code>).</p>
+    <!-- Status -->
+    <div class="vb-card vb-fade-in-up stagger-2">
+        <div class="vb-card-header">
+            <div class="vb-card-title">Status</div>
+            <div class="vb-card-desc">Cron job execution history.</div>
+        </div>
+
+        <div class="vb-info-row">
+            <span class="vb-info-label">Last run</span>
+            <span class="vb-info-value">
+                <?php if ($lastRun): ?>
+                    <code><?= htmlspecialchars($lastRun, ENT_QUOTES, 'UTF-8') ?></code>
+                <?php else: ?>
+                    <span style="color: var(--vb-admin-text-tertiary);">Never — cron has not run yet</span>
+                <?php endif; ?>
+            </span>
+        </div>
+        <div class="vb-info-row">
+            <span class="vb-info-label">Status</span>
+            <span class="vb-info-value">
+                <?php if ($lastRun): ?>
+                    <span style="color: var(--vb-admin-success); font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                        Active
+                    </span>
+                <?php else: ?>
+                    <span style="color: var(--vb-admin-warning); font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        Not configured
+                    </span>
+                <?php endif; ?>
+            </span>
+        </div>
     </div>
 </div>
 
-<div class="settings-card">
-    <h3>Status</h3>
-    <div class="info-row">
-        <span class="info-label">Cron Token</span>
-        <span class="info-value"><code><?= htmlspecialchars(substr($cronToken, 0, 8) . '…', ENT_QUOTES, 'UTF-8') ?></code></span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Last Run</span>
-        <span class="info-value"><?= $lastRun !== '' ? htmlspecialchars($lastRun, ENT_QUOTES, 'UTF-8') : '<span style="color:var(--vb-admin-text-ghost);">Never</span>' ?></span>
-    </div>
-</div>
 <?php
 $content = ob_get_clean();
-include dirname(__DIR__) . '/layout.php';
+include dirname(__DIR__, 2) . '/admin/layout.php';
