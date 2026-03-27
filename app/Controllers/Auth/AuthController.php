@@ -38,9 +38,13 @@ final class AuthController
         $error = $_SESSION['login_error'] ?? null;
         unset($_SESSION['login_error']);
 
+        $lastEmail = $_SESSION['login_email'] ?? '';
+        unset($_SESSION['login_email']);
+
         return View::response('auth.login', [
-            'csrfToken' => $csrfToken,
-            'error'     => $error,
+            'csrfToken'  => $csrfToken,
+            'error'      => $error,
+            'lastEmail'  => $lastEmail,
         ]);
     }
 
@@ -58,9 +62,10 @@ final class AuthController
             return $this->redirectAfterLogin();
         }
 
-        // Store error in session and redirect back to login
+        // Store error and submitted email in session and redirect back to login
         Auth::startSession();
         $_SESSION['login_error'] = $result['error'] ?? 'Invalid email or password.';
+        $_SESSION['login_email'] = $email;
 
         return Response::redirect('/admin/login');
     }

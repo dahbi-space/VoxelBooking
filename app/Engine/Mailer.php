@@ -49,6 +49,14 @@ final class Mailer
     ): array {
         $config = self::loadConfig();
         $logId = Ulid::generate();
+        $transport = strtolower(trim($config['mail_transport'] ?? 'smtp'));
+
+        // Log-only transport: record the email without making any outbound connection
+        if ($transport === 'log') {
+            self::logEmail($logId, $tenantId, $bookingId, $type, $to, $subject, 'sent', null);
+            Logger::info('Email logged (log transport)', ['type' => $type, 'to' => $to]);
+            return ['sent' => true, 'error' => null, 'log_id' => $logId];
+        }
 
         // If SMTP is not configured, log the failure and return gracefully
         if (empty($config['smtp_host'])) {
@@ -232,7 +240,7 @@ final class Mailer
             return self::$configCache;
         }
 
-        $keys = ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_encryption', 'mail_from_address', 'mail_from_name'];
+        $keys = ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_encryption', 'mail_from_address', 'mail_from_name', 'mail_transport'];
         $config = [];
 
         try {

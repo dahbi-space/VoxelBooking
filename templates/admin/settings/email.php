@@ -34,6 +34,14 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                 <div class="vb-card-desc">Outgoing email server settings for notifications and reminders.</div>
             </div>
 
+            <div class="vb-form-group">
+                <label for="mail_transport" class="vb-label">Transport</label>
+                <select id="mail_transport" name="mail_transport" class="vb-input">
+                    <option value="smtp" <?= ($settings['mail_transport'] ?? 'smtp') === 'smtp' ? 'selected' : '' ?>>SMTP — deliver via mail server</option>
+                    <option value="log" <?= ($settings['mail_transport'] ?? '') === 'log' ? 'selected' : '' ?>>Log only — record to email_log, do not send</option>
+                </select>
+            </div>
+
             <div class="vb-form-row">
                 <div class="vb-form-group">
                     <label for="smtp_host" class="vb-label">SMTP host</label>

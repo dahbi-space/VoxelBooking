@@ -173,7 +173,7 @@ final class SettingsController
     {
         $settings = $this->loadSettings([
             'smtp_host', 'smtp_port', 'smtp_username', 'smtp_encryption',
-            'mail_from_address', 'mail_from_name',
+            'mail_from_address', 'mail_from_name', 'mail_transport',
         ]);
 
         return $this->render('admin.settings.email', 'Email', [
@@ -185,11 +185,11 @@ final class SettingsController
     public function saveEmail(Request $request): Response
     {
         // Track changes for audit log
-        $oldSettings = $this->loadSettings(['smtp_host', 'smtp_port', 'smtp_username', 'smtp_encryption', 'mail_from_address', 'mail_from_name']);
+        $oldSettings = $this->loadSettings(['smtp_host', 'smtp_port', 'smtp_username', 'smtp_encryption', 'mail_from_address', 'mail_from_name', 'mail_transport']);
         $changes = [];
 
         try {
-            $fields = ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_encryption', 'mail_from_address', 'mail_from_name'];
+            $fields = ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_encryption', 'mail_from_address', 'mail_from_name', 'mail_transport'];
             foreach ($fields as $field) {
                 $value = trim($request->string($field));
                 if ($value !== '') {
