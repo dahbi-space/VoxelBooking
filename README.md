@@ -125,6 +125,52 @@ templates/              PHP view templates
 tests/                  PHPUnit test suites
 ```
 
+## Privacy & Compliance Posture
+
+VoxelBooking is built with a privacy-by-design architecture. The following describes what the software does — not a legal guarantee. Operators are responsible for their own compliance obligations.
+
+### Self-hosted by default
+
+All data stays on your server. VoxelBooking makes zero outbound connections unless you configure SMTP for email delivery. No telemetry, no analytics beacons, no update checks, no CDN dependencies. Every font, icon, and script is bundled.
+
+### No hidden tracking
+
+VoxelBooking sets one session cookie (`PHPSESSID`, strictly necessary for admin login) and one localStorage preference (`vb-theme` for dark/light mode). Zero analytics cookies. Zero marketing cookies. Zero fingerprinting. Zero cross-session identifiers. The embed widget sets no cookies or storage.
+
+### Consent and privacy controls
+
+- Configurable consent checkbox on booking forms with custom text and privacy policy link
+- Consent evidence stored per booking (exact text shown + timestamp)
+- Public privacy endpoint for customers to view their data and request deletion
+- Two-step deletion process (customer requests, operator confirms) to prevent unauthorized erasure
+- Data export in machine-readable JSON format for portability requests
+
+### Audit logging
+
+- Structured audit log covering authentication events, settings changes, booking lifecycle, customer data actions, and API usage
+- PII-redacted log entries (passwords, tokens, and raw credentials never logged)
+- Configurable retention with automatic cleanup
+- Append-only log — not editable from the admin UI
+
+### Data retention
+
+- Per-tenant configurable retention period (default 24 months)
+- Automated anonymization via cron (names → "Deleted", emails → hashed, phone → null)
+- Booking structure preserved for operational history; PII removed
+- Consent records are never deleted (legal obligation under GDPR Art. 7(1))
+
+### What operators should know
+
+VoxelBooking provides the technical controls for privacy compliance. Operators are responsible for:
+
+- Providing a legally reviewed privacy policy appropriate for their jurisdiction
+- Setting appropriate consent text for their tenants
+- Responding to data-subject requests within legal timeframes
+- Establishing Data Processing Agreements with their hosting and SMTP providers
+- Server-level security (TLS certificates, backups, access control)
+
+The software does not claim GDPR compliance, ISO certification, or any legal guarantee. It provides privacy-by-design controls that support compliance — the organizational and legal obligations remain with the operator.
+
 ## License
 
 Proprietary. See LICENSE file.
