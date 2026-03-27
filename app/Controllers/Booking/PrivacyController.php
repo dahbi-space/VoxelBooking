@@ -148,10 +148,11 @@ final class PrivacyController
     }
 
     /**
-     * Create a deletion request (Right to Erasure, GDPR Art. 17).
+     * Log a deletion request (Right to Erasure, GDPR Art. 17).
      *
-     * Two-step process: customer requests, operator confirms in admin.
-     * This prevents unauthorized erasure.
+     * Records the request in the customer's notes and creates an audit log entry.
+     * The operator must manually process the request via the admin UI (⏳ planned).
+     * No automated erasure occurs from this action.
      */
     private function handleDeletionRequest(array $customer, array $tenant, string $slug): Response
     {

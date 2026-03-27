@@ -145,14 +145,14 @@ VoxelBooking is built with a privacy-by-design architecture. The following descr
 
 **Retention cron.** The `RetentionJob` engine orchestrates automated cleanup: per-tenant customer anonymization based on `data_retention_months`, audit log cleanup, email log cleanup, and rate limit cleanup. Accessible via `GET /cron/retention?token={cron_token}`.
 
-**Privacy endpoint.** `GET /book/{slug}/privacy/{customer-ulid}` provides customer data access (GDPR Art. 15). `POST` supports JSON export download (Art. 20) and deletion requests (Art. 17). Deletion is two-step: customer requests, operator confirms.
+**Privacy endpoint.** `GET /book/{slug}/privacy/{customer-ulid}` displays the customer's personal data, booking history, and consent records (GDPR Art. 15). `POST` with `action=export` returns a JSON download (Art. 20). `POST` with `action=delete` logs a deletion request and notifies the customer that the business will process it (Art. 17). The customer ULID acts as a bearer token (128-bit entropy).
 
 ### Planned controls (not yet implemented)
 
 The following controls are specified but do not exist in the codebase yet:
 
 - **Consent evidence storage** — booking flow integration to record `consent_given_at` + `consent_text_shown`
-- **Privacy page templates** — HTML views for the privacy endpoint (controller exists, templates need design)
+- **Operator deletion queue** — admin UI for reviewing and confirming customer deletion requests
 - **SMTP integration** — `Engine/Mailer.php` for email delivery
 
 ### What operators should know
