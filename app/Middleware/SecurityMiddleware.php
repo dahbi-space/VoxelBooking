@@ -52,12 +52,12 @@ final class SecurityMiddleware
         $path = $request->path();
 
         if (str_starts_with($path, '/install')) {
-            // Install wizard: inline <script> block required (no Vite pre-install)
-            // Google Fonts needed for Inter (self-hosted in production admin)
+            // Install wizard: inline <script> + <style> blocks required (no Vite pre-install)
+            // All assets self-hosted — no external font CDN
             $response->header('Content-Security-Policy',
                 "default-src 'self'; script-src 'self' 'unsafe-inline'; "
-                . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-                . "img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; "
+                . "style-src 'self' 'unsafe-inline'; "
+                . "img-src 'self' data:; font-src 'self'; "
                 . "connect-src 'self'; frame-ancestors 'none'"
             );
         } else {

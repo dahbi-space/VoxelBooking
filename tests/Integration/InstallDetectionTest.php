@@ -11,16 +11,19 @@ use App\Middleware\InstalledMiddleware;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Integration tests for the PRD installation detection contract (§1453).
+ * Tests for the PRD installation detection contract (§1453).
  *
- * Tests all four checks:
- * 1. .env exists with non-empty DB_HOST
- * 2. DB connection succeeds
- * 3. settings table exists
- * 4. settings.installed_at is present and non-empty
+ * This suite is split into two groups:
  *
- * If ANY fails → show /install.
- * If ALL pass → /install returns 404.
+ * **Environment-independent tests** (always run, deterministic):
+ * - Tests that only manipulate $_ENV['DB_HOST'] or $_SERVER['REQUEST_URI']
+ *   to verify middleware routing logic without touching a real database.
+ *
+ * **Database-backed tests** (require local MySQL):
+ * - Tests that verify the full 4-check contract against a live database.
+ * - These are skipped with a clear message when the database defined by
+ *   the test environment (DB_HOST, DB_PORT, etc.) is unreachable.
+ *   This happens in sandboxed CI environments without a MySQL service.
  */
 final class InstallDetectionTest extends TestCase
 {
@@ -49,12 +52,12 @@ final class InstallDetectionTest extends TestCase
             }
         }
         $_SERVER['REQUEST_URI'] = $this->originalRequestUri;
-
-        // Reset DB connection so next test gets fresh state
         Database::reset();
     }
 
-    // ── isInstalled() tests ──
+    // ═══════════════════════════════════════════════════════════════
+    // Environment-independent tests (always run, no DB needed)
+    // ═══════════════════════════════════════════════════════════════
 
     public function testNotInstalledWhenDbHostMissing(): void
     {
@@ -69,53 +72,6 @@ final class InstallDetectionTest extends TestCase
 
         $this->assertFalse(InstalledMiddleware::isInstalled());
     }
-
-    public function testNotInstalledWhenDbConnectionFails(): void
-    {
-        $_ENV['DB_HOST'] = '192.0.2.1'; // RFC 5737 TEST-NET: deliberately unreachable
-        $_ENV['DB_PORT'] = '9999';
-        $_ENV['DB_DATABASE'] = 'nonexistent';
-        $_ENV['DB_USERNAME'] = 'nobody';
-        $_ENV['DB_PASSWORD'] = 'wrong';
-        Database::reset();
-
-        $this->assertFalse(InstalledMiddleware::isInstalled());
-    }
-
-    public function testNotInstalledWhenInstalledAtMissing(): void
-    {
-        $this->requireDatabase();
-
-        $existing = Database::query(
-            "SELECT `value` FROM `settings` WHERE `key` = 'installed_at'"
-        );
-        $hadValue = !empty($existing) && !empty($existing[0]['value']);
-
-        // Remove installed_at
-        Database::execute("DELETE FROM `settings` WHERE `key` = 'installed_at'");
-
-        try {
-            $this->assertFalse(InstalledMiddleware::isInstalled());
-        } finally {
-            // Restore
-            if ($hadValue) {
-                Database::execute(
-                    "INSERT INTO `settings` (`key`, `value`, `updated_at`) VALUES ('installed_at', ?, NOW())",
-                    [$existing[0]['value']]
-                );
-            }
-        }
-    }
-
-    public function testInstalledWhenAllConditionsMet(): void
-    {
-        $this->requireDatabase();
-        $this->ensureInstalledAt();
-
-        $this->assertTrue(InstalledMiddleware::isInstalled());
-    }
-
-    // ── Middleware behavior tests ──
 
     public function testNotInstalledNonInstallRouteRedirects(): void
     {
@@ -141,6 +97,73 @@ final class InstallDetectionTest extends TestCase
         $this->assertSame(200, $response->getStatusCode());
     }
 
+    public function testHealthEndpointAlwaysPasses(): void
+    {
+        unset($_ENV['DB_HOST']);
+        $_SERVER['REQUEST_URI'] = '/health';
+
+        $middleware = new InstalledMiddleware();
+        $request = new Request();
+        $response = $middleware->handle($request, fn($r) => Response::html('healthy', 200));
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertStringContainsString('healthy', $response->getBody());
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Database-backed tests (require live MySQL)
+    //
+    // Skipped with reason when the database is unreachable.
+    // To run these locally: ensure MySQL is running at the host/port
+    // specified in your .env (default: 127.0.0.1:3309, DB=voxelbooking).
+    // ═══════════════════════════════════════════════════════════════
+
+    public function testNotInstalledWhenDbConnectionFails(): void
+    {
+        // Use localhost with a port that no MySQL is listening on.
+        // This fails immediately (connection refused) rather than
+        // waiting for a 30-second TCP timeout like 192.0.2.1 would.
+        $_ENV['DB_HOST'] = '127.0.0.1';
+        $_ENV['DB_PORT'] = '1'; // port 1: no MySQL, instant refused
+        $_ENV['DB_DATABASE'] = 'nonexistent';
+        $_ENV['DB_USERNAME'] = 'nobody';
+        $_ENV['DB_PASSWORD'] = 'wrong';
+        Database::reset();
+
+        $this->assertFalse(InstalledMiddleware::isInstalled());
+    }
+
+    public function testNotInstalledWhenInstalledAtMissing(): void
+    {
+        $this->requireDatabase();
+
+        $existing = Database::query(
+            "SELECT `value` FROM `settings` WHERE `key` = 'installed_at'"
+        );
+        $hadValue = !empty($existing) && !empty($existing[0]['value']);
+
+        Database::execute("DELETE FROM `settings` WHERE `key` = 'installed_at'");
+
+        try {
+            $this->assertFalse(InstalledMiddleware::isInstalled());
+        } finally {
+            if ($hadValue) {
+                Database::execute(
+                    "INSERT INTO `settings` (`key`, `value`, `updated_at`) VALUES ('installed_at', ?, NOW())",
+                    [$existing[0]['value']]
+                );
+            }
+        }
+    }
+
+    public function testInstalledWhenAllConditionsMet(): void
+    {
+        $this->requireDatabase();
+        $this->ensureInstalledAt();
+
+        $this->assertTrue(InstalledMiddleware::isInstalled());
+    }
+
     public function testPostInstallInstallRouteReturns404(): void
     {
         $this->requireDatabase();
@@ -155,21 +178,16 @@ final class InstallDetectionTest extends TestCase
         $this->assertSame(404, $response->getStatusCode());
     }
 
-    public function testHealthEndpointAlwaysPasses(): void
-    {
-        unset($_ENV['DB_HOST']);
-        $_SERVER['REQUEST_URI'] = '/health';
-
-        $middleware = new InstalledMiddleware();
-        $request = new Request();
-        $response = $middleware->handle($request, fn($r) => Response::html('healthy', 200));
-
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertStringContainsString('healthy', $response->getBody());
-    }
-
     // ── Helpers ──
 
+    /**
+     * Connects to the test database or skips the test.
+     *
+     * Tests calling this method are environment-coupled: they need
+     * a MySQL server at DB_HOST:DB_PORT with the voxelbooking database
+     * and settings table present. In CI environments without MySQL,
+     * these tests are skipped with an explicit reason.
+     */
     private function requireDatabase(): void
     {
         $_ENV['DB_HOST'] = $this->originalEnv['DB_HOST'] ?? '127.0.0.1';
@@ -183,7 +201,11 @@ final class InstallDetectionTest extends TestCase
         try {
             Database::connect();
         } catch (\Throwable $e) {
-            $this->markTestSkipped('Database not available: ' . $e->getMessage());
+            $this->markTestSkipped(
+                'Database not available (environment-coupled test). '
+                . 'Requires MySQL at ' . $_ENV['DB_HOST'] . ':' . $_ENV['DB_PORT']
+                . '. Reason: ' . $e->getMessage()
+            );
         }
     }
 
