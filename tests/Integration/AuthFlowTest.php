@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
+use App\Engine\Database;
+use App\Engine\EnvLoader;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -20,20 +22,41 @@ final class AuthFlowTest extends TestCase
 {
     private string $baseUrl;
     private string $cookieJar;
+    private static bool $appReachable = false;
+
+    public static function setUpBeforeClass(): void
+    {
+        $baseUrl = rtrim($_ENV['APP_TEST_URL'] ?? 'https://voxelbooking-app.test', '/');
+
+        $ch = curl_init($baseUrl . '/health');
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_TIMEOUT => 5]);
+        curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($code === 0) {
+            return;
+        }
+
+        self::$appReachable = true;
+
+        // Clear rate limit records for test IP
+        try {
+            require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
+            EnvLoader::load(dirname(__DIR__, 2) . '/.env');
+            Database::connect();
+            Database::execute("DELETE FROM `rate_limits` WHERE `ip` = '127.0.0.1'");
+        } catch (\Throwable) {
+            // best-effort
+        }
+    }
 
     protected function setUp(): void
     {
         $this->baseUrl = rtrim($_ENV['APP_TEST_URL'] ?? 'https://voxelbooking-app.test', '/');
         $this->cookieJar = tempnam(sys_get_temp_dir(), 'vb_test_');
 
-        // Check if the app is reachable
-        $ch = curl_init($this->baseUrl . '/health');
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_TIMEOUT => 5]);
-        $r = curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($code !== 200 || !str_contains((string) $r, 'VoxelBooking')) {
+        if (!self::$appReachable) {
             $this->markTestSkipped('App not reachable at ' . $this->baseUrl);
         }
     }

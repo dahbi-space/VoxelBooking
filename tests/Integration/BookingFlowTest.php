@@ -23,53 +23,86 @@ use PHPUnit\Framework\TestCase;
  * - POST /api/{slug}/bookings  → rejects duplicate booking (409)
  * - POST /api/{slug}/bookings  → validates required fields
  *
- * All tests use cURL against the live app and clean up after themselves.
+ * Deterministic: reachability is checked once in setUpBeforeClass,
+ * not per-test. Rate limit records for the test IP are cleared
+ * before the class runs.
  */
 final class BookingFlowTest extends TestCase
 {
     private string $baseUrl;
-    private static bool $dbReady = false;
     private array $cleanupIds = [];
+
+    private static bool $appReachable = false;
+    private static bool $dbReady = false;
 
     /** @var array{slug: string, tenant_id: string, customer_email: string, service_id: string, staff_id: string} */
     private static array $seed = [];
+
+    /**
+     * One-time reachability + DB + seed. No per-test /health hits.
+     */
+    public static function setUpBeforeClass(): void
+    {
+        $baseUrl = rtrim($_ENV['APP_TEST_URL'] ?? 'https://voxelbooking-app.test', '/');
+
+        // Single reachability check
+        $ch = curl_init($baseUrl . '/health');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT        => 5,
+        ]);
+        $r = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        // Accept 200 or 429 — the app is running either way
+        if ($code === 0) {
+            return; // App unreachable, tests will skip per setUp
+        }
+
+        self::$appReachable = true;
+
+        // DB connection
+        try {
+            require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
+            EnvLoader::load(dirname(__DIR__, 2) . '/.env');
+            Database::connect();
+            self::$dbReady = true;
+        } catch (\Throwable) {
+            return;
+        }
+
+        // Clear rate limit records for 127.0.0.1 so the test suite starts fresh
+        try {
+            Database::execute(
+                "DELETE FROM `rate_limits` WHERE `ip` = '127.0.0.1'",
+            );
+        } catch (\Throwable) {
+            // table may not exist
+        }
+
+        // Seed test data
+        self::$seed = self::seedTestTenant();
+    }
 
     protected function setUp(): void
     {
         $this->baseUrl = rtrim($_ENV['APP_TEST_URL'] ?? 'https://voxelbooking-app.test', '/');
 
-        // Verify app is reachable
-        $ch = curl_init($this->baseUrl . '/health');
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_TIMEOUT => 5]);
-        $r = curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($code !== 200 || !str_contains((string) $r, 'VoxelBooking')) {
+        if (!self::$appReachable) {
             $this->markTestSkipped('App not reachable at ' . $this->baseUrl);
         }
-
-        // Connect to DB for seeding/verification
         if (!self::$dbReady) {
-            try {
-                require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
-                EnvLoader::load(dirname(__DIR__, 2) . '/.env');
-                Database::connect();
-                self::$dbReady = true;
-            } catch (\Throwable $e) {
-                $this->markTestSkipped('Database not available: ' . $e->getMessage());
-            }
+            $this->markTestSkipped('Database not available');
         }
-
-        // Seed test data if not yet done
         if (empty(self::$seed)) {
-            self::$seed = $this->seedTestTenant();
+            $this->markTestSkipped('Test seed not available');
         }
     }
 
     protected function tearDown(): void
     {
-        // Clean up test bookings (not the tenant seed — reused across tests)
         foreach (array_reverse($this->cleanupIds) as [$table, $id]) {
             try {
                 Database::execute("DELETE FROM `{$table}` WHERE `id` = ?", [$id]);
@@ -86,7 +119,6 @@ final class BookingFlowTest extends TestCase
         }
 
         try {
-            // Clean up in correct foreign-key order
             Database::execute('DELETE FROM `service_staff` WHERE `service_id` = ?', [self::$seed['service_id']]);
             Database::execute('DELETE FROM `availability` WHERE `tenant_id` = ?', [self::$seed['tenant_id']]);
             Database::execute('DELETE FROM `bookings` WHERE `tenant_id` = ?', [self::$seed['tenant_id']]);
@@ -129,7 +161,6 @@ final class BookingFlowTest extends TestCase
         $res = $this->httpGet('/book/nonexistent-test-tenant-xyz');
 
         $this->assertSame(404, $res['code']);
-        // Should be a branded 404, not raw HTML
         $this->assertStringContainsString('booking-css.css', $res['body'], '404 must use booking design system');
         $this->assertStringContainsString('not found', strtolower($res['body']));
     }
@@ -142,7 +173,7 @@ final class BookingFlowTest extends TestCase
     {
         $res = $this->httpGetJson('/api/' . self::$seed['slug'] . '/services');
 
-        $this->assertSame(200, $res['code']);
+        $this->assertSame(200, $res['code'], 'Services endpoint must return 200. Body: ' . $res['body']);
         $data = json_decode($res['body'], true);
 
         $this->assertArrayHasKey('services', $data);
@@ -172,7 +203,7 @@ final class BookingFlowTest extends TestCase
     {
         $res = $this->httpGetJson('/api/' . self::$seed['slug'] . '/staff');
 
-        $this->assertSame(200, $res['code']);
+        $this->assertSame(200, $res['code'], 'Staff endpoint must return 200. Body: ' . $res['body']);
         $data = json_decode($res['body'], true);
 
         $this->assertArrayHasKey('staff', $data);
@@ -187,10 +218,10 @@ final class BookingFlowTest extends TestCase
     {
         $res = $this->httpGetJson('/api/' . self::$seed['slug'] . '/staff?service_id=' . self::$seed['service_id']);
 
-        $this->assertSame(200, $res['code']);
+        $this->assertSame(200, $res['code'], 'Filtered staff must return 200. Body: ' . $res['body']);
         $data = json_decode($res['body'], true);
 
-        $this->assertNotEmpty($data['staff'], 'Service-staff pivot should return linked staff');
+        $this->assertNotEmpty($data['staff'] ?? [], 'Service-staff pivot should return linked staff');
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -204,7 +235,7 @@ final class BookingFlowTest extends TestCase
 
         $res = $this->httpGetJson('/api/' . self::$seed['slug'] . '/availability?date=' . $date);
 
-        $this->assertSame(200, $res['code']);
+        $this->assertSame(200, $res['code'], 'Availability must return 200. Body: ' . $res['body']);
         $data = json_decode($res['body'], true);
 
         $this->assertArrayHasKey('slots', $data);
@@ -231,7 +262,7 @@ final class BookingFlowTest extends TestCase
 
         $res = $this->httpGetJson('/api/' . self::$seed['slug'] . "/available-dates?year={$year}&month={$month}");
 
-        $this->assertSame(200, $res['code']);
+        $this->assertSame(200, $res['code'], 'Available dates must return 200. Body: ' . $res['body']);
         $data = json_decode($res['body'], true);
 
         $this->assertArrayHasKey('dates', $data);
@@ -244,28 +275,19 @@ final class BookingFlowTest extends TestCase
 
     public function testCreateBookingSucceeds(): void
     {
-        // Get a valid slot first
-        $nextMon = new \DateTimeImmutable('next Monday');
-        $date = $nextMon->format('Y-m-d');
-
-        $availRes = $this->httpGetJson('/api/' . self::$seed['slug'] . '/availability?date=' . $date
-            . '&service_id=' . self::$seed['service_id']);
-        $availData = json_decode($availRes['body'], true);
-
-        $this->assertNotEmpty($availData['slots'], 'Must have slots to test booking');
-        $slot = $availData['slots'][0];
+        $slot = $this->getFirstAvailableSlot('next Monday');
 
         $payload = [
             'service_id'     => self::$seed['service_id'],
             'staff_id'       => self::$seed['staff_id'],
-            'start_datetime' => $date . 'T' . $slot['time'] . ':00',
+            'start_datetime' => $slot['date'] . 'T' . $slot['time'] . ':00',
             'customer'       => [
                 'name'  => 'Integration Tester',
                 'email' => 'booking-test-' . substr(Ulid::generate(), -6) . '@example.com',
             ],
             'consent_given' => true,
             'notes'         => 'Integration test booking',
-            '__ts'          => (time() - 10) * 1000, // 10 seconds ago
+            '__ts'          => (time() - 10) * 1000,
         ];
 
         $res = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload);
@@ -276,11 +298,10 @@ final class BookingFlowTest extends TestCase
         $this->assertArrayHasKey('booking', $data);
         $booking = $data['booking'];
         $this->assertArrayHasKey('id', $booking);
-        $this->assertSame($date, $booking['date']);
+        $this->assertSame($slot['date'], $booking['date']);
         $this->assertSame($slot['time'], $booking['time']);
         $this->assertTrue($booking['consent_recorded'], 'Consent must be recorded');
 
-        // Track for cleanup
         $this->cleanupIds[] = ['bookings', $booking['id']];
     }
 
@@ -290,17 +311,11 @@ final class BookingFlowTest extends TestCase
 
     public function testConsentEvidenceRecordedViaPublicBooking(): void
     {
-        $nextTue = new \DateTimeImmutable('next Tuesday');
-        $date = $nextTue->format('Y-m-d');
-
-        $availRes = $this->httpGetJson('/api/' . self::$seed['slug'] . '/availability?date=' . $date);
-        $availData = json_decode($availRes['body'], true);
-        $this->assertNotEmpty($availData['slots'] ?? [], 'Tuesday must have slots');
-        $slot = $availData['slots'][0];
+        $slot = $this->getFirstAvailableSlot('next Tuesday');
 
         $payload = [
             'service_id'     => self::$seed['service_id'],
-            'start_datetime' => $date . 'T' . $slot['time'] . ':00',
+            'start_datetime' => $slot['date'] . 'T' . $slot['time'] . ':00',
             'customer'       => [
                 'name'  => 'Consent Evidence Tester',
                 'email' => 'consent-test-' . substr(Ulid::generate(), -6) . '@example.com',
@@ -310,8 +325,10 @@ final class BookingFlowTest extends TestCase
         ];
 
         $res = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload);
-        $this->assertSame(201, $res['code']);
+        $this->assertSame(201, $res['code'], 'Consent booking must return 201. Body: ' . $res['body']);
+
         $data = json_decode($res['body'], true);
+        $this->assertArrayHasKey('booking', $data);
         $bookingId = $data['booking']['id'];
         $this->cleanupIds[] = ['bookings', $bookingId];
 
@@ -337,19 +354,12 @@ final class BookingFlowTest extends TestCase
 
     public function testDoubleBookingReturns409(): void
     {
-        $nextWed = new \DateTimeImmutable('next Wednesday');
-        $date = $nextWed->format('Y-m-d');
-
-        $availRes = $this->httpGetJson('/api/' . self::$seed['slug'] . '/availability?date=' . $date
-            . '&staff_id=' . self::$seed['staff_id']);
-        $availData = json_decode($availRes['body'], true);
-        $this->assertNotEmpty($availData['slots'], 'Must have slots for conflict test');
-        $slot = $availData['slots'][0];
+        $slot = $this->getFirstAvailableSlot('next Wednesday', self::$seed['staff_id']);
 
         $basePayload = [
             'service_id'     => self::$seed['service_id'],
             'staff_id'       => self::$seed['staff_id'],
-            'start_datetime' => $date . 'T' . $slot['time'] . ':00',
+            'start_datetime' => $slot['date'] . 'T' . $slot['time'] . ':00',
             'consent_given'  => true,
             '__ts'           => (time() - 10) * 1000,
         ];
@@ -363,7 +373,9 @@ final class BookingFlowTest extends TestCase
 
         $res1 = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload1);
         $this->assertSame(201, $res1['code'], 'First booking must succeed. Body: ' . $res1['body']);
+
         $data1 = json_decode($res1['body'], true);
+        $this->assertArrayHasKey('booking', $data1);
         $this->cleanupIds[] = ['bookings', $data1['booking']['id']];
 
         // Second booking — same slot, same staff → should be 409
@@ -374,7 +386,8 @@ final class BookingFlowTest extends TestCase
         ];
 
         $res2 = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload2);
-        $this->assertSame(409, $res2['code'], 'Double booking must be rejected with 409');
+        $this->assertSame(409, $res2['code'], 'Double booking must be rejected with 409. Body: ' . $res2['body']);
+
         $data2 = json_decode($res2['body'], true);
         $this->assertSame('slot_unavailable', $data2['error'] ?? '');
         $this->assertArrayHasKey('alternatives', $data2, 'Must offer alternative slots');
@@ -395,7 +408,8 @@ final class BookingFlowTest extends TestCase
         ];
 
         $res = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload);
-        $this->assertSame(422, $res['code']);
+        $this->assertSame(422, $res['code'], 'Missing customer must return 422. Body: ' . $res['body']);
+
         $data = json_decode($res['body'], true);
         $this->assertSame('validation', $data['error'] ?? '');
     }
@@ -411,7 +425,7 @@ final class BookingFlowTest extends TestCase
         ];
 
         $res = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload);
-        $this->assertSame(422, $res['code']);
+        $this->assertSame(422, $res['code'], 'Invalid email must return 422. Body: ' . $res['body']);
     }
 
     public function testBookingRejectsSpamSubmission(): void
@@ -425,9 +439,47 @@ final class BookingFlowTest extends TestCase
         ];
 
         $res = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload);
-        $this->assertSame(422, $res['code']);
+        $this->assertSame(422, $res['code'], 'Spam must return 422. Body: ' . $res['body']);
+
         $data = json_decode($res['body'], true);
         $this->assertSame('spam_detected', $data['error'] ?? '');
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Helpers
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Fetch availability for the given relative day and return the first slot.
+     * Fails the calling test with a clear message if no slots are available
+     * (never reads response body without first asserting the status code).
+     *
+     * @return array{date: string, time: string, end_time: string}
+     */
+    private function getFirstAvailableSlot(string $relativeDay, ?string $staffId = null): array
+    {
+        $date = (new \DateTimeImmutable($relativeDay))->format('Y-m-d');
+        $params = '?date=' . $date;
+        if ($staffId !== null) {
+            $params .= '&staff_id=' . $staffId;
+        }
+
+        $res = $this->httpGetJson('/api/' . self::$seed['slug'] . '/availability' . $params);
+
+        $this->assertSame(
+            200,
+            $res['code'],
+            "Availability for {$relativeDay} ({$date}) must return 200. Got {$res['code']}. Body: {$res['body']}"
+        );
+
+        $data = json_decode($res['body'], true);
+        $this->assertArrayHasKey('slots', $data, 'Response must contain slots key');
+        $this->assertNotEmpty($data['slots'], "{$relativeDay} ({$date}) must have available slots");
+
+        $slot = $data['slots'][0];
+        $slot['date'] = $date;
+
+        return $slot;
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -441,12 +493,12 @@ final class BookingFlowTest extends TestCase
 
     private function httpGetJson(string $path): array
     {
-        return $this->request('GET', $path, [], null, ['Accept: application/json']);
+        return $this->request('GET', $path, [], ['Accept: application/json']);
     }
 
     private function httpPostJson(string $path, array $payload): array
     {
-        return $this->request('POST', $path, $payload, null, [
+        return $this->request('POST', $path, $payload, [
             'Content-Type: application/json',
             'Accept: application/json',
         ]);
@@ -455,7 +507,7 @@ final class BookingFlowTest extends TestCase
     /**
      * @return array{code: int, headers: string, body: string}
      */
-    private function request(string $method, string $path, array $data = [], ?string $cookieJar = null, array $headers = []): array
+    private function request(string $method, string $path, array $data = [], array $headers = []): array
     {
         $ch = curl_init($this->baseUrl . $path);
         curl_setopt_array($ch, [
@@ -468,11 +520,6 @@ final class BookingFlowTest extends TestCase
 
         if (!empty($headers)) {
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        }
-
-        if ($cookieJar !== null) {
-            curl_setopt($ch, CURLOPT_COOKIEJAR, $cookieJar);
-            curl_setopt($ch, CURLOPT_COOKIEFILE, $cookieJar);
         }
 
         if ($method === 'POST') {
@@ -503,16 +550,12 @@ final class BookingFlowTest extends TestCase
     /**
      * Seeds a complete test tenant with service, staff, availability,
      * and service-staff pivot. Returns identifiers for test use.
-     *
-     * @return array{slug: string, tenant_id: string, customer_email: string, service_id: string, staff_id: string}
      */
-    private function seedTestTenant(): array
+    private static function seedTestTenant(): array
     {
         $tenantId = Ulid::generate();
         $serviceId = Ulid::generate();
         $staffId = Ulid::generate();
-        $availId1 = Ulid::generate();
-        $availId2 = Ulid::generate();
         $slug = 'test-booking-' . substr($tenantId, -8);
 
         // Tenant
@@ -548,11 +591,10 @@ final class BookingFlowTest extends TestCase
 
         // Availability: Mon–Fri 09:00–17:00 (day_of_week: 0=Mon, 4=Fri per ISO convention)
         for ($day = 0; $day <= 4; $day++) {
-            $availId = Ulid::generate();
             Database::execute(
                 "INSERT INTO `availability` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`)
                  VALUES (?, ?, ?, '09:00', '17:00')",
-                [$availId, $tenantId, $day]
+                [Ulid::generate(), $tenantId, $day]
             );
         }
 

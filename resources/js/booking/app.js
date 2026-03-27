@@ -284,12 +284,18 @@ async function stepStaff() {
     </div>
   `).join('');
 
+  // Show back link only when service step was visible (multiple services)
+  const staffBackLink = state.services.length > 1
+    ? `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-service>← Change service</button></div>`
+    : '';
+
   await renderStep(`
     <div class="vb-book-step-header">
       <div class="vb-book-step-title">Choose a stylist</div>
       <div class="vb-book-step-subtitle">Or let us pick whoever is available first.</div>
     </div>
     <div class="vb-book-staff-grid" role="radiogroup" aria-label="Staff">${anyCard}${staffCards}</div>
+    ${staffBackLink}
   `);
 
   flowEl.querySelectorAll('[data-book-staff]').forEach(el => {
@@ -309,6 +315,9 @@ async function stepStaff() {
     el.addEventListener('click', handler);
     el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }});
   });
+
+  // Back to service selection
+  flowEl.querySelector('[data-book-back-service]')?.addEventListener('click', () => stepService());
 }
 
 // ── Step 3: Date Selection ──
@@ -371,6 +380,14 @@ async function renderCalendar() {
   // Can go back?
   const canPrev = !(year === today.getFullYear() && month === today.getMonth());
 
+  // Determine back target: go to staff if staff was a visible step, else services
+  let dateBackLink = '';
+  if (state.staff.length > 1) {
+    dateBackLink = `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-staff>← Change stylist</button></div>`;
+  } else if (state.services.length > 1) {
+    dateBackLink = `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-service>← Change service</button></div>`;
+  }
+
   await renderStep(`
     <div class="vb-book-step-header">
       <div class="vb-book-step-title">Pick a date</div>
@@ -391,6 +408,7 @@ async function renderCalendar() {
       </div>
     </div>
     <div id="vb-time-container"></div>
+    ${dateBackLink}
   `);
 
   // Bind month navigation
@@ -407,6 +425,10 @@ async function renderCalendar() {
     await loadAvailableDates();
     renderCalendarGrid();
   });
+
+  // Back navigation
+  flowEl.querySelector('[data-book-back-staff]')?.addEventListener('click', () => stepStaff());
+  flowEl.querySelector('[data-book-back-service]')?.addEventListener('click', () => stepService());
 
   bindDateCells();
 }
