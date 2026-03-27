@@ -17,6 +17,65 @@ const apiBase = `/api/${config.slug}`;
 const flowEl = document.getElementById('vb-book-flow');
 const appEl = document.getElementById('vb-book-app');
 
+// ── Toast Notification System ──
+function showToast(message, { type = 'error', duration = 5000, action = null } = {}) {
+  // Remove existing toast
+  const existing = document.getElementById('vb-book-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'vb-book-toast';
+  toast.className = `vb-book-toast vb-book-toast-${type}`;
+  toast.setAttribute('role', 'alert');
+  toast.setAttribute('aria-live', 'assertive');
+
+  const iconMap = {
+    error: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    warn: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    info: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+  };
+
+  let html = `<span class="vb-book-toast-icon">${iconMap[type] || iconMap.error}</span>`;
+  html += `<span class="vb-book-toast-message">${esc(message)}</span>`;
+
+  if (action) {
+    html += `<button class="vb-book-toast-action" type="button">${esc(action.label)}</button>`;
+  }
+
+  html += `<button class="vb-book-toast-close" type="button" aria-label="Dismiss">`;
+  html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  html += '</button>';
+
+  toast.innerHTML = html;
+  appEl.appendChild(toast);
+
+  // Trigger entrance animation
+  requestAnimationFrame(() => toast.classList.add('is-visible'));
+
+  // Bind action
+  if (action?.onClick) {
+    toast.querySelector('.vb-book-toast-action')?.addEventListener('click', () => {
+      action.onClick();
+      dismissToast(toast);
+    });
+  }
+
+  // Bind close
+  toast.querySelector('.vb-book-toast-close').addEventListener('click', () => dismissToast(toast));
+
+  // Auto-dismiss
+  if (duration > 0) {
+    setTimeout(() => dismissToast(toast), duration);
+  }
+}
+
+function dismissToast(el) {
+  if (!el || !el.parentNode) return;
+  el.classList.remove('is-visible');
+  el.classList.add('is-leaving');
+  setTimeout(() => el.remove(), 200);
+}
+
 // ── State ──
 const state = {
   services: [],
@@ -700,10 +759,17 @@ async function submitBooking() {
       btn.disabled = false;
 
       if (data.error === 'slot_unavailable') {
-        alert(data.message || 'This slot was just taken. Please pick another time.');
-        stepDate();
+        showToast(
+          data.message || 'This time slot was just taken.',
+          {
+            type: 'warn',
+            duration: 6000,
+            action: { label: 'Pick another time', onClick: () => stepDate() },
+          }
+        );
+        setTimeout(() => stepDate(), 3000);
       } else {
-        alert(data.message || 'Something went wrong. Please try again.');
+        showToast(data.message || 'Something went wrong. Please try again.', { type: 'error' });
       }
       return;
     }
@@ -713,7 +779,7 @@ async function submitBooking() {
   } catch (err) {
     btn.classList.remove('is-loading');
     btn.disabled = false;
-    alert('A connection error occurred. Please try again.');
+    showToast('A connection error occurred. Please try again.', { type: 'error', duration: 6000 });
   }
 }
 

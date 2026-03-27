@@ -33,7 +33,9 @@ final class BookingPageController
         );
 
         if (empty($tenant)) {
-            return Response::html('<!DOCTYPE html><html><head><title>Not Found</title></head><body><h1>Booking page not found</h1></body></html>', 404);
+            ob_start();
+            require __DIR__ . '/../../../templates/booking/404.php';
+            return Response::html(ob_get_clean(), 404);
         }
 
         $tenant = $tenant[0];
