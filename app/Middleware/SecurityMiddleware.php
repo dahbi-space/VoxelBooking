@@ -13,17 +13,15 @@ use App\Engine\Response;
  * This middleware fires FIRST in the pipeline so that every response
  * (including error responses from downstream middleware) carries security headers.
  *
- * Per PRD §XV Security:
- * - X-Content-Type-Options: nosniff
- * - X-Frame-Options: SAMEORIGIN
- * - X-XSS-Protection: 0 (disabled, modern browsers use CSP)
- * - Referrer-Policy: strict-origin-when-cross-origin
- * - Permissions-Policy: camera=(), microphone=(), geolocation=()
- * - HSTS when FORCE_HTTPS is true
- * - HTTP → HTTPS redirect when FORCE_HTTPS is true
+ * Per PRD §XV Security — headers are applied unconditionally.
+ * Context-specific headers (CSP, Cache-Control) vary by path prefix.
+ * Routes not matching any prefix still get the default CSP.
  */
 final class SecurityMiddleware
 {
+    private const DEFAULT_CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+        . "img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'";
+
     public function handle(Request $request, callable $next): Response
     {
         $forceHttps = ($_ENV['FORCE_HTTPS'] ?? 'false') === 'true';
@@ -38,7 +36,7 @@ final class SecurityMiddleware
         /** @var Response $response */
         $response = $next($request);
 
-        // Universal headers
+        // Universal security headers — present on EVERY response
         $response->header('X-Content-Type-Options', 'nosniff');
         $response->header('X-Frame-Options', 'SAMEORIGIN');
         $response->header('X-XSS-Protection', '0');
@@ -50,25 +48,21 @@ final class SecurityMiddleware
             $response->header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 
-        // Determine context from path for CSP and caching
+        // CSP — always present, context-specific policy
         $path = $request->path();
+        $response->header('Content-Security-Policy', self::DEFAULT_CSP);
 
-        if (str_starts_with($path, '/admin')) {
+        // Context-specific cache control
+        if (str_starts_with($path, '/admin') || str_starts_with($path, '/install')) {
             $response->header('Cache-Control', 'no-store, no-cache, must-revalidate, private');
             $response->header('Pragma', 'no-cache');
-            $response->header('Content-Security-Policy',
-                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " .
-                "img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'"
-            );
         } elseif (str_starts_with($path, '/api/')) {
             $response->header('Cache-Control', 'no-store');
         } elseif (str_starts_with($path, '/book/')) {
             $response->header('Cache-Control', 'public, max-age=0, must-revalidate');
-            // Embed mode adjusts frame-ancestors; default blocks framing
-            $response->header('Content-Security-Policy',
-                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " .
-                "img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'"
-            );
+        } else {
+            // Default: no caching for unmatched routes (health, install, etc.)
+            $response->header('Cache-Control', 'no-store');
         }
 
         return $response;

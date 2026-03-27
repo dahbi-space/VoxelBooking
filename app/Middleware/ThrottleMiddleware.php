@@ -18,7 +18,9 @@ use App\Engine\Response;
  * - Admin: 120/min/IP
  * - Cron: 4/min/IP
  *
- * Uses the `rate_limits` table. Falls back to in-memory if table doesn't exist.
+ * Uses the `rate_limits` table. Before the table exists (pre-install),
+ * rate limiting is disabled — the middleware passes through without
+ * recording or checking hits. There is no in-memory fallback.
  */
 final class ThrottleMiddleware
 {
@@ -32,6 +34,12 @@ final class ThrottleMiddleware
 
     public function handle(Request $request, callable $next): Response
     {
+        // Before the rate_limits table exists (pre-install), pass through.
+        // No rate limiting is enforced — this is honest, not a fallback.
+        if (!$this->tableReady()) {
+            return $next($request);
+        }
+
         $path = $request->path();
         $method = $request->method();
         $ip = $request->ip();
@@ -99,10 +107,6 @@ final class ThrottleMiddleware
 
     private function getCount(string $ip, string $group, int $window): int
     {
-        if (!Database::tableExists('rate_limits')) {
-            return 0; // No rate limiting before table exists
-        }
-
         $cutoff = date('Y-m-d H:i:s', time() - $window);
 
         $result = Database::query(
@@ -115,13 +119,22 @@ final class ThrottleMiddleware
 
     private function recordHit(string $ip, string $group): void
     {
-        if (!Database::tableExists('rate_limits')) {
-            return;
-        }
-
         Database::execute(
             'INSERT INTO `rate_limits` (`ip`, `endpoint_group`, `created_at`) VALUES (?, ?, NOW())',
             [$ip, $group]
         );
+    }
+
+    /**
+     * Check if the rate_limits table exists and DB is reachable.
+     * Returns false pre-install; rate limiting is honestly disabled until then.
+     */
+    private function tableReady(): bool
+    {
+        try {
+            return Database::canConnect() && Database::tableExists('rate_limits');
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }
