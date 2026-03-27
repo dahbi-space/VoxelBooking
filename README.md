@@ -129,7 +129,7 @@ public/                 Web root (document root)
   assets/               Compiled CSS/JS (built by Vite)
   uploads/              User-uploaded files (logos, covers)
 resources/              Source frontend files
-  css/                  Source CSS (vanilla)
+  css/                  Source CSS (Tailwind + custom tokens)
   js/                   Source JS (admin + booking)
 storage/                Runtime storage
   logs/                 Application logs
@@ -152,7 +152,7 @@ VoxelBooking is internationalization-ready from its foundation. English ships as
 
 | Context | Locale source | Timezone source |
 |---------|--------------|----------------|
-| Booking page | Tenant `locale` setting → fallback `en` | Tenant `timezone` (authoritative for availability) |
+| Booking page | Explicit tenant override → browser `Accept-Language` → tenant default → `en` | Storage: tenant timezone (authoritative). Display: browser timezone (JS-side) |
 | Admin panel | Session → Accept-Language → system default → `en` | Session (browser-detected) |
 | Emails | Tenant `locale` (customer) or session (operator) | Tenant `timezone` |
 

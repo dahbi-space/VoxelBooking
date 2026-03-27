@@ -11,14 +11,20 @@ namespace App\Engine;
  * formatting functions for dates, times, numbers, and currencies.
  *
  * Resolution order (booking page):
- *   1. Tenant locale setting
- *   2. Fallback: 'en'
+ *   1. Tenant locale_override (explicit lock, if set)
+ *   2. Browser Accept-Language (best supported match)
+ *   3. Tenant default locale
+ *   4. Fallback: 'en'
  *
  * Resolution order (admin panel):
  *   1. Session preference
  *   2. Browser Accept-Language (first supported match)
  *   3. System default
  *   4. Fallback: 'en'
+ *
+ * Timezone policy:
+ *   - Storage/availability: Tenant timezone (authoritative, never negotiated)
+ *   - Display-local time:   Browser timezone (JS-side, via Intl.DateTimeFormat)
  */
 final class Locale
 {
@@ -349,6 +355,49 @@ final class Locale
         }
 
         return self::$fallback;
+    }
+
+    /**
+     * Resolve and set locale for the public booking page.
+     *
+     * Resolution order:
+     *   1. Tenant locale_override (explicit lock from operator settings)
+     *   2. Browser Accept-Language (best supported match)
+     *   3. Tenant default locale
+     *   4. Fallback: 'en'
+     *
+     * @param array  $tenant          Tenant row (must contain 'locale', may contain 'locale_override')
+     * @param string|null $acceptLang Accept-Language header value
+     * @return string                 The resolved locale code
+     */
+    public static function resolveForBooking(array $tenant, ?string $acceptLang): string
+    {
+        // 1. Explicit operator lock
+        $override = $tenant['locale_override'] ?? '';
+        if ($override !== '' && self::isSupported($override)) {
+            self::setLocale($override);
+            return self::$locale;
+        }
+
+        // 2. Browser preference
+        if ($acceptLang !== null && $acceptLang !== '') {
+            $negotiated = self::negotiateFromHeader($acceptLang);
+            if ($negotiated !== self::$fallback || str_starts_with(strtolower($acceptLang), 'en')) {
+                self::setLocale($negotiated);
+                return self::$locale;
+            }
+        }
+
+        // 3. Tenant default
+        $tenantLocale = $tenant['locale'] ?? '';
+        if ($tenantLocale !== '' && self::isSupported($tenantLocale)) {
+            self::setLocale($tenantLocale);
+            return self::$locale;
+        }
+
+        // 4. Fallback
+        self::setLocale(self::$fallback);
+        return self::$locale;
     }
 
     // ════════════════════════════════════════════════════════════════

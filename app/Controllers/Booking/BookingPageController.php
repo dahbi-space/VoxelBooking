@@ -45,15 +45,16 @@ final class BookingPageController
         $brandTokens = BrandColorHelper::derive($tenant['brand_color'] ?? '#2563EB');
         $brandStyle = BrandColorHelper::inlineStyle($tenant['brand_color'] ?? '#2563EB');
 
-        // Set locale from tenant preference
-        Locale::setLocale($tenant['locale'] ?? 'en');
+        // Resolve locale: override → browser Accept-Language → tenant default → 'en'
+        $acceptLang = $request->header('Accept-Language');
+        $resolvedLocale = Locale::resolveForBooking($tenant, $acceptLang);
 
         // Build tenant config for the JavaScript app
         $tenantConfig = [
             'slug'             => $tenant['slug'],
             'name'             => $tenant['name'],
             'timezone'         => $tenant['timezone'],
-            'locale'           => Locale::getLocale(),
+            'locale'           => $resolvedLocale,
             'currency'         => $tenant['currency'],
             'booking_pattern'  => $tenant['booking_pattern'],
             'require_phone'    => (bool) $tenant['require_phone'],

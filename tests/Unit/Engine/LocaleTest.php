@@ -327,4 +327,77 @@ final class LocaleTest extends TestCase
         $this->assertSame('German', $config['name']);
         $this->assertSame(',', $config['decimal_sep']);
     }
+
+    // ════════════════════════════════════════════════════════════════
+    // Public Booking Locale Resolution
+    // ════════════════════════════════════════════════════════════════
+
+    public function testResolveForBookingUsesExplicitOverrideFirst(): void
+    {
+        $tenant = ['locale' => 'en', 'locale_override' => 'de'];
+        $result = Locale::resolveForBooking($tenant, 'nl,en;q=0.9');
+        $this->assertSame('de', $result);
+        $this->assertSame('de', Locale::getLocale());
+    }
+
+    public function testResolveForBookingIgnoresUnsupportedOverride(): void
+    {
+        $tenant = ['locale' => 'fr', 'locale_override' => 'xx'];
+        $result = Locale::resolveForBooking($tenant, 'nl');
+        // Should skip invalid override and use browser 'nl'
+        $this->assertSame('nl', $result);
+    }
+
+    public function testResolveForBookingUsesBrowserLanguage(): void
+    {
+        $tenant = ['locale' => 'en'];
+        $result = Locale::resolveForBooking($tenant, 'nl-NL,en;q=0.9');
+        $this->assertSame('nl', $result);
+        $this->assertSame('nl', Locale::getLocale());
+    }
+
+    public function testResolveForBookingFallsToTenantDefault(): void
+    {
+        $tenant = ['locale' => 'de'];
+        // Browser sends unsupported language only
+        $result = Locale::resolveForBooking($tenant, 'xx-YY');
+        $this->assertSame('de', $result);
+    }
+
+    public function testResolveForBookingFallsToEnglishWhenNothingMatches(): void
+    {
+        $tenant = ['locale' => 'xx'];
+        $result = Locale::resolveForBooking($tenant, null);
+        $this->assertSame('en', $result);
+    }
+
+    public function testResolveForBookingWithNoAcceptLanguageFallsToTenant(): void
+    {
+        $tenant = ['locale' => 'fr'];
+        $result = Locale::resolveForBooking($tenant, null);
+        $this->assertSame('fr', $result);
+    }
+
+    public function testResolveForBookingWithEmptyAcceptLanguageFallsToTenant(): void
+    {
+        $tenant = ['locale' => 'es'];
+        $result = Locale::resolveForBooking($tenant, '');
+        $this->assertSame('es', $result);
+    }
+
+    public function testResolveForBookingEmptyOverrideStringIsIgnored(): void
+    {
+        $tenant = ['locale' => 'en', 'locale_override' => ''];
+        $result = Locale::resolveForBooking($tenant, 'de');
+        // Empty override should be skipped, browser 'de' used
+        $this->assertSame('de', $result);
+    }
+
+    public function testResolveForBookingBrowserEnglishIsRecognized(): void
+    {
+        $tenant = ['locale' => 'nl'];
+        $result = Locale::resolveForBooking($tenant, 'en-US,en;q=0.9');
+        // Browser explicitly requests English
+        $this->assertSame('en', $result);
+    }
 }
