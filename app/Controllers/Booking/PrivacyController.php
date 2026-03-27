@@ -28,8 +28,8 @@ use App\Middleware\CsrfMiddleware;
  *
  * Action flow:
  * - View: shows what data is held (name, email, booking history, consent)
- * - Export: generates JSON download
- * - Delete: creates a deletion request (operator must confirm in admin)
+ * - Export: generates JSON download (GDPR Art. 20)
+ * - Delete: logs a deletion request + audit trail (operator queue ⏳ planned)
  */
 final class PrivacyController
 {
