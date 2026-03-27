@@ -1,0 +1,42 @@
+# ── Application ──
+.env
+storage/logs/*.log
+storage/cache/*
+!storage/logs/.gitkeep
+!storage/cache/.gitkeep
+
+# ── Dependencies ──
+node_modules/
+vendor/
+
+# ── Build output (shipped compiled, rebuilt by developer) ──
+public/assets/css/*.css
+public/assets/js/*.js
+public/assets/.vite/
+
+# ── Uploads (user content) ──
+public/uploads/*
+!public/uploads/.htaccess
+
+# ── IDE / OS ──
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── Development only ──
+seed.php
+
+# ── AI and docs (excluded from ZIP) ──
+.ai/
+CLAUDE.md
+.agent/
+.superpowers/
+docs/superpowers/
+
+# ── Test output ──
+.phpunit.result.cache
+.phpunit.cache/
+coverage/
