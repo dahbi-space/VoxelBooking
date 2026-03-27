@@ -152,12 +152,21 @@ final class Mailer
     }
 
     /**
-     * Check if SMTP is configured (host is set).
+     * Check if the mailer is configured and ready to send.
+     *
+     * - log: always configured (no outbound connection needed)
+     * - mailpit: always configured (hardcoded to localhost:1025)
+     * - smtp: configured only when smtp_host is set
      */
     public static function isConfigured(): bool
     {
         $config = self::loadConfig();
-        return !empty($config['smtp_host']);
+        $transport = strtolower(trim($config['mail_transport'] ?? 'smtp'));
+
+        return match ($transport) {
+            'log', 'mailpit' => true,
+            default          => !empty($config['smtp_host']),
+        };
     }
 
     /**

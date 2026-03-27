@@ -157,4 +157,86 @@ final class MailerTransportTest extends TestCase
 
         $this->assertTrue($result['sent'], 'Log transport must succeed regardless of SMTP config');
     }
+
+    // ── isConfigured() transport-awareness ──
+
+    /**
+     * isConfigured returns true for log transport even with no SMTP host.
+     */
+    public function testIsConfiguredTrueForLogTransport(): void
+    {
+        $configProp = new \ReflectionProperty(Mailer::class, 'configCache');
+        $configProp->setValue(null, [
+            'mail_transport'   => 'log',
+            'smtp_host'        => '',
+            'smtp_port'        => '',
+            'smtp_username'    => '',
+            'smtp_password'    => '',
+            'smtp_encryption'  => '',
+            'mail_from_address' => '',
+            'mail_from_name'   => '',
+        ]);
+
+        $this->assertTrue(Mailer::isConfigured(), 'Log transport is always configured');
+    }
+
+    /**
+     * isConfigured returns true for mailpit transport even with no SMTP host.
+     */
+    public function testIsConfiguredTrueForMailpitTransport(): void
+    {
+        $configProp = new \ReflectionProperty(Mailer::class, 'configCache');
+        $configProp->setValue(null, [
+            'mail_transport'   => 'mailpit',
+            'smtp_host'        => '',
+            'smtp_port'        => '',
+            'smtp_username'    => '',
+            'smtp_password'    => '',
+            'smtp_encryption'  => '',
+            'mail_from_address' => '',
+            'mail_from_name'   => '',
+        ]);
+
+        $this->assertTrue(Mailer::isConfigured(), 'Mailpit transport is always configured');
+    }
+
+    /**
+     * isConfigured returns false for smtp transport with no host.
+     */
+    public function testIsConfiguredFalseForSmtpWithNoHost(): void
+    {
+        $configProp = new \ReflectionProperty(Mailer::class, 'configCache');
+        $configProp->setValue(null, [
+            'mail_transport'   => 'smtp',
+            'smtp_host'        => '',
+            'smtp_port'        => '',
+            'smtp_username'    => '',
+            'smtp_password'    => '',
+            'smtp_encryption'  => '',
+            'mail_from_address' => '',
+            'mail_from_name'   => '',
+        ]);
+
+        $this->assertFalse(Mailer::isConfigured(), 'SMTP transport without host is not configured');
+    }
+
+    /**
+     * isConfigured returns true for smtp transport with a host set.
+     */
+    public function testIsConfiguredTrueForSmtpWithHost(): void
+    {
+        $configProp = new \ReflectionProperty(Mailer::class, 'configCache');
+        $configProp->setValue(null, [
+            'mail_transport'   => 'smtp',
+            'smtp_host'        => 'smtp.example.com',
+            'smtp_port'        => '587',
+            'smtp_username'    => '',
+            'smtp_password'    => '',
+            'smtp_encryption'  => 'tls',
+            'mail_from_address' => '',
+            'mail_from_name'   => '',
+        ]);
+
+        $this->assertTrue(Mailer::isConfigured(), 'SMTP transport with host is configured');
+    }
 }
