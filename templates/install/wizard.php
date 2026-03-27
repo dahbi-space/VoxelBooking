@@ -1,8 +1,12 @@
 <?php
 /**
- * Installation Wizard Template
+ * Installation Wizard Template — VoxelBooking
  *
- * Variables: $step (int|'complete'), $checks (array), $errors (array), $flash (array), $session (array)
+ * Uses the official admin design tokens and VoxelBooking logo system.
+ * Dark mode via [data-theme]. Lucide icons only. No emoji.
+ *
+ * Variables: $step (int|'complete'), $checks (array), $errors (array),
+ *            $flash (array), $session (array), $csrfToken (string)
  */
 
 $allChecksPassed = empty(array_filter($checks, fn($c) => $c['required'] && !$c['passed']));
@@ -14,58 +18,156 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="VoxelBooking Installation Wizard">
     <title>Install — VoxelBooking</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@350;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ── Admin Design Tokens (PRD §3 / Visual Design §3) ── */
         :root {
-            --vb-bg: #F8FAFC;
-            --vb-surface: #FFFFFF;
-            --vb-surface-alt: #F1F5F9;
-            --vb-border: #E2E8F0;
-            --vb-text: #1A1A2E;
-            --vb-text-muted: #64748B;
-            --vb-primary: #2563EB;
-            --vb-primary-hover: #1D4ED8;
-            --vb-primary-text: #FFFFFF;
-            --vb-success: #16A34A;
-            --vb-error: #DC2626;
-            --vb-warning: #F59E0B;
-            --vb-info: #3B82F6;
+            /* Light mode tokens */
+            --vb-admin-bg-base: #F8FAFC;
+            --vb-admin-bg-surface: #FFFFFF;
+            --vb-admin-bg-raised: #FFFFFF;
+            --vb-admin-bg-input: #FFFFFF;
+            --vb-admin-bg-well: #F1F5F9;
+            --vb-admin-bg-hover: #F1F5F9;
+            --vb-admin-border-subtle: #E2E8F0;
+            --vb-admin-border-medium: #CBD5E1;
+            --vb-admin-border-strong: #94A3B8;
+            --vb-admin-text-primary: #0F172A;
+            --vb-admin-text-secondary: #475569;
+            --vb-admin-text-tertiary: #94A3B8;
+            --vb-admin-text-ghost: #CBD5E1;
+            --vb-admin-accent: #4F46E5;
+            --vb-admin-accent-hover: #4338CA;
+            --vb-admin-accent-dim: rgba(79, 70, 229, 0.08);
+            --vb-admin-accent-glow: rgba(79, 70, 229, 0.15);
+            --vb-admin-shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+            --vb-admin-shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.03);
+
+            /* Semantic */
+            --vb-admin-success: #059669;
+            --vb-admin-success-bg: #ECFDF5;
+            --vb-admin-warning: #D97706;
+            --vb-admin-warning-bg: #FFFBEB;
+            --vb-admin-error: #DC2626;
+            --vb-admin-error-bg: #FEF2F2;
+            --vb-admin-info: #2563EB;
+            --vb-admin-info-bg: #EFF6FF;
+
+            /* Typography */
+            --vb-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            --vb-text-sm: 0.8125rem;
+            --vb-text-base: 0.875rem;
+            --vb-text-md: 0.9375rem;
+            --vb-text-lg: 1.125rem;
+            --vb-text-xl: 1.375rem;
+            --vb-leading-normal: 1.5;
+            --vb-tracking-tight: -0.025em;
+            --vb-tracking-normal: -0.011em;
+
+            /* Layout */
             --vb-radius: 12px;
             --vb-radius-sm: 8px;
-            --vb-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-            --vb-shadow-lg: 0 10px 25px rgba(0,0,0,0.08);
-            --vb-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
         }
 
         [data-theme="dark"] {
-            --vb-bg: #0F172A;
-            --vb-surface: #1E293B;
-            --vb-surface-alt: #334155;
-            --vb-border: #475569;
-            --vb-text: #F1F5F9;
-            --vb-text-muted: #94A3B8;
-            --vb-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            --vb-shadow-lg: 0 10px 25px rgba(0,0,0,0.3);
+            --vb-admin-bg-base: #0F172A;
+            --vb-admin-bg-surface: #1E293B;
+            --vb-admin-bg-raised: #334155;
+            --vb-admin-bg-input: rgba(30, 41, 59, 0.6);
+            --vb-admin-bg-well: #0F172A;
+            --vb-admin-bg-hover: #334155;
+            --vb-admin-border-subtle: #334155;
+            --vb-admin-border-medium: #475569;
+            --vb-admin-border-strong: #64748B;
+            --vb-admin-text-primary: #F8FAFC;
+            --vb-admin-text-secondary: #94A3B8;
+            --vb-admin-text-tertiary: #64748B;
+            --vb-admin-text-ghost: #475569;
+            --vb-admin-accent: #818CF8;
+            --vb-admin-accent-hover: #6366F1;
+            --vb-admin-accent-dim: rgba(129, 140, 248, 0.12);
+            --vb-admin-accent-glow: rgba(129, 140, 248, 0.3);
+            --vb-admin-shadow-sm: none;
+            --vb-admin-shadow-md: none;
+            --vb-admin-success: #34D399;
+            --vb-admin-success-bg: rgba(52, 211, 153, 0.1);
+            --vb-admin-warning: #FBBF24;
+            --vb-admin-warning-bg: rgba(251, 191, 36, 0.1);
+            --vb-admin-error: #F87171;
+            --vb-admin-error-bg: rgba(248, 113, 113, 0.1);
+            --vb-admin-info: #60A5FA;
+            --vb-admin-info-bg: rgba(96, 165, 250, 0.1);
         }
 
+        /* ── Reset ── */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: var(--vb-font);
-            background: var(--vb-bg);
-            color: var(--vb-text);
+            font-family: var(--vb-font-sans);
+            font-feature-settings: 'cv02' 1, 'cv03' 1, 'cv04' 1, 'cv11' 1;
+            background: var(--vb-admin-bg-base);
+            color: var(--vb-admin-text-primary);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 2rem 1rem;
-            line-height: 1.6;
+            line-height: var(--vb-leading-normal);
+            letter-spacing: var(--vb-tracking-normal);
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        .wizard {
-            width: 100%;
-            max-width: 560px;
+        [data-theme="dark"] body {
+            font-weight: 350;
+        }
+
+        /* ── Reduced motion ── */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* ── Layout ── */
+        .wizard { width: 100%; max-width: 560px; }
+
+        /* ── Hero Logo (Visual Design §2 — hero variant) ── */
+        .vb-hero-logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 0.5rem;
+        }
+
+        .vb-hero-icon {
+            width: 56px;
+            height: 56px;
+            color: var(--vb-admin-accent);
+            filter: drop-shadow(0 12px 24px var(--vb-admin-accent-glow));
+            animation: voxel-float 4s ease-in-out infinite;
+        }
+
+        .voxel-top   { fill: currentColor; opacity: 1; }
+        .voxel-left  { fill: currentColor; opacity: 0.7; }
+        .voxel-right { fill: currentColor; opacity: 0.4; }
+
+        .vb-hero-text {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+        }
+
+        @keyframes voxel-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
         }
 
         .wizard-header {
@@ -73,32 +175,13 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
             margin-bottom: 2rem;
         }
 
-        .wizard-logo {
-            width: 48px;
-            height: 48px;
-            margin: 0 auto 1rem;
-            display: block;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-6px); }
-        }
-
-        .wizard-title {
-            font-size: 1.75rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            margin-bottom: 0.25rem;
-        }
-
         .wizard-subtitle {
-            color: var(--vb-text-muted);
-            font-size: 0.9375rem;
+            color: var(--vb-admin-text-secondary);
+            font-size: var(--vb-text-md);
+            margin-top: 0.25rem;
         }
 
-        /* Step indicator */
+        /* ── Step Indicator ── */
         .steps {
             display: flex;
             justify-content: center;
@@ -110,147 +193,138 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            background: var(--vb-border);
+            background: var(--vb-admin-border-subtle);
             transition: all 0.3s ease;
         }
 
         .step-dot.active {
-            background: var(--vb-primary);
+            background: var(--vb-admin-accent);
             transform: scale(1.2);
         }
 
-        .step-dot.done {
-            background: var(--vb-success);
-        }
+        .step-dot.done { background: var(--vb-admin-success); }
 
-        /* Card */
+        /* ── Card ── */
         .card {
-            background: var(--vb-surface);
-            border: 1px solid var(--vb-border);
+            background: var(--vb-admin-bg-surface);
+            border: 1px solid var(--vb-admin-border-subtle);
             border-radius: var(--vb-radius);
             padding: 2rem;
-            box-shadow: var(--vb-shadow-lg);
+            box-shadow: var(--vb-admin-shadow-md);
+        }
+
+        [data-theme="dark"] .card {
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
         }
 
         .card-title {
-            font-size: 1.125rem;
+            font-size: var(--vb-text-lg);
             font-weight: 600;
+            letter-spacing: var(--vb-tracking-tight);
             margin-bottom: 1.5rem;
         }
 
-        /* Form elements */
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
+        /* ── Forms ── */
+        .form-group { margin-bottom: 1.25rem; }
 
         .form-label {
             display: block;
-            font-size: 0.875rem;
+            font-size: var(--vb-text-sm);
             font-weight: 500;
             margin-bottom: 0.375rem;
-            color: var(--vb-text);
+            color: var(--vb-admin-text-primary);
         }
 
         .form-input {
             width: 100%;
-            padding: 0.625rem 0.875rem;
-            font-size: 0.9375rem;
-            font-family: var(--vb-font);
-            background: var(--vb-surface-alt);
-            border: 1px solid var(--vb-border);
+            padding: 0.5625rem 0.75rem;
+            font-size: var(--vb-text-base);
+            font-family: var(--vb-font-sans);
+            background: var(--vb-admin-bg-input);
+            border: 1px solid var(--vb-admin-border-subtle);
             border-radius: var(--vb-radius-sm);
-            color: var(--vb-text);
-            transition: border-color 0.2s, box-shadow 0.2s;
+            color: var(--vb-admin-text-primary);
+            transition: border-color 0.15s, box-shadow 0.15s;
             outline: none;
         }
 
         .form-input:focus {
-            border-color: var(--vb-primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+            border-color: var(--vb-admin-accent);
+            box-shadow: 0 0 0 3px var(--vb-admin-accent-dim);
         }
 
-        .form-input.error {
-            border-color: var(--vb-error);
-        }
+        .form-input.error { border-color: var(--vb-admin-error); }
 
         .form-error {
-            font-size: 0.8125rem;
-            color: var(--vb-error);
+            font-size: var(--vb-text-sm);
+            color: var(--vb-admin-error);
             margin-top: 0.25rem;
         }
 
         .form-hint {
-            font-size: 0.8125rem;
-            color: var(--vb-text-muted);
+            font-size: var(--vb-text-sm);
+            color: var(--vb-admin-text-tertiary);
             margin-top: 0.25rem;
         }
 
         select.form-input {
             cursor: pointer;
             appearance: none;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
             background-position: right 0.5rem center;
             background-repeat: no-repeat;
-            background-size: 1.5rem;
+            background-size: 1.25rem;
             padding-right: 2.5rem;
         }
 
-        /* Buttons */
+        /* ── Buttons ── */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 0.625rem 1.5rem;
-            font-size: 0.9375rem;
-            font-weight: 600;
-            font-family: var(--vb-font);
+            padding: 0.5625rem 1.5rem;
+            font-size: var(--vb-text-base);
+            font-weight: 500;
+            font-family: var(--vb-font-sans);
             border: none;
             border-radius: var(--vb-radius-sm);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background-color 0.15s, opacity 0.15s;
             text-decoration: none;
             gap: 0.5rem;
         }
 
         .btn-primary {
-            background: var(--vb-primary);
-            color: var(--vb-primary-text);
+            background: var(--vb-admin-accent);
+            color: #FFFFFF;
         }
 
-        .btn-primary:hover {
-            background: var(--vb-primary-hover);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .btn-primary:hover { background: var(--vb-admin-accent-hover); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .btn-ghost {
             background: transparent;
-            color: var(--vb-text-muted);
+            color: var(--vb-admin-text-secondary);
             padding: 0.5rem 1rem;
         }
 
         .btn-ghost:hover {
-            color: var(--vb-text);
-            background: var(--vb-surface-alt);
+            color: var(--vb-admin-text-primary);
+            background: var(--vb-admin-bg-well);
         }
 
         .btn-block { width: 100%; }
 
-        /* System checks */
-        .check-list {
-            list-style: none;
-        }
+        /* ── System Checks ── */
+        .check-list { list-style: none; }
 
         .check-item {
             display: flex;
             align-items: center;
             gap: 0.75rem;
             padding: 0.625rem 0;
-            border-bottom: 1px solid var(--vb-border);
-            font-size: 0.9375rem;
+            border-bottom: 1px solid var(--vb-admin-border-subtle);
+            font-size: var(--vb-text-base);
             opacity: 0;
             animation: fadeIn 0.3s ease forwards;
         }
@@ -262,62 +336,51 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .check-icon {
-            width: 20px;
-            height: 20px;
-            flex-shrink: 0;
-        }
+        .check-icon { width: 20px; height: 20px; flex-shrink: 0; }
+        .check-icon.pass { color: var(--vb-admin-success); }
+        .check-icon.fail { color: var(--vb-admin-error); }
 
-        .check-icon.pass { color: var(--vb-success); }
-        .check-icon.fail { color: var(--vb-error); }
+        .check-name { flex: 1; font-weight: 400; }
+        .check-status { font-size: var(--vb-text-sm); color: var(--vb-admin-text-tertiary); }
 
-        .check-name { flex: 1; }
-        .check-status {
-            font-size: 0.8125rem;
-            color: var(--vb-text-muted);
-        }
-
-        /* Flash messages */
+        /* ── Flash Messages ── */
         .flash {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
             padding: 0.75rem 1rem;
             border-radius: var(--vb-radius-sm);
             margin-bottom: 1rem;
-            font-size: 0.875rem;
+            font-size: var(--vb-text-sm);
             font-weight: 500;
         }
 
-        .flash-success { background: #DCFCE7; color: #166534; }
-        .flash-error { background: #FEE2E2; color: #991B1B; }
-        .flash-info { background: #DBEAFE; color: #1E40AF; }
-        .flash-warning { background: #FEF3C7; color: #92400E; }
+        .flash-success { background: var(--vb-admin-success-bg); color: var(--vb-admin-success); }
+        .flash-error { background: var(--vb-admin-error-bg); color: var(--vb-admin-error); }
+        .flash-info { background: var(--vb-admin-info-bg); color: var(--vb-admin-info); }
+        .flash-warning { background: var(--vb-admin-warning-bg); color: var(--vb-admin-warning); }
 
-        [data-theme="dark"] .flash-success { background: #166534; color: #DCFCE7; }
-        [data-theme="dark"] .flash-error { background: #991B1B; color: #FEE2E2; }
-        [data-theme="dark"] .flash-info { background: #1E40AF; color: #DBEAFE; }
-        [data-theme="dark"] .flash-warning { background: #92400E; color: #FEF3C7; }
+        .flash-icon { width: 18px; height: 18px; flex-shrink: 0; }
 
-        /* Connection error */
+        /* ── Connection Error ── */
         .connection-error {
-            background: #FEE2E2;
-            border: 1px solid #FECACA;
+            background: var(--vb-admin-error-bg);
+            border: 1px solid var(--vb-admin-error);
             border-radius: var(--vb-radius-sm);
             padding: 0.75rem 1rem;
             margin-bottom: 1rem;
-            color: #991B1B;
-            font-size: 0.875rem;
+            color: var(--vb-admin-error);
+            font-size: var(--vb-text-sm);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        [data-theme="dark"] .connection-error {
-            background: #991B1B;
-            border-color: #DC2626;
-            color: #FEE2E2;
-        }
-
-        /* Password strength */
+        /* ── Password Strength ── */
         .password-strength {
             height: 4px;
             border-radius: 2px;
-            background: var(--vb-border);
+            background: var(--vb-admin-border-subtle);
             margin-top: 0.5rem;
             overflow: hidden;
         }
@@ -329,13 +392,13 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
             width: 0;
         }
 
-        /* Theme toggle */
+        /* ── Theme Toggle (PRD: sun/moon cross-fade 150ms) ── */
         .theme-toggle {
             position: fixed;
             top: 1rem;
             right: 1rem;
-            background: var(--vb-surface);
-            border: 1px solid var(--vb-border);
+            background: var(--vb-admin-bg-surface);
+            border: 1px solid var(--vb-admin-border-subtle);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -343,17 +406,32 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 1.125rem;
-            box-shadow: var(--vb-shadow);
-            transition: all 0.2s;
+            box-shadow: var(--vb-admin-shadow-sm);
+            transition: box-shadow 0.15s, border-color 0.15s;
             z-index: 10;
+            padding: 0;
+            color: var(--vb-admin-text-secondary);
         }
 
         .theme-toggle:hover {
-            box-shadow: var(--vb-shadow-lg);
+            border-color: var(--vb-admin-border-medium);
+            color: var(--vb-admin-text-primary);
         }
 
-        /* Booking pattern cards */
+        .theme-toggle svg {
+            width: 20px;
+            height: 20px;
+            position: absolute;
+            transition: opacity 150ms ease, transform 150ms ease;
+        }
+
+        .theme-toggle .icon-sun { opacity: 0; transform: rotate(-90deg); }
+        .theme-toggle .icon-moon { opacity: 1; transform: rotate(0deg); }
+
+        [data-theme="dark"] .theme-toggle .icon-sun { opacity: 1; transform: rotate(0deg); }
+        [data-theme="dark"] .theme-toggle .icon-moon { opacity: 0; transform: rotate(90deg); }
+
+        /* ── Booking Pattern Cards (PRD §1362) ── */
         .pattern-cards {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -362,35 +440,51 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
         }
 
         .pattern-card {
-            border: 2px solid var(--vb-border);
+            border: 2px solid var(--vb-admin-border-subtle);
             border-radius: var(--vb-radius-sm);
             padding: 1rem;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: border-color 0.15s, background-color 0.15s;
             text-align: center;
         }
 
-        .pattern-card:hover { border-color: var(--vb-primary); }
+        .pattern-card:hover {
+            border-color: var(--vb-admin-border-medium);
+            background: var(--vb-admin-bg-well);
+        }
 
         .pattern-card.selected {
-            border-color: var(--vb-primary);
-            background: rgba(37, 99, 235, 0.05);
+            border-color: var(--vb-admin-accent);
+            background: var(--vb-admin-accent-dim);
         }
 
         .pattern-card input { display: none; }
 
         .pattern-card-icon {
-            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-bottom: 0.5rem;
-            display: block;
+            color: var(--vb-admin-accent);
         }
+
+        .pattern-card-icon svg { width: 28px; height: 28px; }
 
         .pattern-card-name {
             font-weight: 600;
-            font-size: 0.875rem;
+            font-size: var(--vb-text-sm);
+            display: block;
+            margin-bottom: 0.125rem;
         }
 
-        /* Color input */
+        .pattern-card-desc {
+            font-size: 0.6875rem;
+            color: var(--vb-admin-text-tertiary);
+            display: block;
+            line-height: 1.3;
+        }
+
+        /* ── Color Input ── */
         .color-input-group {
             display: flex;
             gap: 0.75rem;
@@ -401,64 +495,70 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
             width: 40px;
             height: 40px;
             border-radius: var(--vb-radius-sm);
-            border: 2px solid var(--vb-border);
+            border: 2px solid var(--vb-admin-border-subtle);
             cursor: pointer;
+            padding: 0;
         }
 
-        /* Completion screen */
+        /* ── Completion Screen ── */
         .completion {
             text-align: center;
-            padding: 3rem 2rem;
+            padding: 2rem 1rem;
         }
 
         .completion-icon {
             width: 64px;
             height: 64px;
             margin: 0 auto 1.5rem;
-            color: var(--vb-success);
+            color: var(--vb-admin-success);
         }
 
         .completion h2 {
-            font-size: 1.5rem;
+            font-size: var(--vb-text-xl);
             font-weight: 700;
+            letter-spacing: var(--vb-tracking-tight);
             margin-bottom: 0.5rem;
         }
 
         .completion p {
-            color: var(--vb-text-muted);
+            color: var(--vb-admin-text-secondary);
             margin-bottom: 1.5rem;
+            font-size: var(--vb-text-md);
         }
 
         .booking-url {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            background: var(--vb-surface-alt);
+            background: var(--vb-admin-bg-well);
             padding: 0.75rem 1rem;
             border-radius: var(--vb-radius-sm);
             margin-bottom: 1.5rem;
-            font-size: 0.875rem;
+            font-size: var(--vb-text-sm);
             word-break: break-all;
         }
 
         .booking-url a {
-            color: var(--vb-primary);
+            color: var(--vb-admin-accent);
             text-decoration: none;
             flex: 1;
         }
+
+        .booking-url a:hover { text-decoration: underline; }
 
         .copy-btn {
             background: none;
             border: none;
             cursor: pointer;
-            color: var(--vb-text-muted);
+            color: var(--vb-admin-text-tertiary);
             padding: 0.25rem;
-            font-size: 0.875rem;
+            display: flex;
         }
 
-        .copy-btn:hover { color: var(--vb-text); }
+        .copy-btn:hover { color: var(--vb-admin-text-primary); }
+        .copy-btn svg { width: 16px; height: 16px; }
 
-        /* Form row for side-by-side fields */
+        /* ── Form Row ── */
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -474,37 +574,50 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
             display: block;
             text-align: center;
             margin-top: 1rem;
-            color: var(--vb-text-muted);
-            font-size: 0.875rem;
+            color: var(--vb-admin-text-tertiary);
+            font-size: var(--vb-text-sm);
             text-decoration: none;
             cursor: pointer;
+            background: none;
+            border: none;
+            font-family: var(--vb-font-sans);
+            width: 100%;
+            transition: color 0.15s;
         }
 
-        .skip-link:hover { color: var(--vb-text); }
+        .skip-link:hover { color: var(--vb-admin-text-primary); }
 
-        .actions {
-            margin-top: 1.5rem;
-        }
+        .actions { margin-top: 1.5rem; }
     </style>
 </head>
 <body>
-    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode" title="Toggle dark mode">
-        <span id="theme-icon">🌙</span>
+    <!-- Theme Toggle (PRD: sun/moon cross-fade 150ms, Lucide icons) -->
+    <button class="theme-toggle" id="vb-theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <!-- Lucide Sun: viewBox 0 0 24 24, 1.5px stroke, round caps -->
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+        </svg>
+        <!-- Lucide Moon -->
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+        </svg>
     </button>
 
     <div class="wizard">
         <div class="wizard-header">
-            <!-- VoxelBooking Logo (inline SVG placeholder — replaced with actual logo in Phase 2) -->
-            <svg class="wizard-logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="48" height="48" rx="12" fill="var(--vb-primary)"/>
-                <path d="M14 16L24 32L34 16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <!-- Official VoxelBooking Hero Logo (Visual Design §2 — hero variant) -->
+            <div class="vb-hero-logo">
+                <svg class="vb-hero-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path class="voxel-top"   d="M12 3L20 7.5L12 12L4 7.5Z" />
+                    <path class="voxel-left"  d="M4 7.5L12 12L12 21L4 16.5Z" />
+                    <path class="voxel-right" d="M20 7.5L12 12L12 21L20 16.5Z" />
+                </svg>
+                <div class="vb-hero-text">VoxelBooking</div>
+            </div>
 
             <?php if ($step === 'complete'): ?>
-                <h1 class="wizard-title">Installation Complete</h1>
-                <p class="wizard-subtitle">VoxelBooking is ready.</p>
+                <p class="wizard-subtitle">Installation complete.</p>
             <?php else: ?>
-                <h1 class="wizard-title">Install VoxelBooking</h1>
                 <p class="wizard-subtitle"><?= htmlspecialchars($stepTitles[$step] ?? '', ENT_QUOTES, 'UTF-8') ?> — Step <?= $step ?> of 5</p>
             <?php endif; ?>
         </div>
@@ -520,6 +633,15 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
         <!-- Flash messages -->
         <?php foreach ($flash as $msg): ?>
             <div class="flash flash-<?= htmlspecialchars($msg['type'], ENT_QUOTES, 'UTF-8') ?>">
+                <?php if ($msg['type'] === 'success'): ?>
+                    <svg class="flash-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                <?php elseif ($msg['type'] === 'error'): ?>
+                    <svg class="flash-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                <?php elseif ($msg['type'] === 'info'): ?>
+                    <svg class="flash-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <?php else: ?>
+                    <svg class="flash-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                <?php endif; ?>
                 <?= htmlspecialchars($msg['message'], ENT_QUOTES, 'UTF-8') ?>
             </div>
         <?php endforeach; ?>
@@ -527,13 +649,14 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
         <div class="card">
 
             <?php if ($step === 1): ?>
-            <!-- ══════════ Step 1: System Requirements ══════════ -->
+            <!-- ═══ Step 1: System Requirements ═══ -->
             <h2 class="card-title">System Requirements</h2>
 
-            <ul class="check-list" id="check-list">
+            <ul class="check-list">
                 <?php foreach ($checks as $index => $check): ?>
                 <li class="check-item" style="animation-delay: <?= $index * 150 ?>ms">
-                    <svg class="check-icon <?= $check['passed'] ? 'pass' : 'fail' ?>" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- Lucide check-circle / x-circle -->
+                    <svg class="check-icon <?= $check['passed'] ? 'pass' : 'fail' ?>" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <?php if ($check['passed']): ?>
                             <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
                         <?php else: ?>
@@ -547,25 +670,33 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
             </ul>
 
             <div class="actions">
-                <a href="/install?step=2" class="btn btn-primary btn-block <?= !$allChecksPassed ? 'disabled' : '' ?>"
-                   <?= !$allChecksPassed ? 'onclick="return false" style="pointer-events:none"' : '' ?>>
+                <a href="/install?step=2" class="btn btn-primary btn-block"
+                   <?= !$allChecksPassed ? 'style="pointer-events:none;opacity:0.5"' : '' ?>>
                     Continue
                 </a>
             </div>
 
             <?php elseif ($step === 2): ?>
-            <!-- ══════════ Step 2: Database Configuration ══════════ -->
+            <!-- ═══ Step 2: Database Configuration ═══ -->
             <h2 class="card-title">Database Configuration</h2>
 
             <?php if (!empty($errors['db_connection'])): ?>
-                <div class="connection-error"><?= htmlspecialchars($errors['db_connection'], ENT_QUOTES, 'UTF-8') ?></div>
+                <div class="connection-error">
+                    <svg class="flash-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                    <?= htmlspecialchars($errors['db_connection'], ENT_QUOTES, 'UTF-8') ?>
+                </div>
             <?php endif; ?>
 
             <?php if (!empty($errors['db_migration'])): ?>
-                <div class="connection-error"><?= htmlspecialchars($errors['db_migration'], ENT_QUOTES, 'UTF-8') ?></div>
+                <div class="connection-error">
+                    <svg class="flash-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                    <?= htmlspecialchars($errors['db_migration'], ENT_QUOTES, 'UTF-8') ?>
+                </div>
             <?php endif; ?>
 
             <form method="POST" action="/install/step/2">
+                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label" for="db_host">MySQL Host</label>
@@ -598,15 +729,17 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
                 </div>
 
                 <div class="actions">
-                    <button type="submit" class="btn btn-primary btn-block">Test Connection & Continue</button>
+                    <button type="submit" class="btn btn-primary btn-block">Test Connection &amp; Continue</button>
                 </div>
             </form>
 
             <?php elseif ($step === 3): ?>
-            <!-- ══════════ Step 3: Email Configuration ══════════ -->
+            <!-- ═══ Step 3: Email Configuration ═══ -->
             <h2 class="card-title">Email Configuration</h2>
 
             <form method="POST" action="/install/step/3">
+                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label" for="mail_host">SMTP Host</label>
@@ -652,42 +785,39 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
                 </div>
 
                 <div class="actions">
-                    <button type="submit" class="btn btn-primary btn-block">Save & Continue</button>
+                    <button type="submit" class="btn btn-primary btn-block">Save &amp; Continue</button>
                 </div>
             </form>
 
             <form method="POST" action="/install/step/3">
+                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="skip" value="1">
                 <button type="submit" class="skip-link">I'll configure this later</button>
             </form>
 
             <?php elseif ($step === 4): ?>
-            <!-- ══════════ Step 4: Operator Account ══════════ -->
+            <!-- ═══ Step 4: Operator Account ═══ -->
             <h2 class="card-title">Create Your Account</h2>
 
             <form method="POST" action="/install/step/4">
+                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+
                 <div class="form-group">
                     <label class="form-label" for="name">Name</label>
                     <input type="text" id="name" name="name" class="form-input <?= isset($errors['name']) ? 'error' : '' ?>" required autocomplete="name">
-                    <?php if (isset($errors['name'])): ?>
-                        <div class="form-error"><?= htmlspecialchars($errors['name'], ENT_QUOTES, 'UTF-8') ?></div>
-                    <?php endif; ?>
+                    <?php if (isset($errors['name'])): ?><div class="form-error"><?= htmlspecialchars($errors['name'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="email">Email</label>
                     <input type="email" id="email" name="email" class="form-input <?= isset($errors['email']) ? 'error' : '' ?>" required autocomplete="email">
-                    <?php if (isset($errors['email'])): ?>
-                        <div class="form-error"><?= htmlspecialchars($errors['email'], ENT_QUOTES, 'UTF-8') ?></div>
-                    <?php endif; ?>
+                    <?php if (isset($errors['email'])): ?><div class="form-error"><?= htmlspecialchars($errors['email'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="password">Password</label>
-                    <input type="password" id="password" name="password" class="form-input <?= isset($errors['password']) ? 'error' : '' ?>" required minlength="8" autocomplete="new-password" oninput="updateStrength(this.value)">
-                    <?php if (isset($errors['password'])): ?>
-                        <div class="form-error"><?= htmlspecialchars($errors['password'], ENT_QUOTES, 'UTF-8') ?></div>
-                    <?php endif; ?>
+                    <input type="password" id="password" name="password" class="form-input <?= isset($errors['password']) ? 'error' : '' ?>" required minlength="8" autocomplete="new-password">
+                    <?php if (isset($errors['password'])): ?><div class="form-error"><?= htmlspecialchars($errors['password'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                     <div class="password-strength"><div class="password-strength-bar" id="strength-bar"></div></div>
                     <div class="form-hint">Minimum 8 characters.</div>
                 </div>
@@ -695,51 +825,65 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
                 <div class="form-group">
                     <label class="form-label" for="password_confirmation">Confirm Password</label>
                     <input type="password" id="password_confirmation" name="password_confirmation" class="form-input <?= isset($errors['password_confirmation']) ? 'error' : '' ?>" required autocomplete="new-password">
-                    <?php if (isset($errors['password_confirmation'])): ?>
-                        <div class="form-error"><?= htmlspecialchars($errors['password_confirmation'], ENT_QUOTES, 'UTF-8') ?></div>
-                    <?php endif; ?>
+                    <?php if (isset($errors['password_confirmation'])): ?><div class="form-error"><?= htmlspecialchars($errors['password_confirmation'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                 </div>
 
                 <div class="actions">
-                    <button type="submit" class="btn btn-primary btn-block">Create Account & Continue</button>
+                    <button type="submit" class="btn btn-primary btn-block">Create Account &amp; Continue</button>
                 </div>
             </form>
 
             <?php elseif ($step === 5): ?>
-            <!-- ══════════ Step 5: First Tenant ══════════ -->
+            <!-- ═══ Step 5: First Tenant ═══ -->
             <h2 class="card-title">Create Your First Business</h2>
 
             <form method="POST" action="/install/step/5">
+                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+
                 <div class="form-group">
                     <label class="form-label" for="tenant_name">Business Name</label>
                     <input type="text" id="tenant_name" name="name" class="form-input <?= isset($errors['name']) ? 'error' : '' ?>" required placeholder="e.g. Salon Bella">
-                    <?php if (isset($errors['name'])): ?>
-                        <div class="form-error"><?= htmlspecialchars($errors['name'], ENT_QUOTES, 'UTF-8') ?></div>
-                    <?php endif; ?>
+                    <?php if (isset($errors['name'])): ?><div class="form-error"><?= htmlspecialchars($errors['name'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Booking Pattern</label>
                     <div class="pattern-cards">
-                        <label class="pattern-card" onclick="selectPattern(this)">
+                        <!-- Clock icon: Time Slots (PRD §1362) -->
+                        <label class="pattern-card selected">
                             <input type="radio" name="booking_pattern" value="timeslot" checked>
-                            <span class="pattern-card-icon">🕐</span>
+                            <span class="pattern-card-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            </span>
                             <span class="pattern-card-name">Time Slots</span>
+                            <span class="pattern-card-desc">Salon, therapist, tutor</span>
                         </label>
-                        <label class="pattern-card" onclick="selectPattern(this)">
+                        <!-- Bed-double icon: Resources -->
+                        <label class="pattern-card">
                             <input type="radio" name="booking_pattern" value="resource">
-                            <span class="pattern-card-icon">🏠</span>
+                            <span class="pattern-card-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6"/><path d="M2 18h20"/></svg>
+                            </span>
                             <span class="pattern-card-name">Resources</span>
+                            <span class="pattern-card-desc">B&amp;B, hotel, meeting room</span>
                         </label>
-                        <label class="pattern-card" onclick="selectPattern(this)">
+                        <!-- Utensils icon: Capacity -->
+                        <label class="pattern-card">
                             <input type="radio" name="booking_pattern" value="capacity">
-                            <span class="pattern-card-icon">👥</span>
+                            <span class="pattern-card-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+                            </span>
                             <span class="pattern-card-name">Capacity</span>
+                            <span class="pattern-card-desc">Restaurant, escape room</span>
                         </label>
-                        <label class="pattern-card" onclick="selectPattern(this)">
+                        <!-- Ticket icon: Events -->
+                        <label class="pattern-card">
                             <input type="radio" name="booking_pattern" value="event">
-                            <span class="pattern-card-icon">📅</span>
+                            <span class="pattern-card-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+                            </span>
                             <span class="pattern-card-name">Events</span>
+                            <span class="pattern-card-desc">Yoga, cooking class</span>
                         </label>
                     </div>
                 </div>
@@ -752,27 +896,28 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
                 <div class="form-group">
                     <label class="form-label" for="brand_color">Brand Color</label>
                     <div class="color-input-group">
-                        <input type="color" id="brand_color_picker" class="color-swatch" value="#2563EB" onchange="document.getElementById('brand_color').value=this.value">
-                        <input type="text" id="brand_color" name="brand_color" class="form-input" value="#2563EB" maxlength="7" onchange="document.getElementById('brand_color_picker').value=this.value">
+                        <input type="color" id="brand_color_picker" class="color-swatch" value="#2563EB">
+                        <input type="text" id="brand_color" name="brand_color" class="form-input" value="#2563EB" maxlength="7">
                     </div>
                 </div>
 
                 <div class="actions">
-                    <button type="submit" class="btn btn-primary btn-block">Create Business & Finish</button>
+                    <button type="submit" class="btn btn-primary btn-block">Create Business &amp; Finish</button>
                 </div>
             </form>
 
             <form method="POST" action="/install/step/5">
+                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="skip" value="1">
                 <button type="submit" class="skip-link">I'll do this from the dashboard</button>
             </form>
 
             <?php elseif ($step === 'complete'): ?>
-            <!-- ══════════ Completion ══════════ -->
+            <!-- ═══ Completion ═══ -->
             <div class="completion">
-                <svg class="completion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="m9 12 2 2 4-4"/>
+                <!-- Lucide check-circle -->
+                <svg class="completion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
                 </svg>
 
                 <h2>Installation Complete</h2>
@@ -784,7 +929,10 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
                     <a href="<?= htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank">
                         <?= htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8') ?>
                     </a>
-                    <button class="copy-btn" onclick="navigator.clipboard.writeText('<?= htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8') ?>')" title="Copy URL">📋</button>
+                    <button class="copy-btn" id="vb-copy-url" title="Copy URL">
+                        <!-- Lucide copy -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    </button>
                 </div>
                 <?php endif; ?>
 
@@ -796,54 +944,96 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
     </div>
 
     <script>
-        // Theme toggle
-        function toggleTheme() {
-            const html = document.documentElement;
-            const current = html.getAttribute('data-theme');
-            const next = current === 'dark' ? 'light' : 'dark';
-            html.setAttribute('data-theme', next);
-            localStorage.setItem('vb-theme', next);
-            document.getElementById('theme-icon').textContent = next === 'dark' ? '☀️' : '🌙';
+    (function() {
+        'use strict';
+
+        // ── Theme Resolution (PRD §2236) ──
+        // 1. localStorage `vb-theme`
+        // 2. prefers-color-scheme
+        // 3. fallback: light
+
+        var STORAGE_KEY = 'vb-theme';
+
+        function getResolvedTheme() {
+            var stored = localStorage.getItem(STORAGE_KEY);
+            if (stored === 'light' || stored === 'dark') return stored;
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+            return 'light';
         }
 
-        // Restore saved theme
-        const savedTheme = localStorage.getItem('vb-theme');
-        if (savedTheme) {
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            document.getElementById('theme-icon').textContent = '☀️';
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
         }
 
-        // Password strength
-        function updateStrength(password) {
-            const bar = document.getElementById('strength-bar');
-            if (!bar) return;
-            let score = 0;
-            if (password.length >= 8) score++;
-            if (password.length >= 12) score++;
-            if (/[A-Z]/.test(password)) score++;
-            if (/[0-9]/.test(password)) score++;
-            if (/[^A-Za-z0-9]/.test(password)) score++;
+        // Apply immediately (before paint)
+        applyTheme(getResolvedTheme());
 
-            const width = Math.min(100, score * 20);
-            const colors = ['#DC2626', '#F59E0B', '#F59E0B', '#16A34A', '#16A34A'];
-            bar.style.width = width + '%';
-            bar.style.backgroundColor = colors[Math.min(score, colors.length) - 1] || '#DC2626';
-        }
-
-        // Pattern card selection
-        function selectPattern(el) {
-            document.querySelectorAll('.pattern-card').forEach(c => c.classList.remove('selected'));
-            el.classList.add('selected');
-        }
-
-        // Initialize first selected pattern
-        document.addEventListener('DOMContentLoaded', function() {
-            const checked = document.querySelector('.pattern-card input:checked');
-            if (checked) checked.closest('.pattern-card').classList.add('selected');
+        // OS-level theme change listener — updates live when user hasn't manually overridden
+        var mq = window.matchMedia('(prefers-color-scheme: dark)');
+        mq.addEventListener('change', function(e) {
+            // Only follow OS if user hasn't manually set a preference
+            if (!localStorage.getItem(STORAGE_KEY)) {
+                applyTheme(e.matches ? 'dark' : 'light');
+            }
         });
+
+        // Theme toggle button (no inline onclick — CSP compliant)
+        var toggleBtn = document.getElementById('vb-theme-toggle');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function() {
+                var current = document.documentElement.getAttribute('data-theme');
+                var next = current === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                localStorage.setItem(STORAGE_KEY, next);
+            });
+        }
+
+        // ── Password Strength (PRD: 4px bar, animated width, red→amber→green) ──
+        var passwordInput = document.getElementById('password');
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function() {
+                var bar = document.getElementById('strength-bar');
+                if (!bar) return;
+                var password = this.value;
+                var score = 0;
+                if (password.length >= 8) score++;
+                if (password.length >= 12) score++;
+                if (/[A-Z]/.test(password)) score++;
+                if (/[0-9]/.test(password)) score++;
+                if (/[^A-Za-z0-9]/.test(password)) score++;
+
+                var width = Math.min(100, score * 20);
+                var colors = ['#DC2626', '#D97706', '#D97706', '#059669', '#059669'];
+                bar.style.width = width + '%';
+                bar.style.backgroundColor = colors[Math.min(score, colors.length) - 1] || '#DC2626';
+            });
+        }
+
+        // ── Pattern Card Selection (no inline onclick) ──
+        document.querySelectorAll('.pattern-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.pattern-card').forEach(function(c) { c.classList.remove('selected'); });
+                this.classList.add('selected');
+            });
+        });
+
+        // ── Color Picker Sync ──
+        var colorPicker = document.getElementById('brand_color_picker');
+        var colorText = document.getElementById('brand_color');
+        if (colorPicker && colorText) {
+            colorPicker.addEventListener('change', function() { colorText.value = this.value; });
+            colorText.addEventListener('change', function() { colorPicker.value = this.value; });
+        }
+
+        // ── Copy URL ──
+        var copyBtn = document.getElementById('vb-copy-url');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function() {
+                var link = document.querySelector('.booking-url a');
+                if (link) navigator.clipboard.writeText(link.href);
+            });
+        }
+    })();
     </script>
 </body>
 </html>

@@ -13,6 +13,7 @@ use App\Engine\Response;
 use App\Engine\Ulid;
 use App\Engine\Validator;
 use App\Engine\View;
+use App\Middleware\CsrfMiddleware;
 use PDO;
 
 /**
@@ -42,6 +43,7 @@ final class WizardController
                 'errors' => [],
                 'flash' => Flash::get(),
                 'session' => $_SESSION['install'] ?? [],
+                'csrfToken' => CsrfMiddleware::generateToken(),
             ]);
         }
 
@@ -53,6 +55,7 @@ final class WizardController
             'errors' => [],
             'flash' => Flash::get(),
             'session' => $_SESSION['install'] ?? [],
+            'csrfToken' => CsrfMiddleware::generateToken(),
         ];
 
         return View::response('install.wizard', $data);
@@ -78,6 +81,7 @@ final class WizardController
                 'errors' => $errors,
                 'flash' => [],
                 'session' => $_SESSION['install'] ?? [],
+                'csrfToken' => CsrfMiddleware::generateToken(),
             ]);
         }
 
@@ -106,6 +110,7 @@ final class WizardController
                 'errors' => ['db_connection' => $errorMsg],
                 'flash' => [],
                 'session' => $_SESSION['install'] ?? [],
+                'csrfToken' => CsrfMiddleware::generateToken(),
             ]);
         }
 
@@ -163,6 +168,7 @@ final class WizardController
                 'errors' => ['db_migration' => 'Migration failed: ' . $e->getMessage()],
                 'flash' => [],
                 'session' => $_SESSION['install'] ?? [],
+                'csrfToken' => CsrfMiddleware::generateToken(),
             ]);
         }
     }
@@ -196,6 +202,7 @@ final class WizardController
                 'errors' => $errors,
                 'flash' => [],
                 'session' => $_SESSION['install'] ?? [],
+                'csrfToken' => CsrfMiddleware::generateToken(),
             ]);
         }
 
@@ -246,6 +253,7 @@ final class WizardController
                 'errors' => $errors,
                 'flash' => [],
                 'session' => $_SESSION['install'] ?? [],
+                'csrfToken' => CsrfMiddleware::generateToken(),
             ]);
         }
 
@@ -303,6 +311,7 @@ final class WizardController
                 'errors' => $errors,
                 'flash' => [],
                 'session' => $_SESSION['install'] ?? [],
+                'csrfToken' => CsrfMiddleware::generateToken(),
             ]);
         }
 

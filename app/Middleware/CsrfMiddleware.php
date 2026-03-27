@@ -36,9 +36,9 @@ final class CsrfMiddleware
             return $next($request);
         }
 
-        // Ensure session is started
+        // Ensure session is started for CSRF verification
         if (session_status() !== PHP_SESSION_ACTIVE) {
-            return $next($request);
+            session_start();
         }
 
         $sessionToken = $_SESSION['_csrf_token'] ?? '';

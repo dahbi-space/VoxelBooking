@@ -50,7 +50,19 @@ final class SecurityMiddleware
 
         // CSP — always present, context-specific policy
         $path = $request->path();
-        $response->header('Content-Security-Policy', self::DEFAULT_CSP);
+
+        if (str_starts_with($path, '/install')) {
+            // Install wizard: inline <script> block required (no Vite pre-install)
+            // Google Fonts needed for Inter (self-hosted in production admin)
+            $response->header('Content-Security-Policy',
+                "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                . "img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; "
+                . "connect-src 'self'; frame-ancestors 'none'"
+            );
+        } else {
+            $response->header('Content-Security-Policy', self::DEFAULT_CSP);
+        }
 
         // Context-specific cache control
         if (str_starts_with($path, '/admin') || str_starts_with($path, '/install')) {
