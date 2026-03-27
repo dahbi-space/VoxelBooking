@@ -157,31 +157,38 @@ final class DeletionQueueController
 
         try {
             // Clear the deletion request (keep the customer data)
-            Database::execute(
-                'UPDATE `customers` SET `deletion_requested_at` = NULL, `updated_at` = NOW() WHERE `id` = ?',
+            // WHERE guards: only clear if request is still pending and customer is not anonymized
+            $affectedRows = Database::execute(
+                'UPDATE `customers` SET `deletion_requested_at` = NULL, `updated_at` = NOW()
+                 WHERE `id` = ? AND `deletion_requested_at` IS NOT NULL AND `is_anonymized` = 0',
                 [$customerId]
             );
 
-            AuditLog::log(
-                'privacy.deletion_dismissed',
-                'customer',
-                $customerId,
-                [
-                    'email_hash'   => AuditLog::hashEmail($customer['email']),
-                    'operator_email' => Auth::user()['email'] ?? 'unknown',
-                    'reason'       => $reason ?: 'No reason provided',
-                    'requested_at' => $customer['deletion_requested_at'],
-                ],
-                $customer['tenant_id'],
-            );
+            // Only audit-log if a row was actually changed
+            if ($affectedRows > 0) {
+                AuditLog::log(
+                    'privacy.deletion_dismissed',
+                    'customer',
+                    $customerId,
+                    [
+                        'email_hash'   => AuditLog::hashEmail($customer['email']),
+                        'operator_email' => Auth::user()['email'] ?? 'unknown',
+                        'reason'       => $reason ?: 'No reason provided',
+                        'requested_at' => $customer['deletion_requested_at'],
+                    ],
+                    $customer['tenant_id'],
+                );
 
-            Flash::set('success','Deletion request dismissed. Customer data retained.');
+                Flash::set('success', 'Deletion request dismissed. Customer data retained.');
+            } else {
+                Flash::set('error', 'Request was already processed by another operator.');
+            }
         } catch (\Throwable $e) {
             Logger::error('Deletion dismissal failed', [
                 'customer_id' => $customerId,
                 'error'       => $e->getMessage(),
             ]);
-            Flash::set('error','Failed to dismiss deletion request.');
+            Flash::set('error', 'Failed to dismiss deletion request.');
         }
 
         return Response::redirect('/admin/deletion-queue');

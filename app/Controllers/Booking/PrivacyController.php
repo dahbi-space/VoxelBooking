@@ -145,7 +145,7 @@ final class PrivacyController
             actorId: $customer['id'],
         );
 
-        // Send export acknowledgment email (best-effort, does not block download)
+        // Send export acknowledgment email (synchronous, 10s SMTP timeout; failure does not affect the download)
         Mailer::sendExportAcknowledgment(
             $customer['email'],
             $tenant['name'],
@@ -193,15 +193,21 @@ final class PrivacyController
                     actorId: $customer['id'],
                 );
 
-                // Send deletion acknowledgment to customer (best-effort)
+                // Send deletion acknowledgment to customer (synchronous, 10s timeout; failure does not affect the request)
                 Mailer::sendDeletionAcknowledgment(
                     $customer['email'],
                     $tenant['name'],
                     $tenant['id'],
                 );
 
-                // Notify the operator about the new deletion request (best-effort)
+                // Notify the operator about the new deletion request
+                // Uses tenant notification_email if set, otherwise tenant contact email
+                $operatorRecipient = !empty($tenant['notification_email'])
+                    ? $tenant['notification_email']
+                    : ($tenant['email'] ?? '');
+
                 Mailer::notifyOperatorDeletionRequest(
+                    $operatorRecipient,
                     $customer['name'],
                     $customer['email'],
                     $tenant['name'],

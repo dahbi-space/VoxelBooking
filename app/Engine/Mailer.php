@@ -187,18 +187,22 @@ final class Mailer
 
     /**
      * Notify the operator about a new deletion request.
+     *
+     * @param string      $operatorEmail  The operator's real email (from tenant.notification_email or tenant.email)
+     * @param string      $customerName   Customer display name
+     * @param string      $customerEmail  Customer email (will be hashed in body)
+     * @param string      $tenantName     Tenant display name
+     * @param string|null $tenantId       Associated tenant ID
      */
     public static function notifyOperatorDeletionRequest(
+        string $operatorEmail,
         string $customerName,
         string $customerEmail,
         string $tenantName,
         ?string $tenantId = null,
     ): array {
-        $config = self::loadConfig();
-        $operatorEmail = $config['mail_from_address'] ?: '';
-
         if (empty($operatorEmail)) {
-            return ['sent' => false, 'error' => 'No operator email configured', 'log_id' => ''];
+            return ['sent' => false, 'error' => 'No operator email provided', 'log_id' => ''];
         }
 
         $subject = "New deletion request — {$customerName}";
