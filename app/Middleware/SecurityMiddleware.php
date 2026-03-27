@@ -51,9 +51,9 @@ final class SecurityMiddleware
         // CSP — always present, context-specific policy
         $path = $request->path();
 
-        if (str_starts_with($path, '/install')) {
-            // Install wizard: inline <script> + <style> blocks required (no Vite pre-install)
-            // All assets self-hosted — no external font CDN
+        if (str_starts_with($path, '/install') || str_starts_with($path, '/admin')) {
+            // Install wizard + admin: inline <script> + <style> blocks for theme resolution
+            // All assets self-hosted — no external CDN
             $response->header('Content-Security-Policy',
                 "default-src 'self'; script-src 'self' 'unsafe-inline'; "
                 . "style-src 'self' 'unsafe-inline'; "
