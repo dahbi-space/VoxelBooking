@@ -76,6 +76,14 @@ npm run build
 npm run dev
 ```
 
+## Version
+
+The canonical product version lives in the root [`VERSION`](VERSION) file. This single file is the source of truth — do not hardcode version strings elsewhere.
+
+- The installer seeds `settings.version` from this file
+- Admin UI, diagnostics, and update checks read version via `Version::get()`
+- Bump this file when cutting a release
+
 ## Stack
 
 - **Backend:** PHP 8.3+ (custom micro-framework, no Laravel/Symfony)

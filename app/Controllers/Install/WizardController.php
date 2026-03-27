@@ -12,6 +12,7 @@ use App\Engine\Request;
 use App\Engine\Response;
 use App\Engine\Ulid;
 use App\Engine\Validator;
+use App\Engine\Version;
 use App\Engine\View;
 use App\Middleware\CsrfMiddleware;
 use PDO;
@@ -274,7 +275,7 @@ final class WizardController
         $this->setSetting('default_timezone', $timezone);
         $this->setSetting('default_locale', $locale);
         $this->setSetting('cron_secret', bin2hex(random_bytes(32)));
-        $this->setSetting('version', '1.0.0');
+        $this->setSetting('version', Version::get());
 
         $_SESSION['install']['operator_created'] = true;
         $_SESSION['install']['operator_id'] = $operatorId;
