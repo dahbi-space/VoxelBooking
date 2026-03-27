@@ -12,6 +12,7 @@ use App\Engine\Logger;
 use App\Engine\Request;
 use App\Engine\Response;
 use App\Engine\View;
+use App\Middleware\CsrfMiddleware;
 
 /**
  * Public privacy controller for data-subject rights.
@@ -60,6 +61,9 @@ final class PrivacyController
         $bookings = $this->loadBookings($customerId);
         $consentRecords = $this->extractConsentRecords($bookings);
 
+        // Start public session and generate CSRF token for POST forms
+        $csrfToken = CsrfMiddleware::generateToken();
+
         // Audit the access
         AuditLog::log(
             'privacy.data_viewed',
@@ -76,6 +80,7 @@ final class PrivacyController
             'customer'       => $customer,
             'bookings'       => $bookings,
             'consentRecords' => $consentRecords,
+            'csrfToken'      => $csrfToken,
             'pageTitle'      => 'Your Data — ' . $tenant['name'],
         ]);
     }

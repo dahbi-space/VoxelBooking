@@ -6,7 +6,7 @@
  * Uses the VoxelBooking design system (admin-head.php for tokens).
  * Branded with the tenant's brand_color.
  *
- * Variables: $tenant, $customer, $bookings, $consentRecords, $pageTitle
+ * Variables: $tenant, $customer, $bookings, $consentRecords, $csrfToken, $pageTitle
  */
 use App\Engine\View;
 
@@ -15,6 +15,7 @@ $customer = $customer ?? [];
 $bookings = $bookings ?? [];
 $consentRecords = $consentRecords ?? [];
 $pageTitle = $pageTitle ?? 'Your Data';
+$csrfToken = $csrfToken ?? '';
 $brandColor = $tenant['brand_color'] ?? '#4F46E5';
 $slug = $tenant['slug'] ?? '';
 $customerId = $customer['id'] ?? '';
@@ -186,6 +187,27 @@ $customerId = $customer['id'] ?? '';
             color: var(--vb-admin-text-tertiary);
         }
 
+        /* ── No-JS deletion confirmation ── */
+        .privacy-confirm-toggle { display: none; }
+        .privacy-confirm-step-2 { display: none; }
+        .privacy-confirm-step-1 { display: block; }
+        .privacy-confirm-toggle:checked ~ .privacy-confirm-step-1 { display: none; }
+        .privacy-confirm-toggle:checked ~ .privacy-confirm-step-2 { display: block; }
+
+        .privacy-confirm-label {
+            cursor: pointer;
+        }
+
+        .privacy-confirm-warning {
+            padding: 0.75rem 1rem;
+            background: var(--vb-admin-error-bg);
+            border-left: 3px solid var(--vb-admin-error);
+            border-radius: var(--vb-radius-md);
+            font-size: var(--vb-text-xs);
+            color: var(--vb-admin-error);
+            margin-bottom: 0.75rem;
+        }
+
         @media (max-width: 640px) {
             .privacy-actions { flex-direction: column; }
             .privacy-field { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
@@ -290,19 +312,40 @@ $customerId = $customer['id'] ?? '';
             </p>
             <div class="privacy-actions">
                 <form method="post" action="/book/<?= View::e($slug) ?>/privacy/<?= View::e($customerId) ?>">
+                    <input type="hidden" name="_csrf_token" value="<?= View::e($csrfToken) ?>">
                     <input type="hidden" name="action" value="export">
                     <button type="submit" class="vb-btn vb-btn-secondary" style="width: 100%;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         Export Data (JSON)
                     </button>
                 </form>
-                <form method="post" action="/book/<?= View::e($slug) ?>/privacy/<?= View::e($customerId) ?>" onsubmit="return confirm('Are you sure you want to request deletion of your data? This cannot be undone once confirmed by the business.');">
-                    <input type="hidden" name="action" value="delete">
-                    <button type="submit" class="vb-btn vb-btn-danger" style="width: 100%;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                        Request Deletion
-                    </button>
-                </form>
+                <div>
+                    <input type="checkbox" id="confirm-delete" class="privacy-confirm-toggle">
+                    <div class="privacy-confirm-step-1">
+                        <label for="confirm-delete" class="vb-btn vb-btn-danger privacy-confirm-label" style="width: 100%;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            Request Deletion
+                        </label>
+                    </div>
+                    <div class="privacy-confirm-step-2">
+                        <div class="privacy-confirm-warning">
+                            <strong>Are you sure?</strong> This will request permanent removal of your personal data.
+                            This cannot be undone once processed by the business.
+                        </div>
+                        <form method="post" action="/book/<?= View::e($slug) ?>/privacy/<?= View::e($customerId) ?>">
+                            <input type="hidden" name="_csrf_token" value="<?= View::e($csrfToken) ?>">
+                            <input type="hidden" name="action" value="delete">
+                            <div style="display: flex; gap: 0.5rem;">
+                                <label for="confirm-delete" class="vb-btn vb-btn-secondary privacy-confirm-label" style="flex: 1;">
+                                    Cancel
+                                </label>
+                                <button type="submit" class="vb-btn vb-btn-danger" style="flex: 1;">
+                                    Confirm Deletion
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
 

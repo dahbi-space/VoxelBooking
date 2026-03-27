@@ -64,8 +64,8 @@ final class SecurityMiddleware
         // CSP — always present, context-specific policy
         $path = $request->path();
 
-        if (str_starts_with($path, '/install') || str_starts_with($path, '/admin')) {
-            // Install wizard + admin: inline <script> + <style> blocks for theme resolution
+        if (str_starts_with($path, '/install') || str_starts_with($path, '/admin') || str_starts_with($path, '/book/')) {
+            // Install wizard + admin + booking pages: inline <script> + <style> blocks for theme resolution
             // All assets self-hosted — no external CDN
             $response->header('Content-Security-Policy',
                 "default-src 'self'; script-src 'self' 'unsafe-inline'; "

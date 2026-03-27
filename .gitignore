@@ -29,8 +29,14 @@ Thumbs.db
 # ── Development only ──
 seed.php
 
-# ── AI and docs (excluded from ZIP) ──
-.ai/
+# ── AI and docs ──
+.ai/tmp/
+.ai/screenshots/
+.ai/reports/
+.ai/**/*.png
+.ai/**/*.jpg
+.ai/**/*.jpeg
+.ai/**/*.pdf
 CLAUDE.md
 .agent/
 .superpowers/

@@ -40,7 +40,7 @@ final class PrivacyEndpointTest extends TestCase
      */
     public function testPrivacyEndpointInvalidTenantReturns404(): void
     {
-        $response = $this->get('/book/nonexistent-tenant/privacy/01ABCDEFGHJKLMNPQRSTWXYZ');
+        $response = $this->request('GET', '/book/nonexistent-tenant/privacy/01ABCDEFGHJKLMNPQRSTWXYZ');
         $this->assertSame(404, $response['code']);
     }
 
@@ -50,7 +50,7 @@ final class PrivacyEndpointTest extends TestCase
     public function testPrivacyEndpointInvalidCustomerReturns404(): void
     {
         // Even if the tenant existed, a random customer ID should 404
-        $response = $this->get('/book/test-salon/privacy/01ABCDEFGHJKLMNPQRSTWXYZ');
+        $response = $this->request('GET', '/book/test-salon/privacy/01ABCDEFGHJKLMNPQRSTWXYZ');
         $this->assertSame(404, $response['code']);
     }
 
@@ -59,7 +59,7 @@ final class PrivacyEndpointTest extends TestCase
      */
     public function testRetentionCronRequiresToken(): void
     {
-        $response = $this->get('/cron/retention');
+        $response = $this->request('GET', '/cron/retention');
         $this->assertSame(403, $response['code']);
     }
 
@@ -68,16 +68,110 @@ final class PrivacyEndpointTest extends TestCase
      */
     public function testRetentionCronRejectsInvalidToken(): void
     {
-        $response = $this->get('/cron/retention?token=invalid-token-12345');
+        $response = $this->request('GET', '/cron/retention?token=invalid-token-12345');
         $this->assertSame(403, $response['code']);
     }
 
-    // ── Helper ──
+    // ── Successful-path tests ──
 
     /**
-     * @return array{code: int, body: string}
+     * Full privacy flow: GET returns page with customer data and CSRF token,
+     * then POST export with CSRF token returns JSON download.
      */
-    private function get(string $path): array
+    public function testPrivacyExportFlowWorks(): void
+    {
+        $ids = $this->seedTestData();
+        if ($ids === null) {
+            $this->markTestSkipped('Could not seed test data');
+        }
+
+        $cookieJar = tempnam(sys_get_temp_dir(), 'vb_csrf_');
+
+        // Step 1: GET the privacy page — should return 200 with customer data
+        $getResponse = $this->request('GET', "/book/{$ids['slug']}/privacy/{$ids['customer_id']}", [], $cookieJar);
+        $this->assertSame(200, $getResponse['code'], 'Privacy GET should return 200');
+        $this->assertStringContainsString('test-privacy@example.com', $getResponse['body'], 'Page must show customer email');
+        $this->assertStringContainsString('_csrf_token', $getResponse['body'], 'Page must contain CSRF token field');
+
+        // Extract CSRF token from form
+        preg_match('/name="_csrf_token"\s+value="([^"]+)"/', $getResponse['body'], $matches);
+        $this->assertNotEmpty($matches[1] ?? '', 'Must find CSRF token in form');
+        $csrfToken = $matches[1];
+
+        // Step 2: POST export with CSRF token — should return JSON download
+        $postResponse = $this->request('POST', "/book/{$ids['slug']}/privacy/{$ids['customer_id']}", [
+            '_csrf_token' => $csrfToken,
+            'action'      => 'export',
+        ], $cookieJar);
+        $this->assertSame(200, $postResponse['code'], 'Export POST should return 200');
+
+        $json = json_decode($postResponse['body'], true);
+        $this->assertIsArray($json, 'Export body should be valid JSON');
+        $this->assertSame('1.0', $json['export_version'] ?? null, 'Export must have version 1.0');
+        $this->assertArrayHasKey('customer', $json, 'Export must have customer section');
+        $this->assertArrayHasKey('bookings', $json, 'Export must have bookings section');
+
+        // Cleanup
+        @unlink($cookieJar);
+        $this->cleanupTestData($ids);
+    }
+
+    /**
+     * Deletion request flow: POST with CSRF returns deletion-requested page.
+     */
+    public function testPrivacyDeletionRequestFlowWorks(): void
+    {
+        $ids = $this->seedTestData();
+        if ($ids === null) {
+            $this->markTestSkipped('Could not seed test data');
+        }
+
+        $cookieJar = tempnam(sys_get_temp_dir(), 'vb_csrf_');
+
+        // Step 1: GET to establish session + CSRF
+        $getResponse = $this->request('GET', "/book/{$ids['slug']}/privacy/{$ids['customer_id']}", [], $cookieJar);
+        preg_match('/name="_csrf_token"\s+value="([^"]+)"/', $getResponse['body'], $matches);
+        $csrfToken = $matches[1] ?? '';
+        $this->assertNotEmpty($csrfToken);
+
+        // Step 2: POST deletion request
+        $postResponse = $this->request('POST', "/book/{$ids['slug']}/privacy/{$ids['customer_id']}", [
+            '_csrf_token' => $csrfToken,
+            'action'      => 'delete',
+        ], $cookieJar);
+        $this->assertSame(200, $postResponse['code'], 'Deletion POST should return 200');
+        $this->assertStringContainsString('Deletion Requested', $postResponse['body'], 'Should show deletion confirmation');
+
+        // Cleanup
+        @unlink($cookieJar);
+        $this->cleanupTestData($ids);
+    }
+
+    /**
+     * POST without CSRF token is rejected.
+     */
+    public function testPrivacyPostWithoutCsrfIsRejected(): void
+    {
+        $ids = $this->seedTestData();
+        if ($ids === null) {
+            $this->markTestSkipped('Could not seed test data');
+        }
+
+        // POST directly without session/CSRF
+        $response = $this->request('POST', "/book/{$ids['slug']}/privacy/{$ids['customer_id']}", [
+            'action' => 'export',
+        ]);
+        $this->assertSame(403, $response['code'], 'POST without CSRF should be rejected');
+
+        $this->cleanupTestData($ids);
+    }
+
+    // ── Helpers ──
+
+    /**
+     * @return array{code: int, body: string, headers: string}
+     */
+    private function request(string $method, string $path, array $postData = [], ?string $cookieJar = null): array
     {
         $ch = curl_init($this->baseUrl . $path);
         curl_setopt_array($ch, [
@@ -86,14 +180,71 @@ final class PrivacyEndpointTest extends TestCase
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_HEADER         => true,
         ]);
+
+        if ($cookieJar !== null) {
+            curl_setopt($ch, CURLOPT_COOKIEJAR, $cookieJar);
+            curl_setopt($ch, CURLOPT_COOKIEFILE, $cookieJar);
+        }
+
+        if ($method === 'POST') {
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+        }
+
         $response = (string) curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
         curl_close($ch);
 
         return [
-            'code' => $code,
-            'body' => substr($response, $headerSize),
+            'code'    => $code,
+            'headers' => substr($response, 0, $headerSize),
+            'body'    => substr($response, $headerSize),
         ];
+    }
+
+    /**
+     * Seed a test tenant and customer for happy-path tests.
+     *
+     * @return array{slug: string, tenant_id: string, customer_id: string}|null
+     */
+    private function seedTestData(): ?array
+    {
+        try {
+            require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
+            \App\Engine\EnvLoader::load(dirname(__DIR__, 2) . '/.env');
+            \App\Engine\Database::connect();
+
+            $tenantId = \App\Engine\Ulid::generate();
+            $customerId = \App\Engine\Ulid::generate();
+            $slug = 'test-privacy-' . substr($tenantId, -6);
+
+            \App\Engine\Database::execute(
+                "INSERT INTO `tenants` (`id`, `slug`, `name`, `email`, `booking_pattern`) VALUES (?, ?, 'Privacy Test', 'test@example.com', 'timeslot')",
+                [$tenantId, $slug]
+            );
+
+            \App\Engine\Database::execute(
+                "INSERT INTO `customers` (`id`, `tenant_id`, `name`, `email`) VALUES (?, ?, 'Test User', 'test-privacy@example.com')",
+                [$customerId, $tenantId]
+            );
+
+            return ['slug' => $slug, 'tenant_id' => $tenantId, 'customer_id' => $customerId];
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Remove test data after test.
+     */
+    private function cleanupTestData(array $ids): void
+    {
+        try {
+            \App\Engine\Database::execute("DELETE FROM `customers` WHERE `id` = ?", [$ids['customer_id']]);
+            \App\Engine\Database::execute("DELETE FROM `tenants` WHERE `id` = ?", [$ids['tenant_id']]);
+        } catch (\Throwable) {
+            // Best-effort cleanup
+        }
     }
 }
