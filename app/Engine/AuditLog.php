@@ -218,11 +218,41 @@ final class AuditLog
         foreach ($data as $key => $value) {
             if (is_string($key) && self::isSensitiveKey($key)) {
                 $result[$key] = '[REDACTED]';
-            } elseif (is_string($key) && self::isEmailKey($key) && is_string($value)) {
-                // Hash email-like values centrally — callers don't need to remember
-                $result[$key] = self::hashEmail($value);
+            } elseif (is_string($key) && self::isEmailKey($key)) {
+                // Email-like key: hash the value whether it's a flat string
+                // or a nested structure (e.g. ['old' => 'a@b.com', 'new' => 'c@d.com'])
+                if (is_string($value)) {
+                    $result[$key] = self::hashEmail($value);
+                } elseif (is_array($value)) {
+                    $result[$key] = self::hashEmailValues($value);
+                } else {
+                    $result[$key] = $value;
+                }
             } elseif (is_array($value)) {
                 $result[$key] = self::redact($value);
+            } else {
+                $result[$key] = $value;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Hash all string values in an array (recursive).
+     *
+     * Used when an email-like key contains a sub-array (e.g. old/new diffs).
+     * Every string leaf is treated as an email address and hashed.
+     */
+    private static function hashEmailValues(array $data): array
+    {
+        $result = [];
+
+        foreach ($data as $key => $value) {
+            if (is_string($value)) {
+                $result[$key] = self::hashEmail($value);
+            } elseif (is_array($value)) {
+                $result[$key] = self::hashEmailValues($value);
             } else {
                 $result[$key] = $value;
             }

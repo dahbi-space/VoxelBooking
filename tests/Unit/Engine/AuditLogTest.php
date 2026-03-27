@@ -265,4 +265,83 @@ final class AuditLogTest extends TestCase
         // Must be exactly 8 hex chars
         $this->assertMatchesRegularExpression('/^[0-9a-f]{8}$/', $result['email']);
     }
+
+    // ── Nested diff email leak regression ──
+
+    public function testRedactHashesEmailInOldNewDiff(): void
+    {
+        // This is the EXACT shape produced by logSettingsChanged()
+        $data = [
+            'changes' => [
+                'mail_from_address' => [
+                    'old' => 'from@example.com',
+                    'new' => 'to@example.com',
+                ],
+                'smtp_host' => [
+                    'old' => 'old.smtp.com',
+                    'new' => 'new.smtp.com',
+                ],
+            ],
+        ];
+
+        $result = AuditLog::redact($data);
+
+        // mail_from_address old/new must be hashed
+        $this->assertNotSame('from@example.com', $result['changes']['mail_from_address']['old'],
+            'Raw email must not survive in old value');
+        $this->assertNotSame('to@example.com', $result['changes']['mail_from_address']['new'],
+            'Raw email must not survive in new value');
+        $this->assertSame(
+            AuditLog::hashEmail('from@example.com'),
+            $result['changes']['mail_from_address']['old']
+        );
+        $this->assertSame(
+            AuditLog::hashEmail('to@example.com'),
+            $result['changes']['mail_from_address']['new']
+        );
+
+        // smtp_host is NOT an email key — must pass through unchanged
+        $this->assertSame('old.smtp.com', $result['changes']['smtp_host']['old']);
+        $this->assertSame('new.smtp.com', $result['changes']['smtp_host']['new']);
+    }
+
+    public function testLogSettingsChangedRedactsEmailDiffs(): void
+    {
+        // Simulate what SettingsController does for email settings:
+        // AuditLog::logSettingsChanged() calls redact() on the changes array
+        $changes = [
+            'mail_from_address' => ['old' => 'old@company.com', 'new' => 'new@company.com'],
+            'smtp_host' => ['old' => 'smtp.old.com', 'new' => 'smtp.new.com'],
+        ];
+
+        // logSettingsChanged() wraps changes in ['changes' => $safeChanges]
+        // and passes through redact(). Simulate the full pipeline:
+        $safeChanges = [];
+        foreach ($changes as $key => $diff) {
+            if (in_array(strtolower($key), ['password', 'smtp_password'], true)) {
+                $safeChanges[$key] = ['old' => '[REDACTED]', 'new' => '[REDACTED]'];
+            } else {
+                $safeChanges[$key] = $diff;
+            }
+        }
+        $payload = ['changes' => $safeChanges];
+        $result = AuditLog::redact($payload);
+
+        // Serialize to JSON — the way it's stored in the DB
+        $json = json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        // Raw email addresses must NOT appear in the serialized output
+        $this->assertStringNotContainsString('old@company.com', $json,
+            'Raw old email must not appear in audit log JSON');
+        $this->assertStringNotContainsString('new@company.com', $json,
+            'Raw new email must not appear in audit log JSON');
+
+        // Hashed values MUST appear
+        $this->assertStringContainsString(AuditLog::hashEmail('old@company.com'), $json);
+        $this->assertStringContainsString(AuditLog::hashEmail('new@company.com'), $json);
+
+        // Non-email settings must pass through
+        $this->assertStringContainsString('smtp.old.com', $json);
+        $this->assertStringContainsString('smtp.new.com', $json);
+    }
 }
