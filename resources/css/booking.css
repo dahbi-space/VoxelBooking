@@ -248,6 +248,7 @@ body {
   margin-top: 6px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -548,7 +549,8 @@ body {
 
 .vb-book-input:focus {
   border-color: var(--vb-brand);
-  box-shadow: 0 0 0 3px rgba(var(--vb-brand-rgb), 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--vb-brand-rgb), 0.1);
+  outline: none;
 }
 
 .vb-book-input.has-error {
@@ -578,7 +580,8 @@ body {
 .vb-book-textarea:hover { border-color: var(--vb-border-hover); }
 .vb-book-textarea:focus {
   border-color: var(--vb-brand);
-  box-shadow: 0 0 0 3px rgba(var(--vb-brand-rgb), 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--vb-brand-rgb), 0.1);
+  outline: none;
 }
 
 .vb-book-form-error {
@@ -864,6 +867,8 @@ body {
 
 .vb-book-back-link {
   text-align: center;
+  margin-top: 20px;
+  padding-top: 16px;
 }
 
 /* ── Loading ── */
@@ -910,12 +915,20 @@ body {
 }
 
 /* ── Focus states ── */
+/* Inputs and textareas use their own ring via box-shadow.
+   Everything else (buttons, cards, calendar cells) gets the
+   focus-visible outline for keyboard users only. */
 :focus-visible {
   outline: 2px solid var(--vb-brand);
   outline-offset: 2px;
 }
 
 :focus:not(:focus-visible) {
+  outline: none;
+}
+
+.vb-book-input:focus-visible,
+.vb-book-textarea:focus-visible {
   outline: none;
 }
 

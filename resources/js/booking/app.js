@@ -298,8 +298,8 @@ async function stepStaff() {
 
   await renderStep(`
     <div class="vb-book-step-header">
-      <div class="vb-book-step-title">Choose a stylist</div>
-      <div class="vb-book-step-subtitle">Or let us pick whoever is available first.</div>
+      <div class="vb-book-step-title">Who would you like?</div>
+      <div class="vb-book-step-subtitle">Pick a team member, or let us assign whoever is available first.</div>
     </div>
     <div class="vb-book-staff-grid" role="radiogroup" aria-label="Staff">${anyCard}${staffCards}</div>
     ${staffBackLink}
@@ -390,7 +390,7 @@ async function renderCalendar() {
   // Determine back target: go to staff if staff was a visible step, else services
   let dateBackLink = '';
   if (state.staff.length > 1) {
-    dateBackLink = `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-staff>← Change stylist</button></div>`;
+    dateBackLink = `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-staff>← Change team member</button></div>`;
   } else if (state.services.length > 1) {
     dateBackLink = `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-service>← Change service</button></div>`;
   }
