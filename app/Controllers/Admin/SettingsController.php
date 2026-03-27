@@ -7,6 +7,7 @@ namespace App\Controllers\Admin;
 use App\Engine\Auth;
 use App\Engine\AuditLog;
 use App\Engine\Database;
+use App\Engine\Logger;
 use App\Engine\Request;
 use App\Engine\Response;
 use App\Engine\Version;
@@ -64,27 +65,33 @@ final class SettingsController
         $oldSettings = $this->loadSettings(['app_name', 'app_url', 'timezone', 'date_format']);
         $changes = [];
 
-        $this->saveSetting('app_name', $appName);
-        if ($appName !== ($oldSettings['app_name'] ?? '')) {
-            $changes['app_name'] = ['old' => $oldSettings['app_name'] ?? '', 'new' => $appName];
-        }
-        if ($appUrl !== '') {
-            $this->saveSetting('app_url', $appUrl);
-            if ($appUrl !== ($oldSettings['app_url'] ?? '')) {
-                $changes['app_url'] = ['old' => $oldSettings['app_url'] ?? '', 'new' => $appUrl];
+        try {
+            $this->saveSetting('app_name', $appName);
+            if ($appName !== ($oldSettings['app_name'] ?? '')) {
+                $changes['app_name'] = ['old' => $oldSettings['app_name'] ?? '', 'new' => $appName];
             }
-        }
-        if ($timezone !== '') {
-            $this->saveSetting('timezone', $timezone);
-            if ($timezone !== ($oldSettings['timezone'] ?? '')) {
-                $changes['timezone'] = ['old' => $oldSettings['timezone'] ?? '', 'new' => $timezone];
+            if ($appUrl !== '') {
+                $this->saveSetting('app_url', $appUrl);
+                if ($appUrl !== ($oldSettings['app_url'] ?? '')) {
+                    $changes['app_url'] = ['old' => $oldSettings['app_url'] ?? '', 'new' => $appUrl];
+                }
             }
-        }
-        if ($dateFormat !== '') {
-            $this->saveSetting('date_format', $dateFormat);
-            if ($dateFormat !== ($oldSettings['date_format'] ?? '')) {
-                $changes['date_format'] = ['old' => $oldSettings['date_format'] ?? '', 'new' => $dateFormat];
+            if ($timezone !== '') {
+                $this->saveSetting('timezone', $timezone);
+                if ($timezone !== ($oldSettings['timezone'] ?? '')) {
+                    $changes['timezone'] = ['old' => $oldSettings['timezone'] ?? '', 'new' => $timezone];
+                }
             }
+            if ($dateFormat !== '') {
+                $this->saveSetting('date_format', $dateFormat);
+                if ($dateFormat !== ($oldSettings['date_format'] ?? '')) {
+                    $changes['date_format'] = ['old' => $oldSettings['date_format'] ?? '', 'new' => $dateFormat];
+                }
+            }
+        } catch (\Throwable $e) {
+            Logger::error('Settings persistence failed', ['error' => $e->getMessage()]);
+            $this->setFlash('error', 'Failed to save settings. Please try again.');
+            return Response::redirect('/admin/settings');
         }
 
         if (!empty($changes)) {
@@ -181,22 +188,28 @@ final class SettingsController
         $oldSettings = $this->loadSettings(['smtp_host', 'smtp_port', 'smtp_username', 'smtp_encryption', 'mail_from_address', 'mail_from_name']);
         $changes = [];
 
-        $fields = ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_encryption', 'mail_from_address', 'mail_from_name'];
-        foreach ($fields as $field) {
-            $value = trim($request->string($field));
-            if ($value !== '') {
-                $this->saveSetting($field, $value);
-                if ($value !== ($oldSettings[$field] ?? '')) {
-                    $changes[$field] = ['old' => $oldSettings[$field] ?? '', 'new' => $value];
+        try {
+            $fields = ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_encryption', 'mail_from_address', 'mail_from_name'];
+            foreach ($fields as $field) {
+                $value = trim($request->string($field));
+                if ($value !== '') {
+                    $this->saveSetting($field, $value);
+                    if ($value !== ($oldSettings[$field] ?? '')) {
+                        $changes[$field] = ['old' => $oldSettings[$field] ?? '', 'new' => $value];
+                    }
                 }
             }
-        }
 
-        // Save password separately (don't overwrite if blank)
-        $smtpPassword = $request->string('smtp_password');
-        if ($smtpPassword !== '') {
-            $this->saveSetting('smtp_password', $smtpPassword);
-            $changes['smtp_password'] = ['old' => '[REDACTED]', 'new' => '[REDACTED]'];
+            // Save password separately (don't overwrite if blank)
+            $smtpPassword = $request->string('smtp_password');
+            if ($smtpPassword !== '') {
+                $this->saveSetting('smtp_password', $smtpPassword);
+                $changes['smtp_password'] = ['old' => '[REDACTED]', 'new' => '[REDACTED]'];
+            }
+        } catch (\Throwable $e) {
+            Logger::error('Email settings persistence failed', ['error' => $e->getMessage()]);
+            $this->setFlash('error', 'Failed to save email settings. Please try again.');
+            return Response::redirect('/admin/settings/email');
         }
 
         if (!empty($changes)) {
@@ -308,17 +321,18 @@ final class SettingsController
         }
     }
 
+    /**
+     * Persist a setting to the database.
+     *
+     * @throws \RuntimeException if the database write fails
+     */
     private function saveSetting(string $key, string $value): void
     {
-        try {
-            Database::execute(
-                'INSERT INTO `settings` (`key`, `value`) VALUES (?, ?)
-                 ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)',
-                [$key, $value]
-            );
-        } catch (\Throwable) {
-            // Log would go here
-        }
+        Database::execute(
+            'INSERT INTO `settings` (`key`, `value`) VALUES (?, ?)
+             ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)',
+            [$key, $value]
+        );
     }
 
     private function setFlash(string $type, string $message): void

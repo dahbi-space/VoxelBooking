@@ -18,8 +18,10 @@ namespace App\Engine;
  * - Request correlation (request_id for tracing)
  *
  * Redaction rules (§5):
- * - Passwords, raw tokens, SMTP credentials: NEVER logged
- * - Email addresses: SHA-256 prefix (first 8 hex chars)
+ * - Passwords, raw tokens, SMTP credentials: NEVER logged (→ [REDACTED])
+ * - Email addresses: centrally hashed to SHA-256 prefix (first 8 hex chars)
+ *   Any detail key containing 'email' is transformed automatically.
+ *   Callers do NOT need to hash emails — the engine enforces this.
  * - Customer PII: log action, not personal data
  * - Sensitive settings: "[REDACTED]" placeholder
  */
@@ -34,6 +36,16 @@ final class AuditLog
         'smtp_password', 'smtp_pass', 'cron_secret', 'cron_token',
         'api_key', 'bearer_token', 'token', 'secret',
         'session_id', 'csrf_token', '_csrf_token',
+    ];
+
+    /**
+     * Keys whose values contain email addresses and must be hashed.
+     * These are transformed to SHA-256 prefixes, not blanked — allowing
+     * correlation without exposing the raw email.
+     */
+    private const EMAIL_KEYS = [
+        'email', 'customer_email', 'operator_email', 'to_email', 'from_email',
+        'notification_email', 'mail_from_address', 'user_email',
     ];
 
     /**
@@ -206,6 +218,9 @@ final class AuditLog
         foreach ($data as $key => $value) {
             if (is_string($key) && self::isSensitiveKey($key)) {
                 $result[$key] = '[REDACTED]';
+            } elseif (is_string($key) && self::isEmailKey($key) && is_string($value)) {
+                // Hash email-like values centrally — callers don't need to remember
+                $result[$key] = self::hashEmail($value);
             } elseif (is_array($value)) {
                 $result[$key] = self::redact($value);
             } else {
@@ -321,6 +336,25 @@ final class AuditLog
         }
 
         return false;
+    }
+
+    /**
+     * Check if a key name corresponds to an email address field.
+     * Matches exact keys and keys containing 'email' as a substring.
+     */
+    private static function isEmailKey(string $key): bool
+    {
+        $lower = strtolower($key);
+
+        // Check exact matches first
+        foreach (self::EMAIL_KEYS as $emailKey) {
+            if ($lower === $emailKey) {
+                return true;
+            }
+        }
+
+        // Catch-all: any key containing 'email' is treated as an email field
+        return str_contains($lower, 'email');
     }
 
     /**

@@ -193,4 +193,76 @@ final class AuditLogTest extends TestCase
 
         $this->assertSame($hash1, $hash2);
     }
+
+    // ── Email Field Redaction (Blocker #2 regression) ──
+
+    public function testRedactHashesEmailField(): void
+    {
+        $data = ['email' => 'test@example.com'];
+        $result = AuditLog::redact($data);
+
+        // Must be hashed, not raw and not [REDACTED]
+        $this->assertNotSame('test@example.com', $result['email'], 'Raw email must not leak');
+        $this->assertNotSame('[REDACTED]', $result['email'], 'Emails should be hashed, not blanked');
+        $this->assertSame(AuditLog::hashEmail('test@example.com'), $result['email']);
+    }
+
+    public function testRedactHashesCustomerEmail(): void
+    {
+        $data = ['customer_email' => 'jane@company.org'];
+        $result = AuditLog::redact($data);
+
+        $this->assertSame(AuditLog::hashEmail('jane@company.org'), $result['customer_email']);
+    }
+
+    public function testRedactHashesArbitraryEmailKey(): void
+    {
+        // Any key containing 'email' should be caught by the catch-all
+        $data = ['notification_email_backup' => 'admin@test.io'];
+        $result = AuditLog::redact($data);
+
+        $this->assertNotSame('admin@test.io', $result['notification_email_backup']);
+        $this->assertSame(AuditLog::hashEmail('admin@test.io'), $result['notification_email_backup']);
+    }
+
+    public function testRedactHashesNestedEmailFields(): void
+    {
+        $data = [
+            'changes' => [
+                'customer_email' => 'nested@example.com',
+                'app_name' => 'VoxelBooking',
+            ],
+        ];
+        $result = AuditLog::redact($data);
+
+        $this->assertSame(AuditLog::hashEmail('nested@example.com'), $result['changes']['customer_email']);
+        $this->assertSame('VoxelBooking', $result['changes']['app_name']);
+    }
+
+    public function testRedactHashesMailFromAddress(): void
+    {
+        // mail_from_address is in settings — must be hashed when logged in details
+        $data = ['mail_from_address' => 'noreply@booking.com'];
+        $result = AuditLog::redact($data);
+
+        $this->assertSame(AuditLog::hashEmail('noreply@booking.com'), $result['mail_from_address']);
+    }
+
+    public function testRedactDoesNotHashNonEmailKeys(): void
+    {
+        // Keys that don't contain 'email' should not be hashed
+        $data = ['app_name' => 'test@example.com'];
+        $result = AuditLog::redact($data);
+
+        $this->assertSame('test@example.com', $result['app_name']);
+    }
+
+    public function testRedactEmailHasCorrectFormat(): void
+    {
+        $data = ['email' => 'operator@example.com'];
+        $result = AuditLog::redact($data);
+
+        // Must be exactly 8 hex chars
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{8}$/', $result['email']);
+    }
 }
