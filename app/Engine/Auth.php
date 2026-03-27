@@ -96,6 +96,8 @@ final class Auth
                     // Column may not exist yet — non-fatal
                 }
 
+                AuditLog::logLogin('operator', $operator[0]['id'], AuditLog::hashEmail($email));
+
                 return ['success' => true];
             }
         } catch (\Throwable) {
@@ -138,11 +140,15 @@ final class Auth
                     // Non-fatal
                 }
 
+                AuditLog::logLogin('business_user', $businessUser[0]['id'], AuditLog::hashEmail($email));
+
                 return ['success' => true];
             }
         } catch (\Throwable) {
             // DB error — return generic failure
         }
+
+        AuditLog::logLoginFailed($email);
 
         return ['success' => false, 'error' => 'Invalid email or password.'];
     }
@@ -206,6 +212,8 @@ final class Auth
      */
     public static function logout(): void
     {
+        AuditLog::logLogout();
+
         self::clearSession();
 
         if (session_status() === PHP_SESSION_ACTIVE) {

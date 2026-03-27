@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
+use App\Engine\AuditLog;
 use App\Engine\Database;
 use App\Engine\Request;
 use App\Engine\Response;
@@ -58,15 +59,35 @@ final class SettingsController
             return Response::redirect('/admin/settings');
         }
 
+        // Audit log: track what changed
+        $oldSettings = $this->loadSettings(['app_name', 'app_url', 'timezone', 'date_format']);
+        $changes = [];
+
         $this->saveSetting('app_name', $appName);
+        if ($appName !== ($oldSettings['app_name'] ?? '')) {
+            $changes['app_name'] = ['old' => $oldSettings['app_name'] ?? '', 'new' => $appName];
+        }
         if ($appUrl !== '') {
             $this->saveSetting('app_url', $appUrl);
+            if ($appUrl !== ($oldSettings['app_url'] ?? '')) {
+                $changes['app_url'] = ['old' => $oldSettings['app_url'] ?? '', 'new' => $appUrl];
+            }
         }
         if ($timezone !== '') {
             $this->saveSetting('timezone', $timezone);
+            if ($timezone !== ($oldSettings['timezone'] ?? '')) {
+                $changes['timezone'] = ['old' => $oldSettings['timezone'] ?? '', 'new' => $timezone];
+            }
         }
         if ($dateFormat !== '') {
             $this->saveSetting('date_format', $dateFormat);
+            if ($dateFormat !== ($oldSettings['date_format'] ?? '')) {
+                $changes['date_format'] = ['old' => $oldSettings['date_format'] ?? '', 'new' => $dateFormat];
+            }
+        }
+
+        if (!empty($changes)) {
+            AuditLog::logSettingsChanged($changes);
         }
 
         $this->setFlash('success', 'General settings saved.');
@@ -128,6 +149,8 @@ final class SettingsController
                 [$newHash, $user['id']]
             );
 
+            AuditLog::log('auth.password_changed', $user['type'], $user['id']);
+
             $this->setFlash('success', 'Password updated successfully.');
         } catch (\Throwable $e) {
             $this->setFlash('error', 'Failed to update password. Please try again.');
@@ -153,11 +176,18 @@ final class SettingsController
 
     public function saveEmail(Request $request): Response
     {
+        // Track changes for audit log
+        $oldSettings = $this->loadSettings(['smtp_host', 'smtp_port', 'smtp_username', 'smtp_encryption', 'mail_from_address', 'mail_from_name']);
+        $changes = [];
+
         $fields = ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_encryption', 'mail_from_address', 'mail_from_name'];
         foreach ($fields as $field) {
             $value = trim($request->string($field));
             if ($value !== '') {
                 $this->saveSetting($field, $value);
+                if ($value !== ($oldSettings[$field] ?? '')) {
+                    $changes[$field] = ['old' => $oldSettings[$field] ?? '', 'new' => $value];
+                }
             }
         }
 
@@ -165,6 +195,11 @@ final class SettingsController
         $smtpPassword = $request->string('smtp_password');
         if ($smtpPassword !== '') {
             $this->saveSetting('smtp_password', $smtpPassword);
+            $changes['smtp_password'] = ['old' => '[REDACTED]', 'new' => '[REDACTED]'];
+        }
+
+        if (!empty($changes)) {
+            AuditLog::logSettingsChanged($changes);
         }
 
         $this->setFlash('success', 'Email settings saved.');

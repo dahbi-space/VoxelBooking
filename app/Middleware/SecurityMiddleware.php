@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Middleware;
 
+use App\Engine\AuditLog;
 use App\Engine\Request;
 use App\Engine\Response;
 
@@ -24,6 +25,18 @@ final class SecurityMiddleware
 
     public function handle(Request $request, callable $next): Response
     {
+        // Generate request correlation ID (UUID v4) — used by AuditLog for tracing
+        $requestId = sprintf(
+            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        );
+        $request->setAttribute('request_id', $requestId);
+        AuditLog::setRequestId($requestId);
+
         $forceHttps = ($_ENV['FORCE_HTTPS'] ?? 'false') === 'true';
 
         // HTTPS redirect
