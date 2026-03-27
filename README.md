@@ -122,13 +122,14 @@ app/                    PHP application code
   Middleware/           Request middleware
   Migrations/           Sequential SQL migrations
   Models/               Data models (no ORM)
-config/                 Configuration files
-lang/                   Translation files (en, nl, de, fr, es)
+config/                 Configuration files (locale registry)
+lang/                   Translation files (en shipped; nl, de, fr, es registry-ready)
+  en/                   English translations (booking, auth, admin, etc.)
 public/                 Web root (document root)
   assets/               Compiled CSS/JS (built by Vite)
   uploads/              User-uploaded files (logos, covers)
 resources/              Source frontend files
-  css/                  Source CSS (Tailwind)
+  css/                  Source CSS (vanilla)
   js/                   Source JS (admin + booking)
 storage/                Runtime storage
   logs/                 Application logs
@@ -136,6 +137,34 @@ storage/                Runtime storage
 templates/              PHP view templates
 tests/                  PHPUnit test suites
 ```
+## Localization
+
+VoxelBooking is internationalization-ready from its foundation. English ships as the only complete translation; the architecture supports adding any locale without code changes.
+
+### Architecture
+
+- **`config/locales.php`** — locale registry with per-locale formatting rules (date, time, number, currency, week start)
+- **`app/Engine/Locale.php`** — centralized i18n engine: translation lookup, locale negotiation, formatting functions
+- **`app/helpers.php`** — global helpers: `__()`, `__p()`, `__n()`, `__c()`, `__d()`, `__dl()`, `__t()`
+- **`lang/en/`** — English translation files (booking, auth, admin, validation, email, privacy)
+
+### Resolution rules
+
+| Context | Locale source | Timezone source |
+|---------|--------------|----------------|
+| Booking page | Tenant `locale` setting → fallback `en` | Tenant `timezone` (authoritative for availability) |
+| Admin panel | Session → Accept-Language → system default → `en` | Session (browser-detected) |
+| Emails | Tenant `locale` (customer) or session (operator) | Tenant `timezone` |
+
+### Adding a locale
+
+1. Add the locale entry to `config/locales.php`
+2. Create `lang/{locale}/` with translation files
+3. No code changes required
+
+### JS integration
+
+The booking page injects `window.__VB_I18N__` (flat key→value translations) and `window.__VB_FMT__` (formatting config). The JS `t(key, replace)` function resolves translations at runtime.
 
 ## Privacy & Compliance Posture
 
