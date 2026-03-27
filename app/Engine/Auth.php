@@ -58,7 +58,64 @@ final class Auth
         ]);
 
         session_name('vb_session');
+
+        // Cookie collision guard: when a browser sends multiple vb_session cookies
+        // (e.g. headless browsers accumulating cookies across tabs/navigation),
+        // PHP picks one non-deterministically and may resume a stale session.
+        // Fix: parse raw Cookie header, validate each candidate against session
+        // storage, and force-set the last valid one before session_start().
+        self::resolveSessionCookie($sessionPath);
+
         session_start();
+    }
+
+    /**
+     * Resolve the correct session cookie when the browser sends duplicates.
+     *
+     * Parses the raw Cookie header for all vb_session values, validates
+     * each against the session storage directory, and sets session_id()
+     * to the most recently valid one. If none are valid, leaves session_id
+     * empty so PHP creates a new session.
+     */
+    private static function resolveSessionCookie(string $sessionPath): void
+    {
+        $rawCookies = $_SERVER['HTTP_COOKIE'] ?? '';
+        if ($rawCookies === '') {
+            return;
+        }
+
+        // Parse all vb_session values from the raw Cookie header
+        $sessionIds = [];
+        foreach (explode(';', $rawCookies) as $part) {
+            $part = trim($part);
+            if (str_starts_with($part, 'vb_session=')) {
+                $value = substr($part, strlen('vb_session='));
+                if ($value !== '' && preg_match('/^[a-zA-Z0-9,-]{1,128}$/', $value)) {
+                    $sessionIds[] = $value;
+                }
+            }
+        }
+
+        // No duplicates → PHP handles it fine
+        if (count($sessionIds) <= 1) {
+            return;
+        }
+
+        // Multiple cookies found — find the last one with a valid session file
+        $validId = '';
+        foreach (array_reverse($sessionIds) as $id) {
+            $file = $sessionPath . '/sess_' . $id;
+            if (is_file($file) && filesize($file) > 0) {
+                $validId = $id;
+                break;
+            }
+        }
+
+        // Force PHP to use the valid session (or start fresh if none valid)
+        if ($validId !== '') {
+            session_id($validId);
+        }
+        // If no valid session file, don't set session_id — PHP will create a new one
     }
 
     /**

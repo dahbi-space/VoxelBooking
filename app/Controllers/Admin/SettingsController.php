@@ -24,6 +24,7 @@ use App\Middleware\CsrfMiddleware;
  * POST /admin/settings/email    → Save email config
  * GET  /admin/settings/cron     → Cron status
  * GET  /admin/settings/logs     → Log viewer
+ * GET  /admin/settings/audit    → Audit log viewer (read-only, compliance §5)
  */
 final class SettingsController
 {
@@ -242,6 +243,29 @@ final class SettingsController
 
         return $this->render('admin.settings.logs', 'Logs', [
             'logContent' => $logContent,
+        ]);
+    }
+
+    // ── Audit Log ──
+
+    public function audit(Request $request): Response
+    {
+        $page = max(1, $request->int('page', 1));
+        $perPage = 50;
+        $actionFilter = $request->query('action');
+
+        $result = AuditLog::query(
+            limit: $perPage,
+            offset: ($page - 1) * $perPage,
+            action: $actionFilter !== '' ? $actionFilter : null,
+        );
+
+        return $this->render('admin.settings.audit', 'Audit Log', [
+            'entries'      => $result['entries'],
+            'total'        => $result['total'],
+            'page'         => $page,
+            'perPage'      => $perPage,
+            'actionFilter' => $actionFilter,
         ]);
     }
 

@@ -66,6 +66,7 @@ return function (Router $router): void {
             $router->post('/admin/settings/email', \App\Controllers\Admin\SettingsController::class, 'saveEmail');
             $router->get('/admin/settings/cron', \App\Controllers\Admin\SettingsController::class, 'cron');
             $router->get('/admin/settings/logs', \App\Controllers\Admin\SettingsController::class, 'logs');
+            $router->get('/admin/settings/audit', \App\Controllers\Admin\SettingsController::class, 'audit');
 
             // TODO: Phase 3 — Tenant management routes
         });
