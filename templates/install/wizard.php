@@ -10,7 +10,7 @@
  */
 
 $allChecksPassed = empty(array_filter($checks, fn($c) => $c['required'] && !$c['passed']));
-$stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account', 5 => 'First Business'];
+$stepTitles = [1 => __('install.wizard.step_bar_1'), 2 => __('install.wizard.step_bar_2'), 3 => __('install.wizard.step_bar_3'), 4 => __('install.wizard.step_bar_4'), 5 => __('install.wizard.step_bar_5')];
 ?>
 <!DOCTYPE html>
 <html lang="<?= \App\Engine\Locale::getLocale() ?>" data-theme="light">
@@ -19,7 +19,7 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <meta name="description" content="VoxelBooking Installation Wizard">
-    <title>Install — VoxelBooking</title>
+    <title><?= __('install.wizard.page_title') ?></title>
     <style>
         /* ── Self-hosted Inter (PRD §II: WOFF2, self-hosted) ── */
         @font-face {
@@ -632,9 +632,9 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
             </div>
 
             <?php if ($step === 'complete'): ?>
-                <p class="wizard-subtitle">Installation complete.</p>
+                <p class="wizard-subtitle"><?= __('install.wizard.complete_page_title') ?></p>
             <?php else: ?>
-                <p class="wizard-subtitle"><?= htmlspecialchars($stepTitles[$step] ?? '', ENT_QUOTES, 'UTF-8') ?> — Step <?= $step ?> of 5</p>
+                <p class="wizard-subtitle"><?= htmlspecialchars($stepTitles[$step] ?? '', ENT_QUOTES, 'UTF-8') ?> — <?= str_replace([':step', ':total'], [$step, 5], __('install.wizard.step_of')) ?></p>
             <?php endif; ?>
         </div>
 
@@ -666,7 +666,7 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
 
             <?php if ($step === 1): ?>
             <!-- ═══ Step 1: System Requirements ═══ -->
-            <h2 class="card-title">System Requirements</h2>
+            <h2 class="card-title"><?= __('install.wizard.step1_title') ?></h2>
 
             <ul class="check-list">
                 <?php foreach ($checks as $index => $check): ?>
@@ -688,13 +688,13 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
             <div class="actions">
                 <a href="/install?step=2" class="btn btn-primary btn-block"
                    <?= !$allChecksPassed ? 'style="pointer-events:none;opacity:0.5"' : '' ?>>
-                    Continue
+                    <?= __('install.wizard.continue') ?>
                 </a>
             </div>
 
             <?php elseif ($step === 2): ?>
             <!-- ═══ Step 2: Database Configuration ═══ -->
-            <h2 class="card-title">Database Configuration</h2>
+            <h2 class="card-title"><?= __('install.wizard.step2_title') ?></h2>
 
             <?php if (!empty($errors['db_connection'])): ?>
                 <div class="connection-error">
@@ -715,74 +715,74 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="db_host">MySQL Host</label>
+                        <label class="form-label" for="db_host"><?= __('install.wizard.db_host') ?></label>
                         <input type="text" id="db_host" name="db_host" class="form-input <?= isset($errors['db_host']) ? 'error' : '' ?>" value="localhost" required>
                         <?php if (isset($errors['db_host'])): ?>
                             <div class="form-error"><?= htmlspecialchars($errors['db_host'], ENT_QUOTES, 'UTF-8') ?></div>
                         <?php endif; ?>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="db_port">Port</label>
+                        <label class="form-label" for="db_port"><?= __('install.wizard.db_port') ?></label>
                         <input type="text" id="db_port" name="db_port" class="form-input <?= isset($errors['db_port']) ? 'error' : '' ?>" value="3306" required>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="db_database">Database Name</label>
+                    <label class="form-label" for="db_database"><?= __('install.wizard.db_name') ?></label>
                     <input type="text" id="db_database" name="db_database" class="form-input <?= isset($errors['db_database']) ? 'error' : '' ?>" value="voxelbooking" required>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="db_username">Username</label>
+                        <label class="form-label" for="db_username"><?= __('install.wizard.db_username') ?></label>
                         <input type="text" id="db_username" name="db_username" class="form-input" value="root" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="db_password">Password</label>
+                        <label class="form-label" for="db_password"><?= __('install.wizard.db_password') ?></label>
                         <input type="password" id="db_password" name="db_password" class="form-input" value="">
-                        <div class="form-hint">Leave empty if none required.</div>
+                        <div class="form-hint"><?= __('install.wizard.db_password_hint') ?></div>
                     </div>
                 </div>
 
                 <div class="actions">
-                    <button type="submit" class="btn btn-primary btn-block">Test Connection &amp; Continue</button>
+                    <button type="submit" class="btn btn-primary btn-block"><?= __('install.wizard.db_submit') ?></button>
                 </div>
             </form>
 
             <?php elseif ($step === 3): ?>
             <!-- ═══ Step 3: Email Configuration ═══ -->
-            <h2 class="card-title">Email Configuration</h2>
+            <h2 class="card-title"><?= __('install.wizard.step3_title') ?></h2>
 
             <form method="POST" action="/install/step/3">
                 <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="mail_host">SMTP Host</label>
+                        <label class="form-label" for="mail_host"><?= __('install.wizard.mail_host') ?></label>
                         <input type="text" id="mail_host" name="mail_host" class="form-input <?= isset($errors['mail_host']) ? 'error' : '' ?>" placeholder="smtp.example.com">
                         <?php if (isset($errors['mail_host'])): ?>
                             <div class="form-error"><?= htmlspecialchars($errors['mail_host'], ENT_QUOTES, 'UTF-8') ?></div>
                         <?php endif; ?>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="mail_port">Port</label>
+                        <label class="form-label" for="mail_port"><?= __('install.wizard.mail_port') ?></label>
                         <input type="text" id="mail_port" name="mail_port" class="form-input" value="587">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="mail_username">Username</label>
+                        <label class="form-label" for="mail_username"><?= __('install.wizard.mail_username') ?></label>
                         <input type="text" id="mail_username" name="mail_username" class="form-input">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="mail_password">Password</label>
+                        <label class="form-label" for="mail_password"><?= __('install.wizard.mail_password') ?></label>
                         <input type="password" id="mail_password" name="mail_password" class="form-input">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="mail_encryption">Encryption</label>
+                    <label class="form-label" for="mail_encryption"><?= __('install.wizard.mail_encryption') ?></label>
                     <select id="mail_encryption" name="mail_encryption" class="form-input">
                         <option value="tls" selected>TLS</option>
                         <option value="ssl">SSL</option>
@@ -791,79 +791,79 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="mail_from_address">From Address</label>
+                        <label class="form-label" for="mail_from_address"><?= __('install.wizard.mail_from_address') ?></label>
                         <input type="email" id="mail_from_address" name="mail_from_address" class="form-input" placeholder="bookings@example.com">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="mail_from_name">From Name</label>
+                        <label class="form-label" for="mail_from_name"><?= __('install.wizard.mail_from_name') ?></label>
                         <input type="text" id="mail_from_name" name="mail_from_name" class="form-input" value="VoxelBooking">
                     </div>
                 </div>
 
                 <div class="actions">
-                    <button type="submit" class="btn btn-primary btn-block">Save &amp; Continue</button>
+                    <button type="submit" class="btn btn-primary btn-block"><?= __('install.wizard.mail_submit') ?></button>
                 </div>
             </form>
 
             <form method="POST" action="/install/step/3">
                 <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="skip" value="1">
-                <button type="submit" class="skip-link">I'll configure this later</button>
+                <button type="submit" class="skip-link"><?= __('install.wizard.mail_skip') ?></button>
             </form>
 
             <?php elseif ($step === 4): ?>
             <!-- ═══ Step 4: Operator Account ═══ -->
-            <h2 class="card-title">Create Your Account</h2>
+            <h2 class="card-title"><?= __('install.wizard.step4_title') ?></h2>
 
             <form method="POST" action="/install/step/4">
                 <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
                 <div class="form-group">
-                    <label class="form-label" for="name">Name</label>
+                    <label class="form-label" for="name"><?= __('install.wizard.op_name') ?></label>
                     <input type="text" id="name" name="name" class="form-input <?= isset($errors['name']) ? 'error' : '' ?>" required autocomplete="name">
                     <?php if (isset($errors['name'])): ?><div class="form-error"><?= htmlspecialchars($errors['name'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="email">Email</label>
+                    <label class="form-label" for="email"><?= __('install.wizard.op_email') ?></label>
                     <input type="email" id="email" name="email" class="form-input <?= isset($errors['email']) ? 'error' : '' ?>" required autocomplete="email">
                     <?php if (isset($errors['email'])): ?><div class="form-error"><?= htmlspecialchars($errors['email'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="password">Password</label>
+                    <label class="form-label" for="password"><?= __('install.wizard.op_password') ?></label>
                     <input type="password" id="password" name="password" class="form-input <?= isset($errors['password']) ? 'error' : '' ?>" required minlength="8" autocomplete="new-password">
                     <?php if (isset($errors['password'])): ?><div class="form-error"><?= htmlspecialchars($errors['password'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                     <div class="password-strength"><div class="password-strength-bar" id="strength-bar"></div></div>
-                    <div class="form-hint">Minimum 8 characters.</div>
+                    <div class="form-hint"><?= __('install.wizard.op_password_hint') ?></div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="password_confirmation">Confirm Password</label>
+                    <label class="form-label" for="password_confirmation"><?= __('install.wizard.op_password_confirm') ?></label>
                     <input type="password" id="password_confirmation" name="password_confirmation" class="form-input <?= isset($errors['password_confirmation']) ? 'error' : '' ?>" required autocomplete="new-password">
                     <?php if (isset($errors['password_confirmation'])): ?><div class="form-error"><?= htmlspecialchars($errors['password_confirmation'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                 </div>
 
                 <div class="actions">
-                    <button type="submit" class="btn btn-primary btn-block">Create Account &amp; Continue</button>
+                    <button type="submit" class="btn btn-primary btn-block"><?= __('install.wizard.op_submit') ?></button>
                 </div>
             </form>
 
             <?php elseif ($step === 5): ?>
             <!-- ═══ Step 5: First Tenant ═══ -->
-            <h2 class="card-title">Create Your First Business</h2>
+            <h2 class="card-title"><?= __('install.wizard.step5_title') ?></h2>
 
             <form method="POST" action="/install/step/5">
                 <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
                 <div class="form-group">
-                    <label class="form-label" for="tenant_name">Business Name</label>
+                    <label class="form-label" for="tenant_name"><?= __('install.wizard.tenant_name') ?></label>
                     <input type="text" id="tenant_name" name="name" class="form-input <?= isset($errors['name']) ? 'error' : '' ?>" required placeholder="e.g. Salon Bella">
                     <?php if (isset($errors['name'])): ?><div class="form-error"><?= htmlspecialchars($errors['name'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Booking Pattern</label>
+                    <label class="form-label"><?= __('install.wizard.tenant_pattern') ?></label>
                     <div class="pattern-cards">
                         <!-- Clock icon: Time Slots (PRD §1362) -->
                         <label class="pattern-card selected">
@@ -871,8 +871,8 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
                             <span class="pattern-card-icon">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                             </span>
-                            <span class="pattern-card-name">Time Slots</span>
-                            <span class="pattern-card-desc">Salon, therapist, tutor</span>
+                            <span class="pattern-card-name"><?= __('install.wizard.pattern_timeslot') ?></span>
+                            <span class="pattern-card-desc"><?= __('install.wizard.pattern_timeslot_desc') ?></span>
                         </label>
                         <!-- Bed-double icon: Resources -->
                         <label class="pattern-card">
@@ -880,8 +880,8 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
                             <span class="pattern-card-icon">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6"/><path d="M2 18h20"/></svg>
                             </span>
-                            <span class="pattern-card-name">Resources</span>
-                            <span class="pattern-card-desc">B&amp;B, hotel, meeting room</span>
+                            <span class="pattern-card-name"><?= __('install.wizard.pattern_resource') ?></span>
+                            <span class="pattern-card-desc"><?= __('install.wizard.pattern_resource_desc') ?></span>
                         </label>
                         <!-- Utensils icon: Capacity -->
                         <label class="pattern-card">
@@ -889,8 +889,8 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
                             <span class="pattern-card-icon">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
                             </span>
-                            <span class="pattern-card-name">Capacity</span>
-                            <span class="pattern-card-desc">Restaurant, escape room</span>
+                            <span class="pattern-card-name"><?= __('install.wizard.pattern_capacity') ?></span>
+                            <span class="pattern-card-desc"><?= __('install.wizard.pattern_capacity_desc') ?></span>
                         </label>
                         <!-- Ticket icon: Events -->
                         <label class="pattern-card">
@@ -898,19 +898,19 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
                             <span class="pattern-card-icon">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
                             </span>
-                            <span class="pattern-card-name">Events</span>
-                            <span class="pattern-card-desc">Yoga, cooking class</span>
+                            <span class="pattern-card-name"><?= __('install.wizard.pattern_event') ?></span>
+                            <span class="pattern-card-desc"><?= __('install.wizard.pattern_event_desc') ?></span>
                         </label>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="tenant_email">Business Email</label>
+                    <label class="form-label" for="tenant_email"><?= __('install.wizard.tenant_email') ?></label>
                     <input type="email" id="tenant_email" name="email" class="form-input" required value="<?= htmlspecialchars($session['operator_email'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="brand_color">Brand Color</label>
+                    <label class="form-label" for="brand_color"><?= __('install.wizard.tenant_brand_color') ?></label>
                     <div class="color-input-group">
                         <input type="color" id="brand_color_picker" class="color-swatch" value="#2563EB">
                         <input type="text" id="brand_color" name="brand_color" class="form-input" value="#2563EB" maxlength="7">
@@ -918,14 +918,14 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
                 </div>
 
                 <div class="actions">
-                    <button type="submit" class="btn btn-primary btn-block">Create Business &amp; Finish</button>
+                    <button type="submit" class="btn btn-primary btn-block"><?= __('install.wizard.tenant_submit') ?></button>
                 </div>
             </form>
 
             <form method="POST" action="/install/step/5">
                 <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="skip" value="1">
-                <button type="submit" class="skip-link">I'll do this from the dashboard</button>
+                <button type="submit" class="skip-link"><?= __('install.wizard.tenant_skip') ?></button>
             </form>
 
             <?php elseif ($step === 'complete'): ?>
@@ -936,8 +936,8 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
                     <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
                 </svg>
 
-                <h2>Installation Complete</h2>
-                <p>VoxelBooking is ready to accept bookings.</p>
+                <h2><?= __('install.wizard.complete_title') ?></h2>
+                <p><?= __('install.wizard.ready_message') ?></p>
 
                 <?php if (!empty($session['tenant_slug'])): ?>
                 <div class="booking-url">
@@ -952,7 +952,7 @@ $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account
                 </div>
                 <?php endif; ?>
 
-                <a href="/admin" class="btn btn-primary btn-block">Go to Dashboard</a>
+                <a href="/admin" class="btn btn-primary btn-block"><?= __('install.wizard.go_to_dashboard') ?></a>
             </div>
             <?php endif; ?>
 

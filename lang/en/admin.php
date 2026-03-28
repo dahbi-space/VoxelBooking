@@ -23,6 +23,12 @@ return [
         'sign_out'       => 'Sign out',
     ],
 
+    // ── Layout (shell fallbacks) ──
+    'layout' => [
+        'default_title'  => 'Dashboard',
+        'operator'       => 'Operator',
+    ],
+
     // ── Dashboard ──
     'dashboard' => [
         'title'               => 'Dashboard',
@@ -154,6 +160,32 @@ return [
         'page_of'            => 'Page :page of :total',
         'previous'           => 'Previous',
         'next'               => 'Next',
+
+        // Action-label map (used in audit viewer table + filter dropdown)
+        'action_auth_login'              => 'Login',
+        'action_auth_login_failed'       => 'Login failed',
+        'action_auth_logout'             => 'Logout',
+        'action_auth_password_changed'   => 'Password changed',
+        'action_auth_brute_force'        => 'Brute force',
+        'action_auth_access_denied'      => 'Access denied',
+        'action_settings_updated'        => 'Settings changed',
+        'action_booking_created'         => 'Booking created',
+        'action_booking_cancelled'       => 'Booking cancelled',
+        'action_booking_rescheduled'     => 'Booking rescheduled',
+        'action_booking_status_changed'  => 'Status changed',
+        'action_customer_anonymized'     => 'Customer anonymized',
+        'action_privacy_request_received'=> 'Privacy request',
+        'action_privacy_request_completed'=> 'Privacy completed',
+        'action_data_export'             => 'Data export',
+        'action_api_key_created'         => 'API key created',
+        'action_api_key_revoked'         => 'API key revoked',
+        'action_system_audit_cleanup'    => 'Audit cleanup',
+        'action_system_migration'        => 'Migration',
+        'action_retention_executed'      => 'Retention job',
+        'action_role_changed'            => 'Role changed',
+        'action_rate_limit_exceeded'     => 'Rate limited',
+        'action_tenant_created'          => 'Tenant created',
+        'action_tenant_archived'         => 'Tenant archived',
     ],
 
     // ── Deletion Queue ──

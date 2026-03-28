@@ -9,7 +9,7 @@
  */
 $user = $user ?? [];
 $version = $version ?? '0.0.0';
-$pageTitle = $pageTitle ?? 'Dashboard';
+$pageTitle = $pageTitle ?? __('admin.layout.default_title');
 $activePage = $activePage ?? 'dashboard';
 $csrfToken = $csrfToken ?? '';
 ?>
@@ -235,7 +235,7 @@ $csrfToken = $csrfToken ?? '';
             <div class="vb-topbar-right">
                 <span class="vb-topbar-user">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    <?= htmlspecialchars($user['name'] ?? 'Operator', ENT_QUOTES, 'UTF-8') ?>
+                    <?= htmlspecialchars($user['name'] ?? __('admin.layout.operator'), ENT_QUOTES, 'UTF-8') ?>
                 </span>
                 <button type="button" class="vb-topbar-btn" id="theme-toggle" aria-label="<?= __('admin.nav.toggle_theme') ?>">
                     <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>

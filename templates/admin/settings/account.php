@@ -33,7 +33,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
         </div>
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.account.name_label') ?></span>
-            <span class="vb-info-value"><?= htmlspecialchars($currentUser['name'] ?? 'Operator', ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="vb-info-value"><?= htmlspecialchars($currentUser['name'] ?? __('admin.layout.operator'), ENT_QUOTES, 'UTF-8') ?></span>
         </div>
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.account.email_label') ?></span>

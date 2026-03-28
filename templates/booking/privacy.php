@@ -26,7 +26,7 @@ $customerId = $customer['id'] ?? '';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <meta name="description" content="Review your data held by <?= View::e($tenant['name'] ?? '') ?>">
+    <meta name="description" content="<?= View::e(str_replace(':business', $tenant['name'] ?? '', __('booking.privacy.meta_description'))) ?>">
     <title><?= View::e($pageTitle) ?></title>
     <?php include dirname(__DIR__) . '/partials/admin-head.php'; ?>
     <style>

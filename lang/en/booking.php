@@ -163,6 +163,7 @@ return [
     // ── Privacy Pages ──
     'privacy' => [
         'page_title'              => 'Your Data',
+        'meta_description'        => 'Review your data held by :business',
         'subtitle'                => 'Your data held by this business',
         'personal_info'           => 'Personal Information',
         'name_label'              => 'Name',

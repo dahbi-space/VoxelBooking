@@ -378,84 +378,84 @@ final class WizardController
 
         return [
             [
-                'name'     => 'PHP Version',
+                'name'     => __('install.checks.php_version'),
                 'required' => true,
                 'passed'   => version_compare(PHP_VERSION, '8.3.0', '>='),
                 'message'  => version_compare(PHP_VERSION, '8.3.0', '>=')
-                    ? 'PHP ' . PHP_VERSION
-                    : 'PHP 8.3+ required. Current: ' . PHP_VERSION,
+                    ? str_replace(':version', PHP_VERSION, __('install.checks.php_ok'))
+                    : str_replace(':version', PHP_VERSION, __('install.checks.php_fail')),
             ],
             [
-                'name'     => 'PDO MySQL Extension',
+                'name'     => __('install.checks.pdo_mysql'),
                 'required' => true,
                 'passed'   => extension_loaded('pdo_mysql'),
                 'message'  => extension_loaded('pdo_mysql')
-                    ? 'Loaded'
-                    : 'Enable the pdo_mysql extension in your php.ini',
+                    ? __('install.checks.loaded')
+                    : str_replace(':ext', 'pdo_mysql', __('install.checks.enable_ext')),
             ],
             [
-                'name'     => 'cURL Extension',
+                'name'     => __('install.checks.curl'),
                 'required' => true,
                 'passed'   => extension_loaded('curl'),
                 'message'  => extension_loaded('curl')
-                    ? 'Loaded'
-                    : 'Enable the curl extension in your php.ini',
+                    ? __('install.checks.loaded')
+                    : str_replace(':ext', 'curl', __('install.checks.enable_ext')),
             ],
             [
-                'name'     => 'mbstring Extension',
+                'name'     => __('install.checks.mbstring'),
                 'required' => true,
                 'passed'   => extension_loaded('mbstring'),
                 'message'  => extension_loaded('mbstring')
-                    ? 'Loaded'
-                    : 'Enable the mbstring extension in your php.ini',
+                    ? __('install.checks.loaded')
+                    : str_replace(':ext', 'mbstring', __('install.checks.enable_ext')),
             ],
             [
-                'name'     => 'JSON Extension',
+                'name'     => __('install.checks.json'),
                 'required' => true,
                 'passed'   => extension_loaded('json'),
                 'message'  => extension_loaded('json')
-                    ? 'Loaded'
-                    : 'Enable the json extension in your php.ini',
+                    ? __('install.checks.loaded')
+                    : str_replace(':ext', 'json', __('install.checks.enable_ext')),
             ],
             [
-                'name'     => 'Fileinfo Extension',
+                'name'     => __('install.checks.fileinfo'),
                 'required' => true,
                 'passed'   => extension_loaded('fileinfo'),
                 'message'  => extension_loaded('fileinfo')
-                    ? 'Loaded'
-                    : 'Enable the fileinfo extension in your php.ini',
+                    ? __('install.checks.loaded')
+                    : str_replace(':ext', 'fileinfo', __('install.checks.enable_ext')),
             ],
             [
-                'name'     => 'OpenSSL Extension',
+                'name'     => __('install.checks.openssl'),
                 'required' => true,
                 'passed'   => extension_loaded('openssl'),
                 'message'  => extension_loaded('openssl')
-                    ? 'Loaded'
-                    : 'Enable the openssl extension in your php.ini',
+                    ? __('install.checks.loaded')
+                    : str_replace(':ext', 'openssl', __('install.checks.enable_ext')),
             ],
             [
-                'name'     => 'GD Extension',
+                'name'     => __('install.checks.gd'),
                 'required' => true,
                 'passed'   => extension_loaded('gd'),
                 'message'  => extension_loaded('gd')
-                    ? 'Loaded'
-                    : 'Enable the gd extension in your php.ini',
+                    ? __('install.checks.loaded')
+                    : str_replace(':ext', 'gd', __('install.checks.enable_ext')),
             ],
             [
-                'name'     => 'storage/logs writable',
+                'name'     => __('install.checks.storage_logs'),
                 'required' => true,
                 'passed'   => is_writable($basePath . '/storage/logs'),
                 'message'  => is_writable($basePath . '/storage/logs')
-                    ? 'Writable'
-                    : 'chmod 755 storage/logs',
+                    ? __('install.checks.writable')
+                    : str_replace(':path', 'storage/logs', __('install.checks.chmod')),
             ],
             [
-                'name'     => 'public/uploads writable',
+                'name'     => __('install.checks.public_uploads'),
                 'required' => true,
                 'passed'   => is_writable($basePath . '/public/uploads'),
                 'message'  => is_writable($basePath . '/public/uploads')
-                    ? 'Writable'
-                    : 'chmod 755 public/uploads',
+                    ? __('install.checks.writable')
+                    : str_replace(':path', 'public/uploads', __('install.checks.chmod')),
             ],
         ];
     }
