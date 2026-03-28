@@ -14,6 +14,9 @@
 
 @import "tailwindcss";
 
+/* Alpine.js: prevent content flash before initialization */
+[x-cloak] { display: none !important; }
+
 /* ── Sidebar ─────────────────────────────────────────────────── */
 .vb-sidebar {
     width: var(--vb-sidebar-width);
@@ -318,6 +321,7 @@
     cursor: pointer;
     transition: background var(--vb-duration-fast), color var(--vb-duration-fast);
     text-align: left;
+    text-decoration: none;
 }
 .vb-profile-dropdown-item:hover {
     background: var(--vb-bg-hover);
@@ -409,14 +413,19 @@
 .vb-hamburger { display: none; }
 
 .vb-sidebar-overlay {
-    display: none;
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
     z-index: 35;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
+    cursor: pointer;
 }
+
+/* Overlay transitions (Alpine x-transition) */
+.vb-overlay-enter, .vb-overlay-leave { transition: opacity 150ms var(--vb-ease-out); }
+.vb-overlay-enter-start, .vb-overlay-leave-end { opacity: 0; }
+.vb-overlay-enter-end, .vb-overlay-leave-start { opacity: 1; }
 
 @media (max-width: 768px) {
     .vb-sidebar {

@@ -34,10 +34,17 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
 </head>
 <body x-data="adminShell">
 
-    <!-- Mobile overlay -->
+    <!-- Mobile overlay: hidden until Alpine init via x-cloak -->
     <div class="vb-sidebar-overlay"
          x-show="sidebarOpen"
-         @click="closeSidebar"></div>
+         x-transition:enter="vb-overlay-enter"
+         x-transition:enter-start="vb-overlay-enter-start"
+         x-transition:enter-end="vb-overlay-enter-end"
+         x-transition:leave="vb-overlay-leave"
+         x-transition:leave-start="vb-overlay-leave-start"
+         x-transition:leave-end="vb-overlay-leave-end"
+         @click="closeSidebar"
+         x-cloak></div>
 
     <!-- Sidebar -->
     <aside class="vb-sidebar" x-ref="sidebar">
@@ -128,6 +135,10 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                             <i data-lucide="moon" class="icon-moon"></i>
                             <?= __('admin.nav.toggle_theme') ?>
                         </button>
+                        <a href="/admin/settings/account" class="vb-profile-dropdown-item">
+                            <i data-lucide="user-cog"></i>
+                            <?= __('admin.nav.account') ?>
+                        </a>
                         <div class="vb-profile-dropdown-sep"></div>
                         <form method="POST" action="/auth/logout" class="vb-form-flush">
                             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">

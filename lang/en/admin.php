@@ -20,6 +20,7 @@ return [
         'system'         => 'System',
         'toggle_theme'   => 'Toggle theme',
         'profile_menu'   => 'Profile menu',
+        'account'        => 'Account',
         'toggle_sidebar' => 'Toggle sidebar',
         'sign_out'       => 'Sign out',
         'deletion_queue' => 'Deletion queue',
