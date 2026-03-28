@@ -9,7 +9,6 @@
 $activePage = 'bookings';
 $totalPages = max(1, (int) ceil($total / $perPage));
 
-// Build filter query string for pagination links
 $filterParams = http_build_query(array_filter($filters ?? [], fn($v) => $v !== null && $v !== ''));
 $baseUrl = $backUrl ?? '/admin/bookings';
 
@@ -33,18 +32,15 @@ ob_start();
             <i data-lucide="calendar" class="vb-page-header-icon"></i>
             <?= __('admin.bookings.title') ?>
         </h2>
-        <div class="vb-text-muted" style="font-size: 13px; margin-top: 2px;">
-            <?= $total ?> total
-        </div>
+        <div class="vb-page-subtitle"><?= $total ?> total</div>
     </div>
 </div>
 
 <!-- Filters -->
-<div class="vb-card vb-fade-in-up stagger-1" style="margin-bottom: 1rem;">
-    <form method="GET" action="<?= htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8') ?>"
-          class="vb-filter-bar" style="display: flex; gap: 0.75rem; padding: 0.75rem; flex-wrap: wrap; align-items: flex-end;">
-        <div class="vb-form-group" style="margin: 0; min-width: 140px;">
-            <label for="filter_status" class="vb-label" style="font-size: 11px; margin-bottom: 2px;"><?= __('admin.bookings.status') ?></label>
+<div class="vb-card vb-fade-in-up stagger-1 vb-mb-md">
+    <form method="GET" action="<?= htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8') ?>" class="vb-filter-bar">
+        <div class="vb-form-group vb-form-group--min">
+            <label for="filter_status" class="vb-label"><?= __('admin.bookings.status') ?></label>
             <select id="filter_status" name="status" class="vb-input vb-input-sm">
                 <option value=""><?= __('admin.bookings.filter_all') ?></option>
                 <?php foreach (['pending','confirmed','cancelled','completed','no_show','rescheduled'] as $s): ?>
@@ -54,19 +50,19 @@ ob_start();
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="vb-form-group" style="margin: 0;">
-            <label for="filter_from" class="vb-label" style="font-size: 11px; margin-bottom: 2px;"><?= __('admin.bookings.filter_from') ?></label>
+        <div class="vb-form-group">
+            <label for="filter_from" class="vb-label"><?= __('admin.bookings.filter_from') ?></label>
             <input type="date" id="filter_from" name="from" class="vb-input vb-input-sm"
                    value="<?= htmlspecialchars($filters['from'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
         </div>
-        <div class="vb-form-group" style="margin: 0;">
-            <label for="filter_to" class="vb-label" style="font-size: 11px; margin-bottom: 2px;"><?= __('admin.bookings.filter_to') ?></label>
+        <div class="vb-form-group">
+            <label for="filter_to" class="vb-label"><?= __('admin.bookings.filter_to') ?></label>
             <input type="date" id="filter_to" name="to" class="vb-input vb-input-sm"
                    value="<?= htmlspecialchars($filters['to'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
         </div>
         <?php if ($showTenantColumn): ?>
-        <div class="vb-form-group" style="margin: 0; flex: 1; min-width: 180px;">
-            <label for="filter_search" class="vb-label" style="font-size: 11px; margin-bottom: 2px;"><?= __('admin.bookings.filter_search') ?></label>
+        <div class="vb-form-group vb-form-group--grow">
+            <label for="filter_search" class="vb-label"><?= __('admin.bookings.filter_search') ?></label>
             <input type="text" id="filter_search" name="search" class="vb-input vb-input-sm"
                    placeholder="<?= __('admin.bookings.filter_search') ?>"
                    value="<?= htmlspecialchars($filters['search'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
@@ -103,15 +99,15 @@ ob_start();
                 </thead>
                 <tbody>
                     <?php foreach ($bookings as $i => $b): ?>
-                    <tr class="vb-fade-in-up" style="animation-delay: <?= $i * 0.03 ?>s">
+                    <tr class="vb-fade-in-up stagger-<?= min($i + 1, 6) ?>">
                         <td>
-                            <div style="font-weight: 500;"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
-                            <div class="vb-text-muted" style="font-size: 12px;"><?= htmlspecialchars($b['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
+                            <div class="vb-cell-name"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
+                            <div class="vb-cell-detail"><?= htmlspecialchars($b['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
                         </td>
                         <td><?= htmlspecialchars($b['service_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></td>
                         <td>
-                            <div style="font-weight: 500;"><?= date('M j, Y', strtotime($b['start_datetime'])) ?></div>
-                            <div class="vb-text-muted" style="font-size: 12px;">
+                            <div class="vb-cell-name"><?= date('M j, Y', strtotime($b['start_datetime'])) ?></div>
+                            <div class="vb-cell-detail">
                                 <?= date('H:i', strtotime($b['start_datetime'])) ?> – <?= date('H:i', strtotime($b['end_datetime'])) ?>
                             </div>
                         </td>
@@ -150,11 +146,11 @@ ob_start();
 
     <!-- Pagination -->
     <?php if ($totalPages > 1): ?>
-    <div class="vb-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-        <span class="vb-text-muted" style="font-size: 13px;">
+    <div class="vb-pagination">
+        <span class="vb-text-muted">
             <?= str_replace([':page', ':total'], [(string) $page, (string) $totalPages], __('admin.bookings.page_info')) ?>
         </span>
-        <div class="vb-action-group">
+        <div class="vb-pagination-nav">
             <?php if ($page > 1): ?>
                 <a href="<?= $baseUrl ?>?page=<?= $page - 1 ?><?= $filterParams ? '&' . $filterParams : '' ?>"
                    class="vb-btn vb-btn-ghost vb-btn-sm">

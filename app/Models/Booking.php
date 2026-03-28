@@ -134,6 +134,32 @@ final class Booking
     }
 
     /**
+     * Get nearest upcoming bookings for a tenant (ASC order).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function forTenantUpcoming(
+        string $tenantId,
+        string $afterDatetime,
+        int $limit = 5,
+    ): array {
+        return Database::query(
+            "SELECT b.*, t.`name` AS `tenant_name`, t.`slug` AS `tenant_slug`,
+                    c.`name` AS `customer_name`, c.`email` AS `customer_email`,
+                    s.`name` AS `service_name`
+             FROM `bookings` b
+             LEFT JOIN `tenants` t ON t.`id` = b.`tenant_id`
+             LEFT JOIN `customers` c ON c.`id` = b.`customer_id`
+             LEFT JOIN `services` s ON s.`id` = b.`service_id`
+             WHERE b.`tenant_id` = ? AND b.`status` = 'confirmed'
+                   AND b.`start_datetime` >= ?
+             ORDER BY b.`start_datetime` ASC
+             LIMIT ?",
+            [$tenantId, $afterDatetime, $limit]
+        );
+    }
+
+    /**
      * Count bookings for a specific tenant.
      */
     public static function countForTenant(
@@ -219,12 +245,12 @@ final class Booking
 
         if ($from !== null && $from !== '') {
             $where[] = 'b.`start_datetime` >= ?';
-            $bindings[] = $from . ' 00:00:00';
+            $bindings[] = str_contains($from, ':') ? $from : $from . ' 00:00:00';
         }
 
         if ($to !== null && $to !== '') {
             $where[] = 'b.`start_datetime` <= ?';
-            $bindings[] = $to . ' 23:59:59';
+            $bindings[] = str_contains($to, ':') ? $to : $to . ' 23:59:59';
         }
 
         if ($search !== null && $search !== '') {

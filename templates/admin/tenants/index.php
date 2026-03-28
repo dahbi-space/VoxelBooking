@@ -23,7 +23,7 @@ ob_start();
 <div class="vb-page-header">
     <div>
         <h2 class="vb-page-title"><?= __('admin.tenants.title') ?></h2>
-        <div class="vb-text-muted" style="font-size: 13px; margin-top: 2px;">
+        <div class="vb-page-subtitle">
             <?= str_replace(':count', (string) ($counts['total'] ?? 0), __('admin.tenants.showing_count')) ?>
         </div>
     </div>
@@ -60,13 +60,13 @@ ob_start();
                 </thead>
                 <tbody>
                     <?php foreach ($tenants as $i => $tenant): ?>
-                    <tr class="vb-fade-in-up" style="animation-delay: <?= $i * 0.04 ?>s">
+                    <tr class="vb-fade-in-up stagger-<?= min($i + 1, 6) ?>">
                         <td>
                             <span class="vb-color-dot" style="background: <?= htmlspecialchars($tenant['brand_color'] ?? '#2563EB', ENT_QUOTES, 'UTF-8') ?>"></span>
                         </td>
                         <td>
-                            <div style="font-weight: 500;"><?= htmlspecialchars($tenant['name'], ENT_QUOTES, 'UTF-8') ?></div>
-                            <div class="vb-text-muted" style="font-size: 12px;">/book/<?= htmlspecialchars($tenant['slug'], ENT_QUOTES, 'UTF-8') ?></div>
+                            <div class="vb-cell-name"><?= htmlspecialchars($tenant['name'], ENT_QUOTES, 'UTF-8') ?></div>
+                            <div class="vb-cell-detail">/book/<?= htmlspecialchars($tenant['slug'], ENT_QUOTES, 'UTF-8') ?></div>
                         </td>
                         <td>
                             <span class="vb-badge vb-badge-default"><?= htmlspecialchars(ucfirst($tenant['booking_pattern'] ?? 'timeslot'), ENT_QUOTES, 'UTF-8') ?></span>
@@ -101,14 +101,14 @@ ob_start();
                                     <i data-lucide="external-link"></i>
                                 </a>
                                 <?php if ($tenant['status'] !== 'archived'): ?>
-                                    <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/archive" style="display: inline;">
+                                    <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/archive" class="vb-inline-form">
                                         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                         <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm" title="<?= __('admin.tenants.archive') ?>">
                                             <i data-lucide="archive"></i>
                                         </button>
                                     </form>
                                 <?php else: ?>
-                                    <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/activate" style="display: inline;">
+                                    <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/activate" class="vb-inline-form">
                                         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                         <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm" title="<?= __('admin.tenants.activate') ?>">
                                             <i data-lucide="rotate-ccw"></i>

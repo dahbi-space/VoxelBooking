@@ -126,7 +126,7 @@ ob_start();
     <div class="vb-card-header">
         <div class="vb-card-title"><?= __('admin.common.actions') ?></div>
     </div>
-    <div class="vb-action-group" style="padding: 1rem; gap: 0.75rem;">
+    <div class="vb-card-actions">
         <a href="/admin/tenants/create" class="vb-btn vb-btn-primary">
             <i data-lucide="plus"></i>
             <?= __('admin.tenants.create') ?>

@@ -51,8 +51,8 @@ ob_start();
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.bookings.customer') ?></span>
             <span class="vb-info-value">
-                <div style="font-weight: 500;"><?= htmlspecialchars($booking['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
-                <div class="vb-text-muted" style="font-size: 12px;"><?= htmlspecialchars($booking['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
+                <div class="vb-cell-name"><?= htmlspecialchars($booking['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
+                <div class="vb-cell-detail"><?= htmlspecialchars($booking['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
             </span>
         </div>
         <div class="vb-info-row">

@@ -28,7 +28,7 @@ final class DashboardController
             "SELECT COUNT(*) as cnt FROM `bookings` WHERE DATE(`start_datetime`) = CURDATE()"
         );
         $weekBookings = $this->queryCount(
-            "SELECT COUNT(*) as cnt FROM `bookings` WHERE `start_datetime` >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
+            "SELECT COUNT(*) as cnt FROM `bookings` WHERE `start_datetime` >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND `start_datetime` <= CONCAT(CURDATE(), ' 23:59:59')"
         );
         $upcoming24h = $this->queryCount(
             "SELECT COUNT(*) as cnt FROM `bookings` WHERE `start_datetime` BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 24 HOUR) AND `status` = 'confirmed'"
@@ -68,10 +68,9 @@ final class DashboardController
             return Response::redirect('/admin');
         }
 
-        $todayStart = date('Y-m-d 00:00:00');
-        $todayEnd   = date('Y-m-d 23:59:59');
-        $weekAgo    = date('Y-m-d 00:00:00', strtotime('-7 days'));
-        $now        = date('Y-m-d H:i:s');
+        $today = date('Y-m-d');
+        $weekAgo = date('Y-m-d', strtotime('-7 days'));
+        $now = date('Y-m-d H:i:s');
 
         return View::response('admin.dashboard-business', [
             'user'          => Auth::user(),
@@ -80,10 +79,10 @@ final class DashboardController
             'activePage'    => 'dashboard',
             'csrfToken'     => \App\Middleware\CsrfMiddleware::generateToken(),
             'tenant'        => $tenant,
-            'todayBookings' => Booking::countForTenant($tenantId, null, $todayStart, $todayEnd),
-            'weekBookings'  => Booking::countForTenant($tenantId, null, $weekAgo, null),
+            'todayBookings' => Booking::countForTenant($tenantId, null, $today, $today),
+            'weekBookings'  => Booking::countForTenant($tenantId, null, $weekAgo, $today),
             'statusCounts'  => Booking::statusCounts($tenantId),
-            'upcoming'      => Booking::forTenant($tenantId, 'confirmed', $now, null, 5, 0),
+            'upcoming'      => Booking::forTenantUpcoming($tenantId, $now, 5),
         ]);
     }
 

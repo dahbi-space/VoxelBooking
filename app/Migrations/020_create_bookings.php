@@ -23,7 +23,7 @@ return [
         `start_datetime` DATETIME NOT NULL,
         `end_datetime` DATETIME NOT NULL,
         `party_size` INT NOT NULL DEFAULT 1,
-        `status` ENUM('confirmed','cancelled','rescheduled','completed','no_show') NOT NULL DEFAULT 'confirmed',
+        `status` ENUM('pending','confirmed','cancelled','rescheduled','completed','no_show') NOT NULL DEFAULT 'confirmed',
         `rescheduled_to_id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NULL DEFAULT NULL,
         `notes` TEXT NULL DEFAULT NULL,
         `internal_notes` TEXT NULL DEFAULT NULL,

@@ -128,7 +128,7 @@ ob_start();
                 <a href="/book/<?= htmlspecialchars($tenant['slug'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                    target="_blank" rel="noopener" class="vb-link">
                     /book/<?= htmlspecialchars($tenant['slug'] ?? '', ENT_QUOTES, 'UTF-8') ?>
-                    <i data-lucide="external-link" style="width: 12px; height: 12px;"></i>
+                    <i data-lucide="external-link" class="vb-icon-inline"></i>
                 </a>
             </span>
         </div>

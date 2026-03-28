@@ -155,12 +155,14 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                                 <span class="vb-profile-dropdown-hint icon-sun"><?= __('admin.nav.theme_light') ?></span>
                                 <span class="vb-profile-dropdown-hint icon-moon"><?= __('admin.nav.theme_dark') ?></span>
                             </button>
+                            <?php if (\App\Engine\Auth::isOperator()): ?>
                             <a href="/admin/settings/account" class="vb-profile-dropdown-item" @click="closeProfile">
                                 <span class="vb-profile-dropdown-icon">
                                     <i data-lucide="user-cog"></i>
                                 </span>
                                 <span class="vb-profile-dropdown-label"><?= __('admin.nav.account') ?></span>
                             </a>
+                            <?php endif; ?>
                         </div>
                         <div class="vb-profile-dropdown-sep"></div>
                         <div class="vb-profile-dropdown-group">

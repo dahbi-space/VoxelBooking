@@ -7,7 +7,6 @@
  */
 $activePage = 'dashboard';
 
-// Time-of-day greeting
 $hour = (int) date('H');
 if ($hour < 12) {
     $greeting = __('admin.dashboard.good_morning');
@@ -81,8 +80,8 @@ ob_start();
             <div class="vb-card-title"><?= __('admin.dashboard.next_up') ?></div>
         </div>
         <?php if (empty($upcoming)): ?>
-            <div class="vb-empty" style="padding: 2rem;">
-                <i data-lucide="calendar-check" class="vb-empty-icon" style="width: 32px; height: 32px;"></i>
+            <div class="vb-empty vb-empty-compact">
+                <i data-lucide="calendar-check" class="vb-empty-icon vb-empty-icon-sm"></i>
                 <div class="vb-empty-desc"><?= __('admin.dashboard.no_upcoming_bookings') ?></div>
             </div>
         <?php else: ?>
@@ -92,12 +91,12 @@ ob_start();
                         <?php foreach ($upcoming as $b): ?>
                         <tr>
                             <td>
-                                <div style="font-weight: 500;"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
-                                <div class="vb-text-muted" style="font-size: 12px;"><?= htmlspecialchars($b['service_name'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
+                                <div class="vb-cell-name"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
+                                <div class="vb-cell-detail"><?= htmlspecialchars($b['service_name'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
                             </td>
-                            <td style="text-align: right;">
-                                <div style="font-weight: 500;"><?= date('M j', strtotime($b['start_datetime'])) ?></div>
-                                <div class="vb-text-muted" style="font-size: 12px;"><?= date('H:i', strtotime($b['start_datetime'])) ?></div>
+                            <td class="vb-text-right">
+                                <div class="vb-cell-name"><?= date('M j', strtotime($b['start_datetime'])) ?></div>
+                                <div class="vb-cell-detail"><?= date('H:i', strtotime($b['start_datetime'])) ?></div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -112,15 +111,15 @@ ob_start();
         <div class="vb-card-header">
             <div class="vb-card-title"><?= __('admin.common.actions') ?></div>
         </div>
-        <div style="padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+        <div class="vb-card-actions">
             <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/bookings"
-               class="vb-btn vb-btn-primary" style="width: 100%; justify-content: center;">
+               class="vb-btn vb-btn-primary vb-btn-block">
                 <i data-lucide="calendar"></i>
                 <?= __('admin.dashboard.view_all_bookings') ?>
             </a>
             <a href="/book/<?= htmlspecialchars($tenant['slug'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                target="_blank" rel="noopener"
-               class="vb-btn vb-btn-ghost" style="width: 100%; justify-content: center;">
+               class="vb-btn vb-btn-ghost vb-btn-block">
                 <i data-lucide="external-link"></i>
                 <?= __('admin.dashboard.view_booking_page') ?>
             </a>
