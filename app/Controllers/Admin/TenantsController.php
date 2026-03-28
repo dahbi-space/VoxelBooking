@@ -57,7 +57,7 @@ final class TenantsController
             return $this->forbidden($request);
         }
 
-        return $this->render('admin.tenants.create', __('admin.tenants.create'), [
+        return $this->render('admin.tenants.create', __('admin.tenants.title'), [
             'flash' => $this->flash(),
         ]);
     }
@@ -130,7 +130,7 @@ final class TenantsController
             return Response::redirect('/admin/tenants');
         }
 
-        return $this->render('admin.tenants.edit', __('admin.tenants.edit'), [
+        return $this->render('admin.tenants.edit', __('admin.tenants.title'), [
             'tenant' => $tenant,
             'flash'  => $this->flash(),
         ]);

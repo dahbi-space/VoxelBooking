@@ -71,7 +71,7 @@ final class BookingsController
             return Response::redirect('/admin/bookings');
         }
 
-        return $this->render('admin.bookings.show', __('admin.bookings.detail_title'), [
+        return $this->render('admin.bookings.show', __('admin.bookings.title'), [
             'booking' => $booking,
             'backUrl' => '/admin/bookings',
         ]);
@@ -124,7 +124,7 @@ final class BookingsController
             return Response::redirect("/admin/tenants/{$tenantId}/bookings");
         }
 
-        return $this->render('admin.bookings.show', __('admin.bookings.detail_title'), [
+        return $this->render('admin.bookings.show', __('admin.bookings.title'), [
             'booking' => $booking,
             'backUrl' => "/admin/tenants/{$tenantId}/bookings",
         ]);

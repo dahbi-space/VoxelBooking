@@ -438,9 +438,6 @@
     margin: 0 auto;
 }
 
-@media (max-width: 768px) {
-    .vb-content { padding: 1.25rem 1rem 2rem; }
-}
 
 /* ── Dashboard: Greeting ─────────────────────────────────────── */
 .vb-greeting {
