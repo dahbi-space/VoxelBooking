@@ -99,6 +99,19 @@
         box-shadow var(--vb-duration-fast);
 }
 
+/* Disabled/coming-soon nav items */
+.vb-sidebar-link-disabled {
+    cursor: default;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.vb-sidebar-link-disabled .vb-badge {
+    margin-left: auto;
+    font-size: 0.5625rem;
+    padding: 0.0625rem 0.3125rem;
+}
+
 .vb-sidebar-link:hover {
     background: var(--vb-bg-hover);
     color: var(--vb-text-primary);
@@ -185,20 +198,7 @@
     gap: 0.5rem;
 }
 
-.vb-topbar-user {
-    font-size: var(--vb-text-xs);
-    color: var(--vb-text-tertiary);
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding-right: 0.25rem;
-}
 
-.vb-topbar-user svg,
-.vb-topbar-user [data-lucide] {
-    width: 14px;
-    height: 14px;
-}
 
 /* Topbar: icon button (theme toggle) */
 .vb-topbar-btn {
@@ -240,32 +240,28 @@
 [data-theme="dark"] .vb-topbar-btn .icon-sun { opacity: 0; transform: rotate(60deg) scale(0.7); }
 [data-theme="dark"] .vb-topbar-btn .icon-moon { opacity: 1; transform: rotate(0deg) scale(1); }
 
-/* Logout: subtle, unobtrusive */
-.vb-logout-btn {
-    font-size: var(--vb-text-xs);
-    font-weight: 500;
-    color: var(--vb-text-tertiary);
-    background: transparent;
-    border: none;
-    padding: 0.375rem 0.625rem;
-    border-radius: var(--vb-radius-md);
-    cursor: pointer;
+/* Profile cluster: compact identity + logout */
+.vb-profile {
     display: flex;
     align-items: center;
-    gap: 0.3125rem;
-    font-family: var(--vb-font-sans);
-    transition: background var(--vb-duration-fast), color var(--vb-duration-fast);
+    gap: 0.375rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid var(--vb-border-subtle);
+    margin-left: 0.25rem;
 }
 
-.vb-logout-btn:hover {
-    background: var(--vb-error-bg);
-    color: var(--vb-error);
+.vb-profile-name {
+    font-size: var(--vb-text-xs);
+    font-weight: 500;
+    color: var(--vb-text-secondary);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.vb-logout-btn svg,
-.vb-logout-btn [data-lucide] {
-    width: 13px;
-    height: 13px;
+@media (max-width: 640px) {
+    .vb-profile-name { display: none; }
 }
 
 /* ── Content ─────────────────────────────────────────────────── */
@@ -408,3 +404,133 @@
     color: var(--vb-text-secondary);
     margin-left: 0.25rem;
 }
+
+/* ── Page Header ─────────────────────────────────────────────── */
+.vb-page-header {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-bottom: 1.5rem;
+}
+
+.vb-page-header-icon {
+    width: 22px;
+    height: 22px;
+    color: var(--vb-accent);
+    flex-shrink: 0;
+}
+
+.vb-page-title {
+    font-size: var(--vb-text-xl);
+    font-weight: 700;
+    letter-spacing: var(--vb-tracking-tight);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ── Data Table ──────────────────────────────────────────────── */
+.vb-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--vb-text-sm);
+}
+
+.vb-table th {
+    font-size: var(--vb-text-xs);
+    font-weight: 500;
+    color: var(--vb-text-tertiary);
+    text-align: left;
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid var(--vb-border-subtle);
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: var(--vb-tracking-wide);
+}
+
+.vb-table td {
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid var(--vb-border-subtle);
+    vertical-align: middle;
+}
+
+.vb-table tr:last-child td { border-bottom: none; }
+
+.vb-table tr:hover td {
+    background: var(--vb-bg-hover);
+}
+
+.vb-table .vb-table-actions {
+    display: flex;
+    gap: 0.375rem;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.vb-table-empty {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    color: var(--vb-text-tertiary);
+}
+
+.vb-table-empty-icon {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 0.75rem;
+    opacity: 0.3;
+    color: var(--vb-accent);
+}
+
+.vb-table-empty-title {
+    font-size: var(--vb-text-md);
+    font-weight: 600;
+    color: var(--vb-text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.vb-table-empty-desc {
+    font-size: var(--vb-text-sm);
+}
+
+/* Pagination */
+.vb-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0 0;
+    margin-top: 0.75rem;
+    border-top: 1px solid var(--vb-border-subtle);
+    font-size: var(--vb-text-xs);
+    color: var(--vb-text-tertiary);
+}
+
+.vb-pagination-nav {
+    display: flex;
+    gap: 0.375rem;
+}
+
+/* ── Mobile Table ────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .vb-table thead { display: none; }
+    .vb-table tr {
+        display: block;
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--vb-border-subtle);
+    }
+    .vb-table td { display: block; padding: 0.25rem 0; border: none; }
+    .vb-table .vb-table-actions { margin-top: 0.5rem; }
+}
+
+/* ── Confirm Pattern (no-JS) ─────────────────────────────────── */
+.vb-confirm-toggle { display: none; }
+.vb-confirm-step-2 { display: none; }
+.vb-confirm-step-1 { display: inline; }
+.vb-confirm-toggle:checked ~ .vb-confirm-step-1 { display: none; }
+.vb-confirm-toggle:checked ~ .vb-confirm-step-2 {
+    display: inline-flex;
+    gap: 0.375rem;
+    align-items: center;
+}
+
+/* Processed section muted */
+.vb-section-muted { opacity: 0.65; margin-top: 2rem; }

@@ -2,7 +2,7 @@
 /**
  * Admin shell layout — Visual Design §16: Admin Shell Composition.
  *
- * Sidebar (240px) + glass topbar (56px) + content area.
+ * Sidebar (248px) + glass topbar (52px) + content area.
  * All admin pages extend this layout via ob_start() + $content.
  *
  * Icons: Lucide via data-lucide (rendered by admin/app.js createIcons).
@@ -18,6 +18,9 @@ $version = $version ?? '0.0.0';
 $pageTitle = $pageTitle ?? __('admin.layout.default_title');
 $activePage = $activePage ?? 'dashboard';
 $csrfToken = $csrfToken ?? '';
+
+$operatorName = htmlspecialchars($user['name'] ?? __('admin.layout.operator'), ENT_QUOTES, 'UTF-8');
+$operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
 ?>
 <!DOCTYPE html>
 <html lang="<?= \App\Engine\Locale::getLocale() ?>">
@@ -31,21 +34,21 @@ $csrfToken = $csrfToken ?? '';
 </head>
 <body x-data="adminShell">
 
-    <!-- Mobile overlay: x-show="sidebarOpen" is a CSP-safe property reference -->
+    <!-- Mobile overlay -->
     <div class="vb-sidebar-overlay"
          x-show="sidebarOpen"
          @click="closeSidebar"></div>
 
-    <!-- Sidebar: class toggling done via $refs in app.js (CSP-safe) -->
+    <!-- Sidebar -->
     <aside class="vb-sidebar" x-ref="sidebar">
-        <div class="vb-sidebar-brand">
+        <a href="/admin" class="vb-sidebar-brand" style="text-decoration: none; color: var(--vb-text-primary);">
             <svg class="vb-sidebar-logo" width="24" height="26" viewBox="0 0 48 52" xmlns="http://www.w3.org/2000/svg">
                 <polygon points="24,2 46,14 24,26 2,14" fill="currentColor" opacity="1.0"/>
                 <polygon points="2,14 24,26 24,50 2,38" fill="currentColor" opacity="0.7"/>
                 <polygon points="46,14 24,26 24,50 46,38" fill="currentColor" opacity="0.4"/>
             </svg>
             <span class="vb-sidebar-name"><?= htmlspecialchars(app_name(), ENT_QUOTES, 'UTF-8') ?></span>
-        </div>
+        </a>
 
         <nav class="vb-sidebar-nav">
             <div class="vb-sidebar-section">
@@ -54,15 +57,17 @@ $csrfToken = $csrfToken ?? '';
                     <i data-lucide="layout-dashboard"></i>
                     <?= __('admin.nav.dashboard') ?>
                 </a>
-                <a href="/admin" class="vb-sidebar-link <?= $activePage === 'tenants' ? 'active' : '' ?>">
+                <span class="vb-sidebar-link vb-sidebar-link-disabled" aria-disabled="true">
                     <i data-lucide="building-2"></i>
                     <?= __('admin.nav.tenants') ?>
-                </a>
+                    <span class="vb-badge vb-badge-default"><?= __('admin.nav.soon') ?></span>
+                </span>
                 <?php endif; ?>
-                <a href="/admin" class="vb-sidebar-link <?= $activePage === 'bookings' ? 'active' : '' ?>">
+                <span class="vb-sidebar-link vb-sidebar-link-disabled" aria-disabled="true">
                     <i data-lucide="calendar"></i>
                     <?= __('admin.nav.all_bookings') ?>
-                </a>
+                    <span class="vb-badge vb-badge-default"><?= __('admin.nav.soon') ?></span>
+                </span>
             </div>
             <?php if (\App\Engine\Auth::isOperator()): ?>
             <div class="vb-sidebar-section">
@@ -97,10 +102,6 @@ $csrfToken = $csrfToken ?? '';
                 <h1 class="vb-topbar-title"><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></h1>
             </div>
             <div class="vb-topbar-right">
-                <span class="vb-topbar-user">
-                    <i data-lucide="user"></i>
-                    <?= htmlspecialchars($user['name'] ?? __('admin.layout.operator'), ENT_QUOTES, 'UTF-8') ?>
-                </span>
                 <button type="button"
                         class="vb-topbar-btn"
                         @click="toggleTheme"
@@ -108,13 +109,18 @@ $csrfToken = $csrfToken ?? '';
                     <i data-lucide="sun" class="icon-sun"></i>
                     <i data-lucide="moon" class="icon-moon"></i>
                 </button>
-                <form method="POST" action="/auth/logout" class="m-0">
-                    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-                    <button type="submit" class="vb-logout-btn">
-                        <i data-lucide="log-out"></i>
-                        <?= __('admin.nav.sign_out') ?>
-                    </button>
-                </form>
+
+                <!-- Profile cluster: avatar + dropdown-style compact control -->
+                <div class="vb-profile">
+                    <span class="vb-avatar vb-avatar-sm"><?= $operatorInitials ?></span>
+                    <span class="vb-profile-name"><?= $operatorName ?></span>
+                    <form method="POST" action="/auth/logout" style="margin: 0;">
+                        <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <button type="submit" class="vb-topbar-btn" aria-label="<?= __('admin.nav.sign_out') ?>" data-tooltip="<?= __('admin.nav.sign_out') ?>">
+                            <i data-lucide="log-out"></i>
+                        </button>
+                    </form>
+                </div>
             </div>
         </header>
 

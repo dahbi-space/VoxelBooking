@@ -22,6 +22,7 @@ return [
         'toggle_sidebar' => 'Toggle sidebar',
         'sign_out'       => 'Sign out',
         'deletion_queue' => 'Deletion queue',
+        'soon'           => 'Soon',
     ],
 
     // ── Layout (shell fallbacks) ──
@@ -193,6 +194,8 @@ return [
         'action_rate_limit_exceeded'     => 'Rate limited',
         'action_tenant_created'          => 'Tenant created',
         'action_tenant_archived'         => 'Tenant archived',
+        'action_privacy_deletion_confirmed' => 'Deletion confirmed',
+        'action_privacy_deletion_dismissed' => 'Deletion dismissed',
     ],
 
     // ── Deletion Queue ──

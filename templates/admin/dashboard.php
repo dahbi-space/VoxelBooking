@@ -83,10 +83,10 @@ ob_start();
         <div class="vb-empty-desc">
             <?= __('admin.dashboard.welcome_desc') ?>
         </div>
-        <a href="/admin" class="vb-btn vb-btn-primary vb-btn-lg">
+        <button type="button" class="vb-btn vb-btn-primary vb-btn-lg" disabled>
             <i data-lucide="plus"></i>
             <?= __('admin.dashboard.create_first_tenant') ?>
-        </a>
+        </button>
         <div class="vb-empty-steps">
             <div class="vb-empty-step">
                 <span class="vb-empty-step-num">1</span>
