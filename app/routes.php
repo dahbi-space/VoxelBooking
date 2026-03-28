@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Engine\Router;
 use App\Middleware\SecurityMiddleware;
 use App\Middleware\InstalledMiddleware;
+use App\Middleware\DemoMiddleware;
 use App\Middleware\ThrottleMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\AuthMiddleware;
@@ -26,6 +27,7 @@ return function (Router $router): void {
     $router->group([
         SecurityMiddleware::class,
         InstalledMiddleware::class,
+        DemoMiddleware::class,
         ThrottleMiddleware::class,
         CsrfMiddleware::class,
     ], function (Router $router) {

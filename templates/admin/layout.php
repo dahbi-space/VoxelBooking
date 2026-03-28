@@ -251,12 +251,25 @@ $csrfToken = $csrfToken ?? '';
             </div>
         </header>
 
+        <?php if (\App\Engine\DemoMode::isActive()): ?>
+        <div class="vb-demo-banner" style="background: linear-gradient(135deg, #f59e0b22, #d9770622); border: 1px solid #f59e0b44; border-radius: var(--vb-radius-md); padding: 0.625rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.625rem; font-size: var(--vb-text-sm);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div>
+                <strong style="color: #f59e0b;"><?= __('admin.demo.banner_title') ?></strong>
+                <span style="color: var(--vb-admin-text-secondary); margin-left: 0.375rem;"><?= __('admin.demo.banner_desc') ?></span>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <main class="vb-content">
             <?= $content ?? '' ?>
         </main>
     </div>
 
     <script>
+    <?php if (\App\Engine\DemoMode::isActive()): ?>
+    window.VB_DEMO = true;
+    <?php endif; ?>
     (function() {
         var toggle = document.getElementById('theme-toggle');
         if (toggle) {

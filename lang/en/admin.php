@@ -268,4 +268,13 @@ return [
         '500_desc'         => 'We\'ve logged the error. Try refreshing the page.',
         '500_action'       => 'Refresh page',
     ],
+
+    // ── Demo Mode ──
+    'demo' => [
+        'write_blocked'    => 'This action is disabled in demo mode.',
+        'banner_title'     => 'Demo Mode',
+        'banner_desc'      => 'You are viewing a read-only demo. Changes will not be saved.',
+        'toast_message'    => 'This feature is disabled in demo mode.',
+        'booking_notice'   => 'This is a demo — bookings cannot be submitted.',
+    ],
 ];

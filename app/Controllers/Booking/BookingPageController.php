@@ -6,6 +6,7 @@ namespace App\Controllers\Booking;
 
 use App\Engine\Database;
 use App\Engine\BrandColorHelper;
+use App\Engine\DemoMode;
 use App\Engine\Locale;
 use App\Engine\Request;
 use App\Engine\Response;
@@ -64,6 +65,7 @@ final class BookingPageController
             'custom_fields'    => json_decode($tenant['custom_fields'] ?? '[]', true) ?: [],
             'brand_color'      => $tenant['brand_color'],
             'brand_text'       => $brandTokens['brand_text'],
+            'is_demo'          => DemoMode::isActive(),
         ];
 
         // Inject translations and formatting config for JS

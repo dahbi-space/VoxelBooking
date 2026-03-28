@@ -213,4 +213,7 @@ return [
         'deletion_req_next_title' => 'What happens next:',
         'deletion_req_next_body'  => 'The business will review your request and remove your personal data. Under GDPR, they must respond within 30 days. Booking records may be retained in anonymized form for operational history, but all personal identifiers will be removed.',
     ],
+
+    // ── Demo Mode ──
+    'demo_notice' => 'This is a demo — bookings cannot be submitted.',
 ];

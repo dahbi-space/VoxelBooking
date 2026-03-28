@@ -779,6 +779,12 @@ async function stepSummary() {
 
 // ── Submit Booking ──
 async function submitBooking() {
+  // Demo mode guard: show notice instead of firing a blocked POST
+  if (config.is_demo) {
+    showError(t('demo_notice') || 'This is a demo — bookings cannot be submitted.');
+    return;
+  }
+
   const btn = document.getElementById('vb-confirm-btn');
   btn.classList.add('is-loading');
   btn.disabled = true;

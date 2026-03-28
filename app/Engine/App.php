@@ -47,6 +47,9 @@ final class App
         // Initialize locale engine
         Locale::init($this->basePath);
 
+        // Initialize demo mode engine
+        DemoMode::init($this->basePath);
+
         return $this;
     }
 
