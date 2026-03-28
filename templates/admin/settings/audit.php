@@ -52,7 +52,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
     <div class="vb-card-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
         <div>
             <div class="vb-card-title"><?= __('admin.audit.title') ?></div>
-            <div class="vb-card-desc"><?= number_format($total) ?> <?= __('admin.audit.desc_suffix') ?></div>
+            <div class="vb-card-desc"><?= __n($total) ?> <?= __('admin.audit.desc_suffix') ?></div>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
             <form method="GET" action="/admin/settings/audit" style="display: flex; gap: 0.5rem; align-items: center;">
@@ -103,7 +103,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                         ?>
                         <tr class="vb-audit-row">
                             <td style="font-size: var(--vb-text-xs); color: var(--vb-admin-text-secondary); font-family: var(--vb-font-mono); white-space: nowrap;">
-                                <?= $createdAt->format('M d, H:i:s') ?>
+                                <?= \App\Engine\Locale::datetime($createdAt) ?>
                             </td>
                             <td>
                                 <span class="vb-audit-badge" style="

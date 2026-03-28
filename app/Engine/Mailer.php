@@ -143,7 +143,7 @@ final class Mailer
             '<html><body>'
             . '<h2 style="font-family: -apple-system, sans-serif;">' . __('email.test.title') . '</h2>'
             . '<p style="font-family: -apple-system, sans-serif; color: #666;">' . __('email.test.body') . '</p>'
-            . '<p style="font-family: -apple-system, sans-serif; color: #999; font-size: 12px;">' . __('email.common.powered_by') . ' — ' . date('Y-m-d H:i:s T') . '</p>'
+            . '<p style="font-family: -apple-system, sans-serif; color: #999; font-size: 12px;">' . __('email.common.powered_by') . ' — ' . Locale::datetime(new \DateTimeImmutable()) . '</p>'
             . '</body></html>',
             'test',
         );
