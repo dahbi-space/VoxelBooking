@@ -255,4 +255,98 @@ final class AuthTest extends TestCase
         $this->assertSame('01HTENANT123456789ABC', Auth::user()['tenant_id']);
         $this->assertSame('owner', Auth::user()['role']);
     }
+
+    // ── isOwner() / isManager() ──
+
+    public function testIsOwnerReturnsTrueForOwner(): void
+    {
+        Auth::setSession('business_user', 'bu-001', 'Alice', 'alice@test.com', 'tenant-001', 'owner');
+
+        $this->assertTrue(Auth::isOwner());
+        $this->assertFalse(Auth::isManager());
+    }
+
+    public function testIsManagerReturnsTrueForManager(): void
+    {
+        Auth::setSession('business_user', 'bu-002', 'Bob', 'bob@test.com', 'tenant-001', 'manager');
+
+        $this->assertTrue(Auth::isManager());
+        $this->assertFalse(Auth::isOwner());
+    }
+
+    public function testIsOwnerReturnsFalseForOperator(): void
+    {
+        Auth::setSession('operator', 'op-001', 'Jane', 'jane@test.com');
+
+        $this->assertFalse(Auth::isOwner());
+        $this->assertFalse(Auth::isManager());
+    }
+
+    // ── tenantId() ──
+
+    public function testTenantIdReturnsIdForBusinessUser(): void
+    {
+        Auth::setSession('business_user', 'bu-001', 'Alice', 'alice@test.com', 'tenant-001', 'owner');
+
+        $this->assertSame('tenant-001', Auth::tenantId());
+    }
+
+    public function testTenantIdReturnsNullForOperator(): void
+    {
+        Auth::setSession('operator', 'op-001', 'Jane', 'jane@test.com');
+
+        $this->assertNull(Auth::tenantId());
+    }
+
+    // ── canAccessTenant() ──
+
+    public function testOperatorCanAccessAnyTenant(): void
+    {
+        Auth::setSession('operator', 'op-001', 'Jane', 'jane@test.com');
+
+        $this->assertTrue(Auth::canAccessTenant('tenant-001'));
+        $this->assertTrue(Auth::canAccessTenant('tenant-999'));
+    }
+
+    public function testBusinessUserCanAccessOwnTenant(): void
+    {
+        Auth::setSession('business_user', 'bu-001', 'Alice', 'alice@test.com', 'tenant-001', 'owner');
+
+        $this->assertTrue(Auth::canAccessTenant('tenant-001'));
+    }
+
+    public function testBusinessUserCannotAccessOtherTenant(): void
+    {
+        Auth::setSession('business_user', 'bu-001', 'Alice', 'alice@test.com', 'tenant-001', 'owner');
+
+        $this->assertFalse(Auth::canAccessTenant('tenant-002'));
+    }
+
+    public function testUnauthenticatedCannotAccessTenant(): void
+    {
+        $this->assertFalse(Auth::canAccessTenant('tenant-001'));
+    }
+
+    // ── canManageTenant() ──
+
+    public function testOperatorCanManageTenant(): void
+    {
+        Auth::setSession('operator', 'op-001', 'Jane', 'jane@test.com');
+
+        $this->assertTrue(Auth::canManageTenant());
+    }
+
+    public function testOwnerCanManageTenant(): void
+    {
+        Auth::setSession('business_user', 'bu-001', 'Alice', 'alice@test.com', 'tenant-001', 'owner');
+
+        $this->assertTrue(Auth::canManageTenant());
+    }
+
+    public function testManagerCannotManageTenant(): void
+    {
+        Auth::setSession('business_user', 'bu-002', 'Bob', 'bob@test.com', 'tenant-001', 'manager');
+
+        $this->assertFalse(Auth::canManageTenant());
+    }
 }

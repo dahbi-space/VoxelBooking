@@ -196,6 +196,7 @@ $csrfToken = $csrfToken ?? '';
 
         <nav class="vb-sidebar-nav">
             <div class="vb-sidebar-section">
+                <?php if (\App\Engine\Auth::isOperator()): ?>
                 <a href="/admin" class="vb-sidebar-link <?= $activePage === 'dashboard' ? 'active' : '' ?>">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
                     <?= __('admin.nav.dashboard') ?>
@@ -204,11 +205,13 @@ $csrfToken = $csrfToken ?? '';
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
                     <?= __('admin.nav.tenants') ?>
                 </a>
+                <?php endif; ?>
                 <a href="#" class="vb-sidebar-link <?= $activePage === 'bookings' ? 'active' : '' ?>">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     <?= __('admin.nav.all_bookings') ?>
                 </a>
             </div>
+            <?php if (\App\Engine\Auth::isOperator()): ?>
             <div class="vb-sidebar-section">
                 <div class="vb-sidebar-section-label"><?= __('admin.nav.system') ?></div>
                 <a href="/admin/settings" class="vb-sidebar-link <?= str_starts_with($activePage, 'settings') ? 'active' : '' ?>">
@@ -216,6 +219,7 @@ $csrfToken = $csrfToken ?? '';
                     <?= __('admin.nav.settings') ?>
                 </a>
             </div>
+            <?php endif; ?>
         </nav>
 
         <div class="vb-sidebar-footer">

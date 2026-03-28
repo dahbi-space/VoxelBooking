@@ -301,6 +301,69 @@ final class Auth
     }
 
     /**
+     * Check if the current user is a business user with the 'owner' role.
+     */
+    public static function isOwner(): bool
+    {
+        return self::businessUserRole() === 'owner';
+    }
+
+    /**
+     * Check if the current user is a business user with the 'manager' role.
+     */
+    public static function isManager(): bool
+    {
+        return self::businessUserRole() === 'manager';
+    }
+
+    /**
+     * Get the current user's tenant ID, or null if operator/not authenticated.
+     */
+    public static function tenantId(): ?string
+    {
+        if (!self::isBusinessUser()) {
+            return null;
+        }
+
+        return $_SESSION['auth_tenant_id'] ?? null;
+    }
+
+    /**
+     * Check if the current user can access a given tenant.
+     *
+     * Operators can access any tenant.
+     * Business users can only access their own tenant.
+     */
+    public static function canAccessTenant(string $tenantId): bool
+    {
+        if (self::isOperator()) {
+            return true;
+        }
+
+        if (self::isBusinessUser()) {
+            return self::tenantId() === $tenantId;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the current user has at least 'owner' level access.
+     *
+     * Returns true for operators (who have full access)
+     * and business users with the 'owner' role.
+     * Returns false for managers.
+     */
+    public static function canManageTenant(): bool
+    {
+        if (self::isOperator()) {
+            return true;
+        }
+
+        return self::isOwner();
+    }
+
+    /**
      * Store session data for an authenticated user.
      *
      * Called by login() after successful credential verification,
