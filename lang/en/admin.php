@@ -214,7 +214,7 @@ return [
         'btn_dismiss'         => 'Dismiss',
         'recently_processed'  => 'Recently Processed',
         'status_anonymized'   => 'Anonymized',
-        'page_title'          => 'Deletion Queue — :app_name',
+        'page_title'          => 'Deletion Queue',
         'missing_customer_id' => 'Missing customer ID.',
         'not_found'           => 'Customer not found or no pending deletion request.',
         'anonymized_success'  => 'Customer data has been anonymized. Deletion request processed.',
