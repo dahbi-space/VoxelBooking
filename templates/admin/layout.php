@@ -69,11 +69,18 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                     <?= __('admin.nav.tenants') ?>
                 </a>
                 <?php endif; ?>
-                <span class="vb-sidebar-link vb-sidebar-link-disabled" aria-disabled="true">
+                <?php if (\App\Engine\Auth::isOperator()): ?>
+                <a href="/admin/bookings" class="vb-sidebar-link <?= $activePage === 'bookings' ? 'active' : '' ?>">
                     <i data-lucide="calendar"></i>
                     <?= __('admin.nav.all_bookings') ?>
-                    <span class="vb-badge vb-badge-default"><?= __('admin.nav.soon') ?></span>
-                </span>
+                </a>
+                <?php elseif (isset($_SESSION['auth_tenant_id'])): ?>
+                <a href="/admin/tenants/<?= htmlspecialchars($_SESSION['auth_tenant_id'], ENT_QUOTES, 'UTF-8') ?>/bookings"
+                   class="vb-sidebar-link <?= $activePage === 'bookings' ? 'active' : '' ?>">
+                    <i data-lucide="calendar"></i>
+                    <?= __('admin.nav.bookings') ?>
+                </a>
+                <?php endif; ?>
             </div>
             <?php if (\App\Engine\Auth::isOperator()): ?>
             <div class="vb-sidebar-section">

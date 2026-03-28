@@ -85,6 +85,16 @@ return function (Router $router): void {
             $router->post('/admin/tenants/{id}/edit', \App\Controllers\Admin\TenantsController::class, 'update');
             $router->post('/admin/tenants/{id}/archive', \App\Controllers\Admin\TenantsController::class, 'archive');
             $router->post('/admin/tenants/{id}/activate', \App\Controllers\Admin\TenantsController::class, 'activate');
+
+            // Booking management — operator cross-tenant routes
+            $router->get('/admin/bookings', \App\Controllers\Admin\BookingsController::class, 'index');
+            $router->get('/admin/bookings/{id}', \App\Controllers\Admin\BookingsController::class, 'show');
+            $router->post('/admin/bookings/{id}/status', \App\Controllers\Admin\BookingsController::class, 'updateStatus');
+
+            // Booking management — tenant-context routes (business user + operator)
+            $router->get('/admin/tenants/{tenant_id}/bookings', \App\Controllers\Admin\BookingsController::class, 'tenantIndex');
+            $router->get('/admin/tenants/{tenant_id}/bookings/{id}', \App\Controllers\Admin\BookingsController::class, 'tenantShow');
+            $router->post('/admin/tenants/{tenant_id}/bookings/{id}/status', \App\Controllers\Admin\BookingsController::class, 'tenantUpdateStatus');
         });
 
         // ── Public booking pages ──
