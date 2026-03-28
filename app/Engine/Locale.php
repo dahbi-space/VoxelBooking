@@ -270,14 +270,15 @@ final class Locale
     /**
      * Format datetime with seconds (audit-grade precision).
      *
-     * Uses datetime_full_format from locale config, falling back to
-     * the standard datetime_format with seconds appended.
+     * Reads datetime_full_format from locale config. Every locale in
+     * config/locales.php defines this explicitly to handle 12h vs 24h
+     * clocks correctly (e.g. 'g:i:s A' vs 'H:i:s').
      */
     public static function datetimeFull(\DateTimeInterface $dt): string
     {
         $config = self::getConfig();
 
-        return $dt->format($config['datetime_full_format'] ?? ($config['datetime_format'] ?? 'Y-m-d H:i') . ':s');
+        return $dt->format($config['datetime_full_format'] ?? 'Y-m-d H:i:s');
     }
 
     /**

@@ -248,6 +248,32 @@ final class LocaleTest extends TestCase
         $this->assertSame('14:30', Locale::time($dt));
     }
 
+    public function testDatetimeFullEnglish12hIncludesSeconds(): void
+    {
+        $dt = new \DateTimeImmutable('2026-03-28 14:30:25');
+        $result = Locale::datetimeFull($dt);
+        // en config: 'm/d/Y g:i:s A' → seconds BEFORE AM/PM
+        $this->assertSame('03/28/2026 2:30:25 PM', $result);
+    }
+
+    public function testDatetimeFullDutch24hIncludesSeconds(): void
+    {
+        Locale::setLocale('nl');
+        $dt = new \DateTimeImmutable('2026-03-28 14:30:25');
+        $result = Locale::datetimeFull($dt);
+        // nl config: 'd-m-Y H:i:s'
+        $this->assertSame('28-03-2026 14:30:25', $result);
+    }
+
+    public function testDatetimeFullDoesNotAppendSecondsAfterAmPm(): void
+    {
+        // Regression test: naive ':s' append produced '2:30 PM:25'
+        $dt = new \DateTimeImmutable('2026-03-28 14:30:25');
+        $result = Locale::datetimeFull($dt);
+        $this->assertStringNotContainsString('PM:', $result);
+        $this->assertStringNotContainsString('AM:', $result);
+    }
+
     // ════════════════════════════════════════════════════════════════
     // Week Start
     // ════════════════════════════════════════════════════════════════
