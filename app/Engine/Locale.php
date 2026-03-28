@@ -421,15 +421,27 @@ final class Locale
     /**
      * Get all translations for a domain, for injection into JS.
      *
+     * Merges fallback (en) with the active locale so keys missing from
+     * a partial translation file still resolve to English.
+     *
      * @return array<string, string>
      */
     public static function getTranslationsForDomain(string $domain): array
     {
-        self::loadFile($domain, self::$locale);
+        // Always load English as the base
+        self::loadFile($domain, self::$fallback);
+        $fallbackKey = self::$fallback . '.' . $domain;
+        $base = self::flattenArray(self::$translations[$fallbackKey] ?? []);
 
-        $cacheKey = self::$locale . '.' . $domain;
+        // If active locale differs, overlay it on top of English
+        if (self::$locale !== self::$fallback) {
+            self::loadFile($domain, self::$locale);
+            $cacheKey = self::$locale . '.' . $domain;
+            $overlay = self::flattenArray(self::$translations[$cacheKey] ?? []);
+            return array_merge($base, $overlay);
+        }
 
-        return self::flattenArray(self::$translations[$cacheKey] ?? []);
+        return $base;
     }
 
     /**

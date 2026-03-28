@@ -330,6 +330,12 @@ final class BookingApiController
                 $bookingData['custom_field_data'] = $customFields;
             }
 
+            // Capture customer timezone from browser (Intl.DateTimeFormat)
+            $customerTimezone = trim($input['customer_timezone'] ?? '');
+            if ($customerTimezone !== '' && @timezone_open($customerTimezone)) {
+                $bookingData['customer_timezone'] = $customerTimezone;
+            }
+
             $result = BookingService::createBooking($bookingData, $tenant, $consentGiven);
 
             $pdo->commit();
