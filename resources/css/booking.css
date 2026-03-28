@@ -1077,3 +1077,98 @@ body {
     border-right: none;
   }
 }
+
+/* ── Error / Empty Pages ─────────────────────────────────────── */
+.vb-book-error-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+}
+
+.vb-book-error-content {
+  text-align: center;
+  max-width: 400px;
+}
+
+.vb-book-error-icon {
+  margin-bottom: 24px;
+  opacity: 0.25;
+}
+
+.vb-book-error-title {
+  font-size: 1.375rem;
+}
+
+.vb-book-error-desc {
+  margin-top: 12px;
+}
+
+.vb-book-error-help {
+  margin-top: 24px;
+  font-size: 0.8125rem;
+}
+
+/* ── Privacy Page ────────────────────────────────────────────── */
+.vb-book-privacy {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 20px;
+}
+
+.vb-book-privacy h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--vb-text);
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+}
+
+.vb-book-privacy-sub {
+  font-size: 0.875rem;
+  color: var(--vb-text-tertiary);
+  margin-bottom: 32px;
+}
+
+.vb-book-privacy h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--vb-text);
+  margin-top: 32px;
+  margin-bottom: 12px;
+  letter-spacing: -0.015em;
+}
+
+.vb-book-privacy p,
+.vb-book-privacy ul {
+  font-size: 0.9375rem;
+  color: var(--vb-text-secondary);
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+
+.vb-book-privacy ul {
+  padding-left: 20px;
+}
+
+.vb-book-privacy li {
+  margin-bottom: 6px;
+}
+
+.vb-book-privacy a {
+  color: var(--vb-brand);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.vb-book-privacy-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+
+.vb-book-privacy-actions .vb-book-btn {
+  flex: 1;
+  min-width: 200px;
+}

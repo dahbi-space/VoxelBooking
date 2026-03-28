@@ -208,6 +208,30 @@ $customerId = $customer['id'] ?? '';
             margin-bottom: 0.75rem;
         }
 
+        /* Inline-style replacements */
+        .privacy-booking-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .privacy-gdpr-text {
+            font-size: var(--vb-text-sm);
+            color: var(--vb-admin-text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .privacy-btn-full { width: 100%; }
+
+        .privacy-confirm-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .privacy-confirm-buttons > * {
+            flex: 1;
+        }
+
         @media (max-width: 640px) {
             .privacy-actions { flex-direction: column; }
             .privacy-field { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
@@ -263,7 +287,7 @@ $customerId = $customer['id'] ?? '';
             <?php else: ?>
                 <?php foreach ($bookings as $booking): ?>
                 <div class="privacy-booking">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="privacy-booking-row">
                         <span class="privacy-booking-date"><?= View::e($booking['start_datetime'] ?? '') ?></span>
                         <span class="privacy-status privacy-status-<?= View::e($booking['status'] ?? 'confirmed') ?>">
                             <?= View::e($booking['status'] ?? '') ?>
@@ -307,14 +331,14 @@ $customerId = $customer['id'] ?? '';
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 <?= __('booking.privacy.actions_title') ?>
             </h2>
-            <p style="font-size: var(--vb-text-sm); color: var(--vb-admin-text-secondary); margin-bottom: 1rem;">
+            <p class="privacy-gdpr-text">
                 <?= __('booking.privacy.gdpr_rights') ?>
             </p>
             <div class="privacy-actions">
                 <form method="post" action="/book/<?= View::e($slug) ?>/privacy/<?= View::e($customerId) ?>">
                     <input type="hidden" name="_csrf_token" value="<?= View::e($csrfToken) ?>">
                     <input type="hidden" name="action" value="export">
-                    <button type="submit" class="vb-btn vb-btn-secondary" style="width: 100%;">
+                    <button type="submit" class="vb-btn vb-btn-secondary privacy-btn-full">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         <?= __('booking.privacy.export_data') ?>
                     </button>
@@ -322,7 +346,7 @@ $customerId = $customer['id'] ?? '';
                 <div>
                     <input type="checkbox" id="confirm-delete" class="privacy-confirm-toggle">
                     <div class="privacy-confirm-step-1">
-                        <label for="confirm-delete" class="vb-btn vb-btn-danger privacy-confirm-label" style="width: 100%;">
+                        <label for="confirm-delete" class="vb-btn vb-btn-danger privacy-confirm-label privacy-btn-full">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                             <?= __('booking.privacy.request_deletion') ?>
                         </label>
@@ -334,11 +358,11 @@ $customerId = $customer['id'] ?? '';
                         <form method="post" action="/book/<?= View::e($slug) ?>/privacy/<?= View::e($customerId) ?>">
                             <input type="hidden" name="_csrf_token" value="<?= View::e($csrfToken) ?>">
                             <input type="hidden" name="action" value="delete">
-                            <div style="display: flex; gap: 0.5rem;">
-                                <label for="confirm-delete" class="vb-btn vb-btn-secondary privacy-confirm-label" style="flex: 1;">
+                            <div class="privacy-confirm-buttons">
+                                <label for="confirm-delete" class="vb-btn vb-btn-secondary privacy-confirm-label">
                                     <?= __('booking.privacy.cancel') ?>
                                 </label>
-                                <button type="submit" class="vb-btn vb-btn-danger" style="flex: 1;">
+                                <button type="submit" class="vb-btn vb-btn-danger">
                                     <?= __('booking.privacy.confirm_deletion') ?>
                                 </button>
                             </div>
