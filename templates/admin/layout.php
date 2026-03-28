@@ -64,11 +64,10 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                     <i data-lucide="layout-dashboard"></i>
                     <?= __('admin.nav.dashboard') ?>
                 </a>
-                <span class="vb-sidebar-link vb-sidebar-link-disabled" aria-disabled="true">
+                <a href="/admin/tenants" class="vb-sidebar-link <?= $activePage === 'tenants' ? 'active' : '' ?>">
                     <i data-lucide="building-2"></i>
                     <?= __('admin.nav.tenants') ?>
-                    <span class="vb-badge vb-badge-default"><?= __('admin.nav.soon') ?></span>
-                </span>
+                </a>
                 <?php endif; ?>
                 <span class="vb-sidebar-link vb-sidebar-link-disabled" aria-disabled="true">
                     <i data-lucide="calendar"></i>

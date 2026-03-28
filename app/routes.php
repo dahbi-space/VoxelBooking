@@ -76,7 +76,15 @@ return function (Router $router): void {
             $router->post('/admin/deletion-queue/confirm', \App\Controllers\Admin\DeletionQueueController::class, 'confirm');
             $router->post('/admin/deletion-queue/dismiss', \App\Controllers\Admin\DeletionQueueController::class, 'dismiss');
 
-            // TODO: Phase 3 — Tenant management routes
+            // Tenant management — operator-only enforced in controller, NOT in OPERATOR_ONLY_PREFIXES
+            // (because /admin/tenants/{tenant_id}/... context routes will be business-user-accessible)
+            $router->get('/admin/tenants', \App\Controllers\Admin\TenantsController::class, 'index');
+            $router->get('/admin/tenants/create', \App\Controllers\Admin\TenantsController::class, 'create');
+            $router->post('/admin/tenants/create', \App\Controllers\Admin\TenantsController::class, 'store');
+            $router->get('/admin/tenants/{id}/edit', \App\Controllers\Admin\TenantsController::class, 'edit');
+            $router->post('/admin/tenants/{id}/edit', \App\Controllers\Admin\TenantsController::class, 'update');
+            $router->post('/admin/tenants/{id}/archive', \App\Controllers\Admin\TenantsController::class, 'archive');
+            $router->post('/admin/tenants/{id}/activate', \App\Controllers\Admin\TenantsController::class, 'activate');
         });
 
         // ── Public booking pages ──
