@@ -164,6 +164,8 @@ return [
     'privacy' => [
         'page_title'              => 'Your Data',
         'meta_description'        => 'Review your data held by :business',
+        'not_found'               => 'Page not found',
+        'export_failed'           => 'Export failed. Please try again later.',
         'subtitle'                => 'Your data held by this business',
         'personal_info'           => 'Personal Information',
         'name_label'              => 'Name',

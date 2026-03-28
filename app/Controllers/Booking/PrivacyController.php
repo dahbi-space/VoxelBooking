@@ -44,18 +44,18 @@ final class PrivacyController
 
         $tenant = $this->loadTenant($slug);
         if ($tenant === null) {
-            return Response::html('Page not found', 404);
+            return Response::html(__('booking.privacy.not_found'), 404);
         }
 
         $customer = $this->loadCustomer($customerId, $tenant['id']);
         if ($customer === null) {
-            return Response::html('Page not found', 404);
+            return Response::html(__('booking.privacy.not_found'), 404);
         }
 
         if ((int) ($customer['is_anonymized'] ?? 0) === 1) {
             return View::response('booking.privacy-anonymized', [
                 'tenant'   => $tenant,
-                'pageTitle' => 'Data Removed — ' . $tenant['name'],
+                'pageTitle' => __('booking.privacy.anonymized_page_title') . ' — ' . $tenant['name'],
             ]);
         }
 
@@ -82,7 +82,7 @@ final class PrivacyController
             'bookings'       => $bookings,
             'consentRecords' => $consentRecords,
             'csrfToken'      => $csrfToken,
-            'pageTitle'      => 'Your Data — ' . $tenant['name'],
+            'pageTitle'      => __('booking.privacy.page_title') . ' — ' . $tenant['name'],
         ]);
     }
 
@@ -97,12 +97,12 @@ final class PrivacyController
 
         $tenant = $this->loadTenant($slug);
         if ($tenant === null) {
-            return Response::html('Page not found', 404);
+            return Response::html(__('booking.privacy.not_found'), 404);
         }
 
         $customer = $this->loadCustomer($customerId, $tenant['id']);
         if ($customer === null) {
-            return Response::html('Page not found', 404);
+            return Response::html(__('booking.privacy.not_found'), 404);
         }
 
         if ((int) ($customer['is_anonymized'] ?? 0) === 1) {
@@ -132,7 +132,7 @@ final class PrivacyController
                 'customer_id' => $customer['id'],
                 'error'       => $e->getMessage(),
             ]);
-            return Response::html('Export failed. Please try again later.', 500);
+            return Response::html(__('booking.privacy.export_failed'), 500);
         }
 
         AuditLog::log(
@@ -224,7 +224,7 @@ final class PrivacyController
         return View::response('booking.privacy-deletion-requested', [
             'tenant'    => $tenant,
             'customer'  => $customer,
-            'pageTitle' => 'Deletion Requested — ' . $tenant['name'],
+            'pageTitle' => __('booking.privacy.deletion_req_page_title') . ' — ' . $tenant['name'],
         ]);
     }
 

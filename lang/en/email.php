@@ -51,10 +51,14 @@ return [
     ],
 
     'operator_deletion' => [
-        'subject' => 'New deletion request — :customer',
-        'title'   => 'New Deletion Request',
-        'body'    => 'A customer has requested data deletion.',
-        'footer'  => 'Log in to VoxelBooking and navigate to the Deletion Queue to process this request.',
+        'subject'          => 'New deletion request — :customer',
+        'title'            => 'New Deletion Request',
+        'body'             => 'A customer has requested data deletion.',
+        'detail_customer'  => 'Customer:',
+        'detail_email'     => 'Email:',
+        'detail_hashed'    => '(hashed)',
+        'detail_tenant'    => 'Tenant:',
+        'footer'           => 'Log in to VoxelBooking and navigate to the Deletion Queue to process this request.',
     ],
 
     'test' => [

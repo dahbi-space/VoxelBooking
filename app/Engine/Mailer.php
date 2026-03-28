@@ -233,9 +233,9 @@ final class Mailer
         $html = self::renderPrivacyEmail(
             __('email.operator_deletion.title'),
             __('email.operator_deletion.body') . "<br><br>"
-            . "<strong>Customer:</strong> {$customerName}<br>"
-            . "<strong>Email:</strong> " . AuditLog::hashEmail($customerEmail) . " (hashed)<br>"
-            . "<strong>Tenant:</strong> {$tenantName}",
+            . "<strong>" . __('email.operator_deletion.detail_customer') . "</strong> {$customerName}<br>"
+            . "<strong>" . __('email.operator_deletion.detail_email') . "</strong> " . AuditLog::hashEmail($customerEmail) . " " . __('email.operator_deletion.detail_hashed') . "<br>"
+            . "<strong>" . __('email.operator_deletion.detail_tenant') . "</strong> {$tenantName}",
             __('email.operator_deletion.footer'),
         );
 

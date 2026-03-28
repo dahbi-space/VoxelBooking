@@ -608,7 +608,7 @@ $stepTitles = [1 => __('install.wizard.step_bar_1'), 2 => __('install.wizard.ste
 </head>
 <body>
     <!-- Theme Toggle (PRD: sun/moon cross-fade 150ms, Lucide icons) -->
-    <button class="theme-toggle" id="vb-theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+    <button class="theme-toggle" id="vb-theme-toggle" aria-label="<?= __('install.wizard.toggle_theme') ?>" title="<?= __('install.wizard.toggle_theme') ?>">
         <!-- Lucide Sun: viewBox 0 0 24 24, 1.5px stroke, round caps -->
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
@@ -945,7 +945,7 @@ $stepTitles = [1 => __('install.wizard.step_bar_1'), 2 => __('install.wizard.ste
                     <a href="<?= htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank">
                         <?= htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8') ?>
                     </a>
-                    <button class="copy-btn" id="vb-copy-url" title="Copy URL">
+                    <button class="copy-btn" id="vb-copy-url" title="<?= __('install.wizard.copy_url') ?>">
                         <!-- Lucide copy -->
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                     </button>

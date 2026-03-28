@@ -111,6 +111,10 @@ return [
         'tenant_submit'          => 'Create Business & Finish',
         'tenant_skip'            => 'Skip — I\'ll add one later',
 
+        // UI controls
+        'toggle_theme'           => 'Toggle dark mode',
+        'copy_url'               => 'Copy URL',
+
         // Complete step
         'complete_title'         => 'Installation Complete',
         'ready_message'          => 'VoxelBooking is ready to accept bookings.',
