@@ -48,7 +48,12 @@ final class Validator
 
     private static function checkRule(string $field, mixed $value, string $rule, ?string $param): ?string
     {
-        $label = ucfirst(str_replace('_', ' ', $field));
+        // Resolve field label from translation, fall back to humanized field name
+        $translated = __('validation.attributes.' . $field);
+        $label = ($translated !== 'validation.attributes.' . $field)
+            ? $translated
+            : ucfirst(str_replace('_', ' ', $field));
+
         $strValue = is_string($value) ? trim($value) : '';
 
         $failed = match ($rule) {

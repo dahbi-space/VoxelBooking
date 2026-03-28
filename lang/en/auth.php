@@ -22,4 +22,5 @@ return [
     'rate_limited'        => 'Too many login attempts. Please try again later.',
     'session_expired'     => 'Your session has expired. Please sign in again.',
     'footer'              => 'Powered by VoxelBooking · Self-hosted',
+    'toggle_theme'        => 'Toggle theme',
 ];

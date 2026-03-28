@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= \App\Engine\Locale::getLocale() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Page not found</title>
+    <title><?= __('booking.empty.404_title') ?></title>
     <link rel="stylesheet" href="/assets/css/booking-css.css">
     <style>
         :root {
@@ -26,17 +26,17 @@
                         <circle cx="24" cy="32" r="1.5" fill="currentColor"/>
                     </svg>
                 </div>
-                <h1 class="vb-book-business-name" style="font-size:1.375rem;">Page not found</h1>
+                <h1 class="vb-book-business-name" style="font-size:1.375rem;"><?= __('booking.empty.404_title') ?></h1>
                 <p class="vb-book-business-desc" style="margin-top:12px;">
-                    This booking page doesn't exist or is no longer active.
+                    <?= __('booking.empty.404_desc') ?>
                 </p>
                 <p class="vb-book-business-desc" style="margin-top:24px;font-size:0.8125rem;">
-                    If you followed a link here, please contact the business directly.
+                    <?= __('booking.empty.404_help') ?>
                 </p>
             </div>
         </main>
         <footer class="vb-book-footer">
-            <span>Powered by</span>
+            <span><?= __('booking.footer.powered_by') ?></span>
             <a href="https://voxelbooking.com" target="_blank" rel="noopener">VoxelBooking</a>
         </footer>
     </div>

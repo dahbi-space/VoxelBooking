@@ -13,7 +13,7 @@ $allChecksPassed = empty(array_filter($checks, fn($c) => $c['required'] && !$c['
 $stepTitles = [1 => 'System Check', 2 => 'Database', 3 => 'Email', 4 => 'Account', 5 => 'First Business'];
 ?>
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="<?= \App\Engine\Locale::getLocale() ?>" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

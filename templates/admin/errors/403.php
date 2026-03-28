@@ -4,7 +4,7 @@
  *
  * Variables: $user, $version, $csrfToken
  */
-$pageTitle = 'Access Denied';
+$pageTitle = __('admin.errors.403_admin_title');
 $activePage = '';
 $csrfToken = $csrfToken ?? \App\Middleware\CsrfMiddleware::generateToken();
 
@@ -17,11 +17,11 @@ ob_start();
     </svg>
     <div>
         <div style="font-size: var(--vb-text-3xl); font-weight: 700; color: var(--vb-admin-text-ghost); letter-spacing: var(--vb-tracking-tight); margin-bottom: 0.25rem; font-variant-numeric: tabular-nums;">403</div>
-        <div class="vb-empty-title">Access denied</div>
-        <div class="vb-empty-desc">You don't have permission to view this page. Contact your administrator if you believe this is an error.</div>
+        <div class="vb-empty-title"><?= __('admin.errors.403_title') ?></div>
+        <div class="vb-empty-desc"><?= __('admin.errors.403_desc_admin') ?></div>
         <a href="/admin" class="vb-btn vb-btn-primary vb-btn-lg">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            Back to dashboard
+            <?= __('admin.errors.403_action') ?>
         </a>
     </div>
 </div>

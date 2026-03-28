@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Booking;
 
 use App\Engine\Database;
+use App\Engine\Locale;
 use App\Engine\TimeSlotCalculator;
 use App\Engine\BookingService;
 use App\Engine\Ulid;
@@ -36,6 +37,18 @@ final class BookingApiController
         );
 
         return $rows[0] ?? null;
+    }
+
+    /**
+     * Apply the public booking locale resolution chain.
+     *
+     * Must be called before any __() response to ensure the locale
+     * matches what the booking page shell uses.
+     */
+    private function resolveLocale(array $tenant, Request $request): void
+    {
+        $acceptLang = $request->header('Accept-Language');
+        Locale::resolveForBooking($tenant, $acceptLang);
     }
 
     /**
@@ -107,6 +120,8 @@ final class BookingApiController
             return Response::json(['error' => 'tenant_not_found'], 404);
         }
 
+        $this->resolveLocale($tenant, $request);
+
         $date = $request->string('date');
         $serviceId = $request->string('service_id');
         $staffId = $request->string('staff_id');
@@ -163,6 +178,8 @@ final class BookingApiController
         if (!$tenant) {
             return Response::json(['error' => 'tenant_not_found'], 404);
         }
+
+        $this->resolveLocale($tenant, $request);
 
         $input = $request->json();
 

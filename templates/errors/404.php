@@ -6,12 +6,12 @@
 $user = $user ?? null;
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= \App\Engine\Locale::getLocale() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>404 — VoxelBooking</title>
+    <title><?= __('admin.errors.404_page_title') ?></title>
     <?php include dirname(__DIR__) . '/partials/admin-head.php'; ?>
     <style>
         body {

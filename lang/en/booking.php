@@ -83,6 +83,9 @@ return [
         'no_availability'   => 'No available times this month.',
         'coming_soon'       => 'Coming soon',
         'coming_soon_desc'  => 'This booking pattern is not yet available.',
+        '404_title'         => 'Page not found',
+        '404_desc'          => 'This booking page doesn\'t exist or is no longer active.',
+        '404_help'          => 'If you followed a link here, please contact the business directly.',
     ],
 
     // ── Errors & Toasts ──
