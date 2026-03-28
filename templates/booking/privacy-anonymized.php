@@ -7,7 +7,7 @@
 use App\Engine\View;
 
 $tenant = $tenant ?? [];
-$pageTitle = $pageTitle ?? 'Data Removed';
+$pageTitle = $pageTitle ?? __('booking.privacy.anonymized_page_title');
 $brandColor = $tenant['brand_color'] ?? '#4F46E5';
 ?>
 <!DOCTYPE html>
@@ -72,17 +72,14 @@ $brandColor = $tenant['brand_color'] ?? '#4F46E5';
             <polyline points="9 12 11 14 15 10"/>
         </svg>
 
-        <h1 class="privacy-title">Your Data Has Been Removed</h1>
+        <h1 class="privacy-title"><?= __('booking.privacy.anonymized_title') ?></h1>
 
         <p class="privacy-message">
-            Your personal information has been anonymized as requested.
-            Booking records are retained for operational purposes,
-            but your name, email, phone number, and personal notes
-            have been permanently removed.
+            <?= __('booking.privacy.anonymized_message') ?>
         </p>
 
         <div class="privacy-footer">
-            Powered by VoxelBooking · <?= View::e($tenant['name'] ?? '') ?>
+            <?= __('booking.footer.powered_by') ?> VoxelBooking · <?= View::e($tenant['name'] ?? '') ?>
         </div>
     </div>
 </body>

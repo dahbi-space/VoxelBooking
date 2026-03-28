@@ -159,14 +159,14 @@ final class WizardController
             $_SESSION['install']['mysql_version'] = $version;
             $_SESSION['install']['migrations_run'] = $count;
 
-            Flash::set('success', "Database connected. MySQL {$version}. {$count} table(s) created.");
+            Flash::set('success', str_replace([':version', ':count'], [$version, $count], __('install.flash.db_connected')));
 
             return Response::redirect('/install?step=3');
         } catch (\Throwable $e) {
             return View::response('install.wizard', [
                 'step' => 2,
                 'checks' => $this->runSystemChecks(),
-                'errors' => ['db_migration' => 'Migration failed: ' . $e->getMessage()],
+                'errors' => ['db_migration' => str_replace(':error', $e->getMessage(), __('install.flash.migration_failed'))],
                 'flash' => [],
                 'session' => $_SESSION['install'] ?? [],
                 'csrfToken' => CsrfMiddleware::generateToken(),
@@ -184,7 +184,7 @@ final class WizardController
 
         if ($skip === '1') {
             $_SESSION['install']['mail_configured'] = false;
-            Flash::set('info', 'Email configuration skipped. You can set this up later in Settings.');
+            Flash::set('info', __('install.flash.email_skipped'));
 
             return Response::redirect('/install?step=4');
         }
@@ -223,7 +223,7 @@ final class WizardController
         }
 
         $_SESSION['install']['mail_configured'] = true;
-        Flash::set('success', 'Email configuration saved.');
+        Flash::set('success', __('install.flash.email_saved'));
 
         return Response::redirect('/install?step=4');
     }
@@ -244,7 +244,7 @@ final class WizardController
         $confirm = $request->string('password_confirmation');
 
         if ($password !== $confirm) {
-            $errors['password_confirmation'] = 'Passwords do not match.';
+            $errors['password_confirmation'] = __('install.flash.passwords_mismatch');
         }
 
         if (!empty($errors)) {
@@ -281,7 +281,7 @@ final class WizardController
         $_SESSION['install']['operator_id'] = $operatorId;
         $_SESSION['install']['operator_email'] = $request->string('email');
 
-        Flash::set('success', 'Operator account created.');
+        Flash::set('success', __('install.flash.operator_created'));
 
         return Response::redirect('/install?step=5');
     }
@@ -364,7 +364,7 @@ final class WizardController
 
         $this->setSetting('installed_at', date('Y-m-d H:i:s'));
 
-        Flash::set('success', 'Installation complete.');
+        Flash::set('success', __('install.flash.install_complete'));
 
         return Response::redirect('/install?step=complete');
     }
@@ -466,22 +466,22 @@ final class WizardController
         $msg = $e->getMessage();
 
         if (str_contains($msg, 'Access denied')) {
-            return 'Access denied. Check your username and password.';
+            return __('install.db_errors.access_denied');
         }
 
         if (str_contains($msg, 'Unknown database')) {
-            return 'Database not found. Create it first, then try again.';
+            return __('install.db_errors.unknown_database');
         }
 
         if (str_contains($msg, 'Connection refused')) {
-            return 'Connection refused. Is MySQL running on the specified host and port?';
+            return __('install.db_errors.connection_refused');
         }
 
         if (str_contains($msg, 'timed out') || str_contains($msg, 'timeout')) {
-            return 'Connection timed out. Check the host address and port.';
+            return __('install.db_errors.timed_out');
         }
 
-        return 'Database error: ' . $msg;
+        return str_replace(':message', $msg, __('install.db_errors.generic'));
     }
 
     private function setSetting(string $key, string $value): void

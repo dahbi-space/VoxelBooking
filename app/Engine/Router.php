@@ -133,7 +133,7 @@ final class Router
                 return View::response('admin.errors.404', [
                     'user'      => Auth::user(),
                     'version'   => Version::get(),
-                    'pageTitle' => '404',
+                    'pageTitle' => __('admin.errors.404_admin_title'),
                     'csrfToken' => \App\Middleware\CsrfMiddleware::generateToken(),
                 ], 404);
             } catch (\Throwable) {

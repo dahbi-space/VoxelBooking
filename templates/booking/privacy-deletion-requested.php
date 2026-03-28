@@ -8,7 +8,7 @@ use App\Engine\View;
 
 $tenant = $tenant ?? [];
 $customer = $customer ?? [];
-$pageTitle = $pageTitle ?? 'Deletion Requested';
+$pageTitle = $pageTitle ?? __('booking.privacy.deletion_req_page_title');
 $brandColor = $tenant['brand_color'] ?? '#4F46E5';
 ?>
 <!DOCTYPE html>
@@ -85,23 +85,18 @@ $brandColor = $tenant['brand_color'] ?? '#4F46E5';
             <line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
 
-        <h1 class="privacy-title">Deletion Requested</h1>
+        <h1 class="privacy-title"><?= __('booking.privacy.deletion_req_title') ?></h1>
 
         <p class="privacy-message">
-            Your data deletion request has been logged.
-            The business operating this service has been notified
-            and will process your request.
+            <?= __('booking.privacy.deletion_req_message') ?>
         </p>
 
         <div class="privacy-note">
-            <strong>What happens next:</strong> The business will review your request
-            and remove your personal data. Under GDPR, they must respond
-            within 30 days. Booking records may be retained in anonymized form
-            for operational history, but all personal identifiers will be removed.
+            <strong><?= __('booking.privacy.deletion_req_next_title') ?></strong> <?= __('booking.privacy.deletion_req_next_body') ?>
         </div>
 
         <div class="privacy-footer">
-            Powered by VoxelBooking · <?= View::e($tenant['name'] ?? '') ?>
+            <?= __('booking.footer.powered_by') ?> VoxelBooking · <?= View::e($tenant['name'] ?? '') ?>
         </div>
     </div>
 </body>

@@ -14,7 +14,7 @@ $tenant = $tenant ?? [];
 $customer = $customer ?? [];
 $bookings = $bookings ?? [];
 $consentRecords = $consentRecords ?? [];
-$pageTitle = $pageTitle ?? 'Your Data';
+$pageTitle = $pageTitle ?? __('booking.privacy.page_title');
 $csrfToken = $csrfToken ?? '';
 $brandColor = $tenant['brand_color'] ?? '#4F46E5';
 $slug = $tenant['slug'] ?? '';
@@ -223,31 +223,31 @@ $customerId = $customer['id'] ?? '';
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
                 <?= View::e($tenant['name'] ?? 'VoxelBooking') ?>
             </div>
-            <p class="privacy-subtitle">Your data held by this business</p>
+            <p class="privacy-subtitle"><?= __('booking.privacy.subtitle') ?></p>
         </div>
 
         <!-- Personal Information -->
         <div class="privacy-section vb-fade-in-up stagger-2">
             <h2 class="privacy-section-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Personal Information
+                <?= __('booking.privacy.personal_info') ?>
             </h2>
             <div class="privacy-field">
-                <span class="privacy-field-label">Name</span>
+                <span class="privacy-field-label"><?= __('booking.privacy.name_label') ?></span>
                 <span class="privacy-field-value"><?= View::e($customer['name'] ?? '') ?></span>
             </div>
             <div class="privacy-field">
-                <span class="privacy-field-label">Email</span>
+                <span class="privacy-field-label"><?= __('booking.privacy.email_label') ?></span>
                 <span class="privacy-field-value"><?= View::e($customer['email'] ?? '') ?></span>
             </div>
             <?php if (!empty($customer['phone'])): ?>
             <div class="privacy-field">
-                <span class="privacy-field-label">Phone</span>
+                <span class="privacy-field-label"><?= __('booking.privacy.phone_label') ?></span>
                 <span class="privacy-field-value"><?= View::e($customer['phone']) ?></span>
             </div>
             <?php endif; ?>
             <div class="privacy-field">
-                <span class="privacy-field-label">Customer since</span>
+                <span class="privacy-field-label"><?= __('booking.privacy.customer_since') ?></span>
                 <span class="privacy-field-value"><?= View::e($customer['created_at'] ?? '') ?></span>
             </div>
         </div>
@@ -256,10 +256,10 @@ $customerId = $customer['id'] ?? '';
         <div class="privacy-section vb-fade-in-up stagger-3">
             <h2 class="privacy-section-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                Booking History
+                <?= __('booking.privacy.booking_history') ?>
             </h2>
             <?php if (empty($bookings)): ?>
-                <p class="privacy-empty">No bookings found.</p>
+                <p class="privacy-empty"><?= __('booking.privacy.no_bookings') ?></p>
             <?php else: ?>
                 <?php foreach ($bookings as $booking): ?>
                 <div class="privacy-booking">
@@ -270,9 +270,9 @@ $customerId = $customer['id'] ?? '';
                         </span>
                     </div>
                     <div class="privacy-booking-meta">
-                        <?= View::e($booking['booking_pattern'] ?? '') ?> · Party size: <?= View::e($booking['party_size'] ?? '1') ?>
+                        <?= View::e($booking['booking_pattern'] ?? '') ?> · <?= __('booking.privacy.party_size') ?>: <?= View::e($booking['party_size'] ?? '1') ?>
                         <?php if (!empty($booking['source'])): ?>
-                            · Source: <?= View::e($booking['source']) ?>
+                            · <?= __('booking.privacy.source') ?>: <?= View::e($booking['source']) ?>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -285,13 +285,13 @@ $customerId = $customer['id'] ?? '';
         <div class="privacy-section vb-fade-in-up stagger-4">
             <h2 class="privacy-section-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                Consent Records
+                <?= __('booking.privacy.consent_records') ?>
             </h2>
             <?php foreach ($consentRecords as $record): ?>
             <div class="privacy-field">
                 <span class="privacy-field-label"><?= View::e($record['booking_date'] ?? '') ?></span>
                 <span class="privacy-field-value">
-                    Consented: <?= View::e($record['consent_given_at'] ?? 'N/A') ?>
+                    <?= __('booking.privacy.consented') ?>: <?= View::e($record['consent_given_at'] ?? 'N/A') ?>
                     <?php if (!empty($record['consent_text_shown'])): ?>
                         <br><small>"<?= View::e($record['consent_text_shown']) ?>"</small>
                     <?php endif; ?>
@@ -305,10 +305,10 @@ $customerId = $customer['id'] ?? '';
         <div class="privacy-section vb-fade-in-up stagger-5">
             <h2 class="privacy-section-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                Actions
+                <?= __('booking.privacy.actions_title') ?>
             </h2>
             <p style="font-size: var(--vb-text-sm); color: var(--vb-admin-text-secondary); margin-bottom: 1rem;">
-                Under GDPR, you have the right to export your data or request its deletion.
+                <?= __('booking.privacy.gdpr_rights') ?>
             </p>
             <div class="privacy-actions">
                 <form method="post" action="/book/<?= View::e($slug) ?>/privacy/<?= View::e($customerId) ?>">
@@ -316,7 +316,7 @@ $customerId = $customer['id'] ?? '';
                     <input type="hidden" name="action" value="export">
                     <button type="submit" class="vb-btn vb-btn-secondary" style="width: 100%;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        Export Data (JSON)
+                        <?= __('booking.privacy.export_data') ?>
                     </button>
                 </form>
                 <div>
@@ -324,23 +324,22 @@ $customerId = $customer['id'] ?? '';
                     <div class="privacy-confirm-step-1">
                         <label for="confirm-delete" class="vb-btn vb-btn-danger privacy-confirm-label" style="width: 100%;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                            Request Deletion
+                            <?= __('booking.privacy.request_deletion') ?>
                         </label>
                     </div>
                     <div class="privacy-confirm-step-2">
                         <div class="privacy-confirm-warning">
-                            <strong>Are you sure?</strong> This will request permanent removal of your personal data.
-                            This cannot be undone once processed by the business.
+                            <strong><?= __('booking.privacy.confirm_warning_title') ?></strong> <?= __('booking.privacy.confirm_warning_body') ?>
                         </div>
                         <form method="post" action="/book/<?= View::e($slug) ?>/privacy/<?= View::e($customerId) ?>">
                             <input type="hidden" name="_csrf_token" value="<?= View::e($csrfToken) ?>">
                             <input type="hidden" name="action" value="delete">
                             <div style="display: flex; gap: 0.5rem;">
                                 <label for="confirm-delete" class="vb-btn vb-btn-secondary privacy-confirm-label" style="flex: 1;">
-                                    Cancel
+                                    <?= __('booking.privacy.cancel') ?>
                                 </label>
                                 <button type="submit" class="vb-btn vb-btn-danger" style="flex: 1;">
-                                    Confirm Deletion
+                                    <?= __('booking.privacy.confirm_deletion') ?>
                                 </button>
                             </div>
                         </form>
@@ -350,7 +349,7 @@ $customerId = $customer['id'] ?? '';
         </div>
 
         <div class="privacy-footer">
-            Powered by VoxelBooking · Your data is stored on <?= View::e($tenant['name'] ?? 'this business') ?>'s server
+            <?= __('booking.footer.powered_by') ?> VoxelBooking · <?= str_replace(':business', View::e($tenant['name'] ?? 'this business'), __('booking.privacy.footer_server')) ?>
         </div>
     </div>
 </body>
