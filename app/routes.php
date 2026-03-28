@@ -91,6 +91,9 @@ return function (Router $router): void {
             $router->get('/admin/bookings/{id}', \App\Controllers\Admin\BookingsController::class, 'show');
             $router->post('/admin/bookings/{id}/status', \App\Controllers\Admin\BookingsController::class, 'updateStatus');
 
+            // Tenant context dashboard (business users land here via AuthMiddleware redirect from /admin)
+            $router->get('/admin/tenants/{tenant_id}', \App\Controllers\Admin\DashboardController::class, 'tenantDashboard');
+
             // Booking management — tenant-context routes (business user + operator)
             $router->get('/admin/tenants/{tenant_id}/bookings', \App\Controllers\Admin\BookingsController::class, 'tenantIndex');
             $router->get('/admin/tenants/{tenant_id}/bookings/{id}', \App\Controllers\Admin\BookingsController::class, 'tenantShow');

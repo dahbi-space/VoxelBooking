@@ -176,6 +176,29 @@ final class Booking
     }
 
     /**
+     * Get booking counts by status for a specific tenant.
+     *
+     * @return array<string, int>
+     */
+    public static function statusCounts(string $tenantId): array
+    {
+        $rows = Database::query(
+            "SELECT `status`, COUNT(*) as cnt FROM `bookings` WHERE `tenant_id` = ? GROUP BY `status`",
+            [$tenantId]
+        );
+
+        $counts = [];
+        foreach (self::VALID_STATUSES as $s) {
+            $counts[$s] = 0;
+        }
+        foreach ($rows as $row) {
+            $counts[$row['status']] = (int) $row['cnt'];
+        }
+
+        return $counts;
+    }
+
+    /**
      * Build filter clauses for booking queries.
      *
      * @return array{0: list<string>, 1: list<mixed>}

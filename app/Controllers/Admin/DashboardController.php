@@ -10,6 +10,7 @@ use App\Engine\Request;
 use App\Engine\Response;
 use App\Engine\Version;
 use App\Engine\View;
+use App\Models\Booking;
 use App\Models\Tenant;
 
 /**
@@ -41,6 +42,48 @@ final class DashboardController
             'todayBookings'  => $todayBookings,
             'weekBookings'   => $weekBookings,
             'upcoming24h'    => $upcoming24h,
+        ]);
+    }
+
+    /**
+     * Tenant-scoped business dashboard.
+     *
+     * Business users land here via AuthMiddleware redirect from /admin.
+     * Operators can also view any tenant's dashboard.
+     */
+    public function tenantDashboard(Request $request): Response
+    {
+        $tenantId = $request->getAttribute('tenant_id');
+
+        // Business user: verify tenant ownership
+        if (Auth::isBusinessUser()) {
+            $user = Auth::user();
+            if (($user['tenant_id'] ?? '') !== $tenantId) {
+                return Response::redirect('/admin');
+            }
+        }
+
+        $tenant = Tenant::find($tenantId);
+        if ($tenant === null) {
+            return Response::redirect('/admin');
+        }
+
+        $todayStart = date('Y-m-d 00:00:00');
+        $todayEnd   = date('Y-m-d 23:59:59');
+        $weekAgo    = date('Y-m-d 00:00:00', strtotime('-7 days'));
+        $now        = date('Y-m-d H:i:s');
+
+        return View::response('admin.dashboard-business', [
+            'user'          => Auth::user(),
+            'version'       => Version::get(),
+            'pageTitle'     => $tenant['name'],
+            'activePage'    => 'dashboard',
+            'csrfToken'     => \App\Middleware\CsrfMiddleware::generateToken(),
+            'tenant'        => $tenant,
+            'todayBookings' => Booking::countForTenant($tenantId, null, $todayStart, $todayEnd),
+            'weekBookings'  => Booking::countForTenant($tenantId, null, $weekAgo, null),
+            'statusCounts'  => Booking::statusCounts($tenantId),
+            'upcoming'      => Booking::forTenant($tenantId, 'confirmed', $now, null, 5, 0),
         ]);
     }
 

@@ -68,13 +68,16 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                     <i data-lucide="building-2"></i>
                     <?= __('admin.nav.tenants') ?>
                 </a>
-                <?php endif; ?>
-                <?php if (\App\Engine\Auth::isOperator()): ?>
                 <a href="/admin/bookings" class="vb-sidebar-link <?= $activePage === 'bookings' ? 'active' : '' ?>">
                     <i data-lucide="calendar"></i>
                     <?= __('admin.nav.all_bookings') ?>
                 </a>
                 <?php elseif (isset($_SESSION['auth_tenant_id'])): ?>
+                <a href="/admin/tenants/<?= htmlspecialchars($_SESSION['auth_tenant_id'], ENT_QUOTES, 'UTF-8') ?>"
+                   class="vb-sidebar-link <?= $activePage === 'dashboard' ? 'active' : '' ?>">
+                    <i data-lucide="layout-dashboard"></i>
+                    <?= __('admin.nav.dashboard') ?>
+                </a>
                 <a href="/admin/tenants/<?= htmlspecialchars($_SESSION['auth_tenant_id'], ENT_QUOTES, 'UTF-8') ?>/bookings"
                    class="vb-sidebar-link <?= $activePage === 'bookings' ? 'active' : '' ?>">
                     <i data-lucide="calendar"></i>

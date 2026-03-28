@@ -57,6 +57,14 @@ return [
         'step_create'         => 'Create tenant',
         'step_configure'      => 'Configure services',
         'step_share'          => 'Share booking page',
+        'business_welcome'    => 'Welcome back',
+        'business_subtitle'   => 'Here\'s how :tenant_name is doing.',
+        'next_up'             => 'Next Up',
+        'no_upcoming_bookings'=> 'No upcoming bookings',
+        'view_all_bookings'   => 'View all bookings',
+        'view_booking_page'   => 'View booking page',
+        'confirmed'           => 'Confirmed',
+        'completed'           => 'Completed',
     ],
 
     // ── Settings Tabs ──
