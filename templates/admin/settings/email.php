@@ -89,7 +89,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
         </div>
     </div>
 
-    <div class="vb-form-actions" style="margin-top: 1.5rem;">
+    <div class="vb-form-actions vb-form-actions-spaced">
         <button type="submit" class="vb-btn vb-btn-primary">
             <i data-lucide="check"></i>
             <?= __('admin.email.save_button') ?>

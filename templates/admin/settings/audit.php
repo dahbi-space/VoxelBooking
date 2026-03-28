@@ -5,15 +5,14 @@
  * Read-only view of structured audit log entries.
  * Filters: action type. Paginated, 50 entries per page.
  *
- * Uses design system: .vb-card, .vb-table, .vb-badge, .vb-btn, .vb-pagination.
- * Icons: Lucide via data-lucide (all inline SVGs removed).
+ * Uses design system exclusively — zero inline style= attributes.
+ * Icons: Lucide via data-lucide.
  *
  * Variables: $user, $version, $csrfToken, $pageTitle, $entries, $total, $page, $perPage, $actionFilter
  */
 $activePage = 'settings.audit';
 $activeTab = 'audit';
 
-/** Action type → label + badge semantic variant. */
 $actionLabels = [
     'auth.login'                => ['label' => __('admin.audit.action_auth_login'),             'variant' => 'success'],
     'auth.login_failed'         => ['label' => __('admin.audit.action_auth_login_failed'),      'variant' => 'error'],
@@ -43,7 +42,6 @@ $actionLabels = [
     'tenant.archived'           => ['label' => __('admin.audit.action_tenant_archived'),         'variant' => 'default'],
 ];
 
-/** Actor type → Lucide icon name. */
 $actorIcons = [
     'operator'      => 'shield',
     'business_user' => 'user',
@@ -60,13 +58,13 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
 ?>
 
 <div class="vb-card vb-animate-in stagger-1">
-    <div class="vb-card-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+    <div class="vb-card-header vb-card-header-toolbar">
         <div>
             <div class="vb-card-title"><?= __('admin.audit.title') ?></div>
             <div class="vb-card-desc"><?= __n($total) ?> <?= __('admin.audit.desc_suffix') ?></div>
         </div>
-        <form method="GET" action="/admin/settings/audit" style="display: flex; gap: 0.5rem; align-items: center;">
-            <select name="action" class="vb-input vb-input-compact" style="width: auto; min-width: 160px;" onchange="this.form.submit()">
+        <form method="GET" action="/admin/settings/audit" class="vb-filter-form">
+            <select name="action" class="vb-input vb-input-compact vb-filter-select" onchange="this.form.submit()">
                 <option value=""><?= __('admin.audit.all_events') ?></option>
                 <?php foreach ($actionLabels as $actionKey => $meta):
                     $selected = ($actionFilter ?? '') === $actionKey ? 'selected' : '';
@@ -86,16 +84,16 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
             <div class="vb-table-empty-desc"><?= __('admin.audit.empty_desc') ?></div>
         </div>
     <?php else: ?>
-        <div style="overflow-x: auto;">
+        <div class="vb-scroll-x">
             <table class="vb-table">
                 <thead>
                     <tr>
-                        <th style="width: 10rem;"><?= __('admin.audit.th_time') ?></th>
-                        <th style="width: 9rem;"><?= __('admin.audit.th_event') ?></th>
-                        <th style="width: 6rem;"><?= __('admin.audit.th_actor') ?></th>
-                        <th style="width: 5rem;"><?= __('admin.audit.th_entity') ?></th>
+                        <th class="vb-col-time"><?= __('admin.audit.th_time') ?></th>
+                        <th class="vb-col-event"><?= __('admin.audit.th_event') ?></th>
+                        <th class="vb-col-actor"><?= __('admin.audit.th_actor') ?></th>
+                        <th class="vb-col-entity"><?= __('admin.audit.th_entity') ?></th>
                         <th><?= __('admin.audit.th_details') ?></th>
-                        <th style="width: 5rem;"><?= __('admin.audit.th_request') ?></th>
+                        <th class="vb-col-request"><?= __('admin.audit.th_request') ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -108,7 +106,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                         ?>
                         <tr>
                             <td>
-                                <span class="vb-mono" style="font-size: var(--vb-text-xs); color: var(--vb-text-secondary);">
+                                <span class="vb-mono vb-cell-dim">
                                     <?= \App\Engine\Locale::datetimeFull($createdAt) ?>
                                 </span>
                             </td>
@@ -117,43 +115,43 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                                     <?= htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8') ?>
                                 </span>
                             </td>
-                            <td style="font-size: var(--vb-text-xs); color: var(--vb-text-secondary);">
-                                <span style="display: inline-flex; align-items: center; gap: 0.25rem;">
-                                    <i data-lucide="<?= $actorIcon ?>" style="width: 13px; height: 13px;"></i>
+                            <td class="vb-cell-dim">
+                                <span class="vb-audit-actor">
+                                    <i data-lucide="<?= $actorIcon ?>" class="vb-audit-actor-icon"></i>
                                     <?= htmlspecialchars(ucfirst(str_replace('_', ' ', $entry['actor_type'])), ENT_QUOTES, 'UTF-8') ?>
                                 </span>
                             </td>
-                            <td style="font-size: var(--vb-text-xs); color: var(--vb-text-secondary);">
+                            <td class="vb-cell-dim">
                                 <?= htmlspecialchars($entry['entity_type'], ENT_QUOTES, 'UTF-8') ?>
                                 <?php if ($entry['entity_id']): ?>
-                                    <br><span class="vb-mono" style="font-size: 0.625rem; color: var(--vb-text-tertiary);"><?= htmlspecialchars(substr($entry['entity_id'], 0, 8), ENT_QUOTES, 'UTF-8') ?>…</span>
+                                    <br><span class="vb-mono vb-cell-micro"><?= htmlspecialchars(substr($entry['entity_id'], 0, 8), ENT_QUOTES, 'UTF-8') ?>…</span>
                                 <?php endif; ?>
                             </td>
-                            <td style="font-size: var(--vb-text-xs); color: var(--vb-text-secondary); max-width: 24rem; overflow: hidden; text-overflow: ellipsis;">
+                            <td class="vb-audit-details">
                                 <?php if ($details): ?>
                                     <?php foreach ($details as $key => $value): ?>
                                         <?php if (is_array($value) && isset($value['old'], $value['new'])): ?>
-                                            <span style="display: inline-block; margin-right: 0.375rem; margin-bottom: 0.125rem;">
-                                                <strong style="color: var(--vb-text-primary);"><?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>:</strong>
-                                                <span style="text-decoration: line-through; opacity: 0.5;"><?= htmlspecialchars((string)$value['old'], ENT_QUOTES, 'UTF-8') ?></span>
+                                            <span class="vb-audit-kv">
+                                                <strong class="vb-audit-key"><?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>:</strong>
+                                                <span class="vb-line-through"><?= htmlspecialchars((string)$value['old'], ENT_QUOTES, 'UTF-8') ?></span>
                                                 → <?= htmlspecialchars((string)$value['new'], ENT_QUOTES, 'UTF-8') ?>
                                             </span>
                                         <?php elseif (is_array($value)): ?>
-                                            <strong style="color: var(--vb-text-primary);"><?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>:</strong>
+                                            <strong class="vb-audit-key"><?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>:</strong>
                                             <span class="vb-mono"><?= htmlspecialchars(json_encode($value, JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8') ?></span>
                                         <?php else: ?>
-                                            <span style="display: inline-block; margin-right: 0.375rem; margin-bottom: 0.125rem;">
-                                                <strong style="color: var(--vb-text-primary);"><?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>:</strong>
+                                            <span class="vb-audit-kv">
+                                                <strong class="vb-audit-key"><?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>:</strong>
                                                 <?= htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8') ?>
                                             </span>
                                         <?php endif; ?>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <span style="color: var(--vb-text-tertiary);">—</span>
+                                    <span class="vb-text-tertiary">—</span>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <span class="vb-mono" style="font-size: 0.625rem; color: var(--vb-text-tertiary);">
+                                <span class="vb-mono vb-cell-micro">
                                     <?= htmlspecialchars(substr($entry['request_id'], 0, 8), ENT_QUOTES, 'UTF-8') ?>…
                                 </span>
                             </td>

@@ -41,7 +41,7 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
 
     <!-- Sidebar -->
     <aside class="vb-sidebar" x-ref="sidebar">
-        <a href="/admin" class="vb-sidebar-brand" style="text-decoration: none; color: var(--vb-text-primary);">
+        <a href="/admin" class="vb-sidebar-brand">
             <svg class="vb-sidebar-logo" width="24" height="26" viewBox="0 0 48 52" xmlns="http://www.w3.org/2000/svg">
                 <polygon points="24,2 46,14 24,26 2,14" fill="currentColor" opacity="1.0"/>
                 <polygon points="2,14 24,26 24,50 2,38" fill="currentColor" opacity="0.7"/>
@@ -114,7 +114,7 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                 <div class="vb-profile">
                     <span class="vb-avatar vb-avatar-sm"><?= $operatorInitials ?></span>
                     <span class="vb-profile-name"><?= $operatorName ?></span>
-                    <form method="POST" action="/auth/logout" style="margin: 0;">
+                    <form method="POST" action="/auth/logout" class="vb-form-flush">
                         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                         <button type="submit" class="vb-topbar-btn" aria-label="<?= __('admin.nav.sign_out') ?>" data-tooltip="<?= __('admin.nav.sign_out') ?>">
                             <i data-lucide="log-out"></i>

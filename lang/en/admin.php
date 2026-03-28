@@ -49,6 +49,7 @@ return [
         'welcome_title'       => 'Welcome to :app_name',
         'welcome_desc'        => 'Create your first tenant to start managing bookings. Each tenant represents a business — a salon, restaurant, clinic, or any service provider you manage.',
         'create_first_tenant' => 'Create your first tenant',
+        'configure_app'       => 'Configure your application',
         'step_create'         => 'Create tenant',
         'step_configure'      => 'Configure services',
         'step_share'          => 'Share booking page',

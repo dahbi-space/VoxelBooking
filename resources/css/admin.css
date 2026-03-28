@@ -680,3 +680,102 @@
     margin-bottom: 0.25rem;
     font-variant-numeric: tabular-nums;
 }
+
+.vb-error-container {
+    max-width: 480px;
+    margin: 4rem auto;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UTILITY CLASSES — Replace inline style= patterns
+   ══════════════════════════════════════════════════════════════ */
+
+/* Text utilities */
+.vb-text-xs         { font-size: var(--vb-text-xs); }
+.vb-text-sm         { font-size: var(--vb-text-sm); }
+.vb-text-primary    { color: var(--vb-text-primary); }
+.vb-text-secondary  { color: var(--vb-text-secondary); }
+.vb-text-tertiary   { color: var(--vb-text-tertiary); }
+.vb-text-ghost      { color: var(--vb-text-ghost); }
+.vb-font-semibold   { font-weight: 600; }
+.vb-capitalize      { text-transform: capitalize; }
+.vb-line-through    { text-decoration: line-through; opacity: 0.5; }
+
+/* Table cell data patterns — compact info display */
+.vb-cell-primary    { font-weight: 600; }
+.vb-cell-sub        { font-size: var(--vb-text-xs); color: var(--vb-text-tertiary); }
+.vb-cell-dim        { font-size: var(--vb-text-xs); color: var(--vb-text-secondary); }
+.vb-cell-micro      { font-size: 0.625rem; color: var(--vb-text-tertiary); }
+
+/* Audit detail rendering */
+.vb-audit-details   { font-size: var(--vb-text-xs); color: var(--vb-text-secondary); max-width: 24rem; overflow: hidden; text-overflow: ellipsis; }
+.vb-audit-kv        { display: inline-block; margin-right: 0.375rem; margin-bottom: 0.125rem; }
+.vb-audit-key       { font-weight: 600; color: var(--vb-text-primary); }
+.vb-audit-actor     { display: inline-flex; align-items: center; gap: 0.25rem; }
+.vb-audit-actor-icon { width: 13px; height: 13px; }
+
+/* Card header with toolbar layout */
+.vb-card-header-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* Filter form */
+.vb-filter-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+.vb-filter-select {
+    width: auto;
+    min-width: 160px;
+}
+
+/* Scroll container for wide tables */
+.vb-scroll-x { overflow-x: auto; }
+
+/* Audit column widths */
+.vb-col-time    { width: 10rem; }
+.vb-col-event   { width: 9rem; }
+.vb-col-actor   { width: 6rem; }
+.vb-col-entity  { width: 5rem; }
+.vb-col-request { width: 5rem; }
+
+/* Layout/structural utilities */
+.vb-inline-form   { display: inline; }
+.vb-form-flush     { margin: 0; }
+
+/* Badge with inline icon */
+.vb-badge-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.vb-badge-icon { width: 13px; height: 13px; }
+
+/* Code chip (inline code in descriptions) */
+.vb-code-chip {
+    font-family: var(--vb-font-mono);
+    font-size: var(--vb-text-xs);
+    padding: 0.125rem 0.375rem;
+    background: var(--vb-bg-well);
+    border-radius: var(--vb-radius-xs);
+}
+
+/* Sidebar brand link (remove default link styles) */
+.vb-sidebar-brand {
+    text-decoration: none;
+    color: var(--vb-text-primary);
+}
+
+/* Form actions with spacing */
+.vb-form-actions-spaced { margin-top: 1.5rem; }
+
+/* Label: cursor pointer for clickable labels */
+.vb-label-clickable { cursor: pointer; }
+
+/* Action column text-align */
+.vb-th-actions { text-align: right; }

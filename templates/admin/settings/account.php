@@ -41,7 +41,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
         </div>
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.account.role_label') ?></span>
-            <span class="vb-info-value" style="text-transform: capitalize;">
+            <span class="vb-info-value vb-capitalize">
                 <?= htmlspecialchars($currentUser['type'] ?? 'operator', ENT_QUOTES, 'UTF-8') ?>
             </span>
         </div>

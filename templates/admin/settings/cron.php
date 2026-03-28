@@ -52,7 +52,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                 <?php if ($lastRun): ?>
                     <code><?= htmlspecialchars($lastRun, ENT_QUOTES, 'UTF-8') ?></code>
                 <?php else: ?>
-                    <span style="color: var(--vb-admin-text-tertiary);"><?= __('admin.cron.never_run') ?></span>
+                    <span class="vb-text-tertiary"><?= __('admin.cron.never_run') ?></span>
                 <?php endif; ?>
             </span>
         </div>
@@ -60,13 +60,13 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
             <span class="vb-info-label"><?= __('admin.cron.status_label') ?></span>
             <span class="vb-info-value">
                 <?php if ($lastRun): ?>
-                    <span class="vb-badge vb-badge-success" style="display: inline-flex; align-items: center; gap: 0.25rem;">
-                        <i data-lucide="check" style="width: 13px; height: 13px;"></i>
+                    <span class="vb-badge vb-badge-success vb-badge-inline">
+                        <i data-lucide="check" class="vb-badge-icon"></i>
                         <?= __('admin.cron.active') ?>
                     </span>
                 <?php else: ?>
-                    <span class="vb-badge vb-badge-warning" style="display: inline-flex; align-items: center; gap: 0.25rem;">
-                        <i data-lucide="alert-circle" style="width: 13px; height: 13px;"></i>
+                    <span class="vb-badge vb-badge-warning vb-badge-inline">
+                        <i data-lucide="alert-circle" class="vb-badge-icon"></i>
                         <?= __('admin.cron.not_configured') ?>
                     </span>
                 <?php endif; ?>

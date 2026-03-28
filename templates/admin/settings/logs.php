@@ -15,7 +15,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
 <div class="vb-card vb-fade-in-up stagger-1">
     <div class="vb-card-header">
         <div class="vb-card-title"><?= __('admin.logs.title') ?></div>
-        <div class="vb-card-desc"><?= __('admin.logs.desc') ?> <code style="font-family: var(--vb-font-mono); font-size: var(--vb-text-xs); padding: 0.125rem 0.375rem; background: var(--vb-admin-bg-well); border-radius: var(--vb-radius-xs);">storage/logs/app.log</code></div>
+        <div class="vb-card-desc"><?= __('admin.logs.desc') ?> <code class="vb-code-chip">storage/logs/app.log</code></div>
     </div>
 
     <?php if (trim($logContent ?? '') !== ''): ?>
