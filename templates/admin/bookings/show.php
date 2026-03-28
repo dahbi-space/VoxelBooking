@@ -106,7 +106,7 @@ ob_start();
 
             <div class="vb-form-group">
                 <label for="booking_status" class="vb-label"><?= __('admin.bookings.status') ?></label>
-                <select id="booking_status" name="status" class="vb-input">
+                <select id="booking_status" name="status" class="vb-select">
                     <?php foreach (['pending','confirmed','cancelled','completed','no_show','rescheduled'] as $s): ?>
                         <option value="<?= $s ?>" <?= $booking['status'] === $s ? 'selected' : '' ?>>
                             <?= __('admin.bookings.status_' . $s) ?>

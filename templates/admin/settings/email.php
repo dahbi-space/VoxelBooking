@@ -36,7 +36,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
 
             <div class="vb-form-group">
                 <label for="mail_transport" class="vb-label"><?= __('admin.email.transport_label') ?></label>
-                <select id="mail_transport" name="mail_transport" class="vb-input">
+                <select id="mail_transport" name="mail_transport" class="vb-select">
                     <option value="smtp" <?= ($settings['mail_transport'] ?? 'smtp') === 'smtp' ? 'selected' : '' ?>><?= __('admin.email.transport_smtp') ?></option>
                     <option value="mailpit" <?= ($settings['mail_transport'] ?? '') === 'mailpit' ? 'selected' : '' ?>><?= __('admin.email.transport_mailpit') ?></option>
                     <option value="log" <?= ($settings['mail_transport'] ?? '') === 'log' ? 'selected' : '' ?>><?= __('admin.email.transport_log') ?></option>
@@ -63,7 +63,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
             </div>
             <div class="vb-form-group">
                 <label for="smtp_encryption" class="vb-label"><?= __('admin.email.encryption_label') ?></label>
-                <select id="smtp_encryption" name="smtp_encryption" class="vb-input">
+                <select id="smtp_encryption" name="smtp_encryption" class="vb-select">
                     <option value="tls" <?= ($settings['smtp_encryption'] ?? 'tls') === 'tls' ? 'selected' : '' ?>><?= __('admin.email.tls_recommended') ?></option>
                     <option value="ssl" <?= ($settings['smtp_encryption'] ?? '') === 'ssl' ? 'selected' : '' ?>>SSL</option>
                     <option value="none" <?= ($settings['smtp_encryption'] ?? '') === 'none' ? 'selected' : '' ?>>None</option>

@@ -28,6 +28,8 @@ import { createIcons } from 'lucide';
 import {
     LayoutDashboard,
     Calendar,
+    CalendarDays,
+    CalendarCheck,
     User,
     Users,
     Settings,
@@ -41,6 +43,7 @@ import {
     Menu,
     X,
     Edit,
+    Pencil,
     Trash2,
     Eye,
     EyeOff,
@@ -78,18 +81,25 @@ import {
     HelpCircle,
     Lock,
     UserCog,
+    Layers,
+    Filter,
+    Award,
+    Archive,
+    RotateCcw,
+    CheckCircle,
 } from 'lucide';
 
 const ICON_SET = {
-    LayoutDashboard, Calendar, User, Users, Settings, LogOut,
+    LayoutDashboard, Calendar, CalendarDays, CalendarCheck,
+    User, Users, Settings, LogOut,
     ChevronDown, ChevronRight, ChevronLeft, Plus, Search,
-    Bell, Menu, X, Edit, Trash2, Eye, EyeOff,
+    Bell, Menu, X, Edit, Pencil, Trash2, Eye, EyeOff,
     Check, AlertCircle, Info, Shield, Key, Mail, Clock,
     Building2, UserPlus, FileText, Download, Upload,
     RefreshCw, MoreVertical, Minus, ExternalLink, Copy, Sun, Moon,
     Palette, Globe, Activity, TrendingUp, BarChart3, Hash,
     Bookmark, Briefcase, ShieldCheck, ScrollText, Server, Zap, HelpCircle, Lock,
-    UserCog,
+    UserCog, Layers, Filter, Award, Archive, RotateCcw, CheckCircle,
 };
 
 // ── Alpine: CSP-safe component registration ──
@@ -151,6 +161,48 @@ Alpine.data('adminShell', () => ({
     switchTheme() {
         this.toggleTheme();
         this.closeProfile();
+    },
+}));
+
+// ── Alpine: Pattern Cards (CSP-safe radio card selection) ──
+Alpine.data('patternCards', () => ({
+    selected: 'timeslot',
+
+    select(value) {
+        this.selected = value;
+    },
+
+    isSelected(value) {
+        return this.selected === value;
+    },
+}));
+
+// ── Alpine: Color Sync (swatch ↔ text bidirectional sync) ──
+Alpine.data('colorSync', () => ({
+    hex: '#2563EB',
+
+    init() {
+        // Sync initial value from the color input if present
+        if (this.$refs.colorPicker) {
+            this.hex = this.$refs.colorPicker.value;
+        }
+    },
+
+    onPickerChange() {
+        this.hex = this.$refs.colorPicker.value;
+        if (this.$refs.colorText) {
+            this.$refs.colorText.value = this.hex;
+        }
+    },
+
+    onTextChange() {
+        const v = this.$refs.colorText.value;
+        if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+            this.hex = v;
+            if (this.$refs.colorPicker) {
+                this.$refs.colorPicker.value = v;
+            }
+        }
     },
 }));
 

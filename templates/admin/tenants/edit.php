@@ -1,10 +1,70 @@
 <?php
 /**
- * Edit Tenant form (pre-populated).
+ * Edit Tenant form — premium design with working color picker.
+ *
+ * Uses wizard-grade components:
+ * - vb-color-field: swatch + text input with bidirectional sync
+ * - vb-select:      premium styled selects for timezone and currency
+ *
+ * Alpine component: colorSync (registered in admin/app.js)
  *
  * Variables: $user, $version, $csrfToken, $tenant, $flash, $pageTitle, $activePage
  */
 $activePage = 'tenants';
+
+$timezones = [
+    'UTC', 'Europe/London', 'Europe/Amsterdam', 'Europe/Berlin', 'Europe/Paris',
+    'Europe/Madrid', 'Europe/Rome', 'Europe/Zurich', 'Europe/Stockholm',
+    'Europe/Oslo', 'Europe/Helsinki', 'Europe/Warsaw', 'Europe/Prague',
+    'Europe/Vienna', 'Europe/Brussels', 'Europe/Lisbon', 'Europe/Athens',
+    'Europe/Bucharest', 'Europe/Istanbul', 'Europe/Moscow',
+    'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+    'America/Toronto', 'America/Vancouver', 'America/Sao_Paulo', 'America/Mexico_City',
+    'America/Argentina/Buenos_Aires',
+    'Asia/Dubai', 'Asia/Kolkata', 'Asia/Bangkok', 'Asia/Singapore', 'Asia/Tokyo',
+    'Asia/Shanghai', 'Asia/Seoul', 'Asia/Hong_Kong', 'Asia/Jakarta',
+    'Australia/Sydney', 'Australia/Melbourne', 'Pacific/Auckland',
+    'Africa/Cairo', 'Africa/Johannesburg', 'Africa/Lagos',
+];
+
+$currencies = [
+    'EUR' => '€ EUR — Euro',
+    'USD' => '$ USD — US Dollar',
+    'GBP' => '£ GBP — British Pound',
+    'CHF' => 'CHF — Swiss Franc',
+    'SEK' => 'SEK — Swedish Krona',
+    'NOK' => 'NOK — Norwegian Krone',
+    'DKK' => 'DKK — Danish Krone',
+    'PLN' => 'PLN — Polish Złoty',
+    'CZK' => 'CZK — Czech Koruna',
+    'HUF' => 'HUF — Hungarian Forint',
+    'RON' => 'RON — Romanian Leu',
+    'BGN' => 'BGN — Bulgarian Lev',
+    'HRK' => 'HRK — Croatian Kuna',
+    'CAD' => 'CAD — Canadian Dollar',
+    'AUD' => 'AUD — Australian Dollar',
+    'NZD' => 'NZD — New Zealand Dollar',
+    'BRL' => 'BRL — Brazilian Real',
+    'MXN' => 'MXN — Mexican Peso',
+    'ARS' => 'ARS — Argentine Peso',
+    'JPY' => '¥ JPY — Japanese Yen',
+    'CNY' => '¥ CNY — Chinese Yuan',
+    'KRW' => '₩ KRW — South Korean Won',
+    'INR' => '₹ INR — Indian Rupee',
+    'SGD' => 'SGD — Singapore Dollar',
+    'THB' => '฿ THB — Thai Baht',
+    'IDR' => 'IDR — Indonesian Rupiah',
+    'AED' => 'AED — UAE Dirham',
+    'ZAR' => 'ZAR — South African Rand',
+    'TRY' => '₺ TRY — Turkish Lira',
+    'ILS' => '₪ ILS — Israeli Shekel',
+    'EGP' => 'EGP — Egyptian Pound',
+    'NGN' => '₦ NGN — Nigerian Naira',
+];
+
+$tenantTimezone = $tenant['timezone'] ?? 'UTC';
+$tenantCurrency = $tenant['currency'] ?? 'EUR';
+$tenantColor = $tenant['brand_color'] ?? '#2563EB';
 
 ob_start();
 ?>
@@ -60,24 +120,44 @@ ob_start();
 
             <div class="vb-form-row">
                 <div class="vb-form-group">
-                    <label for="tenant_timezone" class="vb-label"><?= __('admin.tenants.timezone') ?></label>
-                    <input type="text" id="tenant_timezone" name="timezone" class="vb-input"
-                           value="<?= htmlspecialchars($tenant['timezone'] ?? 'UTC', ENT_QUOTES, 'UTF-8') ?>">
+                    <label for="tenant_timezone" class="vb-label">
+                        <i data-lucide="globe" class="vb-icon-inline"></i>
+                        <?= __('admin.tenants.timezone') ?>
+                    </label>
+                    <select id="tenant_timezone" name="timezone" class="vb-select">
+                        <?php foreach ($timezones as $tz): ?>
+                            <option value="<?= $tz ?>" <?= $tz === $tenantTimezone ? 'selected' : '' ?>>
+                                <?= str_replace(['_', '/'], [' ', ' / '], $tz) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
                 <div class="vb-form-group">
-                    <label for="tenant_currency" class="vb-label"><?= __('admin.tenants.currency') ?></label>
-                    <input type="text" id="tenant_currency" name="currency" class="vb-input"
-                           value="<?= htmlspecialchars($tenant['currency'] ?? 'EUR', ENT_QUOTES, 'UTF-8') ?>" maxlength="3">
+                    <label for="tenant_currency" class="vb-label">
+                        <?= __('admin.tenants.currency') ?>
+                    </label>
+                    <select id="tenant_currency" name="currency" class="vb-select">
+                        <?php foreach ($currencies as $code => $label): ?>
+                            <option value="<?= $code ?>" <?= $code === $tenantCurrency ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
             </div>
 
-            <div class="vb-form-group">
-                <label for="tenant_brand_color" class="vb-label"><?= __('admin.tenants.brand_color') ?></label>
+            <div class="vb-form-group" x-data="colorSync">
+                <label class="vb-label">
+                    <i data-lucide="palette" class="vb-icon-inline"></i>
+                    <?= __('admin.tenants.brand_color') ?>
+                </label>
                 <div class="vb-color-field">
-                    <input type="color" id="tenant_brand_color" name="brand_color"
-                           value="<?= htmlspecialchars($tenant['brand_color'] ?? '#2563EB', ENT_QUOTES, 'UTF-8') ?>"
-                           class="vb-color-input">
-                    <span class="vb-color-hex"><?= htmlspecialchars($tenant['brand_color'] ?? '#2563EB', ENT_QUOTES, 'UTF-8') ?></span>
+                    <input type="color" x-ref="colorPicker"
+                           value="<?= htmlspecialchars($tenantColor, ENT_QUOTES, 'UTF-8') ?>"
+                           class="vb-color-input" @input="onPickerChange">
+                    <input type="text" x-ref="colorText" name="brand_color"
+                           value="<?= htmlspecialchars($tenantColor, ENT_QUOTES, 'UTF-8') ?>"
+                           class="vb-input" maxlength="7" @input="onTextChange">
                 </div>
             </div>
 

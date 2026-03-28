@@ -56,7 +56,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                 </div>
                 <div class="vb-form-group">
                     <label for="date_format" class="vb-label"><?= __('admin.settings.date_format_label') ?></label>
-                    <select id="date_format" name="date_format" class="vb-input">
+                    <select id="date_format" name="date_format" class="vb-select">
                         <?php
                         $formats = ['Y-m-d' => '2026-03-27', 'd/m/Y' => '27/03/2026', 'm/d/Y' => '03/27/2026', 'd-m-Y' => '27-03-2026', 'd.m.Y' => '27.03.2026'];
                         foreach ($formats as $fmt => $example):

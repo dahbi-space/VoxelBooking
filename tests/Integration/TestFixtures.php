@@ -10,9 +10,12 @@ use App\Engine\EnvLoader;
 /**
  * Shared test fixtures for integration tests.
  *
- * Provisions deterministic operator and business user accounts via direct
+ * Provisions deterministic operator and business-user accounts via direct
  * database operations. Self-contained: does not depend on install wizard
  * credentials or manual database mutations.
+ *
+ * Uses DELETE + INSERT to guarantee fresh state on every test run,
+ * regardless of pre-existing data.
  *
  * Credentials:
  *   Operator:      operator@example.com / welcome3210
@@ -32,9 +35,11 @@ final class TestFixtures
     private static bool $provisioned = false;
 
     /**
-     * Ensure the test operator, business user, and their tenant exist.
+     * Ensure the test operator, business user, and their tenant exist
+     * with exactly the expected credentials and bindings.
      *
-     * Safe to call multiple times — uses INSERT IGNORE to avoid duplicates.
+     * Deletes any prior records for these IDs/emails before inserting,
+     * so stale hashes or tenant bindings are impossible.
      */
     public static function provision(): void
     {
@@ -48,24 +53,37 @@ final class TestFixtures
 
         $hash = password_hash(self::OPERATOR_PASSWORD, PASSWORD_BCRYPT, ['cost' => 12]);
 
-        // Operator account
+        // ── Operator: delete by ID and email, then insert fresh ──
         Database::execute(
-            "INSERT IGNORE INTO `operators` (`id`, `name`, `email`, `password_hash`)
+            "DELETE FROM `operators` WHERE `id` = ? OR `email` = ?",
+            [self::OPERATOR_ID, self::OPERATOR_EMAIL]
+        );
+        Database::execute(
+            "INSERT INTO `operators` (`id`, `name`, `email`, `password_hash`)
              VALUES (?, 'Test Operator', ?, ?)",
             [self::OPERATOR_ID, self::OPERATOR_EMAIL, $hash]
         );
 
-        // Tenant for the business user
+        // ── Tenant: delete by ID and slug, then insert fresh ──
+        // Business user FK cascades from tenant, so delete tenant first cleans both
         Database::execute(
-            "INSERT IGNORE INTO `tenants`
+            "DELETE FROM `business_users` WHERE `id` = ? OR `email` = ?",
+            [self::BUSINESS_USER_ID, self::BUSINESS_EMAIL]
+        );
+        Database::execute(
+            "DELETE FROM `tenants` WHERE `id` = ? OR `slug` = 'test-fixture'",
+            [self::BUSINESS_TENANT_ID]
+        );
+        Database::execute(
+            "INSERT INTO `tenants`
              (`id`, `name`, `slug`, `email`, `booking_pattern`, `timezone`, `currency`, `brand_color`, `status`)
              VALUES (?, 'Test Tenant', 'test-fixture', ?, 'timeslot', 'UTC', 'EUR', '#2563EB', 'active')",
             [self::BUSINESS_TENANT_ID, self::BUSINESS_EMAIL]
         );
 
-        // Business user account
+        // ── Business user: insert with known hash and tenant binding ──
         Database::execute(
-            "INSERT IGNORE INTO `business_users`
+            "INSERT INTO `business_users`
              (`id`, `tenant_id`, `name`, `email`, `password_hash`, `role`, `is_active`)
              VALUES (?, ?, 'Test Business User', ?, ?, 'owner', 1)",
             [self::BUSINESS_USER_ID, self::BUSINESS_TENANT_ID, self::BUSINESS_EMAIL, $hash]

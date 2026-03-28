@@ -41,7 +41,7 @@ ob_start();
     <form method="GET" action="<?= htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8') ?>" class="vb-filter-bar">
         <div class="vb-form-group vb-form-group--min">
             <label for="filter_status" class="vb-label"><?= __('admin.bookings.status') ?></label>
-            <select id="filter_status" name="status" class="vb-input vb-input-sm">
+            <select id="filter_status" name="status" class="vb-select vb-select-sm">
                 <option value=""><?= __('admin.bookings.filter_all') ?></option>
                 <?php foreach (['pending','confirmed','cancelled','completed','no_show','rescheduled'] as $s): ?>
                     <option value="<?= $s ?>" <?= ($filters['status'] ?? '') === $s ? 'selected' : '' ?>>

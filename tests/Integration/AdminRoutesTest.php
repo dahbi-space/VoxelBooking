@@ -191,7 +191,6 @@ final class AdminRoutesTest extends TestCase
 
     public function test_operator_dashboard_shows_bounded_metrics(): void
     {
-        // Seed: insert a booking for today and one for 30 days ago
         $tenantId = TestFixtures::BUSINESS_TENANT_ID;
         $customerId = $this->ensureTestCustomer($tenantId);
 
@@ -203,14 +202,14 @@ final class AdminRoutesTest extends TestCase
         // Clean prior test bookings
         Database::execute("DELETE FROM `bookings` WHERE `id` LIKE '01TESTBK%'");
 
-        // Insert today's booking
+        // Insert today's booking (should appear in both Today and This Week)
         Database::execute(
             "INSERT INTO `bookings` (`id`, `tenant_id`, `booking_pattern`, `customer_id`, `start_datetime`, `end_datetime`, `status`, `source`)
              VALUES (?, ?, 'timeslot', ?, ?, ?, 'confirmed', 'web')",
             ['01TESTBKTODAY00000000000', $tenantId, $customerId, $todayStart, $todayEnd]
         );
 
-        // Insert old booking (30 days ago — outside week window)
+        // Insert old booking (30 days ago — outside the 7-day week window)
         Database::execute(
             "INSERT INTO `bookings` (`id`, `tenant_id`, `booking_pattern`, `customer_id`, `start_datetime`, `end_datetime`, `status`, `source`)
              VALUES (?, ?, 'timeslot', ?, ?, ?, 'confirmed', 'web')",
@@ -221,16 +220,24 @@ final class AdminRoutesTest extends TestCase
         $r = $this->get('/admin');
         $this->assertSame(200, $r['code']);
 
-        // "Bookings Today" should be >= 1 (our seeded booking)
-        $this->assertStringContainsString('Active Tenants', $r['body']);
-        $this->assertStringContainsString('Bookings Today', $r['body']);
-        $this->assertStringContainsString('This Week', $r['body']);
-
-        // The metric value for "Bookings Today" should reflect our insert
-        // We check for the metric card rendering with a non-zero value
-        $todayMatch = preg_match('/Bookings Today.*?vb-metric-value[^>]*>(\d+)/s', $r['body'], $m);
+        // Extract "Bookings Today" metric value
+        $todayMatch = preg_match('/Bookings Today.*?vb-metric-value[^>]*>(\d+)/s', $r['body'], $mToday);
         $this->assertSame(1, $todayMatch, 'Should find Bookings Today metric');
-        $this->assertGreaterThanOrEqual(1, (int) ($m[1] ?? 0), 'Bookings Today should be >= 1');
+        $todayCount = (int) ($mToday[1] ?? 0);
+        $this->assertGreaterThanOrEqual(1, $todayCount, 'Bookings Today should be >= 1');
+
+        // Extract "This Week" metric value
+        $weekMatch = preg_match('/This Week.*?vb-metric-value[^>]*>(\d+)/s', $r['body'], $mWeek);
+        $this->assertSame(1, $weekMatch, 'Should find This Week metric');
+        $weekCount = (int) ($mWeek[1] ?? 0);
+
+        // The 30-day-old booking must be excluded from This Week.
+        // If both test bookings were counted, weekCount would be todayCount + 1.
+        $this->assertSame(
+            $todayCount,
+            $weekCount,
+            'This Week should equal Bookings Today — the 30-day-old booking must be excluded from the 7-day window'
+        );
     }
 
     public function test_tenant_dashboard_shows_nearest_first_upcoming(): void
@@ -306,12 +313,17 @@ final class AdminRoutesTest extends TestCase
 
     /**
      * Ensure a test customer exists for booking seed data.
+     * Uses DELETE + INSERT for deterministic state.
      */
     private function ensureTestCustomer(string $tenantId): string
     {
         $id = '01TESTCUSTOMER0000000000';
         Database::execute(
-            "INSERT IGNORE INTO `customers` (`id`, `tenant_id`, `name`, `email`) VALUES (?, ?, 'Test Customer', 'customer@example.com')",
+            "DELETE FROM `customers` WHERE `id` = ? OR `email` = 'customer@example.com'",
+            [$id]
+        );
+        Database::execute(
+            "INSERT INTO `customers` (`id`, `tenant_id`, `name`, `email`) VALUES (?, ?, 'Test Customer', 'customer@example.com')",
             [$id, $tenantId]
         );
         return $id;
