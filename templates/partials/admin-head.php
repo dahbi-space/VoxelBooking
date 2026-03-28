@@ -704,7 +704,12 @@
     :focus:not(:focus-visible) { outline: none; }
     .vb-input:focus-visible, .vb-select:focus-visible { outline: none; }
 
-    /* Scrollbar */
+    /* Color scheme for native controls (scrollbars, form elements) */
+    :root { color-scheme: light; }
+    [data-theme="dark"] { color-scheme: dark; }
+
+    /* Scrollbar — slim, theme-aware */
+    * { scrollbar-width: thin; scrollbar-color: var(--vb-border-default) transparent; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--vb-border-default); border-radius: 3px; }

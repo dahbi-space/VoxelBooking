@@ -433,9 +433,10 @@
 /* ── Content ─────────────────────────────────────────────────── */
 .vb-content {
     flex: 1;
-    padding: 2rem 2.25rem 3rem;
+    padding: 2rem 2.5rem 3rem;
     max-width: 1200px;
     margin: 0 auto;
+    animation: vb-fade-in-up var(--vb-duration-normal) var(--vb-ease-out) both;
 }
 
 
@@ -462,8 +463,59 @@
 .vb-metrics {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 0.875rem;
+    gap: 1rem;
     margin-bottom: 2rem;
+}
+
+/* Metric card: premium elevation with accent gradient stripe */
+.vb-metric {
+    position: relative;
+    overflow: hidden;
+    transition:
+        transform var(--vb-duration-fast) var(--vb-ease-spring),
+        box-shadow var(--vb-duration-normal) var(--vb-ease-out);
+}
+.vb-metric::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--vb-accent-gradient);
+    opacity: 0;
+    transition: opacity var(--vb-duration-normal) var(--vb-ease-out);
+}
+.vb-metric:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--vb-shadow-card-hover);
+}
+.vb-metric:hover::before { opacity: 1; }
+
+/* Metric typography: numbers should feel data-dense, impactful */
+.vb-metric-value {
+    font-size: var(--vb-text-3xl);
+    font-weight: 700;
+    letter-spacing: var(--vb-tracking-tighter);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    margin: 0.375rem 0 0.5rem;
+}
+.vb-metric-label {
+    font-size: var(--vb-text-2xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--vb-tracking-wide);
+    color: var(--vb-text-tertiary);
+}
+.vb-metric-context {
+    font-size: var(--vb-text-xs);
+    color: var(--vb-text-tertiary);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.vb-metric-context svg,
+.vb-metric-context [data-lucide] {
+    width: 13px; height: 13px;
 }
 
 @media (max-width: 1024px) { .vb-metrics { grid-template-columns: repeat(2, 1fr); } }
@@ -647,27 +699,34 @@
 }
 
 .vb-table th {
-    font-size: var(--vb-text-xs);
-    font-weight: 500;
+    font-size: var(--vb-text-2xs);
+    font-weight: 600;
     color: var(--vb-text-tertiary);
     text-align: left;
-    padding: 0.625rem 0.875rem;
-    border-bottom: 1px solid var(--vb-border-subtle);
+    padding: 0.5rem 0.875rem;
+    border-bottom: 1px solid var(--vb-border-default);
     white-space: nowrap;
     text-transform: uppercase;
-    letter-spacing: var(--vb-tracking-wide);
+    letter-spacing: 0.06em;
 }
 
 .vb-table td {
-    padding: 0.625rem 0.875rem;
+    padding: 0.75rem 0.875rem;
     border-bottom: 1px solid var(--vb-border-subtle);
     vertical-align: middle;
+    transition: background var(--vb-duration-instant) var(--vb-ease-out);
 }
 
 .vb-table tr:last-child td { border-bottom: none; }
 
-.vb-table tr:hover td {
+.vb-table tbody tr {
+    transition: background var(--vb-duration-instant) var(--vb-ease-out);
+}
+.vb-table tbody tr:hover {
     background: var(--vb-bg-hover);
+}
+.vb-table tbody tr:hover td {
+    background: transparent;
 }
 
 .vb-table .vb-table-actions {
@@ -1019,6 +1078,80 @@
     margin-bottom: 2px;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   QUICKSTART — Dashboard action cards
+   ══════════════════════════════════════════════════════════════ */
+.vb-quickstart {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+@media (max-width: 640px) { .vb-quickstart { grid-template-columns: 1fr; } }
+
+.vb-quickstart-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--vb-bg-surface);
+    border: 1px solid var(--vb-border-subtle);
+    border-radius: var(--vb-radius);
+    box-shadow: var(--vb-shadow-card);
+    text-decoration: none;
+    color: var(--vb-text-primary);
+    position: relative;
+    overflow: hidden;
+    transition:
+        transform var(--vb-duration-fast) var(--vb-ease-spring),
+        box-shadow var(--vb-duration-normal) var(--vb-ease-out),
+        border-color var(--vb-duration-normal) var(--vb-ease-out);
+}
+.vb-quickstart-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--vb-accent-gradient);
+    opacity: 0;
+    transition: opacity var(--vb-duration-normal) var(--vb-ease-out);
+}
+.vb-quickstart-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--vb-shadow-card-hover);
+    border-color: var(--vb-border-default);
+}
+.vb-quickstart-card:hover::before { opacity: 1; }
+
+.vb-quickstart-icon {
+    width: 40px; height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--vb-radius-md);
+    background: var(--vb-accent-subtle);
+    color: var(--vb-accent);
+    flex-shrink: 0;
+}
+.vb-quickstart-icon svg,
+.vb-quickstart-icon [data-lucide] {
+    width: 20px; height: 20px;
+}
+.vb-quickstart-icon-secondary {
+    background: var(--vb-bg-well);
+    color: var(--vb-text-secondary);
+}
+
+.vb-quickstart-title {
+    font-weight: 600;
+    font-size: var(--vb-text-sm);
+    letter-spacing: var(--vb-tracking-tight);
+}
+.vb-quickstart-desc {
+    font-size: var(--vb-text-xs);
+    color: var(--vb-text-tertiary);
+    line-height: var(--vb-leading-snug);
+    margin-top: 0.125rem;
+}
 /* ── Table cell data patterns ────────────────────────────────── */
 .vb-cell-name   { font-weight: 500; }
 .vb-cell-detail { font-size: var(--vb-text-xs); color: var(--vb-text-tertiary); }

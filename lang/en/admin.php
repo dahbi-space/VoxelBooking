@@ -65,6 +65,8 @@ return [
         'view_booking_page'   => 'View booking page',
         'confirmed'           => 'Confirmed',
         'completed'           => 'Completed',
+        'create_desc'         => 'Set up a new business with services and booking page',
+        'tenants_desc'        => 'Manage existing businesses, services, and bookings',
     ],
 
     // ── Settings Tabs ──

@@ -38,11 +38,10 @@ ob_start();
 
 <!-- Metric Band -->
 <div class="vb-metrics">
-    <div class="vb-metric vb-fade-in-up stagger-1">
-        <div class="vb-metric-accent"></div>
+    <div class="vb-metric vb-card vb-fade-in-up stagger-1">
         <div class="vb-metric-label"><?= __('admin.dashboard.active_tenants') ?></div>
         <div class="vb-metric-value"><?= (int) ($activeTenants ?? 0) ?></div>
-        <div class="vb-metric-trend">
+        <div class="vb-metric-context">
             <?php if (($activeTenants ?? 0) > 0): ?>
                 <i data-lucide="trending-up"></i>
                 <?= (int) $activeTenants ?> <?= __('admin.tenants.status_active') ?>
@@ -52,10 +51,10 @@ ob_start();
             <?php endif; ?>
         </div>
     </div>
-    <div class="vb-metric vb-fade-in-up stagger-2">
+    <div class="vb-metric vb-card vb-fade-in-up stagger-2">
         <div class="vb-metric-label"><?= __('admin.dashboard.bookings_today') ?></div>
         <div class="vb-metric-value"><?= (int) ($todayBookings ?? 0) ?></div>
-        <div class="vb-metric-trend">
+        <div class="vb-metric-context">
             <?php if (($todayBookings ?? 0) > 0): ?>
                 <i data-lucide="trending-up"></i>
             <?php else: ?>
@@ -64,10 +63,10 @@ ob_start();
             <?= ($todayBookings ?? 0) > 0 ? (int) $todayBookings . ' today' : __('admin.dashboard.awaiting_first') ?>
         </div>
     </div>
-    <div class="vb-metric vb-fade-in-up stagger-3">
+    <div class="vb-metric vb-card vb-fade-in-up stagger-3">
         <div class="vb-metric-label"><?= __('admin.dashboard.this_week') ?></div>
         <div class="vb-metric-value"><?= (int) ($weekBookings ?? 0) ?></div>
-        <div class="vb-metric-trend">
+        <div class="vb-metric-context">
             <?php if (($weekBookings ?? 0) > 0): ?>
                 <i data-lucide="trending-up"></i>
             <?php else: ?>
@@ -76,10 +75,10 @@ ob_start();
             <?= ($weekBookings ?? 0) > 0 ? (int) $weekBookings . ' this week' : __('admin.dashboard.no_data_yet') ?>
         </div>
     </div>
-    <div class="vb-metric vb-fade-in-up stagger-4">
+    <div class="vb-metric vb-card vb-fade-in-up stagger-4">
         <div class="vb-metric-label"><?= __('admin.dashboard.upcoming_24h') ?></div>
         <div class="vb-metric-value"><?= (int) ($upcoming24h ?? 0) ?></div>
-        <div class="vb-metric-trend">
+        <div class="vb-metric-context">
             <?php if (($upcoming24h ?? 0) > 0): ?>
                 <i data-lucide="clock"></i>
             <?php else: ?>
@@ -122,20 +121,27 @@ ob_start();
     </div>
 </div>
 <?php else: ?>
-<div class="vb-card vb-fade-in-up stagger-5">
-    <div class="vb-card-header">
-        <div class="vb-card-title"><?= __('admin.common.actions') ?></div>
-    </div>
-    <div class="vb-card-actions">
-        <a href="/admin/tenants/create" class="vb-btn vb-btn-primary">
+<!-- Quick Actions — two-column grid instead of generic card -->
+<div class="vb-section-title vb-fade-in-up stagger-5" style="margin-bottom: 0.75rem;"><?= __('admin.common.actions') ?></div>
+<div class="vb-quickstart vb-fade-in-up stagger-5">
+    <a href="/admin/tenants/create" class="vb-quickstart-card">
+        <div class="vb-quickstart-icon">
             <i data-lucide="plus"></i>
-            <?= __('admin.tenants.create') ?>
-        </a>
-        <a href="/admin/tenants" class="vb-btn vb-btn-ghost">
+        </div>
+        <div class="vb-quickstart-text">
+            <div class="vb-quickstart-title"><?= __('admin.tenants.create') ?></div>
+            <div class="vb-quickstart-desc"><?= __('admin.dashboard.create_desc') ?></div>
+        </div>
+    </a>
+    <a href="/admin/tenants" class="vb-quickstart-card">
+        <div class="vb-quickstart-icon vb-quickstart-icon-secondary">
             <i data-lucide="building-2"></i>
-            <?= __('admin.tenants.title') ?>
-        </a>
-    </div>
+        </div>
+        <div class="vb-quickstart-text">
+            <div class="vb-quickstart-title"><?= __('admin.tenants.title') ?></div>
+            <div class="vb-quickstart-desc"><?= __('admin.dashboard.tenants_desc') ?></div>
+        </div>
+    </a>
 </div>
 <?php endif; ?>
 

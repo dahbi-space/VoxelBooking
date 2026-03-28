@@ -49,13 +49,16 @@ final class Auth
         session_save_path($sessionPath);
 
         session_set_cookie_params([
-            'lifetime' => 0,
+            'lifetime' => 2592000, // 30 days — persist across browser restarts
             'path'     => '/',
             'domain'   => '',
             'secure'   => $secure,
             'httponly'  => true,
             'samesite'  => 'Lax',
         ]);
+
+        // Match GC lifetime to cookie lifetime so sessions survive
+        ini_set('session.gc_maxlifetime', '2592000');
 
         session_name('vb_session');
 
