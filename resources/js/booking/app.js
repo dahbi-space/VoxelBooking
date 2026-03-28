@@ -371,9 +371,13 @@ async function renderCalendar() {
 
   const monthName = new Date(year, month, 1).toLocaleDateString(config.locale || 'en', { month: 'long', year: 'numeric' });
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = (new Date(year, month, 1).getDay() + 6) % 7; // Mon=0
+  const weekStart = fmt.week_start ?? 0; // 0=Sun, 1=Mon
+  const rawDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const firstDay = (rawDay - weekStart + 7) % 7;
 
-  const dayNames = [t('days_short.1'), t('days_short.2'), t('days_short.3'), t('days_short.4'), t('days_short.5'), t('days_short.6'), t('days_short.0')];
+  // Build day name headers based on week start
+  const allDays = [t('days_short.0'), t('days_short.1'), t('days_short.2'), t('days_short.3'), t('days_short.4'), t('days_short.5'), t('days_short.6')];
+  const dayNames = [...allDays.slice(weekStart), ...allDays.slice(0, weekStart)];
   const dayHeaders = dayNames.map(d => `<div class="vb-book-calendar-dayname">${d}</div>`).join('');
 
   let cells = '';
@@ -465,10 +469,12 @@ function renderCalendarGrid() {
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const monthName = new Date(year, month, 1).toLocaleDateString(config.locale || 'en', { month: 'long', year: 'numeric' });
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
+  const firstDay = (new Date(year, month, 1).getDay() - (fmt.week_start ?? 0) + 7) % 7;
   const canPrev = !(year === today.getFullYear() && month === today.getMonth());
 
-  const dayNames = [t('days_short.1'), t('days_short.2'), t('days_short.3'), t('days_short.4'), t('days_short.5'), t('days_short.6'), t('days_short.0')];
+  const allDays = [t('days_short.0'), t('days_short.1'), t('days_short.2'), t('days_short.3'), t('days_short.4'), t('days_short.5'), t('days_short.6')];
+  const ws = fmt.week_start ?? 0;
+  const dayNames = [...allDays.slice(ws), ...allDays.slice(0, ws)];
   const dayHeaders = dayNames.map(d => `<div class="vb-book-calendar-dayname">${d}</div>`).join('');
 
   let cells = '';
