@@ -28,9 +28,9 @@ $user = $user ?? null;
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </div>
         <div class="error-code">403</div>
-        <h1 class="error-title">Access denied</h1>
-        <p class="error-desc">You don't have permission to view this page.</p>
-        <a href="/admin" class="error-btn">Back to dashboard</a>
+        <h1 class="error-title"><?= __('admin.errors.403_title') ?></h1>
+        <p class="error-desc"><?= __('admin.errors.403_desc') ?></p>
+        <a href="/admin" class="error-btn"><?= __('admin.errors.403_action') ?></a>
     </div>
 </body>
 </html>

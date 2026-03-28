@@ -25,8 +25,8 @@
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
         <div class="error-code">429</div>
-        <h1 class="error-title">Too many requests</h1>
-        <p class="error-desc">Please wait a moment and try again.</p>
+        <h1 class="error-title"><?= __('admin.errors.429_title') ?></h1>
+        <p class="error-desc"><?= __('admin.errors.429_desc') ?></p>
     </div>
 </body>
 </html>

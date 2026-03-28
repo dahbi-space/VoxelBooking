@@ -21,8 +21,8 @@ return [
     ],
 
     'operator_notification' => [
-        'subject'   => 'New booking: :service – :customer',
-        'body'      => 'A new booking has been made.',
+        'subject' => 'New booking: :service – :customer',
+        'body'    => 'A new booking has been made.',
     ],
 
     'privacy_acknowledgment' => [
@@ -34,6 +34,33 @@ return [
     'deletion_completed' => [
         'subject' => 'Your data has been deleted',
         'body'    => 'Your personal data has been removed from our systems.',
+    ],
+
+    'export_acknowledgment' => [
+        'subject' => 'Your data export from :tenant',
+        'title'   => 'Data Export Completed',
+        'body'    => 'Your personal data has been exported from :tenant. The export file was downloaded to your device during your session.',
+        'footer'  => 'If you did not request this export, please contact the business directly.',
+    ],
+
+    'deletion_acknowledgment' => [
+        'subject' => 'Deletion request received — :tenant',
+        'title'   => 'Deletion Request Received',
+        'body'    => 'Your data deletion request has been submitted to :tenant. The business will review your request and process it in accordance with data protection regulations.',
+        'footer'  => 'Under GDPR, the business must respond within 30 days. Your personal data will be anonymized once the request is confirmed.',
+    ],
+
+    'operator_deletion' => [
+        'subject' => 'New deletion request — :customer',
+        'title'   => 'New Deletion Request',
+        'body'    => 'A customer has requested data deletion.',
+        'footer'  => 'Log in to VoxelBooking and navigate to the Deletion Queue to process this request.',
+    ],
+
+    'test' => [
+        'subject' => 'VoxelBooking — SMTP Test',
+        'title'   => 'SMTP Configuration Verified',
+        'body'    => 'This test email confirms your SMTP settings are working correctly.',
     ],
 
     'common' => [

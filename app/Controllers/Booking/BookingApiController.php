@@ -112,7 +112,7 @@ final class BookingApiController
         $staffId = $request->string('staff_id');
 
         if (!$date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-            return Response::json(['error' => 'invalid_date', 'message' => 'Date parameter required (YYYY-MM-DD)'], 400);
+            return Response::json(['error' => 'invalid_date', 'message' => __('booking.api.invalid_date')], 400);
         }
 
         $result = TimeSlotCalculator::getAvailableSlots($tenant, $date, $serviceId ?: null, $staffId ?: null);
@@ -173,12 +173,12 @@ final class BookingApiController
         // Anti-spam: check __ts (timestamp field populated by JS on page load)
         $ts = $input['__ts'] ?? null;
         if (!$ts || !is_numeric($ts)) {
-            return Response::json(['error' => 'spam_detected', 'message' => 'Invalid request.'], 422);
+            return Response::json(['error' => 'spam_detected', 'message' => __('booking.api.spam_detected')], 422);
         }
         $pageLoadTime = (int) $ts;
         $elapsed = time() * 1000 - $pageLoadTime;
         if ($elapsed < 3000) {
-            return Response::json(['error' => 'spam_detected', 'message' => 'Please try again.'], 422);
+            return Response::json(['error' => 'spam_detected', 'message' => __('booking.api.spam_retry')], 422);
         }
 
         // Validate required fields
@@ -188,15 +188,15 @@ final class BookingApiController
         $customerPhone = trim($customer['phone'] ?? '');
 
         if ($customerName === '' || $customerEmail === '') {
-            return Response::json(['error' => 'validation', 'message' => 'Name and email are required.'], 422);
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.name_email_required')], 422);
         }
 
         if (!filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
-            return Response::json(['error' => 'validation', 'message' => 'Invalid email address.'], 422);
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.invalid_email')], 422);
         }
 
         if ((int) $tenant['require_phone'] === 1 && $customerPhone === '') {
-            return Response::json(['error' => 'validation', 'message' => 'Phone number is required.'], 422);
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.phone_required')], 422);
         }
 
         $serviceId = $input['service_id'] ?? null;
@@ -205,7 +205,7 @@ final class BookingApiController
         $consentGiven = (bool) ($input['consent_given'] ?? false);
 
         if (!$startDatetime) {
-            return Response::json(['error' => 'validation', 'message' => 'Start time is required.'], 422);
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.start_time_required')], 422);
         }
 
         // Resolve service for duration
@@ -273,7 +273,7 @@ final class BookingApiController
 
                 return Response::json([
                     'error'        => 'slot_unavailable',
-                    'message'      => 'This time slot was just taken.',
+                    'message'      => __('booking.api.slot_unavailable'),
                     'alternatives' => $alternatives,
                 ], 409);
             }
@@ -361,7 +361,7 @@ final class BookingApiController
 
             return Response::json([
                 'error'   => 'booking_failed',
-                'message' => 'An error occurred while creating your booking. Please try again.',
+                'message' => __('booking.api.booking_failed'),
             ], 500);
         }
     }

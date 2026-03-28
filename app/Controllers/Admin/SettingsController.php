@@ -90,7 +90,7 @@ final class SettingsController
             }
         } catch (\Throwable $e) {
             Logger::error('Settings persistence failed', ['error' => $e->getMessage()]);
-            $this->setFlash('error', 'Failed to save settings. Please try again.');
+            $this->setFlash('error', __('admin.flash.general_failed'));
             return Response::redirect('/admin/settings');
         }
 
@@ -98,7 +98,7 @@ final class SettingsController
             AuditLog::logSettingsChanged($changes);
         }
 
-        $this->setFlash('success', 'General settings saved.');
+        $this->setFlash('success', __('admin.flash.general_saved'));
         return Response::redirect('/admin/settings');
     }
 
@@ -118,17 +118,17 @@ final class SettingsController
         $confirmPassword = $request->string('confirm_password');
 
         if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
-            $this->setFlash('error', 'All password fields are required.');
+            $this->setFlash('error', __('admin.flash.password_required'));
             return Response::redirect('/admin/settings/account');
         }
 
         if ($newPassword !== $confirmPassword) {
-            $this->setFlash('error', 'New passwords do not match.');
+            $this->setFlash('error', __('admin.flash.password_mismatch'));
             return Response::redirect('/admin/settings/account');
         }
 
         if (strlen($newPassword) < 8) {
-            $this->setFlash('error', 'New password must be at least 8 characters.');
+            $this->setFlash('error', __('admin.flash.password_min_length'));
             return Response::redirect('/admin/settings/account');
         }
 
@@ -146,7 +146,7 @@ final class SettingsController
             );
 
             if (empty($rows) || !password_verify($currentPassword, $rows[0]['password_hash'])) {
-                $this->setFlash('error', 'Current password is incorrect.');
+                $this->setFlash('error', __('admin.flash.password_incorrect'));
                 return Response::redirect('/admin/settings/account');
             }
 
@@ -159,9 +159,9 @@ final class SettingsController
 
             AuditLog::log('auth.password_changed', $user['type'], $user['id']);
 
-            $this->setFlash('success', 'Password updated successfully.');
+            $this->setFlash('success', __('admin.flash.password_updated'));
         } catch (\Throwable $e) {
-            $this->setFlash('error', 'Failed to update password. Please try again.');
+            $this->setFlash('error', __('admin.flash.password_failed'));
         }
 
         return Response::redirect('/admin/settings/account');
@@ -208,7 +208,7 @@ final class SettingsController
             }
         } catch (\Throwable $e) {
             Logger::error('Email settings persistence failed', ['error' => $e->getMessage()]);
-            $this->setFlash('error', 'Failed to save email settings. Please try again.');
+            $this->setFlash('error', __('admin.flash.email_failed'));
             return Response::redirect('/admin/settings/email');
         }
 
@@ -216,7 +216,7 @@ final class SettingsController
             AuditLog::logSettingsChanged($changes);
         }
 
-        $this->setFlash('success', 'Email settings saved.');
+        $this->setFlash('success', __('admin.flash.email_saved'));
         return Response::redirect('/admin/settings/email');
     }
 

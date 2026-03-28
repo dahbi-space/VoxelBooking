@@ -17,8 +17,8 @@ $csrfToken = $csrfToken ?? '';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <meta name="description" content="VoxelBooking Admin Login">
-    <title>Login — VoxelBooking</title>
+    <meta name="description" content="<?= __('auth.meta_description') ?>">
+    <title><?= __('auth.page_title') ?></title>
     <?php include dirname(__DIR__) . '/partials/admin-head.php'; ?>
     <style>
         /* ── Login Layout — §15 ── */
@@ -196,13 +196,13 @@ $csrfToken = $csrfToken ?? '';
                     <polygon points="2,14 24,26 24,50 2,38" fill="var(--vb-admin-accent)" opacity="0.7"/>
                     <polygon points="46,14 24,26 24,50 46,38" fill="var(--vb-admin-accent)" opacity="0.4"/>
                 </svg>
-                <span class="login-hero-name">VoxelBooking</span>
-                <span class="login-hero-sub">Self-hosted booking platform</span>
+                <span class="login-hero-name"><?= __('auth.hero_name') ?></span>
+                <span class="login-hero-sub"><?= __('auth.hero_sub') ?></span>
             </div>
 
             <!-- Login Form -->
             <div class="login-form-card<?= $error ? ' vb-shake' : '' ?>">
-                <h2>Sign in to your account</h2>
+                <h2><?= __('auth.login_heading') ?></h2>
 
                 <?php if ($error): ?>
                     <div class="vb-alert vb-alert-error login-error">
@@ -215,27 +215,27 @@ $csrfToken = $csrfToken ?? '';
                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
                     <div class="vb-form-group login-field-1">
-                        <label for="email" class="vb-label">Email address</label>
+                        <label for="email" class="vb-label"><?= __('auth.email_label') ?></label>
                         <div class="vb-input-wrap">
                             <svg class="vb-icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                            <input type="email" id="email" name="email" class="vb-input vb-input-icon" placeholder="operator@example.com" required autocomplete="email" autofocus value="<?= htmlspecialchars($lastEmail ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                            <input type="email" id="email" name="email" class="vb-input vb-input-icon" placeholder="<?= __('auth.email_placeholder') ?>" required autocomplete="email" autofocus value="<?= htmlspecialchars($lastEmail ?? '', ENT_QUOTES, 'UTF-8') ?>">
                         </div>
                     </div>
 
                     <div class="vb-form-group login-field-2">
-                        <label for="password" class="vb-label">Password</label>
+                        <label for="password" class="vb-label"><?= __('auth.password_label') ?></label>
                         <div class="vb-input-wrap">
                             <svg class="vb-icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            <input type="password" id="password" name="password" class="vb-input vb-input-icon" placeholder="••••••••" required autocomplete="current-password" minlength="8">
+                            <input type="password" id="password" name="password" class="vb-input vb-input-icon" placeholder="<?= __('auth.password_placeholder') ?>" required autocomplete="current-password" minlength="8">
                         </div>
                     </div>
 
-                    <button type="submit" class="vb-btn vb-btn-primary login-submit">Sign in</button>
+                    <button type="submit" class="vb-btn vb-btn-primary login-submit"><?= __('auth.login_button') ?></button>
                 </form>
             </div>
 
             <div class="login-footer">
-                Powered by VoxelBooking · Self-hosted
+                <?= __('auth.footer') ?>
             </div>
         </div>
     </div>

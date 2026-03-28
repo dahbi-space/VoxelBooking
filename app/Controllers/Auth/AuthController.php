@@ -64,7 +64,7 @@ final class AuthController
 
         // Store error and submitted email in session and redirect back to login
         Auth::startSession();
-        $_SESSION['login_error'] = $result['error'] ?? 'Invalid email or password.';
+        $_SESSION['login_error'] = $result['error'] ?? __('auth.invalid_credentials');
         $_SESSION['login_email'] = $email;
 
         return Response::redirect('/admin/login');

@@ -4,24 +4,28 @@ declare(strict_types=1);
 
 /**
  * English translations: validation messages.
+ *
+ * Replacements: :field → field label, :param → rule parameter value.
  */
 return [
-    'required'     => 'The :field field is required.',
-    'email'        => 'The :field field must be a valid email address.',
-    'min'          => 'The :field field must be at least :min characters.',
-    'max'          => 'The :field field must not exceed :max characters.',
-    'numeric'      => 'The :field field must be a number.',
-    'string'       => 'The :field field must be a string.',
-    'unique'       => 'The :field has already been taken.',
-    'confirmed'    => 'The :field confirmation does not match.',
-    'date'         => 'The :field field must be a valid date.',
-    'in'           => 'The selected :field is invalid.',
-    'url'          => 'The :field field must be a valid URL.',
-    'phone'        => 'The :field field must be a valid phone number.',
-    'slug'         => 'The :field field must contain only lowercase letters, numbers, and hyphens.',
-    'hex_color'    => 'The :field field must be a valid hex color.',
-    'timezone'     => 'The :field field must be a valid timezone.',
-    'file'         => 'The :field must be an uploaded file.',
-    'image'        => 'The :field must be an image.',
-    'max_size'     => 'The :field must not be larger than :max KB.',
+    'required'   => ':field is required.',
+    'string'     => ':field must be a string.',
+    'email'      => ':field must be a valid email address.',
+    'integer'    => ':field must be an integer.',
+    'min'        => ':field must be at least :param characters.',
+    'max'        => ':field must not exceed :param.',
+    'max_length' => ':field must not exceed :param characters.',
+    'in'         => ':field must be one of: :param.',
+    'date'       => ':field must be a valid date.',
+    'url'        => ':field must be a valid URL.',
+    'numeric'    => ':field must be a number.',
+    'unique'     => ':field has already been taken.',
+    'confirmed'  => ':field confirmation does not match.',
+    'phone'      => ':field must be a valid phone number.',
+    'slug'       => ':field must contain only lowercase letters, numbers, and hyphens.',
+    'hex_color'  => ':field must be a valid hex color.',
+    'timezone'   => ':field must be a valid timezone.',
+    'file'       => ':field must be an uploaded file.',
+    'image'      => ':field must be an image.',
+    'max_size'   => ':field must not be larger than :param KB.',
 ];

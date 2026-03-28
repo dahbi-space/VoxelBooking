@@ -41,6 +41,8 @@ final class MailerTest extends TestCase
     protected function setUp(): void
     {
         Mailer::clearConfigCache();
+        \App\Engine\Locale::init(dirname(__DIR__, 3));
+        \App\Engine\Locale::setLocale('en');
     }
 
     /**

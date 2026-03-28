@@ -139,11 +139,11 @@ final class Mailer
     {
         $result = self::send(
             $to,
-            'VoxelBooking — SMTP Test',
+            __('email.test.subject'),
             '<html><body>'
-            . '<h2 style="font-family: -apple-system, sans-serif;">SMTP Configuration Verified</h2>'
-            . '<p style="font-family: -apple-system, sans-serif; color: #666;">This test email confirms your SMTP settings are working correctly.</p>'
-            . '<p style="font-family: -apple-system, sans-serif; color: #999; font-size: 12px;">Sent by VoxelBooking at ' . date('Y-m-d H:i:s T') . '</p>'
+            . '<h2 style="font-family: -apple-system, sans-serif;">' . __('email.test.title') . '</h2>'
+            . '<p style="font-family: -apple-system, sans-serif; color: #666;">' . __('email.test.body') . '</p>'
+            . '<p style="font-family: -apple-system, sans-serif; color: #999; font-size: 12px;">' . __('email.common.powered_by') . ' — ' . date('Y-m-d H:i:s T') . '</p>'
             . '</body></html>',
             'test',
         );
@@ -184,12 +184,11 @@ final class Mailer
      */
     public static function sendExportAcknowledgment(string $to, string $tenantName, ?string $tenantId = null): array
     {
-        $subject = "Your data export from {$tenantName}";
+        $subject = __('email.export_acknowledgment.subject', ['tenant' => $tenantName]);
         $html = self::renderPrivacyEmail(
-            'Data Export Completed',
-            "Your personal data has been exported from <strong>{$tenantName}</strong>. "
-            . 'The export file was downloaded to your device during your session.',
-            'If you did not request this export, please contact the business directly.',
+            __('email.export_acknowledgment.title'),
+            __('email.export_acknowledgment.body', ['tenant' => '<strong>' . $tenantName . '</strong>']),
+            __('email.export_acknowledgment.footer'),
         );
 
         return self::send($to, $subject, $html, 'privacy_export', $tenantId);
@@ -200,13 +199,11 @@ final class Mailer
      */
     public static function sendDeletionAcknowledgment(string $to, string $tenantName, ?string $tenantId = null): array
     {
-        $subject = "Deletion request received — {$tenantName}";
+        $subject = __('email.deletion_acknowledgment.subject', ['tenant' => $tenantName]);
         $html = self::renderPrivacyEmail(
-            'Deletion Request Received',
-            "Your data deletion request has been submitted to <strong>{$tenantName}</strong>. "
-            . 'The business will review your request and process it in accordance with data protection regulations.',
-            'Under GDPR, the business must respond within 30 days. '
-            . 'Your personal data will be anonymized once the request is confirmed.',
+            __('email.deletion_acknowledgment.title'),
+            __('email.deletion_acknowledgment.body', ['tenant' => '<strong>' . $tenantName . '</strong>']),
+            __('email.deletion_acknowledgment.footer'),
         );
 
         return self::send($to, $subject, $html, 'privacy_deletion', $tenantId);
@@ -232,15 +229,14 @@ final class Mailer
             return ['sent' => false, 'error' => 'No operator email provided', 'log_id' => ''];
         }
 
-        $subject = "New deletion request — {$customerName}";
+        $subject = __('email.operator_deletion.subject', ['customer' => $customerName]);
         $html = self::renderPrivacyEmail(
-            'New Deletion Request',
-            "A customer has requested data deletion:<br><br>"
+            __('email.operator_deletion.title'),
+            __('email.operator_deletion.body') . "<br><br>"
             . "<strong>Customer:</strong> {$customerName}<br>"
             . "<strong>Email:</strong> " . AuditLog::hashEmail($customerEmail) . " (hashed)<br>"
-            . "<strong>Tenant:</strong> {$tenantName}<br><br>"
-            . 'Please review this request in the admin deletion queue.',
-            'Log in to VoxelBooking and navigate to the Deletion Queue to process this request.',
+            . "<strong>Tenant:</strong> {$tenantName}",
+            __('email.operator_deletion.footer'),
         );
 
         return self::send($operatorEmail, $subject, $html, 'operator_notification', $tenantId);
@@ -361,6 +357,8 @@ final class Mailer
      */
     private static function renderPrivacyEmail(string $title, string $body, string $footer): string
     {
+        $poweredBy = __('email.common.powered_by');
+
         return <<<HTML
         <html>
         <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f4f5;">
@@ -375,7 +373,7 @@ final class Mailer
                             <p style="margin: 0; font-size: 12px; color: #71717a; line-height: 1.5;">{$footer}</p>
                         </td></tr>
                     </table>
-                    <p style="margin-top: 1rem; font-size: 11px; color: #a1a1aa;">Powered by VoxelBooking</p>
+                    <p style="margin-top: 1rem; font-size: 11px; color: #a1a1aa;">{$poweredBy}</p>
                 </td></tr>
             </table>
         </body>

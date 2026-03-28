@@ -42,11 +42,11 @@ $user = $user ?? null;
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         </div>
         <div class="error-code">404</div>
-        <h1 class="error-title">Page not found</h1>
-        <p class="error-desc">The page you're looking for doesn't exist.</p>
+        <h1 class="error-title"><?= __('admin.errors.404_title') ?></h1>
+        <p class="error-desc"><?= __('admin.errors.404_desc') ?></p>
         <a href="/admin" class="error-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-            Back to dashboard
+            <?= __('admin.errors.403_action') ?>
         </a>
     </div>
 </body>

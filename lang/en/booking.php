@@ -95,6 +95,20 @@ return [
         'required_email'    => 'Please enter a valid email address.',
     ],
 
+    // ── API Error Messages (server-side, returned as JSON) ──
+    'api' => [
+        'invalid_date'        => 'Date parameter required (YYYY-MM-DD)',
+        'name_email_required' => 'Name and email are required.',
+        'invalid_email'       => 'Invalid email address.',
+        'phone_required'      => 'Phone number is required.',
+        'start_time_required' => 'Start time is required.',
+        'slot_unavailable'    => 'This time slot was just taken.',
+        'booking_failed'      => 'An error occurred while creating your booking. Please try again.',
+        'invalid_json'        => 'Invalid request body.',
+        'spam_detected'       => 'Invalid request.',
+        'spam_retry'          => 'Please try again.',
+    ],
+
     // ── Calendar ──
     'calendar' => [
         'today' => 'Today',
