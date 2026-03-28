@@ -15,9 +15,9 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
 <?php if ($flash): ?>
     <div class="vb-alert vb-alert-<?= $flash['type'] === 'success' ? 'success' : 'error' ?>">
         <?php if ($flash['type'] === 'success'): ?>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 6 9 17l-5-5"/></svg>
+            <i data-lucide="check"></i>
         <?php else: ?>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <i data-lucide="alert-circle"></i>
         <?php endif; ?>
         <?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?>
     </div>
@@ -26,7 +26,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
 <form method="POST" action="/admin/settings/email">
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
-    <div class="vb-grid" style="gap: 1.5rem; grid-template-columns: 1fr 1fr;">
+    <div class="vb-grid vb-grid-2">
         <!-- SMTP Configuration -->
         <div class="vb-card vb-fade-in-up stagger-1">
             <div class="vb-card-header">
@@ -91,7 +91,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
 
     <div class="vb-form-actions" style="margin-top: 1.5rem;">
         <button type="submit" class="vb-btn vb-btn-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <i data-lucide="check"></i>
             <?= __('admin.email.save_button') ?>
         </button>
     </div>

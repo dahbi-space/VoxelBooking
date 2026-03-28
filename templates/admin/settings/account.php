@@ -16,15 +16,15 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
 <?php if ($flash): ?>
     <div class="vb-alert vb-alert-<?= $flash['type'] === 'success' ? 'success' : 'error' ?>">
         <?php if ($flash['type'] === 'success'): ?>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 6 9 17l-5-5"/></svg>
+            <i data-lucide="check"></i>
         <?php else: ?>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <i data-lucide="alert-circle"></i>
         <?php endif; ?>
         <?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?>
     </div>
 <?php endif; ?>
 
-<div class="vb-grid" style="gap: 1.5rem; grid-template-columns: 1fr 1fr;">
+<div class="vb-grid vb-grid-2">
     <!-- Account Details -->
     <div class="vb-card vb-fade-in-up stagger-1">
         <div class="vb-card-header">
@@ -73,7 +73,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
             </div>
             <div class="vb-form-actions">
                 <button type="submit" class="vb-btn vb-btn-primary">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <i data-lucide="lock"></i>
                     <?= __('admin.account.update_pw_button') ?>
                 </button>
             </div>

@@ -18,7 +18,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
     </div>
 <?php endif; ?>
 
-<div class="vb-grid" style="gap: 1.5rem; grid-template-columns: 1fr 1fr;">
+<div class="vb-grid vb-grid-2">
     <!-- Cron Configuration -->
     <div class="vb-card vb-fade-in-up stagger-1">
         <div class="vb-card-header">
@@ -60,13 +60,13 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
             <span class="vb-info-label"><?= __('admin.cron.status_label') ?></span>
             <span class="vb-info-value">
                 <?php if ($lastRun): ?>
-                    <span style="color: var(--vb-admin-success); font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                    <span class="vb-badge vb-badge-success" style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                        <i data-lucide="check" style="width: 13px; height: 13px;"></i>
                         <?= __('admin.cron.active') ?>
                     </span>
                 <?php else: ?>
-                    <span style="color: var(--vb-admin-warning); font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <span class="vb-badge vb-badge-warning" style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                        <i data-lucide="alert-circle" style="width: 13px; height: 13px;"></i>
                         <?= __('admin.cron.not_configured') ?>
                     </span>
                 <?php endif; ?>
