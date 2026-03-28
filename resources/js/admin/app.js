@@ -103,11 +103,23 @@ const ICON_SET = {
 
 Alpine.data('adminShell', () => ({
     sidebarOpen: false,
+    profileOpen: false,
 
     init() {
-        // Close sidebar on Escape
+        // Close all on Escape
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') this.closeSidebar();
+            if (e.key === 'Escape') {
+                this.closeSidebar();
+                this.closeProfile();
+            }
+        });
+
+        // Close profile on click outside
+        document.addEventListener('click', (e) => {
+            if (this.profileOpen && this.$refs.profileMenu &&
+                !this.$refs.profileMenu.contains(e.target)) {
+                this.closeProfile();
+            }
         });
     },
 
@@ -121,11 +133,24 @@ Alpine.data('adminShell', () => ({
         this.$refs.sidebar.classList.remove('open');
     },
 
+    toggleProfile() {
+        this.profileOpen = !this.profileOpen;
+    },
+
+    closeProfile() {
+        this.profileOpen = false;
+    },
+
     toggleTheme() {
         const html = document.documentElement;
         const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         html.setAttribute('data-theme', next);
         localStorage.setItem('vb-theme', next);
+    },
+
+    switchTheme() {
+        this.toggleTheme();
+        this.closeProfile();
     },
 }));
 

@@ -109,19 +109,25 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                 <h1 class="vb-topbar-title"><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></h1>
             </div>
             <div class="vb-topbar-right">
-                <!-- Compact profile menu: avatar trigger → dropdown -->
-                <div class="vb-profile-menu" x-data="{ open: false }" @click.outside="open = false">
+                <div class="vb-profile-menu" x-ref="profileMenu">
                     <button type="button"
                             class="vb-profile-trigger"
-                            @click="open = !open"
+                            @click="toggleProfile"
                             aria-haspopup="true"
-                            :aria-expanded="open"
+                            :aria-expanded="profileOpen"
                             aria-label="<?= __('admin.nav.profile_menu') ?>">
                         <span class="vb-avatar vb-avatar-sm"><?= $operatorInitials ?></span>
-                        <i data-lucide="chevron-down" class="vb-profile-chevron" :class="open && 'is-open'"></i>
+                        <i data-lucide="chevron-down" class="vb-profile-chevron" :class="profileOpen && 'is-open'"></i>
                     </button>
 
-                    <div class="vb-profile-dropdown" x-show="open" x-transition.opacity.duration.150ms x-cloak>
+                    <div class="vb-profile-dropdown" x-show="profileOpen"
+                         x-transition:enter="vb-dropdown-enter"
+                         x-transition:enter-start="vb-dropdown-enter-start"
+                         x-transition:enter-end="vb-dropdown-enter-end"
+                         x-transition:leave="vb-dropdown-leave"
+                         x-transition:leave-start="vb-dropdown-leave-start"
+                         x-transition:leave-end="vb-dropdown-leave-end"
+                         x-cloak>
                         <div class="vb-profile-dropdown-header">
                             <span class="vb-avatar"><?= $operatorInitials ?></span>
                             <div>
@@ -130,23 +136,35 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                             </div>
                         </div>
                         <div class="vb-profile-dropdown-sep"></div>
-                        <button type="button" class="vb-profile-dropdown-item" @click="toggleTheme(); open = false">
-                            <i data-lucide="sun" class="icon-sun"></i>
-                            <i data-lucide="moon" class="icon-moon"></i>
-                            <?= __('admin.nav.toggle_theme') ?>
-                        </button>
-                        <a href="/admin/settings/account" class="vb-profile-dropdown-item">
-                            <i data-lucide="user-cog"></i>
-                            <?= __('admin.nav.account') ?>
-                        </a>
-                        <div class="vb-profile-dropdown-sep"></div>
-                        <form method="POST" action="/auth/logout" class="vb-form-flush">
-                            <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-                            <button type="submit" class="vb-profile-dropdown-item vb-profile-dropdown-danger">
-                                <i data-lucide="log-out"></i>
-                                <?= __('admin.nav.sign_out') ?>
+                        <div class="vb-profile-dropdown-group">
+                            <button type="button" class="vb-profile-dropdown-item" @click="switchTheme">
+                                <span class="vb-profile-dropdown-icon">
+                                    <i data-lucide="sun" class="icon-sun"></i>
+                                    <i data-lucide="moon" class="icon-moon"></i>
+                                </span>
+                                <span class="vb-profile-dropdown-label"><?= __('admin.nav.toggle_theme') ?></span>
+                                <span class="vb-profile-dropdown-hint icon-sun"><?= __('admin.nav.theme_light') ?></span>
+                                <span class="vb-profile-dropdown-hint icon-moon"><?= __('admin.nav.theme_dark') ?></span>
                             </button>
-                        </form>
+                            <a href="/admin/settings/account" class="vb-profile-dropdown-item" @click="closeProfile">
+                                <span class="vb-profile-dropdown-icon">
+                                    <i data-lucide="user-cog"></i>
+                                </span>
+                                <span class="vb-profile-dropdown-label"><?= __('admin.nav.account') ?></span>
+                            </a>
+                        </div>
+                        <div class="vb-profile-dropdown-sep"></div>
+                        <div class="vb-profile-dropdown-group">
+                            <form method="POST" action="/auth/logout" class="vb-form-flush">
+                                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                                <button type="submit" class="vb-profile-dropdown-item vb-profile-dropdown-danger">
+                                    <span class="vb-profile-dropdown-icon">
+                                        <i data-lucide="log-out"></i>
+                                    </span>
+                                    <span class="vb-profile-dropdown-label"><?= __('admin.nav.sign_out') ?></span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
