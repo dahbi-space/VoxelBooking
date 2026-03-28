@@ -111,9 +111,6 @@ ob_start();
 <?php endif; ?>
 
 <div class="vb-card vb-fade-in-up">
-    <div class="vb-card-header">
-        <div class="vb-card-title"><?= __('admin.tenants.create') ?></div>
-    </div>
     <form method="POST" action="/admin/tenants/create">
         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
@@ -157,8 +154,8 @@ ob_start();
         <!-- Timezone & Currency -->
         <div class="vb-form-row">
             <div class="vb-form-group">
-                <label for="tenant_timezone" class="vb-label">
-                    <i data-lucide="globe" class="vb-icon-inline"></i>
+                <label for="tenant_timezone" class="vb-label vb-icon-label">
+                    <i data-lucide="globe"></i>
                     <?= __('admin.tenants.timezone') ?>
                 </label>
                 <select id="tenant_timezone" name="timezone" class="vb-select">
@@ -185,8 +182,8 @@ ob_start();
 
         <!-- Brand Color -->
         <div class="vb-form-group" x-data="colorSync">
-            <label class="vb-label">
-                <i data-lucide="palette" class="vb-icon-inline"></i>
+            <label class="vb-label vb-icon-label">
+                <i data-lucide="palette"></i>
                 <?= __('admin.tenants.brand_color') ?>
             </label>
             <div class="vb-color-field">

@@ -45,9 +45,6 @@ ob_start();
 <div class="vb-grid vb-grid-2 vb-fade-in-up">
     <!-- Booking Info -->
     <div class="vb-card">
-        <div class="vb-card-header">
-            <div class="vb-card-title"><?= __('admin.bookings.detail_title') ?></div>
-        </div>
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.bookings.customer') ?></span>
             <span class="vb-info-value">

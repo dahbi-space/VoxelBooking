@@ -435,10 +435,11 @@
     flex: 1;
     padding: 2rem 2.25rem 3rem;
     max-width: 1200px;
+    margin: 0 auto;
 }
 
-@media (min-width: 1440px) {
-    .vb-content { margin: 0; }
+@media (max-width: 768px) {
+    .vb-content { padding: 1.25rem 1rem 2rem; }
 }
 
 /* ── Dashboard: Greeting ─────────────────────────────────────── */
@@ -579,7 +580,8 @@
 /* ── Page Header ─────────────────────────────────────────────── */
 .vb-page-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 0.625rem;
     margin-bottom: 1.5rem;
 }
@@ -598,6 +600,46 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+.vb-page-subtitle {
+    font-size: var(--vb-text-sm);
+    color: var(--vb-text-tertiary);
+    margin-top: 0.125rem;
+}
+
+/* Back link — breadcrumb-style navigation above page title */
+.vb-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: var(--vb-text-sm);
+    font-weight: 450;
+    color: var(--vb-text-tertiary);
+    text-decoration: none;
+    transition: color var(--vb-duration-fast) var(--vb-ease-out);
+    margin-bottom: 0.25rem;
+}
+.vb-back-link:hover {
+    color: var(--vb-accent);
+}
+.vb-back-link svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Icon-label primitive — icon + text aligned in form labels */
+.vb-icon-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+.vb-icon-label svg,
+.vb-icon-label [data-lucide] {
+    width: 14px;
+    height: 14px;
+    color: var(--vb-text-tertiary);
+    flex-shrink: 0;
 }
 
 /* ── Data Table ──────────────────────────────────────────────── */
@@ -985,12 +1027,6 @@
 .vb-cell-detail { font-size: var(--vb-text-xs); color: var(--vb-text-tertiary); }
 .vb-text-right  { text-align: right; }
 
-/* ── Page subtitle (below page title) ────────────────────────── */
-.vb-page-subtitle {
-    font-size: 0.8125rem;
-    color: var(--vb-text-tertiary);
-    margin-top: 2px;
-}
 
 /* ── Card internal padding (action group, content section) ──── */
 .vb-card-body {
@@ -1069,15 +1105,15 @@
 }
 
 .vb-pattern-card:hover {
-    border-color: var(--vb-border-medium);
+    border-color: var(--vb-border-default);
     background: var(--vb-bg-hover);
 }
 
 .vb-pattern-card.selected,
 .vb-pattern-card:has(input:checked) {
     border-color: var(--vb-accent);
-    background: var(--vb-accent-dim);
-    box-shadow: 0 0 0 3px var(--vb-accent-dim);
+    background: var(--vb-accent-subtle);
+    box-shadow: 0 0 0 3px var(--vb-accent-subtle);
 }
 
 .vb-pattern-card input[type="radio"] {
@@ -1137,7 +1173,7 @@
 }
 
 .vb-color-input:hover {
-    border-color: var(--vb-border-medium);
+    border-color: var(--vb-border-default);
 }
 
 .vb-color-input::-webkit-color-swatch-wrapper { padding: 2px; }
@@ -1158,41 +1194,25 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   PREMIUM SELECT — custom chevron, consistent look
+   SELECT ENHANCEMENTS — native chevron + sizing
+   (base .vb-select is defined in admin-head.php alongside .vb-input)
    ══════════════════════════════════════════════════════════════ */
 .vb-select {
     appearance: none;
     -webkit-appearance: none;
-    width: 100%;
-    padding: 0.5rem 2.25rem 0.5rem 0.75rem;
-    font-size: var(--vb-text-base);
-    font-family: var(--vb-font-sans);
-    background-color: var(--vb-bg-input);
+    padding-right: 2.25rem;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
     background-position: right 0.5rem center;
     background-repeat: no-repeat;
     background-size: 1.25rem;
-    border: 1px solid var(--vb-border-subtle);
-    border-radius: var(--vb-radius-md);
-    color: var(--vb-text-primary);
     cursor: pointer;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    outline: none;
-    line-height: var(--vb-leading-normal);
-}
-
-.vb-select:hover {
-    border-color: var(--vb-border-medium);
-}
-
-.vb-select:focus {
-    border-color: var(--vb-accent);
-    box-shadow: 0 0 0 3px var(--vb-accent-dim);
 }
 
 .vb-select-sm {
-    padding: 0.375rem 2rem 0.375rem 0.625rem;
-    font-size: var(--vb-text-sm);
+    height: 30px;
+    padding: 0 2rem 0 0.625rem;
+    font-size: var(--vb-text-xs);
+    border-radius: var(--vb-radius-sm);
 }
 
 /* ── Inline form (display: inline) ────────────────────────────── */
