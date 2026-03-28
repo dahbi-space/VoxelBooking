@@ -104,6 +104,18 @@ return [
         'dismiss' => 'Dismiss',
     ],
 
+    // ── Timezone ──
+    'timezone' => [
+        'label'            => 'Timezone',
+        'same_as_business' => 'same as business',
+        'notice'           => 'Times shown in your timezone (:tz)',
+        'search'           => 'Search timezone…',
+        'group_americas'   => 'Americas',
+        'group_europe'     => 'Europe',
+        'group_asia'       => 'Asia & Pacific',
+        'group_africa'     => 'Africa',
+    ],
+
     // ── Duration Formatting ──
     'duration' => [
         'hours'        => 'h',

@@ -1,921 +1,800 @@
 /**
- * VoxelBooking — Booking Flow Orchestrator
- *
- * Per PRD §V and .ai/11 §6.4:
- * - Vanilla JS, no framework
- * - Step-based flow with animated transitions
- * - State held in a plain object
- * - All API calls via fetch to /api/{slug}/...
+ * VoxelBooking — Booking Flow (Alpine.js CSP-safe)
  *
  * Architecture:
- *   window.__VB_CONFIG__  → tenant config (injected by PHP)
- *   window.__VB_TS__      → page load timestamp (anti-spam)
- *   window.__VB_I18N__    → translations for active locale
- *   window.__VB_FMT__     → locale formatting config
+ *   Alpine.data('bookingWizard')  → single component for the entire flow
+ *   Lucide via data-lucide        → icons rendered after Alpine commits DOM
+ *   Timezone conversion           → all display times in customer TZ, storage in tenant TZ
+ *
+ * CSP-safe rules:
+ *   - No inline JS in x-on / x-bind / x-show
+ *   - All component logic registered via Alpine.data()
+ *   - HTML references methods by name: @click="selectService"
+ *   - x-show references computed booleans by name
  */
 
-const config = window.__VB_CONFIG__;
-const apiBase = `/api/${config.slug}`;
-const flowEl = document.getElementById('vb-book-flow');
-const appEl = document.getElementById('vb-book-app');
+import Alpine from '@alpinejs/csp';
+import { createIcons } from 'lucide';
+import {
+    ChevronLeft, ChevronRight, ChevronDown, Clock, Globe, Check, X,
+    AlertCircle, Info, AlertTriangle, Calendar as CalendarIcon,
+    User, Users, ExternalLink,
+} from 'lucide';
 
-// ── Translation Helper ──
-const i18n = window.__VB_I18N__ || {};
-const fmt  = window.__VB_FMT__  || {};
-
-/**
- * Translate a dot-notation key with optional replacements.
- * Falls back to the key itself if no translation exists.
- */
-function t(key, replace = {}) {
-  let value = i18n[key] ?? key;
-  for (const [k, v] of Object.entries(replace)) {
-    value = value.replace(`:${k}`, v);
-  }
-  return value;
-}
-
-// ── Toast Notification System ──
-function showToast(message, { type = 'error', duration = 5000, action = null } = {}) {
-  // Remove existing toast
-  const existing = document.getElementById('vb-book-toast');
-  if (existing) existing.remove();
-
-  const toast = document.createElement('div');
-  toast.id = 'vb-book-toast';
-  toast.className = `vb-book-toast vb-book-toast-${type}`;
-  toast.setAttribute('role', 'alert');
-  toast.setAttribute('aria-live', 'assertive');
-
-  const iconMap = {
-    error: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
-    warn: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-    info: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
-  };
-
-  let html = `<span class="vb-book-toast-icon">${iconMap[type] || iconMap.error}</span>`;
-  html += `<span class="vb-book-toast-message">${esc(message)}</span>`;
-
-  if (action) {
-    html += `<button class="vb-book-toast-action" type="button">${esc(action.label)}</button>`;
-  }
-
-  html += `<button class="vb-book-toast-close" type="button" aria-label="${t('common.dismiss')}">`;
-  html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-  html += '</button>';
-
-  toast.innerHTML = html;
-  appEl.appendChild(toast);
-
-  // Trigger entrance animation
-  requestAnimationFrame(() => toast.classList.add('is-visible'));
-
-  // Bind action
-  if (action?.onClick) {
-    toast.querySelector('.vb-book-toast-action')?.addEventListener('click', () => {
-      action.onClick();
-      dismissToast(toast);
-    });
-  }
-
-  // Bind close
-  toast.querySelector('.vb-book-toast-close').addEventListener('click', () => dismissToast(toast));
-
-  // Auto-dismiss
-  if (duration > 0) {
-    setTimeout(() => dismissToast(toast), duration);
-  }
-}
-
-function dismissToast(el) {
-  if (!el || !el.parentNode) return;
-  el.classList.remove('is-visible');
-  el.classList.add('is-leaving');
-  setTimeout(() => el.remove(), 200);
-}
-
-// ── State ──
-const state = {
-  services: [],
-  staff: [],
-  selectedService: null,
-  selectedStaff: null,    // null = "any available"
-  selectedDate: null,
-  selectedSlot: null,
-  availableDates: [],
-  availableSlots: [],
-  currentMonth: new Date().getMonth(),
-  currentYear: new Date().getFullYear(),
-  customer: { name: '', email: '', phone: '', notes: '' },
-  customFields: {},
-  consentGiven: false,
-  booking: null,          // confirmation data
+const ICON_SET = {
+    ChevronLeft, ChevronRight, ChevronDown, Clock, Globe, Check, X,
+    AlertCircle, Info, AlertTriangle, Calendar: CalendarIcon,
+    User, Users, ExternalLink,
 };
 
-// ── API ──
-async function api(path, options = {}) {
-  const url = `${apiBase}${path}`;
-  const res = await fetch(url, {
-    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-    ...options,
-  });
-  return res.json();
-}
+// ── Globals injected by PHP ──
+const config = window.__VB_CONFIG__;
+const apiBase = `/api/${config.slug}`;
+const i18n = window.__VB_I18N__ || {};
+const fmt   = window.__VB_FMT__  || {};
 
-// ── Step Rendering ──
-function renderStep(html) {
-  return new Promise(resolve => {
-    const existing = flowEl.querySelector('.vb-book-step');
-    if (existing) {
-      existing.classList.add('is-exiting');
-      setTimeout(() => {
-        flowEl.innerHTML = '';
-        insertStep(html);
-        resolve();
-      }, 160);
-    } else {
-      flowEl.innerHTML = '';
-      insertStep(html);
-      resolve();
+// ── Translation helper ──
+function t(key, replace = {}) {
+    let value = i18n[key] ?? key;
+    for (const [k, v] of Object.entries(replace)) {
+        value = value.replace(`:${k}`, v);
     }
-  });
+    return value;
 }
 
-function insertStep(html) {
-  const step = document.createElement('div');
-  step.className = 'vb-book-step';
-  step.innerHTML = html;
-  flowEl.appendChild(step);
-
-  // Focus first interactive element
-  requestAnimationFrame(() => {
-    const focusable = step.querySelector('[data-book-focus], input, button, [tabindex="0"]');
-    if (focusable) focusable.focus({ preventScroll: true });
-  });
-}
-
-function hideLoading() {
-  const loading = document.getElementById('vb-book-loading');
-  if (loading) loading.style.display = 'none';
-}
-
-// ── Format helpers ──
-function formatPrice(price, currency) {
-  if (price === null || price === undefined) return '';
-  const num = parseFloat(price);
-  if (isNaN(num)) return '';
-  try {
-    return new Intl.NumberFormat(config.locale || 'en', {
-      style: 'currency', currency: currency || config.currency || 'EUR',
-    }).format(num);
-  } catch { return `€${num.toFixed(2)}`; }
-}
-
-function formatDuration(minutes) {
-  if (minutes >= 60) {
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return m > 0 ? `${h}${t('duration.hours')} ${m}${t('duration.minutes')}` : `${h}${t('duration.hours')}`;
-  }
-  return `${minutes} ${t('duration.minutes')}`;
-}
-
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString(config.locale || 'en', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  });
-}
-
-function initials(name) {
-  return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-}
-
-// ════════════════════════════════════════════════════════════════════════
-// STEPS
-// ════════════════════════════════════════════════════════════════════════
-
-// ── Step 1: Service Selection ──
-async function stepService() {
-  const data = await api('/services');
-  state.services = data.services || [];
-
-  if (state.services.length === 0) {
-    await renderStep(`
-      <div class="vb-book-step-header">
-        <div class="vb-book-step-title">${t('empty.no_services')}</div>
-        <div class="vb-book-step-subtitle">${t('empty.no_services_desc')}</div>
-      </div>
-    `);
-    return;
-  }
-
-  // If only one service, auto-select and skip
-  if (state.services.length === 1) {
-    state.selectedService = state.services[0];
-    stepStaff();
-    return;
-  }
-
-  const cards = state.services.map(s => {
-    const isSelected = state.selectedService?.id === s.id;
-    return `
-    <div class="vb-book-service-card${isSelected ? ' is-selected' : ''}" data-book-service="${s.id}" role="radio" tabindex="0"
-         aria-checked="${isSelected}" aria-label="${s.name}">
-      <div class="vb-book-service-info">
-        <div class="vb-book-service-name">${esc(s.name)}</div>
-        <div class="vb-book-service-meta">
-          <span>${formatDuration(s.duration_minutes)}</span>
-          ${s.description ? `<span>·</span>` : ''}
-        </div>
-        ${s.description ? `<div class="vb-book-service-desc">${esc(s.description)}</div>` : ''}
-      </div>
-      ${s.price !== null ? `<div class="vb-book-service-price">${s.price_label || formatPrice(s.price)}</div>` : ''}
-    </div>
-  `;
-  }).join('');
-
-  await renderStep(`
-    <div class="vb-book-step-header">
-      <div class="vb-book-step-title">${t('steps.service_title')}</div>
-    </div>
-    <div class="vb-book-service-list" role="radiogroup" aria-label="${t('steps.service_title')}">${cards}</div>
-  `);
-
-  // Bind clicks
-  flowEl.querySelectorAll('[data-book-service]').forEach(el => {
-    const handler = () => {
-      const id = el.dataset.bookService;
-      state.selectedService = state.services.find(s => s.id === id);
-
-      // Visual feedback
-      flowEl.querySelectorAll('[data-book-service]').forEach(c => {
-        c.classList.remove('is-selected');
-        c.setAttribute('aria-checked', 'false');
-      });
-      el.classList.add('is-selected');
-      el.setAttribute('aria-checked', 'true');
-
-      // Advance after brief pause for selection feel
-      setTimeout(() => stepStaff(), 200);
-    };
-    el.addEventListener('click', handler);
-    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }});
-  });
-}
-
-// ── Step 2: Staff Selection ──
-async function stepStaff() {
-  const serviceId = state.selectedService?.id;
-  const params = serviceId ? `?service_id=${serviceId}` : '';
-  const data = await api(`/staff${params}`);
-  state.staff = data.staff || [];
-
-  // Skip if no staff or only one
-  if (state.staff.length <= 1) {
-    state.selectedStaff = state.staff[0] || null;
-    stepDate();
-    return;
-  }
-
-  // "Any available" + staff cards — restore previous selection
-  const anyIsSelected = !state.selectedStaff;
-  const anyCard = `
-    <div class="vb-book-staff-card${anyIsSelected ? ' is-selected' : ''}" data-book-staff="" role="radio" tabindex="0"
-         aria-checked="${anyIsSelected}" aria-label="${t('staff.any_available')}">
-      <div class="vb-book-staff-avatar">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-      </div>
-      <div class="vb-book-staff-name">${t('staff.any_available')}</div>
-    </div>
-  `;
-
-  const staffCards = state.staff.map(s => {
-    const isSelected = state.selectedStaff?.id === s.id;
-    return `
-    <div class="vb-book-staff-card${isSelected ? ' is-selected' : ''}" data-book-staff="${s.id}" role="radio" tabindex="0"
-         aria-checked="${isSelected}" aria-label="${s.name}">
-      <div class="vb-book-staff-avatar">
-        ${s.avatar_path
-          ? `<img src="/uploads/${config.slug}/${s.avatar_path}" alt="${esc(s.name)}">`
-          : initials(s.name)}
-      </div>
-      <div class="vb-book-staff-name">${esc(s.name)}</div>
-      ${s.title ? `<div class="vb-book-staff-title">${esc(s.title)}</div>` : ''}
-    </div>
-  `;
-  }).join('');
-
-  // Show back link only when service step was visible (multiple services)
-  const staffBackLink = state.services.length > 1
-    ? `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-service>${t('back.change_service')}</button></div>`
-    : '';
-
-  await renderStep(`
-    <div class="vb-book-step-header">
-      <div class="vb-book-step-title">${t('steps.staff_title')}</div>
-      <div class="vb-book-step-subtitle">${t('steps.staff_subtitle')}</div>
-    </div>
-    <div class="vb-book-staff-grid" role="radiogroup" aria-label="${t('steps.staff_title')}">${anyCard}${staffCards}</div>
-    ${staffBackLink}
-  `);
-
-  flowEl.querySelectorAll('[data-book-staff]').forEach(el => {
-    const handler = () => {
-      const id = el.dataset.bookStaff;
-      state.selectedStaff = id ? state.staff.find(s => s.id === id) : null;
-
-      flowEl.querySelectorAll('[data-book-staff]').forEach(c => {
-        c.classList.remove('is-selected');
-        c.setAttribute('aria-checked', 'false');
-      });
-      el.classList.add('is-selected');
-      el.setAttribute('aria-checked', 'true');
-
-      setTimeout(() => stepDate(), 200);
-    };
-    el.addEventListener('click', handler);
-    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }});
-  });
-
-  // Back to service selection
-  flowEl.querySelector('[data-book-back-service]')?.addEventListener('click', () => stepService());
-}
-
-// ── Step 3: Date Selection ──
-async function stepDate() {
-  await loadAvailableDates();
-  renderCalendar();
-}
-
-async function loadAvailableDates() {
-  const params = new URLSearchParams({
-    year: state.currentYear,
-    month: state.currentMonth + 1,
-  });
-  if (state.selectedService) params.set('service_id', state.selectedService.id);
-  if (state.selectedStaff) params.set('staff_id', state.selectedStaff.id);
-
-  const data = await api(`/available-dates?${params}`);
-  state.availableDates = data.dates || [];
-}
-
-async function renderCalendar() {
-  const year = state.currentYear;
-  const month = state.currentMonth;
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-  const monthName = new Date(year, month, 1).toLocaleDateString(config.locale || 'en', { month: 'long', year: 'numeric' });
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const weekStart = fmt.week_start ?? 0; // 0=Sun, 1=Mon
-  const rawDay = new Date(year, month, 1).getDay(); // 0=Sun
-  const firstDay = (rawDay - weekStart + 7) % 7;
-
-  // Build day name headers based on week start
-  const allDays = [t('days_short.0'), t('days_short.1'), t('days_short.2'), t('days_short.3'), t('days_short.4'), t('days_short.5'), t('days_short.6')];
-  const dayNames = [...allDays.slice(weekStart), ...allDays.slice(0, weekStart)];
-  const dayHeaders = dayNames.map(d => `<div class="vb-book-calendar-dayname">${d}</div>`).join('');
-
-  let cells = '';
-  // Empty cells before first day
-  for (let i = 0; i < firstDay; i++) {
-    cells += '<div class="vb-book-calendar-cell is-disabled"></div>';
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const isToday = dateStr === todayStr;
-    const hasSlots = state.availableDates.includes(dateStr);
-    const isPast = new Date(dateStr) < new Date(new Date().toDateString());
-    const isSelected = dateStr === state.selectedDate;
-
-    const classes = [
-      'vb-book-calendar-cell',
-      isToday ? 'is-today' : '',
-      hasSlots ? 'has-slots' : '',
-      (!hasSlots || isPast) ? 'is-disabled' : '',
-      isSelected ? 'is-selected' : '',
-    ].filter(Boolean).join(' ');
-
-    cells += `<div class="${classes}" data-book-date="${dateStr}"
-      ${hasSlots && !isPast ? 'tabindex="0" role="gridcell"' : 'role="gridcell" aria-disabled="true"'}
-      ${isSelected ? 'aria-selected="true"' : ''}>${day}</div>`;
-  }
-
-  // Can go back?
-  const canPrev = !(year === today.getFullYear() && month === today.getMonth());
-
-  // Determine back target: go to staff if staff was a visible step, else services
-  let dateBackLink = '';
-  if (state.staff.length > 1) {
-    dateBackLink = `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-staff>${t('back.change_staff')}</button></div>`;
-  } else if (state.services.length > 1) {
-    dateBackLink = `<div class="vb-book-back-link"><button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-service>${t('back.change_service')}</button></div>`;
-  }
-
-  await renderStep(`
-    <div class="vb-book-step-header">
-      <div class="vb-book-step-title">${t('steps.date_title')}</div>
-    </div>
-    <div class="vb-book-calendar" role="grid" aria-label="${t('calendar.label')}">
-      <div class="vb-book-calendar-nav">
-        <button class="vb-book-calendar-btn" data-book-prev-month ${canPrev ? '' : 'disabled'} aria-label="${t('calendar.prev_month')}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <span class="vb-book-calendar-month">${monthName}</span>
-        <button class="vb-book-calendar-btn" data-book-next-month aria-label="${t('calendar.next_month')}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </button>
-      </div>
-      <div class="vb-book-calendar-grid vb-book-calendar-fade">
-        ${dayHeaders}
-        ${cells}
-      </div>
-    </div>
-    <div id="vb-time-container"></div>
-    ${dateBackLink}
-  `);
-
-  // Bind month navigation
-  flowEl.querySelector('[data-book-prev-month]')?.addEventListener('click', async () => {
-    state.currentMonth--;
-    if (state.currentMonth < 0) { state.currentMonth = 11; state.currentYear--; }
-    await loadAvailableDates();
-    renderCalendarGrid();
-  });
-
-  flowEl.querySelector('[data-book-next-month]')?.addEventListener('click', async () => {
-    state.currentMonth++;
-    if (state.currentMonth > 11) { state.currentMonth = 0; state.currentYear++; }
-    await loadAvailableDates();
-    renderCalendarGrid();
-  });
-
-  // Back navigation
-  flowEl.querySelector('[data-book-back-staff]')?.addEventListener('click', () => stepStaff());
-  flowEl.querySelector('[data-book-back-service]')?.addEventListener('click', () => stepService());
-
-  bindDateCells();
-}
-
-function renderCalendarGrid() {
-  const year = state.currentYear;
-  const month = state.currentMonth;
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const monthName = new Date(year, month, 1).toLocaleDateString(config.locale || 'en', { month: 'long', year: 'numeric' });
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = (new Date(year, month, 1).getDay() - (fmt.week_start ?? 0) + 7) % 7;
-  const canPrev = !(year === today.getFullYear() && month === today.getMonth());
-
-  const allDays = [t('days_short.0'), t('days_short.1'), t('days_short.2'), t('days_short.3'), t('days_short.4'), t('days_short.5'), t('days_short.6')];
-  const ws = fmt.week_start ?? 0;
-  const dayNames = [...allDays.slice(ws), ...allDays.slice(0, ws)];
-  const dayHeaders = dayNames.map(d => `<div class="vb-book-calendar-dayname">${d}</div>`).join('');
-
-  let cells = '';
-  for (let i = 0; i < firstDay; i++) cells += '<div class="vb-book-calendar-cell is-disabled"></div>';
-  for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const isToday = dateStr === todayStr;
-    const hasSlots = state.availableDates.includes(dateStr);
-    const isPast = new Date(dateStr) < new Date(new Date().toDateString());
-    const isSelected = dateStr === state.selectedDate;
-    const classes = [
-      'vb-book-calendar-cell',
-      isToday ? 'is-today' : '', hasSlots ? 'has-slots' : '',
-      (!hasSlots || isPast) ? 'is-disabled' : '', isSelected ? 'is-selected' : '',
-    ].filter(Boolean).join(' ');
-    cells += `<div class="${classes}" data-book-date="${dateStr}"
-      ${hasSlots && !isPast ? 'tabindex="0" role="gridcell"' : 'role="gridcell" aria-disabled="true"'}
-      ${isSelected ? 'aria-selected="true"' : ''}>${day}</div>`;
-  }
-
-  // Update month label
-  flowEl.querySelector('.vb-book-calendar-month').textContent = monthName;
-  const prevBtn = flowEl.querySelector('[data-book-prev-month]');
-  if (prevBtn) prevBtn.disabled = !canPrev;
-
-  // Replace grid with fade
-  const grid = flowEl.querySelector('.vb-book-calendar-grid');
-  grid.innerHTML = dayHeaders + cells;
-  grid.classList.remove('vb-book-calendar-fade');
-  void grid.offsetWidth; // Force reflow
-  grid.classList.add('vb-book-calendar-fade');
-
-  bindDateCells();
-
-  // Clear time container
-  const timeContainer = document.getElementById('vb-time-container');
-  if (timeContainer) timeContainer.innerHTML = '';
-}
-
-function bindDateCells() {
-  flowEl.querySelectorAll('[data-book-date]').forEach(el => {
-    if (el.classList.contains('is-disabled')) return;
-    const handler = async () => {
-      state.selectedDate = el.dataset.bookDate;
-
-      // Update visual state
-      flowEl.querySelectorAll('[data-book-date]').forEach(c => {
-        c.classList.remove('is-selected');
-        c.removeAttribute('aria-selected');
-      });
-      el.classList.add('is-selected');
-      el.setAttribute('aria-selected', 'true');
-
-      // Load time slots
-      await loadTimeSlots();
-    };
-    el.addEventListener('click', handler);
-    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }});
-  });
-}
-
-async function loadTimeSlots() {
-  const params = new URLSearchParams({ date: state.selectedDate });
-  if (state.selectedService) params.set('service_id', state.selectedService.id);
-  if (state.selectedStaff) params.set('staff_id', state.selectedStaff.id);
-
-  const data = await api(`/availability?${params}`);
-  state.availableSlots = data.slots || [];
-
-  const container = document.getElementById('vb-time-container');
-  if (!container) return;
-
-  if (state.availableSlots.length === 0) {
-    container.innerHTML = `<div class="vb-book-empty">${t('empty.no_times')}</div>`;
-    return;
-  }
-
-  const pills = state.availableSlots.map((s, i) => `
-    <div class="vb-book-time-pill" data-book-slot="${s.time}" data-book-staff-id="${s.staff_id || ''}"
-         role="radio" tabindex="0" aria-checked="false" aria-label="${s.time}"
-         style="animation-delay: ${i * parseInt(getComputedStyle(document.documentElement).getPropertyValue('--vb-stagger') || '40')}ms">
-      ${s.time}
-    </div>
-  `).join('');
-
-  container.innerHTML = `
-    <div class="vb-book-time-grid" role="radiogroup" aria-label="${t('steps.time_title')}">${pills}</div>
-  `;
-
-  container.querySelectorAll('[data-book-slot]').forEach(el => {
-    const handler = () => {
-      const time = el.dataset.bookSlot;
-      const staffId = el.dataset.bookStaffId;
-      state.selectedSlot = state.availableSlots.find(s => s.time === time);
-
-      // If staff was resolved by slot, update state
-      if (staffId && !state.selectedStaff) {
-        state.selectedSlot._resolvedStaffId = staffId;
-      }
-
-      container.querySelectorAll('[data-book-slot]').forEach(p => {
-        p.classList.remove('is-selected');
-        p.classList.toggle('is-dimmed', p.dataset.bookSlot !== time);
-        p.setAttribute('aria-checked', 'false');
-      });
-      el.classList.add('is-selected');
-      el.classList.remove('is-dimmed');
-      el.setAttribute('aria-checked', 'true');
-
-      setTimeout(() => stepDetails(), 250);
-    };
-    el.addEventListener('click', handler);
-    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }});
-  });
-}
-
-// ── Step 4: Customer Details ──
-async function stepDetails() {
-  const phoneField = config.require_phone ? `
-    <div class="vb-book-form-group">
-      <label class="vb-book-label" for="vb-phone">${t('form.phone_label')} <span class="vb-book-required" aria-hidden="true">*</span></label>
-      <input class="vb-book-input" id="vb-phone" type="tel" required aria-required="true"
-             value="${esc(state.customer.phone)}" placeholder="+31 6 12345678" autocomplete="tel">
-    </div>
-  ` : '';
-
-  // Custom fields
-  const customFieldsHtml = (config.custom_fields || []).map(f => {
-    const isRequired = f.required ? `required aria-required="true"` : '';
-    const reqStar = f.required ? ' <span class="vb-book-required" aria-hidden="true">*</span>' : '';
-    if (f.type === 'textarea') {
-      return `
-        <div class="vb-book-form-group">
-          <label class="vb-book-label" for="vb-cf-${f.key}">${esc(f.label)}${reqStar}</label>
-          <textarea class="vb-book-textarea" id="vb-cf-${f.key}" data-book-custom="${f.key}"
-                    placeholder="${esc(f.placeholder || '')}" ${isRequired}>${esc(state.customFields[f.key] || '')}</textarea>
-        </div>
-      `;
-    }
-    return `
-      <div class="vb-book-form-group">
-        <label class="vb-book-label" for="vb-cf-${f.key}">${esc(f.label)}${reqStar}</label>
-        <input class="vb-book-input" id="vb-cf-${f.key}" type="text" data-book-custom="${f.key}"
-               placeholder="${esc(f.placeholder || '')}" value="${esc(state.customFields[f.key] || '')}" ${isRequired}>
-      </div>
-    `;
-  }).join('');
-
-  // Consent
-  let consentHtml = '';
-  if (config.requires_consent) {
-    const consentLabel = config.consent_text || t('form.consent_default');
-    const policyLink = config.privacy_policy_url
-      ? ` <a href="${esc(config.privacy_policy_url)}" target="_blank" rel="noopener">${t('form.privacy_link')}</a>`
-      : '';
-    consentHtml = `
-      <div class="vb-book-consent">
-        <input type="checkbox" class="vb-book-consent-checkbox" id="vb-consent"
-               ${state.consentGiven ? 'checked' : ''} aria-required="true">
-        <label class="vb-book-consent-label" for="vb-consent">
-          ${esc(consentLabel)}${policyLink}
-        </label>
-      </div>
-    `;
-  }
-
-  await renderStep(`
-    <div class="vb-book-step-header">
-      <div class="vb-book-step-title">${t('steps.details_title')}</div>
-      <div class="vb-book-step-subtitle">${t('steps.details_subtitle')}</div>
-    </div>
-
-    <form id="vb-details-form" novalidate>
-      <div class="vb-book-form-group">
-        <label class="vb-book-label" for="vb-name">${t('form.name_label')} <span class="vb-book-required" aria-hidden="true">*</span></label>
-        <input class="vb-book-input" id="vb-name" type="text" required aria-required="true"
-               value="${esc(state.customer.name)}" placeholder="${t('form.name_placeholder')}" autocomplete="name"
-               data-book-focus>
-      </div>
-
-      <div class="vb-book-form-group">
-        <label class="vb-book-label" for="vb-email">${t('form.email_label')} <span class="vb-book-required" aria-hidden="true">*</span></label>
-        <input class="vb-book-input" id="vb-email" type="email" required aria-required="true"
-               value="${esc(state.customer.email)}" placeholder="${t('form.email_placeholder')}" autocomplete="email">
-      </div>
-
-      ${phoneField}
-
-      <div class="vb-book-form-group">
-        <label class="vb-book-label" for="vb-notes">${t('form.notes_label')}</label>
-        <textarea class="vb-book-textarea" id="vb-notes" placeholder="${t('form.notes_placeholder')}">${esc(state.customer.notes)}</textarea>
-      </div>
-
-      ${customFieldsHtml}
-      ${consentHtml}
-
-      <div class="vb-book-form-actions">
-        <button type="submit" class="vb-book-btn vb-book-btn-primary" id="vb-to-summary">
-          <span class="vb-book-btn-text">${t('buttons.review')}</span>
-        </button>
-        <div class="vb-book-back-link">
-          <button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-date>${t('back.change_date')}</button>
-        </div>
-      </div>
-    </form>
-  `);
-
-  // Bind form
-  document.getElementById('vb-details-form').addEventListener('submit', e => {
-    e.preventDefault();
-
-    // Collect values
-    state.customer.name = document.getElementById('vb-name').value.trim();
-    state.customer.email = document.getElementById('vb-email').value.trim();
-
-    const phoneEl = document.getElementById('vb-phone');
-    if (phoneEl) state.customer.phone = phoneEl.value.trim();
-
-    state.customer.notes = document.getElementById('vb-notes').value.trim();
-
-    // Custom fields
-    flowEl.querySelectorAll('[data-book-custom]').forEach(el => {
-      state.customFields[el.dataset.bookCustom] = el.value.trim();
-    });
-
-    // Consent
-    const consentEl = document.getElementById('vb-consent');
-    if (consentEl) state.consentGiven = consentEl.checked;
-
-    // Validate
-    if (!state.customer.name || !state.customer.email) {
-      const nameEl = document.getElementById('vb-name');
-      const emailEl = document.getElementById('vb-email');
-      if (!state.customer.name) nameEl.classList.add('has-error');
-      if (!state.customer.email) emailEl.classList.add('has-error');
-      return;
-    }
-
-    if (config.requires_consent && !state.consentGiven) {
-      const consentCb = document.getElementById('vb-consent');
-      consentCb.focus();
-      return;
-    }
-
-    stepSummary();
-  });
-
-  // Back button
-  flowEl.querySelector('[data-book-back-date]')?.addEventListener('click', () => stepDate());
-}
-
-// ── Step 5: Summary ──
-async function stepSummary() {
-  const service = state.selectedService;
-  const staff = state.selectedStaff;
-  const slot = state.selectedSlot;
-
-  const rows = [];
-  if (service) {
-    rows.push({ label: t('summary.service_label'), value: service.name });
-    if (service.price !== null) {
-      rows.push({ label: t('summary.price_label'), value: service.price_label || formatPrice(service.price) });
-    }
-  }
-  if (staff) {
-    rows.push({ label: t('summary.with_label'), value: staff.name });
-  }
-  rows.push({ label: t('summary.date_label'), value: formatDate(state.selectedDate) });
-  rows.push({ label: t('summary.time_label'), value: `${slot.time} – ${slot.end_time}` });
-  if (service) {
-    rows.push({ label: t('summary.duration_label'), value: formatDuration(service.duration_minutes) });
-  }
-
-  const summaryRows = rows.map(r =>
-    `<div class="vb-book-summary-row">
-      <span class="vb-book-summary-label">${r.label}</span>
-      <span class="vb-book-summary-value">${r.value}</span>
-    </div>`
-  ).join('');
-
-  await renderStep(`
-    <div class="vb-book-step-header">
-      <div class="vb-book-step-title">${t('steps.confirm_title')}</div>
-      <div class="vb-book-step-subtitle">${t('steps.confirm_subtitle')}</div>
-    </div>
-
-    <div class="vb-book-summary">${summaryRows}</div>
-
-    <div class="vb-book-form-actions">
-      <button class="vb-book-btn vb-book-btn-primary" id="vb-confirm-btn">
-        <span class="vb-book-btn-text">${t('buttons.confirm')}</span>
-      </button>
-      <div class="vb-book-back-link">
-        <button type="button" class="vb-book-btn vb-book-btn-ghost" data-book-back-details>${t('back.edit_details')}</button>
-      </div>
-    </div>
-  `);
-
-  document.getElementById('vb-confirm-btn').addEventListener('click', submitBooking);
-  flowEl.querySelector('[data-book-back-details]')?.addEventListener('click', () => stepDetails());
-}
-
-// ── Submit Booking ──
-async function submitBooking() {
-  // Demo mode guard: show notice instead of firing a blocked POST
-  if (config.is_demo) {
-    showError(t('demo_notice') || 'This is a demo — bookings cannot be submitted.');
-    return;
-  }
-
-  const btn = document.getElementById('vb-confirm-btn');
-  btn.classList.add('is-loading');
-  btn.disabled = true;
-
-  const slot = state.selectedSlot;
-  const startDt = `${state.selectedDate}T${slot.time}:00`;
-
-  const payload = {
-    service_id: state.selectedService?.id || null,
-    staff_id: state.selectedStaff?.id || slot._resolvedStaffId || null,
-    start_datetime: startDt,
-    customer: {
-      name: state.customer.name,
-      email: state.customer.email,
-      phone: state.customer.phone || '',
-    },
-    notes: state.customer.notes || '',
-    custom_fields: Object.keys(state.customFields).length > 0 ? state.customFields : null,
-    consent_given: state.consentGiven,
-    __ts: window.__VB_TS__,
-  };
-
-  try {
-    const data = await api('/bookings', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-
-    if (data.error) {
-      btn.classList.remove('is-loading');
-      btn.disabled = false;
-
-      if (data.error === 'slot_unavailable') {
-        showToast(
-          data.message || t('errors.slot_taken'),
-          {
-            type: 'warn',
-            duration: 6000,
-            action: { label: t('buttons.pick_another_time'), onClick: () => stepDate() },
-          }
-        );
-        setTimeout(() => stepDate(), 3000);
-      } else {
-        showToast(data.message || t('errors.generic'), { type: 'error' });
-      }
-      return;
-    }
-
-    state.booking = data.booking;
-    stepConfirmation();
-  } catch (err) {
-    btn.classList.remove('is-loading');
-    btn.disabled = false;
-    showToast(t('errors.connection'), { type: 'error', duration: 6000 });
-  }
-}
-
-// ── Step 6: Confirmation ──
-async function stepConfirmation() {
-  const b = state.booking;
-
-  const summaryRows = [];
-  if (b.service) summaryRows.push({ label: t('summary.service_label'), value: b.service });
-  if (b.staff) summaryRows.push({ label: t('summary.with_label'), value: b.staff });
-  summaryRows.push({ label: t('summary.date_label'), value: formatDate(b.date) });
-  summaryRows.push({ label: t('summary.time_label'), value: `${b.time} – ${b.end_time}` });
-  summaryRows.push({ label: t('summary.duration_label'), value: formatDuration(b.duration) });
-
-  const summaryHtml = summaryRows.map(r =>
-    `<div class="vb-book-summary-row">
-      <span class="vb-book-summary-label">${r.label}</span>
-      <span class="vb-book-summary-value">${r.value}</span>
-    </div>`
-  ).join('');
-
-  // Google Calendar URL
-  const gcalStart = `${b.date.replace(/-/g, '')}T${b.time.replace(':', '')}00`;
-  const gcalEnd = `${b.date.replace(/-/g, '')}T${b.end_time.replace(':', '')}00`;
-  const gcalTitle = encodeURIComponent(b.service || config.name);
-  const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalTitle}&dates=${gcalStart}/${gcalEnd}`;
-
-  await renderStep(`
-    <div class="vb-book-confirmation">
-      <div class="vb-book-checkmark-wrap vb-book-confirm-scale">
-        <svg class="vb-book-checkmark" viewBox="0 0 64 64">
-          <circle class="vb-book-checkmark-circle" cx="32" cy="32" r="28"/>
-          <path class="vb-book-checkmark-check" d="M20 33 L28 41 L44 25"/>
-        </svg>
-      </div>
-      <div class="vb-book-confirm-heading">${t('confirmed.heading')}</div>
-      <div class="vb-book-confirm-ref">${b.id}</div>
-
-      <div class="vb-book-confirm-summary">
-        <div class="vb-book-summary">${summaryHtml}</div>
-      </div>
-
-      <div class="vb-book-confirm-actions">
-        <a href="${gcalUrl}" target="_blank" rel="noopener" class="vb-book-btn vb-book-btn-secondary">
-          <span class="vb-book-btn-text">${t('buttons.add_to_calendar')}</span>
-        </a>
-      </div>
-    </div>
-  `);
-
-  // Scroll to top
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// ── Utilities ──
+// ── HTML escape ──
 function esc(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
 
-// ── Init ──
-async function init() {
-  hideLoading();
-  appEl.classList.add('is-ready');
+// ── Timezone conversion engine ──
+// Convert a date+time from one IANA timezone to another.
+// Returns { date: 'YYYY-MM-DD', time: 'HH:MM' } in the target timezone.
+function convertTime(date, time, fromTz, toTz) {
+    if (fromTz === toTz) return { date, time };
 
-  if (config.booking_pattern === 'timeslot') {
-    stepService();
-  } else {
-    await renderStep(`
-      <div class="vb-book-step-header">
-        <div class="vb-book-step-title">${t('empty.coming_soon')}</div>
-        <div class="vb-book-step-subtitle">${t('empty.coming_soon_desc')}</div>
-      </div>
-    `);
-  }
+    // Build ISO-like string and parse in source timezone
+    // We use Intl.DateTimeFormat to resolve the UTC offset, then convert
+    const srcParts = new Date(`${date}T${time}:00`);
+    // Get the source and target offsets
+    const srcOffset = getTimezoneOffsetMinutes(date, time, fromTz);
+    const tgtOffset = getTimezoneOffsetMinutes(date, time, toTz);
+
+    // Convert to UTC, then to target
+    const utcMs = srcParts.getTime() + srcOffset * 60000;
+    const tgtMs = utcMs - tgtOffset * 60000;
+    const tgtDate = new Date(tgtMs);
+
+    return {
+        date: `${tgtDate.getFullYear()}-${String(tgtDate.getMonth() + 1).padStart(2, '0')}-${String(tgtDate.getDate()).padStart(2, '0')}`,
+        time: `${String(tgtDate.getHours()).padStart(2, '0')}:${String(tgtDate.getMinutes()).padStart(2, '0')}`,
+    };
 }
 
-init();
+// Get the UTC offset in minutes for a given date/time in a timezone
+// Positive = behind UTC (e.g. +60 for CET = UTC+1)
+function getTimezoneOffsetMinutes(date, time, tz) {
+    const dtStr = `${date}T${time}:00`;
+    const dt = new Date(dtStr);
+
+    // Format in the target timezone to get the local representation
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false,
+    });
+
+    const parts = {};
+    for (const p of formatter.formatToParts(dt)) {
+        parts[p.type] = p.value;
+    }
+
+    // Reconstruct what the local time is in that timezone for this UTC instant
+    const localStr = `${parts.year}-${parts.month}-${parts.day}T${parts.hour === '24' ? '00' : parts.hour}:${parts.minute}:${parts.second}`;
+    const localDt = new Date(localStr);
+
+    // The offset = local interpretation - UTC interpretation
+    return (dt.getTime() - localDt.getTime()) / 60000;
+}
+
+// Format display time for a slot (in customer's timezone)
+function formatSlotDisplay(slotTime, slotDate, tenantTz, customerTz) {
+    if (tenantTz === customerTz) return slotTime;
+    const converted = convertTime(slotDate, slotTime, tenantTz, customerTz);
+    return converted.time;
+}
+
+// ── Common timezone list (grouped by continent) ──
+const TIMEZONE_GROUPS = [
+    { labelKey: 'timezone.group_americas', zones: [
+        'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+        'America/Anchorage', 'Pacific/Honolulu', 'America/Phoenix',
+        'America/Toronto', 'America/Vancouver', 'America/Mexico_City',
+        'America/Bogota', 'America/Lima', 'America/Sao_Paulo', 'America/Argentina/Buenos_Aires',
+    ]},
+    { labelKey: 'timezone.group_europe', zones: [
+        'Europe/London', 'Europe/Dublin', 'Europe/Paris', 'Europe/Berlin',
+        'Europe/Amsterdam', 'Europe/Brussels', 'Europe/Madrid', 'Europe/Rome',
+        'Europe/Zurich', 'Europe/Vienna', 'Europe/Stockholm', 'Europe/Oslo',
+        'Europe/Copenhagen', 'Europe/Helsinki', 'Europe/Warsaw', 'Europe/Prague',
+        'Europe/Lisbon', 'Europe/Athens', 'Europe/Bucharest', 'Europe/Moscow',
+        'Europe/Istanbul',
+    ]},
+    { labelKey: 'timezone.group_asia', zones: [
+        'Asia/Dubai', 'Asia/Kolkata', 'Asia/Bangkok', 'Asia/Singapore',
+        'Asia/Hong_Kong', 'Asia/Shanghai', 'Asia/Tokyo', 'Asia/Seoul',
+        'Asia/Jakarta', 'Asia/Karachi', 'Asia/Riyadh', 'Asia/Tehran',
+        'Australia/Sydney', 'Australia/Melbourne', 'Australia/Perth',
+        'Pacific/Auckland', 'Pacific/Fiji',
+    ]},
+    { labelKey: 'timezone.group_africa', zones: [
+        'Africa/Cairo', 'Africa/Lagos', 'Africa/Johannesburg', 'Africa/Nairobi',
+        'Africa/Casablanca', 'Africa/Accra',
+    ]},
+];
+
+// Human-readable timezone label
+function tzLabel(tz) {
+    const city = tz.split('/').pop().replace(/_/g, ' ');
+    try {
+        const now = new Date();
+        const offset = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz, timeZoneName: 'shortOffset',
+        }).formatToParts(now).find(p => p.type === 'timeZoneName')?.value || '';
+        return `${city} (${offset})`;
+    } catch {
+        return city;
+    }
+}
+
+
+// ── Alpine: Booking Wizard Component ──
+Alpine.data('bookingWizard', () => ({
+    // Step management
+    step: 'loading',
+    stepTransition: '',
+
+    // Data
+    services: [],
+    staff: [],
+    selectedService: null,
+    selectedStaff: null,
+    selectedDate: null,
+    selectedSlot: null,
+    availableDates: [],
+    availableSlots: [],
+    currentMonth: new Date().getMonth(),
+    currentYear: new Date().getFullYear(),
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
+    customerNotes: '',
+    customFields: {},
+    consentGiven: false,
+    booking: null,
+    submitting: false,
+    formErrors: {},
+
+    // CSP-safe setters for x-model (nested property assignment is prohibited)
+    setCustomerName(val) { this.customerName = val; },
+    setCustomerEmail(val) { this.customerEmail = val; },
+    setCustomerPhone(val) { this.customerPhone = val; },
+    setCustomerNotes(val) { this.customerNotes = val; },
+    setConsentGiven(val) { this.consentGiven = val; },
+    setTzSearchQuery(val) { this.tzSearchQuery = val; },
+
+    // Timezone
+    customerTz: '',
+    tenantTz: config.timezone || 'UTC',
+    tzDropdownOpen: false,
+    tzSearchQuery: '',
+
+    // Toast
+    toast: null,
+    toastTimer: null,
+
+    // Config passthrough
+    config,
+
+    // ── CSP-safe step visibility (x-show only accepts property/method refs) ──
+    isStep(name) { return this.step === name; },
+    get isLoading() { return this.step === 'loading'; },
+    get isEmpty() { return this.step === 'empty'; },
+    get isUnsupported() { return this.step === 'unsupported'; },
+    get isServiceStep() { return this.step === 'service'; },
+    get isStaffStep() { return this.step === 'staff'; },
+    get isDateStep() { return this.step === 'date'; },
+    get isDetailsStep() { return this.step === 'details'; },
+    get isReviewStep() { return this.step === 'review'; },
+    get isConfirmedStep() { return this.step === 'confirmed'; },
+    get hasToast() { return !!this.toast; },
+    get hasSelectedDate() { return !!this.selectedDate; },
+    get hasNoSlots() { return this.availableSlots.length === 0 && !!this.selectedDate; },
+    get hasSlots() { return this.availableSlots.length > 0; },
+    get isTzMismatch() { return !this.tzMatch; },
+
+    // ── Init ──
+    init() {
+        // Detect browser timezone
+        try {
+            this.customerTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        } catch {
+            this.customerTz = this.tenantTz;
+        }
+
+        if (config.booking_pattern === 'timeslot') {
+            this.loadServices();
+        } else {
+            this.step = 'unsupported';
+        }
+    },
+
+    // ── Step transitions ──
+    goToStep(name) {
+        this.stepTransition = 'exit';
+        setTimeout(() => {
+            this.step = name;
+            this.stepTransition = 'enter';
+            this.$nextTick(() => {
+                createIcons({ icons: ICON_SET });
+            });
+            // Clear transition class after animation
+            setTimeout(() => { this.stepTransition = ''; }, 250);
+        }, 160);
+    },
+
+    // ── Progress indicator ──
+    get progressSteps() {
+        const steps = ['service'];
+        if (this.staff.length > 1) steps.push('staff');
+        steps.push('date', 'details', 'review');
+        return steps;
+    },
+
+    get currentStepIndex() {
+        return this.progressSteps.indexOf(this.step);
+    },
+
+    isProgressDotActive(i) {
+        return i === this.currentStepIndex;
+    },
+
+    isProgressDotCompleted(i) {
+        return i < this.currentStepIndex;
+    },
+
+    get showProgress() {
+        return this.step !== 'loading' && this.step !== 'confirmed' && this.step !== 'unsupported';
+    },
+
+    // ── Timezone ──
+    get tzMatch() {
+        return this.customerTz === this.tenantTz;
+    },
+
+    get tzGroups() {
+        const q = this.tzSearchQuery.toLowerCase();
+        const resolved = TIMEZONE_GROUPS.map(g => ({
+            label: t(g.labelKey),
+            zones: q
+                ? g.zones.filter(z => z.toLowerCase().includes(q) || tzLabel(z).toLowerCase().includes(q))
+                : g.zones,
+        }));
+        return q ? resolved.filter(g => g.zones.length > 0) : resolved;
+    },
+
+    tzGroupLabel(group) {
+        return group.label;
+    },
+
+    tzDisplayLabel(tz) {
+        return tzLabel(tz);
+    },
+
+    selectTimezone(tz) {
+        this.customerTz = tz;
+        this.tzDropdownOpen = false;
+        this.tzSearchQuery = '';
+        // Re-render time slots if we're on the date step with slots loaded
+        if (this.step === 'date' && this.selectedDate) {
+            // Slots stay the same, just display changes via reactive binding
+        }
+    },
+
+    toggleTzDropdown() {
+        this.tzDropdownOpen = !this.tzDropdownOpen;
+        if (this.tzDropdownOpen) {
+            this.$nextTick(() => {
+                const input = this.$refs.tzSearch;
+                if (input) input.focus();
+            });
+        }
+    },
+
+    closeTzDropdown() {
+        this.tzDropdownOpen = false;
+        this.tzSearchQuery = '';
+    },
+
+    // ── API ──
+    async api(path, options = {}) {
+        const url = `${apiBase}${path}`;
+        const res = await fetch(url, {
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            ...options,
+        });
+        return res.json();
+    },
+
+    // ── Step 1: Services ──
+    async loadServices() {
+        const data = await this.api('/services');
+        this.services = data.services || [];
+
+        if (this.services.length === 0) {
+            this.step = 'empty';
+            return;
+        }
+
+        if (this.services.length === 1) {
+            this.selectedService = this.services[0];
+            this.loadStaff();
+            return;
+        }
+
+        this.step = 'service';
+        this.$nextTick(() => createIcons({ icons: ICON_SET }));
+    },
+
+    selectService(service) {
+        this.selectedService = service;
+        setTimeout(() => this.loadStaff(), 200);
+    },
+
+    isServiceSelected(service) {
+        return this.selectedService?.id === service.id;
+    },
+
+    // ── Step 2: Staff ──
+    async loadStaff() {
+        const params = this.selectedService ? `?service_id=${this.selectedService.id}` : '';
+        const data = await this.api(`/staff${params}`);
+        this.staff = data.staff || [];
+
+        if (this.staff.length <= 1) {
+            this.selectedStaff = this.staff[0] || null;
+            this.loadDates();
+            return;
+        }
+
+        this.goToStep('staff');
+    },
+
+    selectStaff(staff) {
+        this.selectedStaff = staff;
+        setTimeout(() => this.loadDates(), 200);
+    },
+
+    selectAnyStaff() {
+        this.selectedStaff = null;
+        setTimeout(() => this.loadDates(), 200);
+    },
+
+    isStaffSelected(staff) {
+        return this.selectedStaff?.id === staff.id;
+    },
+
+    isAnyStaffSelected() {
+        return !this.selectedStaff;
+    },
+
+    staffInitials(name) {
+        return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    },
+
+    // ── Step 3: Date & Time ──
+    async loadDates() {
+        const params = new URLSearchParams({
+            year: this.currentYear,
+            month: this.currentMonth + 1,
+        });
+        if (this.selectedService) params.set('service_id', this.selectedService.id);
+        if (this.selectedStaff) params.set('staff_id', this.selectedStaff.id);
+
+        const data = await this.api(`/available-dates?${params}`);
+        this.availableDates = data.dates || [];
+
+        if (this.step !== 'date') {
+            this.goToStep('date');
+        }
+    },
+
+    async prevMonth() {
+        this.currentMonth--;
+        if (this.currentMonth < 0) { this.currentMonth = 11; this.currentYear--; }
+        await this.loadDates();
+    },
+
+    async nextMonth() {
+        this.currentMonth++;
+        if (this.currentMonth > 11) { this.currentMonth = 0; this.currentYear++; }
+        await this.loadDates();
+    },
+
+    get canPrevMonth() {
+        const now = new Date();
+        return !(this.currentYear === now.getFullYear() && this.currentMonth === now.getMonth());
+    },
+
+    get monthLabel() {
+        return new Date(this.currentYear, this.currentMonth, 1)
+            .toLocaleDateString(config.locale || 'en', { month: 'long', year: 'numeric' });
+    },
+
+    get dayNames() {
+        const all = [t('days_short.0'), t('days_short.1'), t('days_short.2'), t('days_short.3'), t('days_short.4'), t('days_short.5'), t('days_short.6')];
+        const ws = fmt.week_start ?? 0;
+        return [...all.slice(ws), ...all.slice(0, ws)];
+    },
+
+    get calendarCells() {
+        const year = this.currentYear;
+        const month = this.currentMonth;
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const weekStart = fmt.week_start ?? 0;
+        const rawDay = new Date(year, month, 1).getDay();
+        const firstDay = (rawDay - weekStart + 7) % 7;
+
+        const cells = [];
+
+        // Empty cells
+        for (let i = 0; i < firstDay; i++) {
+            cells.push({ day: '', dateStr: '', disabled: true, today: false, hasSlots: false, selected: false });
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const isPast = new Date(dateStr) < new Date(today.toDateString());
+            const hasSlots = this.availableDates.includes(dateStr);
+            cells.push({
+                day,
+                dateStr,
+                disabled: !hasSlots || isPast,
+                today: dateStr === todayStr,
+                hasSlots,
+                selected: dateStr === this.selectedDate,
+            });
+        }
+
+        return cells;
+    },
+
+    // CSP-safe helpers for template bindings
+    cellKey(cell) {
+        return cell.dateStr || ('empty-' + cell.day);
+    },
+
+    clickDate(cell) {
+        if (!cell.disabled && cell.day) {
+            this.selectDate(cell.dateStr);
+        }
+    },
+
+    get dateBackLabel() {
+        if (this.dateBackTarget === 'staff') return t('back.change_staff');
+        return t('back.change_service');
+    },
+
+    fieldLabel(field) {
+        return field.label + (field.required ? ' *' : '');
+    },
+
+    fieldPlaceholder(field) {
+        return field.placeholder || '';
+    },
+
+    servicePriceLabel(service) {
+        return service.price_label || this.formatPrice(service.price);
+    },
+
+    cellTabindex(cell) {
+        return cell.disabled ? -1 : 0;
+    },
+
+    cellRole(cell) {
+        return cell.day ? 'gridcell' : '';
+    },
+
+    consentLabel() {
+        return config.consent_text || t('form.consent_default');
+    },
+
+    slotAnimDelay(i) {
+        return 'animation-delay:' + (i * 40) + 'ms';
+    },
+
+    hasPrice(service) {
+        return service.price !== null;
+    },
+
+    isTextarea(field) {
+        return field.type === 'textarea';
+    },
+
+    isNotTextarea(field) {
+        return field.type !== 'textarea';
+    },
+
+    hasAvatar(member) {
+        return !!member.avatar_path;
+    },
+
+    avatarUrl(member) {
+        return '/uploads/' + config.slug + '/' + member.avatar_path;
+    },
+
+    noAvatar(member) {
+        return !member.avatar_path;
+    },
+
+    customFieldId(field) {
+        return 'vb-cf-' + field.key;
+    },
+
+    async selectDate(dateStr) {
+        this.selectedDate = dateStr;
+        this.selectedSlot = null;
+        this.availableSlots = [];
+
+        const params = new URLSearchParams({ date: dateStr });
+        if (this.selectedService) params.set('service_id', this.selectedService.id);
+        if (this.selectedStaff) params.set('staff_id', this.selectedStaff.id);
+
+        const data = await this.api(`/availability?${params}`);
+        this.availableSlots = data.slots || [];
+    },
+
+    // Display a slot time in the customer's timezone
+    displaySlotTime(slot) {
+        return formatSlotDisplay(slot.time, this.selectedDate, this.tenantTz, this.customerTz);
+    },
+
+    selectSlot(slot) {
+        this.selectedSlot = slot;
+        setTimeout(() => this.goToStep('details'), 250);
+    },
+
+    isSlotSelected(slot) {
+        return this.selectedSlot?.time === slot.time;
+    },
+
+    isSlotDimmed(slot) {
+        return this.selectedSlot && this.selectedSlot.time !== slot.time;
+    },
+
+    // ── Step 4: Details ──
+    submitDetails() {
+        this.formErrors = {};
+
+        if (!this.customerName.trim()) {
+            this.formErrors.name = true;
+        }
+        if (!this.customerEmail.trim()) {
+            this.formErrors.email = true;
+        }
+        if (config.require_phone && !this.customerPhone.trim()) {
+            this.formErrors.phone = true;
+        }
+        if (config.requires_consent && !this.consentGiven) {
+            this.formErrors.consent = true;
+        }
+
+        if (Object.keys(this.formErrors).length > 0) return;
+
+        // Collect custom field values from refs
+        const customEls = this.$el.querySelectorAll('[data-book-custom]');
+        customEls.forEach(el => {
+            this.customFields[el.dataset.bookCustom] = el.value.trim();
+        });
+
+        this.goToStep('review');
+    },
+
+    hasError(field) {
+        return !!this.formErrors[field];
+    },
+
+    // ── Step 5: Review / Summary ──
+    get summaryRows() {
+        const rows = [];
+        if (this.selectedService) {
+            rows.push({ label: t('summary.service_label'), value: this.selectedService.name });
+            if (this.selectedService.price !== null) {
+                rows.push({ label: t('summary.price_label'), value: this.selectedService.price_label || this.formatPrice(this.selectedService.price) });
+            }
+        }
+        if (this.selectedStaff) {
+            rows.push({ label: t('summary.with_label'), value: this.selectedStaff.name });
+        }
+        rows.push({ label: t('summary.date_label'), value: this.formatDateDisplay(this.selectedDate) });
+        if (this.selectedSlot) {
+            const displayStart = formatSlotDisplay(this.selectedSlot.time, this.selectedDate, this.tenantTz, this.customerTz);
+            const displayEnd   = formatSlotDisplay(this.selectedSlot.end_time, this.selectedDate, this.tenantTz, this.customerTz);
+            rows.push({ label: t('summary.time_label'), value: `${displayStart} – ${displayEnd}` });
+        }
+        if (this.selectedService) {
+            rows.push({ label: t('summary.duration_label'), value: this.formatDuration(this.selectedService.duration_minutes) });
+        }
+        if (!this.tzMatch) {
+            rows.push({ label: t('timezone.label'), value: this.tzDisplayLabel(this.customerTz) });
+        }
+        return rows;
+    },
+
+    // ── Step 6: Submit ──
+    async submitBooking() {
+        if (config.is_demo) {
+            this.showToast(t('demo_notice') || 'This is a demo — bookings cannot be submitted.', 'error');
+            return;
+        }
+
+        this.submitting = true;
+
+        const slot = this.selectedSlot;
+        const startDt = `${this.selectedDate}T${slot.time}:00`;
+
+        const payload = {
+            service_id: this.selectedService?.id || null,
+            staff_id: this.selectedStaff?.id || slot.staff_id || null,
+            start_datetime: startDt,
+            customer: {
+                name: this.customerName.trim(),
+                email: this.customerEmail.trim(),
+                phone: this.customerPhone.trim() || '',
+            },
+            notes: this.customerNotes.trim() || '',
+            custom_fields: Object.keys(this.customFields).length > 0 ? this.customFields : null,
+            consent_given: this.consentGiven,
+            customer_timezone: this.customerTz,
+            __ts: window.__VB_TS__,
+        };
+
+        try {
+            const data = await this.api('/bookings', {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            });
+
+            if (data.error) {
+                this.submitting = false;
+                if (data.error === 'slot_unavailable') {
+                    this.showToast(data.message || t('errors.slot_taken'), 'warn');
+                    setTimeout(() => this.goToStep('date'), 3000);
+                } else {
+                    this.showToast(data.message || t('errors.generic'), 'error');
+                }
+                return;
+            }
+
+            this.booking = data.booking;
+            this.goToStep('confirmed');
+            this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+        } catch {
+            this.submitting = false;
+            this.showToast(t('errors.connection'), 'error');
+        }
+    },
+
+    // ── Confirmation ──
+    get confirmSummaryRows() {
+        if (!this.booking) return [];
+        const b = this.booking;
+        const rows = [];
+        if (b.service) rows.push({ label: t('summary.service_label'), value: b.service });
+        if (b.staff) rows.push({ label: t('summary.with_label'), value: b.staff });
+        rows.push({ label: t('summary.date_label'), value: this.formatDateDisplay(b.date) });
+
+        const displayStart = formatSlotDisplay(b.time, b.date, this.tenantTz, this.customerTz);
+        const displayEnd   = formatSlotDisplay(b.end_time, b.date, this.tenantTz, this.customerTz);
+        rows.push({ label: t('summary.time_label'), value: `${displayStart} – ${displayEnd}` });
+        rows.push({ label: t('summary.duration_label'), value: this.formatDuration(b.duration) });
+        return rows;
+    },
+
+    get gcalUrl() {
+        if (!this.booking) return '#';
+        const b = this.booking;
+        const start = `${b.date.replace(/-/g, '')}T${b.time.replace(':', '')}00`;
+        const end = `${b.date.replace(/-/g, '')}T${b.end_time.replace(':', '')}00`;
+        const title = encodeURIComponent(b.service || config.name);
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}`;
+    },
+
+    // ── Toast ──
+    showToast(message, type = 'error') {
+        if (this.toastTimer) clearTimeout(this.toastTimer);
+        this.toast = { message, type };
+        this.toastTimer = setTimeout(() => { this.toast = null; }, 5000);
+    },
+
+    dismissToast() {
+        this.toast = null;
+        if (this.toastTimer) clearTimeout(this.toastTimer);
+    },
+
+    get toastClass() {
+        return this.toast ? 'vb-book-toast-' + this.toast.type : '';
+    },
+
+    isZoneSelected(zone) {
+        return zone === this.customerTz;
+    },
+
+    // ── Format helpers ──
+    formatPrice(price) {
+        const num = parseFloat(price);
+        if (isNaN(num)) return '';
+        try {
+            return new Intl.NumberFormat(config.locale || 'en', {
+                style: 'currency', currency: config.currency || 'EUR',
+            }).format(num);
+        } catch { return `€${num.toFixed(2)}`; }
+    },
+
+    formatDuration(minutes) {
+        if (!minutes) return '';
+        if (minutes >= 60) {
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return m > 0 ? `${h}${t('duration.hours')} ${m}${t('duration.minutes')}` : `${h}${t('duration.hours')}`;
+        }
+        return `${minutes} ${t('duration.minutes')}`;
+    },
+
+    formatDateDisplay(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr + 'T00:00:00');
+        return d.toLocaleDateString(config.locale || 'en', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+        });
+    },
+
+    // ── Navigation helpers ──
+    get showStaffBackLink() {
+        return this.services.length > 1;
+    },
+
+    get dateBackTarget() {
+        if (this.staff.length > 1) return 'staff';
+        if (this.services.length > 1) return 'service';
+        return null;
+    },
+
+    goBack(target) {
+        if (target === 'service') this.loadServices();
+        else if (target === 'staff') this.loadStaff();
+        else if (target === 'date') this.loadDates();
+        else if (target === 'details') this.goToStep('details');
+    },
+
+    // ── Translation passthrough for templates ──
+    t,
+    esc,
+}));
+
+
+// ── Alpine: start ──
+window.Alpine = Alpine;
+Alpine.start();
+
+// ── Lucide: initial render ──
+createIcons({ icons: ICON_SET });
+
+// ── Refresh helper for dynamically rendered content ──
+window.refreshIcons = () => createIcons({ icons: ICON_SET });

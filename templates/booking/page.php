@@ -13,15 +13,17 @@
     <link rel="preconnect" href="/assets/fonts/">
     <link rel="stylesheet" href="/assets/css/booking-css.css">
 
-    <!-- Anti-FOUC: hide until CSS loads -->
+    <!-- Anti-FOUC: hide until Alpine is ready -->
     <style>
-        .vb-book-app { opacity: 0; transition: opacity 0.2s ease-out; }
-        .vb-book-app.is-ready { opacity: 1; }
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body>
-    <div class="vb-book-app" id="vb-book-app">
-        <!-- Header -->
+    <div class="vb-book-app" x-data="bookingWizard" x-cloak
+         x-init="$el.removeAttribute('x-cloak')"
+         id="vb-book-app">
+
+        <!-- ── Header ── -->
         <header class="vb-book-header">
             <div class="vb-book-header-inner">
                 <?php if (!empty($tenant['logo_path'])): ?>
@@ -36,17 +38,416 @@
                     <p class="vb-book-business-desc"><?= htmlspecialchars($tenant['booking_page_description']) ?></p>
                 <?php endif; ?>
             </div>
+
+            <!-- ── Progress Dots ── -->
+            <div class="vb-book-progress-wrap" x-show="showProgress">
+                <div class="vb-book-progress">
+                    <template x-for="(s, i) in progressSteps" x-bind:key="s">
+                        <div class="vb-book-progress-dot"
+                             x-bind:class="{
+                                 'is-active': isProgressDotActive(i),
+                                 'is-completed': isProgressDotCompleted(i)
+                             }"></div>
+                    </template>
+                </div>
+            </div>
         </header>
 
-        <!-- Booking flow container -->
+        <!-- ── Timezone Selector ── -->
+        <div class="vb-book-tz-bar" x-show="showProgress">
+            <div class="vb-book-tz-inner">
+                <button class="vb-book-tz-trigger" type="button" x-bind:aria-expanded="tzDropdownOpen" @click="toggleTzDropdown">
+                    <i data-lucide="globe" class="vb-book-tz-icon"></i>
+                    <span class="vb-book-tz-label" x-text="tzDisplayLabel(customerTz)"></span>
+                    <span class="vb-book-tz-badge" x-show="tzMatch" x-text="t('timezone.same_as_business')"></span>
+                    <i data-lucide="chevron-down" class="vb-book-tz-chevron"></i>
+                </button>
+
+                <div class="vb-book-tz-dropdown" x-show="tzDropdownOpen" @click.outside="closeTzDropdown" @keydown.escape.window="closeTzDropdown">
+                    <div class="vb-book-tz-search-wrap">
+                        <input type="text" class="vb-book-tz-search" x-ref="tzSearch"
+                               x-bind:value="tzSearchQuery"
+                               @input="setTzSearchQuery($el.value)"
+                               placeholder="Search timezone…"
+                               autocomplete="off">
+                    </div>
+                    <div class="vb-book-tz-list">
+                        <template x-for="group in tzGroups" x-bind:key="group.label">
+                            <div class="vb-book-tz-group">
+                                <div class="vb-book-tz-group-label" x-text="group.label"></div>
+                                <template x-for="zone in group.zones" x-bind:key="zone">
+                                    <button type="button" class="vb-book-tz-option"
+                                            x-bind:class="{ 'is-selected': isZoneSelected(zone) }"
+                                            @click="selectTimezone(zone)"
+                                            x-text="tzDisplayLabel(zone)">
+                                    </button>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Main Flow ── -->
         <main class="vb-book-flow" id="vb-book-flow">
-            <!-- Steps are rendered by JavaScript -->
-            <div class="vb-book-loading" id="vb-book-loading">
+
+            <!-- Loading -->
+            <div x-show="isLoading" class="vb-book-loading">
                 <div class="vb-book-spinner"></div>
             </div>
+
+            <!-- Empty state -->
+            <div x-show="isEmpty" class="vb-book-step">
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('empty.no_services')"></div>
+                    <div class="vb-book-step-subtitle" x-text="t('empty.no_services_desc')"></div>
+                </div>
+            </div>
+
+            <!-- Unsupported pattern -->
+            <div x-show="isUnsupported" class="vb-book-step">
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('empty.coming_soon')"></div>
+                    <div class="vb-book-step-subtitle" x-text="t('empty.coming_soon_desc')"></div>
+                </div>
+            </div>
+
+            <!-- ═══ Step 1: Service Selection ═══ -->
+            <div x-show="isServiceStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('steps.service_title')"></div>
+                </div>
+                <div class="vb-book-service-list" role="radiogroup">
+                    <template x-for="service in services" x-bind:key="service.id">
+                        <div class="vb-book-service-card"
+                             x-bind:class="{ 'is-selected': isServiceSelected(service) }"
+                             @click="selectService(service)"
+                             role="radio" tabindex="0"
+                             x-bind:aria-checked="isServiceSelected(service)"
+                             @keydown.enter="selectService(service)"
+                             @keydown.space.prevent="selectService(service)">
+                            <div class="vb-book-service-info">
+                                <div class="vb-book-service-name" x-text="service.name"></div>
+                                <div class="vb-book-service-meta">
+                                    <span x-text="formatDuration(service.duration_minutes)"></span>
+                                    <template x-if="service.description">
+                                        <span>·</span>
+                                    </template>
+                                </div>
+                                <template x-if="service.description">
+                                    <div class="vb-book-service-desc" x-text="service.description"></div>
+                                </template>
+                            </div>
+                            <template x-if="hasPrice(service)">
+                                <div class="vb-book-service-price" x-text="servicePriceLabel(service)"></div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- ═══ Step 2: Staff Selection ═══ -->
+            <div x-show="isStaffStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('steps.staff_title')"></div>
+                    <div class="vb-book-step-subtitle" x-text="t('steps.staff_subtitle')"></div>
+                </div>
+                <div class="vb-book-staff-grid" role="radiogroup">
+                    <!-- Any available -->
+                    <div class="vb-book-staff-card"
+                         x-bind:class="{ 'is-selected': isAnyStaffSelected() }"
+                         @click="selectAnyStaff"
+                         role="radio" tabindex="0"
+                         x-bind:aria-checked="isAnyStaffSelected()">
+                        <div class="vb-book-staff-avatar">
+                            <i data-lucide="users"></i>
+                        </div>
+                        <div class="vb-book-staff-name" x-text="t('staff.any_available')"></div>
+                    </div>
+                    <!-- Staff members -->
+                    <template x-for="member in staff" x-bind:key="member.id">
+                        <div class="vb-book-staff-card"
+                             x-bind:class="{ 'is-selected': isStaffSelected(member) }"
+                             @click="selectStaff(member)"
+                             role="radio" tabindex="0"
+                             x-bind:aria-checked="isStaffSelected(member)">
+                            <div class="vb-book-staff-avatar">
+                                <template x-if="hasAvatar(member)">
+                                    <img x-bind:src="avatarUrl(member)" x-bind:alt="member.name">
+                                </template>
+                                <template x-if="noAvatar(member)">
+                                    <span x-text="staffInitials(member.name)"></span>
+                                </template>
+                            </div>
+                            <div class="vb-book-staff-name" x-text="member.name"></div>
+                            <template x-if="member.title">
+                                <div class="vb-book-staff-title" x-text="member.title"></div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+                <!-- Back link -->
+                <template x-if="showStaffBackLink">
+                    <div class="vb-book-back-link">
+                        <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('service')" x-text="t('back.change_service')"></button>
+                    </div>
+                </template>
+            </div>
+
+            <!-- ═══ Step 3: Date & Time ═══ -->
+            <div x-show="isDateStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('steps.date_title')"></div>
+                </div>
+
+                <!-- Timezone mismatch notice -->
+                <div class="vb-book-tz-notice" x-show="isTzMismatch">
+                    <i data-lucide="globe" class="vb-book-tz-notice-icon"></i>
+                    <span x-text="t('timezone.notice', { tz: tzDisplayLabel(customerTz) })"></span>
+                </div>
+
+                <!-- Calendar -->
+                <div class="vb-book-calendar" role="grid">
+                    <div class="vb-book-calendar-nav">
+                        <button class="vb-book-calendar-btn" @click="prevMonth" x-bind:disabled="!canPrevMonth" aria-label="Previous month">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
+                        <span class="vb-book-calendar-month" x-text="monthLabel"></span>
+                        <button class="vb-book-calendar-btn" @click="nextMonth" aria-label="Next month">
+                            <i data-lucide="chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="vb-book-calendar-grid">
+                        <!-- Day name headers -->
+                        <template x-for="d in dayNames" x-bind:key="d">
+                            <div class="vb-book-calendar-dayname" x-text="d"></div>
+                        </template>
+                        <!-- Calendar cells -->
+                        <template x-for="cell in calendarCells" x-bind:key="cellKey(cell)">
+                            <div class="vb-book-calendar-cell"
+                                 x-bind:class="{
+                                     'is-disabled': cell.disabled,
+                                     'is-today': cell.today,
+                                     'has-slots': cell.hasSlots,
+                                     'is-selected': cell.selected
+                                 }"
+                                 x-bind:tabindex="cellTabindex(cell)"
+                                 x-bind:role="cellRole(cell)"
+                                 x-bind:aria-disabled="cell.disabled"
+                                 x-bind:aria-selected="cell.selected"
+                                 @click="clickDate(cell)"
+                                 @keydown.enter="clickDate(cell)"
+                                 @keydown.space.prevent="clickDate(cell)"
+                                 x-text="cell.day">
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Time Slots -->
+                <div id="vb-time-container" x-show="hasSelectedDate">
+                    <template x-if="hasNoSlots">
+                        <div class="vb-book-empty" x-text="t('empty.no_times')"></div>
+                    </template>
+                    <template x-if="hasSlots">
+                        <div class="vb-book-time-grid" role="radiogroup">
+                            <template x-for="(slot, i) in availableSlots" x-bind:key="slot.time">
+                                <div class="vb-book-time-pill"
+                                     x-bind:class="{
+                                         'is-selected': isSlotSelected(slot),
+                                         'is-dimmed': isSlotDimmed(slot)
+                                     }"
+                                     @click="selectSlot(slot)"
+                                     @keydown.enter="selectSlot(slot)"
+                                     @keydown.space.prevent="selectSlot(slot)"
+                                     role="radio" tabindex="0"
+                                     x-bind:aria-checked="isSlotSelected(slot)"
+                                     x-bind:style="slotAnimDelay(i)"
+                                     x-text="displaySlotTime(slot)">
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Back link -->
+                <template x-if="dateBackTarget">
+                    <div class="vb-book-back-link">
+                        <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack(dateBackTarget)"
+                                x-text="dateBackLabel"></button>
+                    </div>
+                </template>
+            </div>
+
+            <!-- ═══ Step 4: Customer Details ═══ -->
+            <div x-show="isDetailsStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('steps.details_title')"></div>
+                    <div class="vb-book-step-subtitle" x-text="t('steps.details_subtitle')"></div>
+                </div>
+
+                <form @submit.prevent="submitDetails" novalidate>
+                    <div class="vb-book-form-group">
+                        <label class="vb-book-label" for="vb-name"><?= __('booking.form.name_label') ?> <span class="vb-book-required" aria-hidden="true">*</span></label>
+                        <input class="vb-book-input" id="vb-name" type="text" required
+                               x-bind:value="customerName"
+                               @input="setCustomerName($el.value)"
+                               x-bind:class="{ 'has-error': hasError('name') }"
+                               placeholder="<?= __('booking.form.name_placeholder') ?>"
+                               autocomplete="name">
+                    </div>
+
+                    <div class="vb-book-form-group">
+                        <label class="vb-book-label" for="vb-email"><?= __('booking.form.email_label') ?> <span class="vb-book-required" aria-hidden="true">*</span></label>
+                        <input class="vb-book-input" id="vb-email" type="email" required
+                               x-bind:value="customerEmail"
+                               @input="setCustomerEmail($el.value)"
+                               x-bind:class="{ 'has-error': hasError('email') }"
+                               placeholder="<?= __('booking.form.email_placeholder') ?>"
+                               autocomplete="email">
+                    </div>
+
+                    <?php /* Phone field — only rendered when require_phone is true */ ?>
+                    <template x-if="config.require_phone">
+                        <div class="vb-book-form-group">
+                            <label class="vb-book-label" for="vb-phone"><?= __('booking.form.phone_label') ?> <span class="vb-book-required" aria-hidden="true">*</span></label>
+                            <input class="vb-book-input" id="vb-phone" type="tel" required
+                                   x-bind:value="customerPhone"
+                                   @input="setCustomerPhone($el.value)"
+                                   x-bind:class="{ 'has-error': hasError('phone') }"
+                                   placeholder="+31 6 12345678"
+                                   autocomplete="tel">
+                        </div>
+                    </template>
+
+                    <div class="vb-book-form-group">
+                        <label class="vb-book-label" for="vb-notes"><?= __('booking.form.notes_label') ?></label>
+                        <textarea class="vb-book-textarea" id="vb-notes"
+                                  x-bind:value="customerNotes"
+                                  @input="setCustomerNotes($el.value)"
+                                  placeholder="<?= __('booking.form.notes_placeholder') ?>"></textarea>
+                    </div>
+
+                    <!-- Custom Fields -->
+                    <template x-for="field in config.custom_fields" x-bind:key="field.key">
+                        <div class="vb-book-form-group">
+                            <label class="vb-book-label" x-bind:for="customFieldId(field)"
+                                   x-text="fieldLabel(field)"></label>
+                            <template x-if="isTextarea(field)">
+                                <textarea class="vb-book-textarea" x-bind:id="customFieldId(field)"
+                                          x-bind:data-book-custom="field.key"
+                                          x-bind:placeholder="fieldPlaceholder(field)"
+                                          x-bind:required="field.required"></textarea>
+                            </template>
+                            <template x-if="isNotTextarea(field)">
+                                <input class="vb-book-input" x-bind:id="customFieldId(field)" type="text"
+                                       x-bind:data-book-custom="field.key"
+                                       x-bind:placeholder="fieldPlaceholder(field)"
+                                       x-bind:required="field.required">
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- Consent -->
+                    <template x-if="config.requires_consent">
+                        <div class="vb-book-consent" x-bind:class="{ 'has-error': hasError('consent') }">
+                            <input type="checkbox" class="vb-book-consent-checkbox" id="vb-consent"
+                                   x-bind:checked="consentGiven"
+                                   @change="setConsentGiven($el.checked)"
+                                   aria-required="true">
+                            <label class="vb-book-consent-label" for="vb-consent" x-text="consentLabel()"></label>
+                        </div>
+                    </template>
+
+                    <div class="vb-book-form-actions">
+                        <button type="submit" class="vb-book-btn vb-book-btn-primary">
+                            <span class="vb-book-btn-text" x-text="t('buttons.review')"></span>
+                        </button>
+                        <div class="vb-book-back-link">
+                            <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('date')" x-text="t('back.change_date')"></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ═══ Step 5: Review / Summary ═══ -->
+            <div x-show="isReviewStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('steps.confirm_title')"></div>
+                    <div class="vb-book-step-subtitle" x-text="t('steps.confirm_subtitle')"></div>
+                </div>
+
+                <div class="vb-book-summary">
+                    <template x-for="row in summaryRows" x-bind:key="row.label">
+                        <div class="vb-book-summary-row">
+                            <span class="vb-book-summary-label" x-text="row.label"></span>
+                            <span class="vb-book-summary-value" x-text="row.value"></span>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="vb-book-form-actions">
+                    <button class="vb-book-btn vb-book-btn-primary" @click="submitBooking"
+                            x-bind:disabled="submitting"
+                            x-bind:class="{ 'is-loading': submitting }">
+                        <span class="vb-book-btn-text" x-text="t('buttons.confirm')"></span>
+                    </button>
+                    <div class="vb-book-back-link">
+                        <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('details')" x-text="t('back.edit_details')"></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Step 6: Confirmation ═══ -->
+            <div x-show="isConfirmedStep" class="vb-book-step" x-transition>
+                <div class="vb-book-confirmation">
+                    <div class="vb-book-checkmark-wrap vb-book-confirm-scale">
+                        <svg class="vb-book-checkmark" viewBox="0 0 64 64">
+                            <circle class="vb-book-checkmark-circle" cx="32" cy="32" r="28"/>
+                            <path class="vb-book-checkmark-check" d="M20 33 L28 41 L44 25"/>
+                        </svg>
+                    </div>
+                    <div class="vb-book-confirm-heading" x-text="t('confirmed.heading')"></div>
+                    <template x-if="booking">
+                        <div class="vb-book-confirm-ref" x-text="booking.id"></div>
+                    </template>
+
+                    <div class="vb-book-confirm-summary">
+                        <div class="vb-book-summary">
+                            <template x-for="row in confirmSummaryRows" x-bind:key="row.label">
+                                <div class="vb-book-summary-row">
+                                    <span class="vb-book-summary-label" x-text="row.label"></span>
+                                    <span class="vb-book-summary-value" x-text="row.value"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="vb-book-confirm-actions">
+                        <a x-bind:href="gcalUrl" target="_blank" rel="noopener" class="vb-book-btn vb-book-btn-secondary">
+                            <i data-lucide="calendar" class="vb-book-btn-icon"></i>
+                            <span class="vb-book-btn-text" x-text="t('buttons.add_to_calendar')"></span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
         </main>
 
-        <!-- Footer -->
+        <!-- ── Toast ── -->
+        <div class="vb-book-toast-container" x-show="hasToast" x-transition>
+            <template x-if="hasToast">
+                <div class="vb-book-toast is-visible" x-bind:class="toastClass" role="alert">
+                    <span class="vb-book-toast-message" x-text="toast.message"></span>
+                    <button class="vb-book-toast-close" type="button" @click="dismissToast" aria-label="Dismiss">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            </template>
+        </div>
+
+        <!-- ── Footer ── -->
         <footer class="vb-book-footer">
             <span>Powered by</span>
             <a href="<?= htmlspecialchars(brand_url(), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><?= htmlspecialchars(app_name(), ENT_QUOTES, 'UTF-8') ?></a>
