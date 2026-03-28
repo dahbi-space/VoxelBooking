@@ -81,6 +81,7 @@ return [
         'no_services'       => 'No services available',
         'no_services_desc'  => 'This business has not configured any services yet.',
         'no_availability'   => 'No available times this month.',
+        'no_times'          => 'No available times on this day.',
         'coming_soon'       => 'Coming soon',
         'coming_soon_desc'  => 'This booking pattern is not yet available.',
         '404_title'         => 'Page not found',
@@ -96,6 +97,19 @@ return [
         'spam_detected'     => 'Your request could not be processed. Please try again.',
         'required_name'     => 'Please enter your name.',
         'required_email'    => 'Please enter a valid email address.',
+    ],
+
+    // ── Common / UI ──
+    'common' => [
+        'dismiss' => 'Dismiss',
+    ],
+
+    // ── Duration Formatting ──
+    'duration' => [
+        'hours'        => 'h',
+        'minutes'      => 'min',
+        'hours_long'   => ':h h :m min',
+        'minutes_only' => ':m min',
     ],
 
     // ── API Error Messages (server-side, returned as JSON) ──
@@ -114,7 +128,10 @@ return [
 
     // ── Calendar ──
     'calendar' => [
-        'today' => 'Today',
+        'today'      => 'Today',
+        'label'      => 'Calendar',
+        'prev_month' => 'Previous month',
+        'next_month' => 'Next month',
     ],
 
     // ── Day Names (0=Sunday) ──

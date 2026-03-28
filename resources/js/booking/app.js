@@ -60,7 +60,7 @@ function showToast(message, { type = 'error', duration = 5000, action = null } =
     html += `<button class="vb-book-toast-action" type="button">${esc(action.label)}</button>`;
   }
 
-  html += `<button class="vb-book-toast-close" type="button" aria-label="Dismiss">`;
+  html += `<button class="vb-book-toast-close" type="button" aria-label="${t('common.dismiss')}">`;
   html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
   html += '</button>';
 
@@ -175,9 +175,9 @@ function formatDuration(minutes) {
   if (minutes >= 60) {
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
-    return m > 0 ? `${h}h ${m}min` : `${h}h`;
+    return m > 0 ? `${h}${t('duration.hours')} ${m}${t('duration.minutes')}` : `${h}${t('duration.hours')}`;
   }
-  return `${minutes} min`;
+  return `${minutes} ${t('duration.minutes')}`;
 }
 
 function formatDate(dateStr) {
@@ -239,7 +239,7 @@ async function stepService() {
     <div class="vb-book-step-header">
       <div class="vb-book-step-title">${t('steps.service_title')}</div>
     </div>
-    <div class="vb-book-service-list" role="radiogroup" aria-label="Services">${cards}</div>
+    <div class="vb-book-service-list" role="radiogroup" aria-label="${t('steps.service_title')}">${cards}</div>
   `);
 
   // Bind clicks
@@ -319,7 +319,7 @@ async function stepStaff() {
       <div class="vb-book-step-title">${t('steps.staff_title')}</div>
       <div class="vb-book-step-subtitle">${t('steps.staff_subtitle')}</div>
     </div>
-    <div class="vb-book-staff-grid" role="radiogroup" aria-label="Staff">${anyCard}${staffCards}</div>
+    <div class="vb-book-staff-grid" role="radiogroup" aria-label="${t('steps.staff_title')}">${anyCard}${staffCards}</div>
     ${staffBackLink}
   `);
 
@@ -373,7 +373,7 @@ async function renderCalendar() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = (new Date(year, month, 1).getDay() + 6) % 7; // Mon=0
 
-  const dayNames = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+  const dayNames = [t('days_short.1'), t('days_short.2'), t('days_short.3'), t('days_short.4'), t('days_short.5'), t('days_short.6'), t('days_short.0')];
   const dayHeaders = dayNames.map(d => `<div class="vb-book-calendar-dayname">${d}</div>`).join('');
 
   let cells = '';
@@ -417,13 +417,13 @@ async function renderCalendar() {
     <div class="vb-book-step-header">
       <div class="vb-book-step-title">${t('steps.date_title')}</div>
     </div>
-    <div class="vb-book-calendar" role="grid" aria-label="Calendar">
+    <div class="vb-book-calendar" role="grid" aria-label="${t('calendar.label')}">
       <div class="vb-book-calendar-nav">
-        <button class="vb-book-calendar-btn" data-book-prev-month ${canPrev ? '' : 'disabled'} aria-label="Previous month">
+        <button class="vb-book-calendar-btn" data-book-prev-month ${canPrev ? '' : 'disabled'} aria-label="${t('calendar.prev_month')}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         <span class="vb-book-calendar-month">${monthName}</span>
-        <button class="vb-book-calendar-btn" data-book-next-month aria-label="Next month">
+        <button class="vb-book-calendar-btn" data-book-next-month aria-label="${t('calendar.next_month')}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
         </button>
       </div>
@@ -468,7 +468,7 @@ function renderCalendarGrid() {
   const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
   const canPrev = !(year === today.getFullYear() && month === today.getMonth());
 
-  const dayNames = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+  const dayNames = [t('days_short.1'), t('days_short.2'), t('days_short.3'), t('days_short.4'), t('days_short.5'), t('days_short.6'), t('days_short.0')];
   const dayHeaders = dayNames.map(d => `<div class="vb-book-calendar-dayname">${d}</div>`).join('');
 
   let cells = '';
@@ -542,7 +542,7 @@ async function loadTimeSlots() {
   if (!container) return;
 
   if (state.availableSlots.length === 0) {
-    container.innerHTML = '<div class="vb-book-empty">No available times on this day.</div>';
+    container.innerHTML = `<div class="vb-book-empty">${t('empty.no_times')}</div>`;
     return;
   }
 
@@ -555,7 +555,7 @@ async function loadTimeSlots() {
   `).join('');
 
   container.innerHTML = `
-    <div class="vb-book-time-grid" role="radiogroup" aria-label="Available times">${pills}</div>
+    <div class="vb-book-time-grid" role="radiogroup" aria-label="${t('steps.time_title')}">${pills}</div>
   `;
 
   container.querySelectorAll('[data-book-slot]').forEach(el => {
@@ -620,7 +620,7 @@ async function stepDetails() {
   // Consent
   let consentHtml = '';
   if (config.requires_consent) {
-    const consentLabel = config.consent_text || 'I agree to the processing of my personal data for this booking.';
+    const consentLabel = config.consent_text || t('form.consent_default');
     const policyLink = config.privacy_policy_url
       ? ` <a href="${esc(config.privacy_policy_url)}" target="_blank" rel="noopener">${t('form.privacy_link')}</a>`
       : '';
