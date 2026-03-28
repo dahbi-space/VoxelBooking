@@ -100,5 +100,19 @@ return function (Router $router): void {
         // ── Cron ──
         $router->get('/cron/retention', \App\Controllers\CronController::class, 'retention');
         // TODO: Phase 6 — /cron/reminders
+
+        // ── Agent API v1 ──
+        // Schema endpoint: public (no auth — supports LLM tool-calling discovery)
+        $router->get('/api/agent/v1/schema', \App\Controllers\AgentApi\SchemaController::class, 'index');
+
+        // Authenticated Agent API endpoints
+        $router->group([
+            \App\Middleware\AgentAuthMiddleware::class,
+        ], function (Router $router) {
+            $router->get('/api/agent/v1/tenants', \App\Controllers\AgentApi\ResourceController::class, 'tenants');
+            $router->get('/api/agent/v1/bookings', \App\Controllers\AgentApi\ResourceController::class, 'bookings');
+            $router->get('/api/agent/v1/services', \App\Controllers\AgentApi\ResourceController::class, 'services');
+            $router->get('/api/agent/v1/availability', \App\Controllers\AgentApi\ResourceController::class, 'availability');
+        });
     });
 };
