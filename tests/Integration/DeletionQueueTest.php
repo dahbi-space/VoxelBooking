@@ -47,7 +47,7 @@ final class DeletionQueueTest extends TestCase
         try {
             Database::query("SELECT `deletion_requested_at` FROM `customers` LIMIT 0");
         } catch (\Throwable) {
-            $this->markTestSkipped('deletion_requested_at column not present — run migration 022');
+            $this->markTestSkipped('deletion_requested_at column not present — run install wizard or refresh database');
         }
     }
 

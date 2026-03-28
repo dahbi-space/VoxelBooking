@@ -88,6 +88,46 @@ npm run build
 npm run dev
 ```
 
+### Frontend Conventions (Admin)
+
+The admin panel uses **Tailwind CSS 4** for styling, **Alpine.js** for reactive state, and **Lucide** for icons. All three are bundled via Vite — no CDN dependencies.
+
+**Icons — Lucide via `data-lucide`:**
+
+```html
+<!-- Use data-lucide on any <i> element -->
+<i data-lucide="settings"></i>
+<i data-lucide="calendar" class="w-5 h-5"></i>
+```
+
+- Only tree-shaken icons are bundled. To use a new icon, import it in `resources/js/admin/app.js` and add it to the `ICON_SET` constant.
+- Do **not** use inline `<svg>` if a Lucide icon exists for the same glyph.
+- After Alpine.js dynamically renders new DOM (e.g., `x-for`, `x-if`), call `window.refreshIcons()` to render any new `data-lucide` elements.
+
+**Alpine.js for shell/component state:**
+
+```html
+<div x-data="{ open: false }">
+    <button @click="open = !open">Toggle</button>
+    <div x-show="open" x-transition>Content</div>
+</div>
+```
+
+- Alpine is started in `resources/js/admin/app.js`. Do not call `Alpine.start()` elsewhere.
+- Use `x-data` on the nearest appropriate container, not on `<body>` globally.
+
+**CSS — Tailwind 4 + design tokens:**
+
+- Global design tokens (colors, typography, radii, timing) live in `templates/partials/admin-head.php` as CSS custom properties (`--vb-admin-*`).
+- Structural layout CSS lives in `resources/css/admin.css` (processed by Tailwind/Vite).
+- Admin pages should not add new inline `<style>` blocks. If a component needs custom CSS, add it to `admin.css`.
+
+**White-label branding:**
+
+- `app_name()` — configurable product name (DB setting → `APP_NAME` env → default)
+- `brand_url()` — configurable "Powered by" URL (DB setting → `BRAND_URL` env → `https://voxelbooking.com`)
+- All user-facing surfaces use these helpers instead of hardcoded brand strings.
+
 ## Version
 
 The canonical product version lives in the root [`VERSION`](VERSION) file. This single file is the source of truth — do not hardcode version strings elsewhere.

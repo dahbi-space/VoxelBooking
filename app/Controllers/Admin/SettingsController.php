@@ -33,7 +33,7 @@ final class SettingsController
 
     public function general(Request $request): Response
     {
-        $settings = $this->loadSettings(['app_name', 'app_url', 'timezone', 'date_format']);
+        $settings = $this->loadSettings(['app_name', 'app_url', 'brand_url', 'timezone', 'date_format']);
 
         return $this->render('admin.settings.general', 'General', [
             'settings' => $settings,
@@ -45,6 +45,7 @@ final class SettingsController
     {
         $appName    = trim($request->string('app_name'));
         $appUrl     = rtrim(trim($request->string('app_url')), '/');
+        $brandUrl   = rtrim(trim($request->string('brand_url')), '/');
         $timezone   = trim($request->string('timezone'));
         $dateFormat = trim($request->string('date_format'));
 
@@ -55,6 +56,9 @@ final class SettingsController
         if ($appUrl !== '' && !filter_var($appUrl, FILTER_VALIDATE_URL)) {
             $errors[] = 'Application URL must be a valid URL.';
         }
+        if ($brandUrl !== '' && !filter_var($brandUrl, FILTER_VALIDATE_URL)) {
+            $errors[] = 'Brand URL must be a valid URL.';
+        }
 
         if (!empty($errors)) {
             $this->setFlash('error', implode(' ', $errors));
@@ -62,7 +66,7 @@ final class SettingsController
         }
 
         // Audit log: track what changed
-        $oldSettings = $this->loadSettings(['app_name', 'app_url', 'timezone', 'date_format']);
+        $oldSettings = $this->loadSettings(['app_name', 'app_url', 'brand_url', 'timezone', 'date_format']);
         $changes = [];
 
         try {
@@ -74,6 +78,12 @@ final class SettingsController
                 $this->saveSetting('app_url', $appUrl);
                 if ($appUrl !== ($oldSettings['app_url'] ?? '')) {
                     $changes['app_url'] = ['old' => $oldSettings['app_url'] ?? '', 'new' => $appUrl];
+                }
+            }
+            if ($brandUrl !== '') {
+                $this->saveSetting('brand_url', $brandUrl);
+                if ($brandUrl !== ($oldSettings['brand_url'] ?? '')) {
+                    $changes['brand_url'] = ['old' => $oldSettings['brand_url'] ?? '', 'new' => $brandUrl];
                 }
             }
             if ($timezone !== '') {

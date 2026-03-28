@@ -37,7 +37,7 @@
         </main>
         <footer class="vb-book-footer">
             <span><?= __('booking.footer.powered_by') ?></span>
-            <a href="https://voxelbooking.com" target="_blank" rel="noopener">VoxelBooking</a>
+            <a href="<?= htmlspecialchars(brand_url(), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><?= htmlspecialchars(app_name(), ENT_QUOTES, 'UTF-8') ?></a>
         </footer>
     </div>
 </body>

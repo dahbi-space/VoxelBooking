@@ -1,4 +1,326 @@
-/* VoxelBooking Admin Stylesheet */
+/* ══════════════════════════════════════════════════════════════
+   VoxelBooking Admin — Tailwind CSS 4
+   ══════════════════════════════════════════════════════════════
+   Design tokens live in admin-head.php (inline <style>).
+   This file imports Tailwind and defines admin shell layout
+   components that complement the token-based system.
+   ══════════════════════════════════════════════════════════════ */
+
 @import "tailwindcss";
 
-/* Admin design tokens and styles will be added in Phase 2 */
+/* ── Admin Shell: Sidebar ────────────────────────────────────── */
+.vb-sidebar {
+    width: var(--vb-sidebar-width);
+    min-height: 100vh;
+    background: var(--vb-admin-bg-surface);
+    border-right: 1px solid var(--vb-admin-border-subtle);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 40;
+    transition: transform var(--vb-duration-normal) var(--vb-ease-out);
+}
+
+.vb-sidebar-brand {
+    height: var(--vb-topbar-height);
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0 1.125rem;
+}
+
+.vb-sidebar-logo {
+    color: var(--vb-admin-accent);
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 8px var(--vb-admin-accent-glow));
+}
+
+.vb-sidebar-name {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    white-space: nowrap;
+}
+
+.vb-sidebar-nav {
+    flex: 1;
+    padding: 0.75rem 0.625rem;
+    overflow-y: auto;
+}
+
+.vb-sidebar-section {
+    margin-bottom: 1.25rem;
+}
+
+.vb-sidebar-section-label {
+    font-size: var(--vb-text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--vb-admin-text-ghost);
+    padding: 0 0.75rem 0.375rem;
+    user-select: none;
+}
+
+.vb-sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1px;
+    font-size: var(--vb-text-sm);
+    font-weight: 450;
+    color: var(--vb-admin-text-secondary);
+    text-decoration: none;
+    border-radius: var(--vb-radius-md);
+    transition: background var(--vb-duration-fast), color var(--vb-duration-fast);
+}
+
+.vb-sidebar-link:hover {
+    background: var(--vb-admin-bg-hover);
+    color: var(--vb-admin-text-primary);
+}
+
+.vb-sidebar-link.active {
+    background: var(--vb-admin-accent-dim);
+    color: var(--vb-admin-accent);
+    font-weight: 500;
+}
+
+/* Lucide icons inside sidebar links */
+.vb-sidebar-link svg,
+.vb-sidebar-link [data-lucide] {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--vb-admin-text-tertiary);
+    transition: color var(--vb-duration-fast);
+}
+
+.vb-sidebar-link:hover svg,
+.vb-sidebar-link:hover [data-lucide] {
+    color: var(--vb-admin-text-secondary);
+}
+
+.vb-sidebar-link.active svg,
+.vb-sidebar-link.active [data-lucide] {
+    color: var(--vb-admin-accent);
+}
+
+.vb-sidebar-footer {
+    padding: 0.75rem 1.125rem;
+    border-top: 1px solid var(--vb-admin-border-subtle);
+    font-size: var(--vb-text-xs);
+    color: var(--vb-admin-text-ghost);
+}
+
+/* ── Admin Shell: Main wrapper ───────────────────────────────── */
+.vb-main {
+    margin-left: var(--vb-sidebar-width);
+    flex: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Admin Shell: Topbar ─────────────────────────────────────── */
+.vb-topbar {
+    height: var(--vb-topbar-height);
+    background: rgba(var(--vb-admin-bg-surface-rgb), 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--vb-admin-border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+}
+
+.vb-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.vb-topbar-title {
+    font-size: var(--vb-text-md);
+    font-weight: 600;
+    letter-spacing: var(--vb-tracking-tight);
+}
+
+.vb-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.vb-topbar-user {
+    font-size: var(--vb-text-sm);
+    color: var(--vb-admin-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.vb-topbar-user svg,
+.vb-topbar-user [data-lucide] {
+    width: 16px;
+    height: 16px;
+}
+
+/* Topbar icon button */
+.vb-topbar-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--vb-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--vb-admin-text-secondary);
+    background: transparent;
+    border: 1px solid var(--vb-admin-border-subtle);
+    cursor: pointer;
+    transition: background var(--vb-duration-fast);
+    position: relative;
+}
+
+.vb-topbar-btn:hover {
+    background: var(--vb-admin-bg-hover);
+}
+
+.vb-topbar-btn svg,
+.vb-topbar-btn [data-lucide] {
+    width: 16px;
+    height: 16px;
+}
+
+/* Theme toggle crossfade */
+.vb-topbar-btn .icon-sun,
+.vb-topbar-btn .icon-moon {
+    position: absolute;
+    transition: opacity var(--vb-duration-fast), transform var(--vb-duration-fast);
+}
+
+.vb-topbar-btn .icon-sun { opacity: 1; transform: rotate(0deg); }
+.vb-topbar-btn .icon-moon { opacity: 0; transform: rotate(-90deg); }
+[data-theme="dark"] .vb-topbar-btn .icon-sun { opacity: 0; transform: rotate(90deg); }
+[data-theme="dark"] .vb-topbar-btn .icon-moon { opacity: 1; transform: rotate(0deg); }
+
+/* Logout button */
+.vb-logout-btn {
+    font-size: var(--vb-text-sm);
+    font-weight: 500;
+    color: var(--vb-admin-text-secondary);
+    background: transparent;
+    border: 1px solid var(--vb-admin-border-subtle);
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--vb-radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-family: var(--vb-font-sans);
+    transition: background var(--vb-duration-fast), color var(--vb-duration-fast), border-color var(--vb-duration-fast);
+}
+
+.vb-logout-btn:hover {
+    background: var(--vb-admin-error-bg);
+    color: var(--vb-admin-error);
+    border-color: var(--vb-admin-error);
+}
+
+.vb-logout-btn svg,
+.vb-logout-btn [data-lucide] {
+    width: 16px;
+    height: 16px;
+}
+
+/* ── Admin Shell: Content ────────────────────────────────────── */
+.vb-content {
+    flex: 1;
+    padding: 1.5rem;
+    animation: vb-fade-in-up var(--vb-duration-slow) var(--vb-ease-out) both;
+    max-width: 1200px;
+}
+
+@media (min-width: 1440px) {
+    .vb-content { margin: 0 auto; width: 100%; }
+}
+
+/* ── Admin Shell: Mobile ─────────────────────────────────────── */
+.vb-hamburger { display: none; }
+
+.vb-sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 35;
+    backdrop-filter: blur(2px);
+}
+
+.vb-sidebar-overlay.active { display: block; }
+
+@media (max-width: 768px) {
+    .vb-sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+        box-shadow: var(--vb-admin-shadow-xl);
+    }
+    .vb-sidebar.open { transform: translateX(0); }
+    .vb-main { margin-left: 0; }
+    .vb-hamburger {
+        display: flex;
+        width: 36px;
+        height: 36px;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: 1px solid var(--vb-admin-border-subtle);
+        border-radius: var(--vb-radius-md);
+        cursor: pointer;
+        color: var(--vb-admin-text-secondary);
+    }
+    .vb-hamburger svg,
+    .vb-hamburger [data-lucide] {
+        width: 20px;
+        height: 20px;
+    }
+    .vb-content { padding: 1rem; }
+}
+
+/* ── Demo Banner ─────────────────────────────────────────────── */
+.vb-demo-banner {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.08));
+    border: 1px solid rgba(245, 158, 11, 0.27);
+    border-radius: var(--vb-radius-md);
+    padding: 0.625rem 1rem;
+    margin: 0 1.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: var(--vb-text-sm);
+}
+
+.vb-demo-banner-icon {
+    width: 18px;
+    height: 18px;
+    color: #f59e0b;
+    flex-shrink: 0;
+}
+
+.vb-demo-banner-title {
+    font-weight: 600;
+    color: #f59e0b;
+}
+
+.vb-demo-banner-desc {
+    color: var(--vb-admin-text-secondary);
+    margin-left: 0.375rem;
+}

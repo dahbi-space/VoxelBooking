@@ -72,6 +72,8 @@ return [
         'app_desc'           => 'Core application configuration.',
         'app_name_label'     => 'Application name',
         'app_url_label'      => 'Application URL',
+        'brand_url_label'    => 'Brand URL',
+        'brand_url_hint'     => 'URL for the "Powered by" link in booking page footers.',
         'timezone_label'     => 'Timezone',
         'date_format_label'  => 'Date format',
         'system_title'       => 'System Information',

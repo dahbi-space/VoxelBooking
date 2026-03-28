@@ -144,3 +144,35 @@ function app_name(): string
     $cached = $_ENV['APP_NAME'] ?? 'Booking System';
     return $cached;
 }
+
+/**
+ * Get the configured brand/vendor URL.
+ *
+ * Resolution order: DB setting → APP_URL env → default.
+ * Used for white-label support: the "Powered by" footer link
+ * can point to the operator's own domain instead of voxelbooking.com.
+ */
+function brand_url(): string
+{
+    static $cached = null;
+
+    if ($cached !== null) {
+        return $cached;
+    }
+
+    try {
+        $rows = Database::query(
+            "SELECT `value` FROM `settings` WHERE `key` = 'brand_url' LIMIT 1"
+        );
+        if (!empty($rows) && !empty($rows[0]['value'])) {
+            $cached = $rows[0]['value'];
+            return $cached;
+        }
+    } catch (\Throwable) {
+        // DB unavailable (pre-install, test context) — fall through
+    }
+
+    $cached = $_ENV['BRAND_URL'] ?? 'https://voxelbooking.com';
+    return $cached;
+}
+

@@ -50,6 +50,7 @@ import {
     Upload,
     RefreshCw,
     MoreVertical,
+    Minus,
     ExternalLink,
     Copy,
     Sun,
@@ -74,7 +75,7 @@ const ICON_SET = {
     Bell, Menu, X, Edit, Trash2, Eye, EyeOff,
     Check, AlertCircle, Info, Shield, Key, Mail, Clock,
     Building2, UserPlus, FileText, Download, Upload,
-    RefreshCw, MoreVertical, ExternalLink, Copy, Sun, Moon,
+    RefreshCw, MoreVertical, Minus, ExternalLink, Copy, Sun, Moon,
     Palette, Globe, Activity, TrendingUp, BarChart3, Hash,
     Bookmark, Briefcase, ShieldCheck, ScrollText, Server, Zap,
 };
