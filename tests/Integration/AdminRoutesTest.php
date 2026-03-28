@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Tests\Integration;
 
 use App\Engine\Database;
-use App\Engine\EnvLoader;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Integration tests for the admin booking/tenant/dashboard routes.
+ * Integration tests for admin routes.
  *
- * Tests HTTP-level behavior via curl against the running application.
- * Requires the app to be reachable at APP_TEST_URL.
+ * Covers operator flows, business-user flows, unauthenticated redirects,
+ * and dashboard correctness. All fixtures are provisioned automatically
+ * by TestFixtures::provision().
  */
 final class AdminRoutesTest extends TestCase
 {
@@ -37,10 +37,7 @@ final class AdminRoutesTest extends TestCase
         self::$appReachable = true;
 
         try {
-            require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
-            EnvLoader::load(dirname(__DIR__, 2) . '/.env');
-            Database::connect();
-            Database::execute('TRUNCATE TABLE `rate_limits`');
+            TestFixtures::provision();
         } catch (\Throwable) {
             // best-effort
         }
@@ -64,24 +61,20 @@ final class AdminRoutesTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════
-    // Operator: /admin/bookings
+    // Operator: page access
     // ════════════════════════════════════════════════════════════════
 
     public function test_operator_bookings_list_returns_200(): void
     {
-        $this->doLogin();
+        $this->doLoginOperator();
         $r = $this->get('/admin/bookings');
         $this->assertSame(200, $r['code'], 'Bookings list should be accessible');
         $this->assertStringContainsString('Bookings', $r['body']);
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // Operator: /admin/tenants
-    // ════════════════════════════════════════════════════════════════
-
     public function test_operator_tenants_list_returns_200(): void
     {
-        $this->doLogin();
+        $this->doLoginOperator();
         $r = $this->get('/admin/tenants');
         $this->assertSame(200, $r['code'], 'Tenants list should be accessible');
         $this->assertStringContainsString('Tenants', $r['body']);
@@ -89,57 +82,93 @@ final class AdminRoutesTest extends TestCase
 
     public function test_operator_tenant_create_returns_200(): void
     {
-        $this->doLogin();
+        $this->doLoginOperator();
         $r = $this->get('/admin/tenants/create');
         $this->assertSame(200, $r['code'], 'Create tenant form should be accessible');
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // Operator: /admin/tenants/{tenant_id} (tenant dashboard)
-    // ════════════════════════════════════════════════════════════════
-
-    public function test_operator_tenant_dashboard_returns_200_for_valid_tenant(): void
+    public function test_operator_tenant_dashboard_returns_200(): void
     {
-        $this->doLogin();
-
-        // Find a tenant from the database
-        $tenants = Database::query("SELECT `id` FROM `tenants` LIMIT 1");
-        if (empty($tenants)) {
-            $this->markTestSkipped('No tenants in database');
-        }
-
-        $tenantId = $tenants[0]['id'];
-        $r = $this->get("/admin/tenants/{$tenantId}");
+        $this->doLoginOperator();
+        $r = $this->get('/admin/tenants/' . TestFixtures::BUSINESS_TENANT_ID);
         $this->assertSame(200, $r['code'], 'Tenant dashboard should be accessible');
     }
 
     public function test_operator_tenant_dashboard_redirects_for_invalid_tenant(): void
     {
-        $this->doLogin();
+        $this->doLoginOperator();
         $r = $this->get('/admin/tenants/01NONEXISTENT00000000000');
         $this->assertSame(302, $r['code'], 'Invalid tenant should redirect');
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // Operator: /admin/tenants/{tenant_id}/bookings (tenant-context)
-    // ════════════════════════════════════════════════════════════════
-
     public function test_operator_tenant_bookings_returns_200(): void
     {
-        $this->doLogin();
-
-        $tenants = Database::query("SELECT `id` FROM `tenants` LIMIT 1");
-        if (empty($tenants)) {
-            $this->markTestSkipped('No tenants in database');
-        }
-
-        $tenantId = $tenants[0]['id'];
-        $r = $this->get("/admin/tenants/{$tenantId}/bookings");
+        $this->doLoginOperator();
+        $r = $this->get('/admin/tenants/' . TestFixtures::BUSINESS_TENANT_ID . '/bookings');
         $this->assertSame(200, $r['code'], 'Tenant bookings list should be accessible');
     }
 
+    public function test_operator_settings_returns_200(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/settings');
+        $this->assertSame(200, $r['code'], 'Settings should be accessible for operators');
+    }
+
     // ════════════════════════════════════════════════════════════════
-    // Unauthenticated access redirects to login
+    // Business user: redirect, allowed access, and denied access
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_business_user_admin_redirects_to_tenant_dashboard(): void
+    {
+        $this->doLoginBusinessUser();
+        $r = $this->get('/admin');
+        $this->assertSame(302, $r['code'], 'Business user on /admin should be redirected');
+        $this->assertStringContainsString(
+            '/admin/tenants/' . TestFixtures::BUSINESS_TENANT_ID,
+            $r['location'],
+            'Redirect should point to the business user\'s tenant dashboard'
+        );
+    }
+
+    public function test_business_user_tenant_dashboard_returns_200(): void
+    {
+        $this->doLoginBusinessUser();
+        $r = $this->get('/admin/tenants/' . TestFixtures::BUSINESS_TENANT_ID);
+        $this->assertSame(200, $r['code'], 'Business user should access own tenant dashboard');
+    }
+
+    public function test_business_user_tenant_bookings_returns_200(): void
+    {
+        $this->doLoginBusinessUser();
+        $r = $this->get('/admin/tenants/' . TestFixtures::BUSINESS_TENANT_ID . '/bookings');
+        $this->assertSame(200, $r['code'], 'Business user should access own tenant bookings');
+    }
+
+    public function test_business_user_settings_returns_403(): void
+    {
+        $this->doLoginBusinessUser();
+        $r = $this->get('/admin/settings');
+        $this->assertSame(403, $r['code'], 'Business user should be denied operator-only settings');
+    }
+
+    public function test_business_user_settings_account_returns_403(): void
+    {
+        $this->doLoginBusinessUser();
+        $r = $this->get('/admin/settings/account');
+        $this->assertSame(403, $r['code'], 'Business user should be denied operator-only account page');
+    }
+
+    public function test_business_user_other_tenant_returns_403(): void
+    {
+        $this->doLoginBusinessUser();
+        // Access a tenant that is NOT theirs
+        $r = $this->get('/admin/tenants/01SOMEOTHERTENANT0000000');
+        $this->assertSame(403, $r['code'], 'Business user should be denied access to other tenants');
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Unauthenticated access redirects
     // ════════════════════════════════════════════════════════════════
 
     public function test_unauthenticated_bookings_redirects_to_login(): void
@@ -157,31 +186,135 @@ final class AdminRoutesTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════
-    // Dashboard correctness
+    // Dashboard correctness: bounded counts and nearest-first
     // ════════════════════════════════════════════════════════════════
 
-    public function test_operator_dashboard_shows_real_metrics(): void
+    public function test_operator_dashboard_shows_bounded_metrics(): void
     {
-        $this->doLogin();
+        // Seed: insert a booking for today and one for 30 days ago
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+        $customerId = $this->ensureTestCustomer($tenantId);
+
+        $todayStart = date('Y-m-d 10:00:00');
+        $todayEnd = date('Y-m-d 10:30:00');
+        $oldStart = date('Y-m-d 10:00:00', strtotime('-30 days'));
+        $oldEnd = date('Y-m-d 10:30:00', strtotime('-30 days'));
+
+        // Clean prior test bookings
+        Database::execute("DELETE FROM `bookings` WHERE `id` LIKE '01TESTBK%'");
+
+        // Insert today's booking
+        Database::execute(
+            "INSERT INTO `bookings` (`id`, `tenant_id`, `booking_pattern`, `customer_id`, `start_datetime`, `end_datetime`, `status`, `source`)
+             VALUES (?, ?, 'timeslot', ?, ?, ?, 'confirmed', 'web')",
+            ['01TESTBKTODAY00000000000', $tenantId, $customerId, $todayStart, $todayEnd]
+        );
+
+        // Insert old booking (30 days ago — outside week window)
+        Database::execute(
+            "INSERT INTO `bookings` (`id`, `tenant_id`, `booking_pattern`, `customer_id`, `start_datetime`, `end_datetime`, `status`, `source`)
+             VALUES (?, ?, 'timeslot', ?, ?, ?, 'confirmed', 'web')",
+            ['01TESTBKOLD0000000000000', $tenantId, $customerId, $oldStart, $oldEnd]
+        );
+
+        $this->doLoginOperator();
         $r = $this->get('/admin');
         $this->assertSame(200, $r['code']);
+
+        // "Bookings Today" should be >= 1 (our seeded booking)
         $this->assertStringContainsString('Active Tenants', $r['body']);
         $this->assertStringContainsString('Bookings Today', $r['body']);
+        $this->assertStringContainsString('This Week', $r['body']);
+
+        // The metric value for "Bookings Today" should reflect our insert
+        // We check for the metric card rendering with a non-zero value
+        $todayMatch = preg_match('/Bookings Today.*?vb-metric-value[^>]*>(\d+)/s', $r['body'], $m);
+        $this->assertSame(1, $todayMatch, 'Should find Bookings Today metric');
+        $this->assertGreaterThanOrEqual(1, (int) ($m[1] ?? 0), 'Bookings Today should be >= 1');
+    }
+
+    public function test_tenant_dashboard_shows_nearest_first_upcoming(): void
+    {
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+        $customerId = $this->ensureTestCustomer($tenantId);
+
+        // Clean prior test bookings
+        Database::execute("DELETE FROM `bookings` WHERE `id` LIKE '01TESTBK%'");
+
+        $futureNear = date('Y-m-d 09:00:00', strtotime('+1 day'));
+        $futureNearEnd = date('Y-m-d 09:30:00', strtotime('+1 day'));
+        $futureFar = date('Y-m-d 14:00:00', strtotime('+5 days'));
+        $futureFarEnd = date('Y-m-d 14:30:00', strtotime('+5 days'));
+
+        // Insert far booking first (to confirm sort order, not insertion order)
+        Database::execute(
+            "INSERT INTO `bookings` (`id`, `tenant_id`, `booking_pattern`, `customer_id`, `start_datetime`, `end_datetime`, `status`, `source`)
+             VALUES (?, ?, 'timeslot', ?, ?, ?, 'confirmed', 'web')",
+            ['01TESTBKFAR0000000000000', $tenantId, $customerId, $futureFar, $futureFarEnd]
+        );
+
+        // Insert near booking second
+        Database::execute(
+            "INSERT INTO `bookings` (`id`, `tenant_id`, `booking_pattern`, `customer_id`, `start_datetime`, `end_datetime`, `status`, `source`)
+             VALUES (?, ?, 'timeslot', ?, ?, ?, 'confirmed', 'web')",
+            ['01TESTBKNEAR000000000000', $tenantId, $customerId, $futureNear, $futureNearEnd]
+        );
+
+        $this->doLoginOperator();
+        $r = $this->get('/admin/tenants/' . $tenantId);
+        $this->assertSame(200, $r['code']);
+
+        // "Next Up" should show the near booking before the far booking
+        $nearDate = date('M j', strtotime('+1 day'));
+        $farDate = date('M j', strtotime('+5 days'));
+
+        $nearPos = strpos($r['body'], $nearDate);
+        $farPos = strpos($r['body'], $farDate);
+
+        $this->assertNotFalse($nearPos, "Near booking date ($nearDate) should appear on tenant dashboard");
+        $this->assertNotFalse($farPos, "Far booking date ($farDate) should appear on tenant dashboard");
+        $this->assertLessThan($farPos, $nearPos, 'Nearest booking should appear before the far one (ASC sort)');
     }
 
     // ── Helpers ──
 
-    private function doLogin(): void
+    private function doLoginOperator(): void
     {
         $response = $this->get('/admin/login');
         preg_match('/name="_csrf_token" value="([^"]+)"/', $response['body'], $m);
         $csrf = $m[1] ?? '';
 
         $this->post('/admin/login', [
-            'email' => 'operator@example.com',
-            'password' => 'welcome3210',
+            'email' => TestFixtures::OPERATOR_EMAIL,
+            'password' => TestFixtures::OPERATOR_PASSWORD,
             '_csrf_token' => $csrf,
         ]);
+    }
+
+    private function doLoginBusinessUser(): void
+    {
+        $response = $this->get('/admin/login');
+        preg_match('/name="_csrf_token" value="([^"]+)"/', $response['body'], $m);
+        $csrf = $m[1] ?? '';
+
+        $this->post('/admin/login', [
+            'email' => TestFixtures::BUSINESS_EMAIL,
+            'password' => TestFixtures::BUSINESS_PASSWORD,
+            '_csrf_token' => $csrf,
+        ]);
+    }
+
+    /**
+     * Ensure a test customer exists for booking seed data.
+     */
+    private function ensureTestCustomer(string $tenantId): string
+    {
+        $id = '01TESTCUSTOMER0000000000';
+        Database::execute(
+            "INSERT IGNORE INTO `customers` (`id`, `tenant_id`, `name`, `email`) VALUES (?, ?, 'Test Customer', 'customer@example.com')",
+            [$id, $tenantId]
+        );
+        return $id;
     }
 
     /**

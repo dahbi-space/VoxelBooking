@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
-use App\Engine\Database;
-use App\Engine\EnvLoader;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -16,7 +14,8 @@ use PHPUnit\Framework\TestCase;
  *
  * Requires:
  * - The app running at APP_TEST_URL (defaults to https://voxelbooking-app.test)
- * - A valid operator account (operator@example.com / welcome3210)
+ *
+ * Test fixtures are provisioned automatically by TestFixtures::provision().
  */
 final class AuthFlowTest extends TestCase
 {
@@ -40,14 +39,10 @@ final class AuthFlowTest extends TestCase
 
         self::$appReachable = true;
 
-        // Clear rate limit records for test IP
         try {
-            require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
-            EnvLoader::load(dirname(__DIR__, 2) . '/.env');
-            Database::connect();
-            Database::execute('TRUNCATE TABLE `rate_limits`');
+            TestFixtures::provision();
         } catch (\Throwable) {
-            // best-effort
+            // best-effort — tests will fail if fixtures are missing
         }
     }
 
@@ -176,8 +171,8 @@ final class AuthFlowTest extends TestCase
         $csrf = $m[1] ?? '';
 
         $this->post('/admin/login', [
-            'email' => 'operator@example.com',
-            'password' => 'welcome3210',
+            'email' => TestFixtures::OPERATOR_EMAIL,
+            'password' => TestFixtures::OPERATOR_PASSWORD,
             '_csrf_token' => $csrf,
         ]);
     }
