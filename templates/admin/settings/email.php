@@ -30,41 +30,41 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
         <!-- SMTP Configuration -->
         <div class="vb-card vb-fade-in-up stagger-1">
             <div class="vb-card-header">
-                <div class="vb-card-title">SMTP Configuration</div>
-                <div class="vb-card-desc">Outgoing email server settings for notifications and reminders.</div>
+                <div class="vb-card-title"><?= __('admin.email.smtp_title') ?></div>
+                <div class="vb-card-desc"><?= __('admin.email.smtp_desc') ?></div>
             </div>
 
             <div class="vb-form-group">
-                <label for="mail_transport" class="vb-label">Transport</label>
+                <label for="mail_transport" class="vb-label"><?= __('admin.email.transport_label') ?></label>
                 <select id="mail_transport" name="mail_transport" class="vb-input">
-                    <option value="smtp" <?= ($settings['mail_transport'] ?? 'smtp') === 'smtp' ? 'selected' : '' ?>>SMTP — deliver via mail server</option>
-                    <option value="mailpit" <?= ($settings['mail_transport'] ?? '') === 'mailpit' ? 'selected' : '' ?>>Mailpit — deliver to localhost:1025 (dev/testing)</option>
-                    <option value="log" <?= ($settings['mail_transport'] ?? '') === 'log' ? 'selected' : '' ?>>Log only — record to email_log, do not send</option>
+                    <option value="smtp" <?= ($settings['mail_transport'] ?? 'smtp') === 'smtp' ? 'selected' : '' ?>><?= __('admin.email.transport_smtp') ?></option>
+                    <option value="mailpit" <?= ($settings['mail_transport'] ?? '') === 'mailpit' ? 'selected' : '' ?>><?= __('admin.email.transport_mailpit') ?></option>
+                    <option value="log" <?= ($settings['mail_transport'] ?? '') === 'log' ? 'selected' : '' ?>><?= __('admin.email.transport_log') ?></option>
                 </select>
             </div>
 
             <div class="vb-form-row">
                 <div class="vb-form-group">
-                    <label for="smtp_host" class="vb-label">SMTP host</label>
+                    <label for="smtp_host" class="vb-label"><?= __('admin.email.host_label') ?></label>
                     <input type="text" id="smtp_host" name="smtp_host" class="vb-input" value="<?= htmlspecialchars($settings['smtp_host'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="smtp.example.com">
                 </div>
                 <div class="vb-form-group">
-                    <label for="smtp_port" class="vb-label">Port</label>
+                    <label for="smtp_port" class="vb-label"><?= __('admin.email.port_label') ?></label>
                     <input type="number" id="smtp_port" name="smtp_port" class="vb-input" value="<?= htmlspecialchars($settings['smtp_port'] ?? '587', ENT_QUOTES, 'UTF-8') ?>" placeholder="587">
                 </div>
             </div>
             <div class="vb-form-group">
-                <label for="smtp_username" class="vb-label">Username</label>
+                <label for="smtp_username" class="vb-label"><?= __('admin.email.username_label') ?></label>
                 <input type="text" id="smtp_username" name="smtp_username" class="vb-input" value="<?= htmlspecialchars($settings['smtp_username'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="noreply@yourdomain.com" autocomplete="off">
             </div>
             <div class="vb-form-group">
-                <label for="smtp_password" class="vb-label">Password</label>
-                <input type="password" id="smtp_password" name="smtp_password" class="vb-input" placeholder="Leave blank to keep current" autocomplete="new-password">
+                <label for="smtp_password" class="vb-label"><?= __('admin.email.password_label') ?></label>
+                <input type="password" id="smtp_password" name="smtp_password" class="vb-input" placeholder="<?= __('admin.email.password_hint') ?>" autocomplete="new-password">
             </div>
             <div class="vb-form-group">
-                <label for="smtp_encryption" class="vb-label">Encryption</label>
+                <label for="smtp_encryption" class="vb-label"><?= __('admin.email.encryption_label') ?></label>
                 <select id="smtp_encryption" name="smtp_encryption" class="vb-input">
-                    <option value="tls" <?= ($settings['smtp_encryption'] ?? 'tls') === 'tls' ? 'selected' : '' ?>>TLS (recommended)</option>
+                    <option value="tls" <?= ($settings['smtp_encryption'] ?? 'tls') === 'tls' ? 'selected' : '' ?>><?= __('admin.email.tls_recommended') ?></option>
                     <option value="ssl" <?= ($settings['smtp_encryption'] ?? '') === 'ssl' ? 'selected' : '' ?>>SSL</option>
                     <option value="none" <?= ($settings['smtp_encryption'] ?? '') === 'none' ? 'selected' : '' ?>>None</option>
                 </select>
@@ -74,16 +74,16 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
         <!-- Sender Identity -->
         <div class="vb-card vb-fade-in-up stagger-2">
             <div class="vb-card-header">
-                <div class="vb-card-title">Sender Identity</div>
-                <div class="vb-card-desc">The "From" name and address that recipients will see.</div>
+                <div class="vb-card-title"><?= __('admin.email.sender_title') ?></div>
+                <div class="vb-card-desc"><?= __('admin.email.sender_desc') ?></div>
             </div>
 
             <div class="vb-form-group">
-                <label for="mail_from_name" class="vb-label">From name</label>
+                <label for="mail_from_name" class="vb-label"><?= __('admin.email.from_name_label') ?></label>
                 <input type="text" id="mail_from_name" name="mail_from_name" class="vb-input" value="<?= htmlspecialchars($settings['mail_from_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="VoxelBooking">
             </div>
             <div class="vb-form-group">
-                <label for="mail_from_address" class="vb-label">From address</label>
+                <label for="mail_from_address" class="vb-label"><?= __('admin.email.from_address_label') ?></label>
                 <input type="email" id="mail_from_address" name="mail_from_address" class="vb-input" value="<?= htmlspecialchars($settings['mail_from_address'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="noreply@yourdomain.com">
             </div>
         </div>
@@ -92,7 +92,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
     <div class="vb-form-actions" style="margin-top: 1.5rem;">
         <button type="submit" class="vb-btn vb-btn-primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Save email settings
+            <?= __('admin.email.save_button') ?>
         </button>
     </div>
 </form>

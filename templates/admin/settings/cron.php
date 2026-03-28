@@ -22,52 +22,52 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
     <!-- Cron Configuration -->
     <div class="vb-card vb-fade-in-up stagger-1">
         <div class="vb-card-header">
-            <div class="vb-card-title">Cron Job</div>
-            <div class="vb-card-desc">Add this command to your server's crontab (every 5 minutes recommended).</div>
+            <div class="vb-card-title"><?= __('admin.cron.job_title') ?></div>
+            <div class="vb-card-desc"><?= __('admin.cron.job_desc') ?></div>
         </div>
 
         <div class="vb-form-group">
-            <label class="vb-label">Crontab command</label>
+            <label class="vb-label"><?= __('admin.cron.command_label') ?></label>
             <input type="text" class="vb-input vb-input-mono" readonly value="*/5 * * * * curl -s <?= htmlspecialchars(($_ENV['APP_URL'] ?? 'https://yourdomain.com'), ENT_QUOTES, 'UTF-8') ?>/cron?token=<?= htmlspecialchars($cronToken, ENT_QUOTES, 'UTF-8') ?> > /dev/null 2>&1" onclick="this.select()">
-            <div class="vb-hint">Click to select, then copy.</div>
+            <div class="vb-hint"><?= __('admin.cron.command_hint') ?></div>
         </div>
 
         <div class="vb-form-group">
-            <label class="vb-label">Cron token</label>
+            <label class="vb-label"><?= __('admin.cron.token_label') ?></label>
             <input type="text" class="vb-input vb-input-mono" readonly value="<?= htmlspecialchars($cronToken, ENT_QUOTES, 'UTF-8') ?>" onclick="this.select()">
-            <div class="vb-hint">Auto-generated. Keep this token secret.</div>
+            <div class="vb-hint"><?= __('admin.cron.token_hint') ?></div>
         </div>
     </div>
 
     <!-- Status -->
     <div class="vb-card vb-fade-in-up stagger-2">
         <div class="vb-card-header">
-            <div class="vb-card-title">Status</div>
-            <div class="vb-card-desc">Cron job execution history.</div>
+            <div class="vb-card-title"><?= __('admin.cron.status_title') ?></div>
+            <div class="vb-card-desc"><?= __('admin.cron.status_desc') ?></div>
         </div>
 
         <div class="vb-info-row">
-            <span class="vb-info-label">Last run</span>
+            <span class="vb-info-label"><?= __('admin.cron.last_run') ?></span>
             <span class="vb-info-value">
                 <?php if ($lastRun): ?>
                     <code><?= htmlspecialchars($lastRun, ENT_QUOTES, 'UTF-8') ?></code>
                 <?php else: ?>
-                    <span style="color: var(--vb-admin-text-tertiary);">Never — cron has not run yet</span>
+                    <span style="color: var(--vb-admin-text-tertiary);"><?= __('admin.cron.never_run') ?></span>
                 <?php endif; ?>
             </span>
         </div>
         <div class="vb-info-row">
-            <span class="vb-info-label">Status</span>
+            <span class="vb-info-label"><?= __('admin.cron.status_label') ?></span>
             <span class="vb-info-value">
                 <?php if ($lastRun): ?>
                     <span style="color: var(--vb-admin-success); font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-                        Active
+                        <?= __('admin.cron.active') ?>
                     </span>
                 <?php else: ?>
                     <span style="color: var(--vb-admin-warning); font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        Not configured
+                        <?= __('admin.cron.not_configured') ?>
                     </span>
                 <?php endif; ?>
             </span>

@@ -9,7 +9,7 @@
  */
 use App\Engine\View;
 
-$pageTitle = $pageTitle ?? 'Deletion Queue';
+$pageTitle = $pageTitle ?? __('admin.deletion.title');
 $activePage = 'deletion-queue';
 $csrfToken = \App\Middleware\CsrfMiddleware::generateToken();
 $pendingRequests = $pendingRequests ?? [];
@@ -234,7 +234,7 @@ ob_start();
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            Deletion Queue
+            <?= __('admin.deletion.title') ?>
             <?php if (count($pendingRequests) > 0): ?>
                 <span class="dq-badge dq-badge-pending"><?= count($pendingRequests) ?></span>
             <?php else: ?>
@@ -246,7 +246,7 @@ ob_start();
 
 <!-- Pending Requests -->
 <div class="vb-card vb-fade-in-up stagger-2">
-    <h2 class="dq-section-title">Pending Requests</h2>
+    <h2 class="dq-section-title"><?= __('admin.deletion.pending_title') ?></h2>
 
     <?php if (empty($pendingRequests)): ?>
         <div class="dq-empty">
@@ -254,18 +254,18 @@ ob_start();
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 <polyline points="9 12 11 14 15 10"/>
             </svg>
-            <div class="dq-empty-title">No pending requests</div>
-            <p style="font-size: var(--vb-text-sm);">All customer deletion requests have been processed.</p>
+            <div class="dq-empty-title"><?= __('admin.deletion.empty_title') ?></div>
+            <p style="font-size: var(--vb-text-sm);"><?= __('admin.deletion.empty_desc') ?></p>
         </div>
     <?php else: ?>
         <table class="dq-table">
             <thead>
                 <tr>
-                    <th>Customer</th>
-                    <th>Tenant</th>
-                    <th>Requested</th>
-                    <th>Bookings</th>
-                    <th style="text-align: right;">Actions</th>
+                    <th><?= __('admin.deletion.th_customer') ?></th>
+                    <th><?= __('admin.deletion.th_tenant') ?></th>
+                    <th><?= __('admin.deletion.th_requested') ?></th>
+                    <th><?= __('admin.deletion.th_bookings') ?></th>
+                    <th style="text-align: right;"><?= __('admin.deletion.th_actions') ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -290,24 +290,24 @@ ob_start();
                             <input type="checkbox" id="dq-confirm-<?= View::e($req['id']) ?>" class="dq-confirm-toggle">
                             <span class="dq-confirm-step-1">
                                 <label for="dq-confirm-<?= View::e($req['id']) ?>" class="dq-btn-confirm" style="cursor: pointer;">
-                                    Anonymize
+                                    <?= __('admin.deletion.btn_anonymize') ?>
                                 </label>
                             </span>
                             <span class="dq-confirm-step-2">
                                 <form method="post" action="/admin/deletion-queue/confirm">
                                     <input type="hidden" name="_csrf_token" value="<?= View::e($csrfToken) ?>">
                                     <input type="hidden" name="customer_id" value="<?= View::e($req['id']) ?>">
-                                    <button type="submit" class="dq-btn-confirm">Confirm</button>
+                                    <button type="submit" class="dq-btn-confirm"><?= __('admin.deletion.btn_confirm') ?></button>
                                 </form>
                                 <label for="dq-confirm-<?= View::e($req['id']) ?>" class="dq-btn-dismiss" style="cursor: pointer;">
-                                    Cancel
+                                    <?= __('admin.deletion.btn_cancel') ?>
                                 </label>
                             </span>
 
                             <form method="post" action="/admin/deletion-queue/dismiss">
                                 <input type="hidden" name="_csrf_token" value="<?= View::e($csrfToken) ?>">
                                 <input type="hidden" name="customer_id" value="<?= View::e($req['id']) ?>">
-                                <button type="submit" class="dq-btn-dismiss">Dismiss</button>
+                                <button type="submit" class="dq-btn-dismiss"><?= __('admin.deletion.btn_dismiss') ?></button>
                             </form>
                         </div>
                     </td>
@@ -322,15 +322,15 @@ ob_start();
 <?php if (!empty($processedRequests)): ?>
 <div class="dq-processed-section vb-fade-in-up stagger-6">
     <div class="vb-card">
-        <h2 class="dq-section-title">Recently Processed</h2>
+        <h2 class="dq-section-title"><?= __('admin.deletion.recently_processed') ?></h2>
         <table class="dq-table">
             <thead>
                 <tr>
-                    <th>Customer</th>
-                    <th>Tenant</th>
-                    <th>Requested</th>
-                    <th>Processed</th>
-                    <th>Status</th>
+                    <th><?= __('admin.deletion.th_customer') ?></th>
+                    <th><?= __('admin.deletion.th_tenant') ?></th>
+                    <th><?= __('admin.deletion.th_requested') ?></th>
+                    <th><?= __('admin.deletion.th_processed') ?></th>
+                    <th><?= __('admin.deletion.th_status') ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -343,7 +343,7 @@ ob_start();
                     <td><span class="dq-tenant"><?= View::e($req['tenant_name']) ?></span></td>
                     <td><span class="dq-timestamp"><?= View::e($req['deletion_requested_at']) ?></span></td>
                     <td><span class="dq-timestamp"><?= View::e($req['anonymized_at'] ?? '') ?></span></td>
-                    <td><span class="dq-status-badge">Anonymized</span></td>
+                    <td><span class="dq-status-badge"><?= __('admin.deletion.status_anonymized') ?></span></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>

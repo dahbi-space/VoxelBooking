@@ -51,13 +51,13 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
 <div class="vb-card vb-fade-in-up stagger-1">
     <div class="vb-card-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <div class="vb-card-title">Audit Log</div>
-            <div class="vb-card-desc"><?= number_format($total) ?> entries · Structured event log for accountability and compliance</div>
+            <div class="vb-card-title"><?= __('admin.audit.title') ?></div>
+            <div class="vb-card-desc"><?= number_format($total) ?> <?= __('admin.audit.desc_suffix') ?></div>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
             <form method="GET" action="/admin/settings/audit" style="display: flex; gap: 0.5rem; align-items: center;">
                 <select name="action" class="vb-input" style="width: auto; min-width: 160px; font-size: var(--vb-text-xs);" onchange="this.form.submit()">
-                    <option value="">All events</option>
+                    <option value=""><?= __('admin.audit.all_events') ?></option>
                     <?php
                     $uniqueActions = array_unique(array_column($entries, 'action'));
                     // Use known labels for ordering, then any unknown actions
@@ -76,9 +76,9 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 1rem; opacity: 0.4;">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            <div style="font-size: var(--vb-text-sm); font-weight: 500;">No audit log entries<?= ($actionFilter ?? '') !== '' ? ' matching this filter' : '' ?></div>
+            <div style="font-size: var(--vb-text-sm); font-weight: 500;"><?= __('admin.audit.empty_title') ?><?= ($actionFilter ?? '') !== '' ? ' ' . __('admin.audit.empty_filter') : '' ?></div>
             <div style="font-size: var(--vb-text-xs); margin-top: 0.375rem; max-width: 24rem; margin-left: auto; margin-right: auto;">
-                Audit entries are created automatically when actions like logins, settings changes, and booking operations occur.
+                <?= __('admin.audit.empty_desc') ?>
             </div>
         </div>
     <?php else: ?>
@@ -86,12 +86,12 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
             <table class="vb-table" style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr>
-                        <th style="width: 10rem;">Time</th>
-                        <th style="width: 9rem;">Event</th>
-                        <th style="width: 7rem;">Actor</th>
-                        <th style="width: 6rem;">Entity</th>
-                        <th>Details</th>
-                        <th style="width: 5.5rem;">Request</th>
+                        <th style="width: 10rem;"><?= __('admin.audit.th_time') ?></th>
+                        <th style="width: 9rem;"><?= __('admin.audit.th_event') ?></th>
+                        <th style="width: 7rem;"><?= __('admin.audit.th_actor') ?></th>
+                        <th style="width: 6rem;"><?= __('admin.audit.th_entity') ?></th>
+                        <th><?= __('admin.audit.th_details') ?></th>
+                        <th style="width: 5.5rem;"><?= __('admin.audit.th_request') ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -175,17 +175,17 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
 
         <?php if ($totalPages > 1): ?>
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem 0.75rem; border-top: 1px solid var(--vb-admin-border); font-size: var(--vb-text-xs); color: var(--vb-admin-text-secondary);">
-                <span>Page <?= $page ?> of <?= $totalPages ?></span>
+                <span><?= str_replace([':page', ':total'], [$page, $totalPages], __('admin.audit.page_of')) ?></span>
                 <div style="display: flex; gap: 0.375rem;">
                     <?php if ($page > 1): ?>
                         <a href="/admin/settings/audit?page=<?= $page - 1 ?><?= ($actionFilter ?? '') !== '' ? '&action=' . urlencode($actionFilter) : '' ?>" class="vb-btn vb-btn-ghost" style="padding: 0.25rem 0.75rem; font-size: var(--vb-text-xs);">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-                            Previous
+                            <?= __('admin.audit.previous') ?>
                         </a>
                     <?php endif; ?>
                     <?php if ($page < $totalPages): ?>
                         <a href="/admin/settings/audit?page=<?= $page + 1 ?><?= ($actionFilter ?? '') !== '' ? '&action=' . urlencode($actionFilter) : '' ?>" class="vb-btn vb-btn-ghost" style="padding: 0.25rem 0.75rem; font-size: var(--vb-text-xs);">
-                            Next
+                            <?= __('admin.audit.next') ?>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                         </a>
                     <?php endif; ?>

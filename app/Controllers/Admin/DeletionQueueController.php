@@ -54,7 +54,7 @@ final class DeletionQueueController
         return View::response('admin.deletion-queue', [
             'pendingRequests'   => $pendingRequests,
             'processedRequests' => $processedRequests,
-            'pageTitle'         => 'Deletion Queue — VoxelBooking',
+            'pageTitle'         => __('admin.deletion.page_title'),
         ]);
     }
 
@@ -66,7 +66,7 @@ final class DeletionQueueController
         $customerId = $request->string('customer_id');
 
         if (empty($customerId)) {
-            Flash::set('error','Missing customer ID.');
+            Flash::set('error', __('admin.deletion.missing_customer_id'));
             return Response::redirect('/admin/deletion-queue');
         }
 
@@ -83,7 +83,7 @@ final class DeletionQueueController
         );
 
         if (empty($rows)) {
-            Flash::set('error','Customer not found or no pending deletion request.');
+            Flash::set('error', __('admin.deletion.not_found'));
             return Response::redirect('/admin/deletion-queue');
         }
 
@@ -94,7 +94,7 @@ final class DeletionQueueController
             $result = CustomerAnonymizer::anonymize($customerId);
 
             if (!$result['anonymized']) {
-                Flash::set('error','Anonymization failed: ' . ($result['reason'] ?? 'unknown'));
+                Flash::set('error', str_replace(':reason', $result['reason'] ?? 'unknown', __('admin.deletion.anonymize_failed')));
                 return Response::redirect('/admin/deletion-queue');
             }
 
@@ -111,13 +111,13 @@ final class DeletionQueueController
                 $customer['tenant_id'],
             );
 
-            Flash::set('success','Customer data has been anonymized. Deletion request processed.');
+            Flash::set('success', __('admin.deletion.anonymized_success'));
         } catch (\Throwable $e) {
             Logger::error('Deletion confirmation failed', [
                 'customer_id' => $customerId,
                 'error'       => $e->getMessage(),
             ]);
-            Flash::set('error','Failed to process deletion: ' . $e->getMessage());
+            Flash::set('error', str_replace(':error', $e->getMessage(), __('admin.deletion.confirm_failed')));
         }
 
         return Response::redirect('/admin/deletion-queue');
@@ -132,7 +132,7 @@ final class DeletionQueueController
         $reason = $request->string('reason');
 
         if (empty($customerId)) {
-            Flash::set('error','Missing customer ID.');
+            Flash::set('error', __('admin.deletion.missing_customer_id'));
             return Response::redirect('/admin/deletion-queue');
         }
 
@@ -149,7 +149,7 @@ final class DeletionQueueController
         );
 
         if (empty($rows)) {
-            Flash::set('error','Customer not found or no pending deletion request.');
+            Flash::set('error', __('admin.deletion.not_found'));
             return Response::redirect('/admin/deletion-queue');
         }
 
@@ -173,22 +173,22 @@ final class DeletionQueueController
                     [
                         'email_hash'   => AuditLog::hashEmail($customer['email']),
                         'operator_email' => Auth::user()['email'] ?? 'unknown',
-                        'reason'       => $reason ?: 'No reason provided',
+                        'reason'       => $reason ?: __('admin.deletion.no_reason'),
                         'requested_at' => $customer['deletion_requested_at'],
                     ],
                     $customer['tenant_id'],
                 );
 
-                Flash::set('success', 'Deletion request dismissed. Customer data retained.');
+                Flash::set('success', __('admin.deletion.dismissed_success'));
             } else {
-                Flash::set('error', 'Request was already processed by another operator.');
+                Flash::set('error', __('admin.deletion.dismiss_race'));
             }
         } catch (\Throwable $e) {
             Logger::error('Deletion dismissal failed', [
                 'customer_id' => $customerId,
                 'error'       => $e->getMessage(),
             ]);
-            Flash::set('error', 'Failed to dismiss deletion request.');
+            Flash::set('error', __('admin.deletion.dismiss_failed'));
         }
 
         return Response::redirect('/admin/deletion-queue');

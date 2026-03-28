@@ -28,19 +28,19 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
     <!-- Account Details -->
     <div class="vb-card vb-fade-in-up stagger-1">
         <div class="vb-card-header">
-            <div class="vb-card-title">Account Details</div>
-            <div class="vb-card-desc">Your operator account information.</div>
+            <div class="vb-card-title"><?= __('admin.account.details_title') ?></div>
+            <div class="vb-card-desc"><?= __('admin.account.details_desc') ?></div>
         </div>
         <div class="vb-info-row">
-            <span class="vb-info-label">Name</span>
+            <span class="vb-info-label"><?= __('admin.account.name_label') ?></span>
             <span class="vb-info-value"><?= htmlspecialchars($currentUser['name'] ?? 'Operator', ENT_QUOTES, 'UTF-8') ?></span>
         </div>
         <div class="vb-info-row">
-            <span class="vb-info-label">Email</span>
+            <span class="vb-info-label"><?= __('admin.account.email_label') ?></span>
             <span class="vb-info-value"><?= htmlspecialchars($currentUser['email'] ?? '—', ENT_QUOTES, 'UTF-8') ?></span>
         </div>
         <div class="vb-info-row">
-            <span class="vb-info-label">Role</span>
+            <span class="vb-info-label"><?= __('admin.account.role_label') ?></span>
             <span class="vb-info-value" style="text-transform: capitalize;">
                 <?= htmlspecialchars($currentUser['type'] ?? 'operator', ENT_QUOTES, 'UTF-8') ?>
             </span>
@@ -50,31 +50,31 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
     <!-- Change Password -->
     <div class="vb-card vb-fade-in-up stagger-2">
         <div class="vb-card-header">
-            <div class="vb-card-title">Change Password</div>
-            <div class="vb-card-desc">Update your account password. Minimum 8 characters.</div>
+            <div class="vb-card-title"><?= __('admin.account.change_pw_title') ?></div>
+            <div class="vb-card-desc"><?= __('admin.account.change_pw_desc') ?></div>
         </div>
         <form method="POST" action="/admin/settings/account">
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
             <div class="vb-form-group">
-                <label for="current_password" class="vb-label">Current password</label>
+                <label for="current_password" class="vb-label"><?= __('admin.account.current_pw_label') ?></label>
                 <input type="password" id="current_password" name="current_password" class="vb-input" required autocomplete="current-password">
             </div>
             <div class="vb-form-group">
-                <label for="new_password" class="vb-label">New password</label>
+                <label for="new_password" class="vb-label"><?= __('admin.account.new_pw_label') ?></label>
                 <input type="password" id="new_password" name="new_password" class="vb-input" required autocomplete="new-password" minlength="8">
                 <div class="vb-pw-track" id="pw-track">
                     <div class="vb-pw-fill" id="pw-fill"></div>
                 </div>
             </div>
             <div class="vb-form-group">
-                <label for="confirm_password" class="vb-label">Confirm new password</label>
+                <label for="confirm_password" class="vb-label"><?= __('admin.account.confirm_pw_label') ?></label>
                 <input type="password" id="confirm_password" name="confirm_password" class="vb-input" required autocomplete="new-password">
             </div>
             <div class="vb-form-actions">
                 <button type="submit" class="vb-btn vb-btn-primary">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    Update password
+                    <?= __('admin.account.update_pw_button') ?>
                 </button>
             </div>
         </form>

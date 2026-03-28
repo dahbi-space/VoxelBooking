@@ -8,7 +8,7 @@
  *
  * Variables: $user, $version
  */
-$pageTitle = 'Dashboard';
+$pageTitle = __('admin.dashboard.title');
 $activePage = 'dashboard';
 $csrfToken = \App\Middleware\CsrfMiddleware::generateToken();
 
@@ -18,35 +18,35 @@ ob_start();
 <!-- Metric Band -->
 <div class="vb-grid vb-grid-4" style="margin-bottom: 1.5rem;">
     <div class="vb-metric vb-fade-in-up stagger-1">
-        <div class="vb-metric-label">Active Tenants</div>
+        <div class="vb-metric-label"><?= __('admin.dashboard.active_tenants') ?></div>
         <div class="vb-metric-value">0</div>
         <div class="vb-metric-trend is-flat">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            No change
+            <?= __('admin.dashboard.no_change') ?>
         </div>
     </div>
     <div class="vb-metric vb-fade-in-up stagger-2">
-        <div class="vb-metric-label">Bookings Today</div>
+        <div class="vb-metric-label"><?= __('admin.dashboard.bookings_today') ?></div>
         <div class="vb-metric-value">0</div>
         <div class="vb-metric-trend is-flat">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Awaiting first booking
+            <?= __('admin.dashboard.awaiting_first') ?>
         </div>
     </div>
     <div class="vb-metric vb-fade-in-up stagger-3">
-        <div class="vb-metric-label">This Week</div>
+        <div class="vb-metric-label"><?= __('admin.dashboard.this_week') ?></div>
         <div class="vb-metric-value">0</div>
         <div class="vb-metric-trend is-flat">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            No data yet
+            <?= __('admin.dashboard.no_data_yet') ?>
         </div>
     </div>
     <div class="vb-metric vb-fade-in-up stagger-4">
-        <div class="vb-metric-label">Upcoming (24h)</div>
+        <div class="vb-metric-label"><?= __('admin.dashboard.upcoming_24h') ?></div>
         <div class="vb-metric-value">0</div>
         <div class="vb-metric-trend is-flat">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            No upcoming
+            <?= __('admin.dashboard.no_upcoming') ?>
         </div>
     </div>
 </div>
@@ -60,28 +60,28 @@ ob_start();
         <path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>
     </svg>
     <div>
-        <div class="vb-empty-title">Welcome to VoxelBooking</div>
+        <div class="vb-empty-title"><?= __('admin.dashboard.welcome_title') ?></div>
         <div class="vb-empty-desc">
-            Create your first tenant to start managing bookings. Each tenant represents a business — a salon, restaurant, clinic, or any service provider you manage.
+            <?= __('admin.dashboard.welcome_desc') ?>
         </div>
         <button class="vb-btn vb-btn-primary vb-btn-lg" onclick="window.location.href='#'">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Create your first tenant
+            <?= __('admin.dashboard.create_first_tenant') ?>
         </button>
         <div class="vb-empty-steps">
             <div class="vb-empty-step">
                 <span class="vb-empty-step-num">1</span>
-                Create tenant
+                <?= __('admin.dashboard.step_create') ?>
             </div>
             <svg class="vb-empty-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             <div class="vb-empty-step">
                 <span class="vb-empty-step-num">2</span>
-                Configure services
+                <?= __('admin.dashboard.step_configure') ?>
             </div>
             <svg class="vb-empty-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             <div class="vb-empty-step">
                 <span class="vb-empty-step-num">3</span>
-                Share booking page
+                <?= __('admin.dashboard.step_share') ?>
             </div>
         </div>
     </div>
