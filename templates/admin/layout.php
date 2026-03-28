@@ -102,24 +102,41 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                 <h1 class="vb-topbar-title"><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></h1>
             </div>
             <div class="vb-topbar-right">
-                <button type="button"
-                        class="vb-topbar-btn"
-                        @click="toggleTheme"
-                        aria-label="<?= __('admin.nav.toggle_theme') ?>">
-                    <i data-lucide="sun" class="icon-sun"></i>
-                    <i data-lucide="moon" class="icon-moon"></i>
-                </button>
+                <!-- Compact profile menu: avatar trigger → dropdown -->
+                <div class="vb-profile-menu" x-data="{ open: false }" @click.outside="open = false">
+                    <button type="button"
+                            class="vb-profile-trigger"
+                            @click="open = !open"
+                            aria-haspopup="true"
+                            :aria-expanded="open"
+                            aria-label="<?= __('admin.nav.profile_menu') ?>">
+                        <span class="vb-avatar vb-avatar-sm"><?= $operatorInitials ?></span>
+                        <i data-lucide="chevron-down" class="vb-profile-chevron" :class="open && 'is-open'"></i>
+                    </button>
 
-                <!-- Profile cluster: avatar + dropdown-style compact control -->
-                <div class="vb-profile">
-                    <span class="vb-avatar vb-avatar-sm"><?= $operatorInitials ?></span>
-                    <span class="vb-profile-name"><?= $operatorName ?></span>
-                    <form method="POST" action="/auth/logout" class="vb-form-flush">
-                        <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-                        <button type="submit" class="vb-topbar-btn" aria-label="<?= __('admin.nav.sign_out') ?>" data-tooltip="<?= __('admin.nav.sign_out') ?>">
-                            <i data-lucide="log-out"></i>
+                    <div class="vb-profile-dropdown" x-show="open" x-transition.opacity.duration.150ms x-cloak>
+                        <div class="vb-profile-dropdown-header">
+                            <span class="vb-avatar"><?= $operatorInitials ?></span>
+                            <div>
+                                <div class="vb-profile-dropdown-name"><?= $operatorName ?></div>
+                                <div class="vb-profile-dropdown-role"><?= htmlspecialchars(ucfirst($user['type'] ?? 'operator'), ENT_QUOTES, 'UTF-8') ?></div>
+                            </div>
+                        </div>
+                        <div class="vb-profile-dropdown-sep"></div>
+                        <button type="button" class="vb-profile-dropdown-item" @click="toggleTheme(); open = false">
+                            <i data-lucide="sun" class="icon-sun"></i>
+                            <i data-lucide="moon" class="icon-moon"></i>
+                            <?= __('admin.nav.toggle_theme') ?>
                         </button>
-                    </form>
+                        <div class="vb-profile-dropdown-sep"></div>
+                        <form method="POST" action="/auth/logout" class="vb-form-flush">
+                            <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                            <button type="submit" class="vb-profile-dropdown-item vb-profile-dropdown-danger">
+                                <i data-lucide="log-out"></i>
+                                <?= __('admin.nav.sign_out') ?>
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </header>

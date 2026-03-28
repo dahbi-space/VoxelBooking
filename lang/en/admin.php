@@ -19,6 +19,7 @@ return [
         'audit_log'      => 'Audit log',
         'system'         => 'System',
         'toggle_theme'   => 'Toggle theme',
+        'profile_menu'   => 'Profile menu',
         'toggle_sidebar' => 'Toggle sidebar',
         'sign_out'       => 'Sign out',
         'deletion_queue' => 'Deletion queue',
