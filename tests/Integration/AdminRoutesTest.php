@@ -116,6 +116,58 @@ final class AdminRoutesTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════
+    // Document title contract: browser tab titles must be page-specific
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_tenant_create_document_title_is_page_specific(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/tenants/create');
+        $this->assertSame(200, $r['code']);
+        $this->assertStringContainsString(
+            '<title>Create Tenant',
+            $r['body'],
+            'Browser tab should say "Create Tenant", not just "Tenants"'
+        );
+    }
+
+    public function test_tenant_edit_document_title_is_page_specific(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/tenants/' . TestFixtures::BUSINESS_TENANT_ID . '/edit');
+        $this->assertSame(200, $r['code']);
+        $this->assertStringContainsString(
+            '<title>Edit Tenant',
+            $r['body'],
+            'Browser tab should say "Edit Tenant", not just "Tenants"'
+        );
+    }
+
+    public function test_booking_detail_document_title_is_page_specific(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/bookings/' . TestFixtures::BOOKING_ID);
+        $this->assertSame(200, $r['code']);
+        $this->assertStringContainsString(
+            '<title>Booking Details',
+            $r['body'],
+            'Browser tab should say "Booking Details", not just "Bookings"'
+        );
+    }
+
+    public function test_tenant_list_document_title_is_section_name(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/tenants');
+        $this->assertSame(200, $r['code']);
+        $this->assertStringContainsString(
+            '<title>Tenants',
+            $r['body'],
+            'Tenant list tab should say "Tenants"'
+        );
+    }
+
+    // ════════════════════════════════════════════════════════════════
     // Business user: redirect, allowed access, and denied access
     // ════════════════════════════════════════════════════════════════
 

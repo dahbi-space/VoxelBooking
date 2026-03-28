@@ -72,6 +72,7 @@ final class BookingsController
         }
 
         return $this->render('admin.bookings.show', __('admin.bookings.title'), [
+            'documentTitle' => __('admin.bookings.detail_title'),
             'booking' => $booking,
             'backUrl' => '/admin/bookings',
         ]);
@@ -125,6 +126,7 @@ final class BookingsController
         }
 
         return $this->render('admin.bookings.show', __('admin.bookings.title'), [
+            'documentTitle' => __('admin.bookings.detail_title'),
             'booking' => $booking,
             'backUrl' => "/admin/tenants/{$tenantId}/bookings",
         ]);

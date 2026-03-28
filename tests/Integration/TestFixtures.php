@@ -32,6 +32,9 @@ final class TestFixtures
     public const BUSINESS_USER_ID = '01TESTBUSINESSUSR0000000';
     public const BUSINESS_TENANT_ID = '01TESTTENANT000000000000';
 
+    public const CUSTOMER_ID = '01TESTCUSTOMER0000000000';
+    public const BOOKING_ID  = '01TESTBOOKING00000000000';
+
     private static bool $provisioned = false;
 
     /**
@@ -87,6 +90,31 @@ final class TestFixtures
              (`id`, `tenant_id`, `name`, `email`, `password_hash`, `role`, `is_active`)
              VALUES (?, ?, 'Test Business User', ?, ?, 'owner', 1)",
             [self::BUSINESS_USER_ID, self::BUSINESS_TENANT_ID, self::BUSINESS_EMAIL, $hash]
+        );
+
+        // ── Customer + booking: delete then insert fresh ──
+        Database::execute(
+            "DELETE FROM `bookings` WHERE `id` = ?",
+            [self::BOOKING_ID]
+        );
+        Database::execute(
+            "DELETE FROM `customers` WHERE `id` = ?",
+            [self::CUSTOMER_ID]
+        );
+        Database::execute(
+            "INSERT INTO `customers` (`id`, `tenant_id`, `name`, `email`)
+             VALUES (?, ?, 'Test Customer', 'customer@example.com')",
+            [self::CUSTOMER_ID, self::BUSINESS_TENANT_ID]
+        );
+        Database::execute(
+            "INSERT INTO `bookings`
+             (`id`, `tenant_id`, `booking_pattern`, `customer_id`,
+              `start_datetime`, `end_datetime`, `status`, `source`)
+             VALUES (?, ?, 'timeslot', ?,
+              DATE_ADD(CURDATE(), INTERVAL 1 DAY),
+              DATE_ADD(DATE_ADD(CURDATE(), INTERVAL 1 DAY), INTERVAL 30 MINUTE),
+              'confirmed', 'web')",
+            [self::BOOKING_ID, self::BUSINESS_TENANT_ID, self::CUSTOMER_ID]
         );
 
         // Clear rate limits for clean test runs

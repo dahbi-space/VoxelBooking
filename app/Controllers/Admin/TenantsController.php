@@ -58,6 +58,7 @@ final class TenantsController
         }
 
         return $this->render('admin.tenants.create', __('admin.tenants.title'), [
+            'documentTitle' => __('admin.tenants.create'),
             'flash' => $this->flash(),
         ]);
     }
@@ -131,6 +132,7 @@ final class TenantsController
         }
 
         return $this->render('admin.tenants.edit', __('admin.tenants.title'), [
+            'documentTitle' => __('admin.tenants.edit'),
             'tenant' => $tenant,
             'flash'  => $this->flash(),
         ]);
