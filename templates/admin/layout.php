@@ -6,7 +6,9 @@
  * All admin pages extend this layout via ob_start() + $content.
  *
  * Icons: Lucide via data-lucide (rendered by admin/app.js createIcons).
- * State: Alpine.js for sidebar toggle and theme switch.
+ * State: Alpine.js (CSP build) — x-data="adminShell" registered in app.js.
+ *        All @click handlers reference method names (no inline JS expressions).
+ *        Sidebar class toggling done via $refs in JS (CSP-safe).
  * Styles: admin.css (Tailwind 4) + admin-head.php (design tokens).
  *
  * Variables: $user, $version, $pageTitle, $content (HTML), $activePage, $csrfToken
@@ -27,17 +29,15 @@ $csrfToken = $csrfToken ?? '';
     <?php include dirname(__DIR__) . '/partials/admin-head.php'; ?>
     <link rel="stylesheet" href="/assets/css/admin-css.css">
 </head>
-<body class="bg-[var(--vb-admin-bg-base)] min-h-screen flex"
-      x-data="{ sidebarOpen: false }"
-      @keydown.escape.window="sidebarOpen = false">
+<body x-data="adminShell">
 
-    <!-- Mobile overlay -->
+    <!-- Mobile overlay: x-show="sidebarOpen" is a CSP-safe property reference -->
     <div class="vb-sidebar-overlay"
-         :class="{ 'active': sidebarOpen }"
-         @click="sidebarOpen = false"></div>
+         x-show="sidebarOpen"
+         @click="closeSidebar"></div>
 
-    <!-- Sidebar -->
-    <aside class="vb-sidebar" :class="{ 'open': sidebarOpen }">
+    <!-- Sidebar: class toggling done via $refs in app.js (CSP-safe) -->
+    <aside class="vb-sidebar" x-ref="sidebar">
         <div class="vb-sidebar-brand">
             <svg class="vb-sidebar-logo" width="24" height="26" viewBox="0 0 48 52" xmlns="http://www.w3.org/2000/svg">
                 <polygon points="24,2 46,14 24,26 2,14" fill="currentColor" opacity="1.0"/>
@@ -54,12 +54,12 @@ $csrfToken = $csrfToken ?? '';
                     <i data-lucide="layout-dashboard"></i>
                     <?= __('admin.nav.dashboard') ?>
                 </a>
-                <a href="#" class="vb-sidebar-link <?= $activePage === 'tenants' ? 'active' : '' ?>">
+                <a href="/admin" class="vb-sidebar-link <?= $activePage === 'tenants' ? 'active' : '' ?>">
                     <i data-lucide="building-2"></i>
                     <?= __('admin.nav.tenants') ?>
                 </a>
                 <?php endif; ?>
-                <a href="#" class="vb-sidebar-link <?= $activePage === 'bookings' ? 'active' : '' ?>">
+                <a href="/admin" class="vb-sidebar-link <?= $activePage === 'bookings' ? 'active' : '' ?>">
                     <i data-lucide="calendar"></i>
                     <?= __('admin.nav.all_bookings') ?>
                 </a>
@@ -70,6 +70,10 @@ $csrfToken = $csrfToken ?? '';
                 <a href="/admin/settings" class="vb-sidebar-link <?= str_starts_with($activePage, 'settings') ? 'active' : '' ?>">
                     <i data-lucide="settings"></i>
                     <?= __('admin.nav.settings') ?>
+                </a>
+                <a href="/admin/deletion-queue" class="vb-sidebar-link <?= $activePage === 'deletion-queue' ? 'active' : '' ?>">
+                    <i data-lucide="shield"></i>
+                    <?= __('admin.nav.deletion_queue') ?>
                 </a>
             </div>
             <?php endif; ?>
@@ -86,7 +90,7 @@ $csrfToken = $csrfToken ?? '';
             <div class="vb-topbar-left">
                 <button type="button"
                         class="vb-hamburger"
-                        @click="sidebarOpen = !sidebarOpen"
+                        @click="toggleSidebar"
                         aria-label="<?= __('admin.nav.toggle_sidebar') ?>">
                     <i data-lucide="menu"></i>
                 </button>
@@ -94,25 +98,20 @@ $csrfToken = $csrfToken ?? '';
             </div>
             <div class="vb-topbar-right">
                 <span class="vb-topbar-user">
-                    <i data-lucide="users" class="w-4 h-4"></i>
+                    <i data-lucide="user"></i>
                     <?= htmlspecialchars($user['name'] ?? __('admin.layout.operator'), ENT_QUOTES, 'UTF-8') ?>
                 </span>
                 <button type="button"
                         class="vb-topbar-btn"
-                        @click="
-                            let html = document.documentElement;
-                            let next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                            html.setAttribute('data-theme', next);
-                            localStorage.setItem('vb-theme', next);
-                        "
+                        @click="toggleTheme"
                         aria-label="<?= __('admin.nav.toggle_theme') ?>">
-                    <i data-lucide="sun" class="icon-sun w-4 h-4"></i>
-                    <i data-lucide="moon" class="icon-moon w-4 h-4"></i>
+                    <i data-lucide="sun" class="icon-sun"></i>
+                    <i data-lucide="moon" class="icon-moon"></i>
                 </button>
                 <form method="POST" action="/auth/logout" class="m-0">
                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                     <button type="submit" class="vb-logout-btn">
-                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                        <i data-lucide="log-out"></i>
                         <?= __('admin.nav.sign_out') ?>
                     </button>
                 </form>

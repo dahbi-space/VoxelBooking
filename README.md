@@ -104,17 +104,22 @@ The admin panel uses **Tailwind CSS 4** for styling, **Alpine.js** for reactive 
 - Do **not** use inline `<svg>` if a Lucide icon exists for the same glyph.
 - After Alpine.js dynamically renders new DOM (e.g., `x-for`, `x-if`), call `window.refreshIcons()` to render any new `data-lucide` elements.
 
-**Alpine.js for shell/component state:**
+**Alpine.js (CSP build) for shell/component state:**
+
+The admin uses `@alpinejs/csp` (not the standard `alpinejs`) to comply with the application's Content-Security-Policy. This means:
 
 ```html
-<div x-data="{ open: false }">
-    <button @click="open = !open">Toggle</button>
-    <div x-show="open" x-transition>Content</div>
+<!-- Reference a registered component by name (CSP-safe) -->
+<div x-data="adminShell">
+    <button @click="toggleSidebar">Toggle</button>
+    <div x-show="sidebarOpen">Content</div>
 </div>
 ```
 
+- All component logic must be registered via `Alpine.data()` in `resources/js/admin/app.js`.
+- **Do not** use inline JS expressions in Alpine directives (`@click="count++"` will NOT work).
+- Use method references (`@click="toggleSidebar"`) and property references (`x-show="sidebarOpen"`).
 - Alpine is started in `resources/js/admin/app.js`. Do not call `Alpine.start()` elsewhere.
-- Use `x-data` on the nearest appropriate container, not on `<body>` globally.
 
 **CSS — Tailwind 4 + design tokens:**
 

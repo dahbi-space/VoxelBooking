@@ -21,6 +21,7 @@ return [
         'toggle_theme'   => 'Toggle theme',
         'toggle_sidebar' => 'Toggle sidebar',
         'sign_out'       => 'Sign out',
+        'deletion_queue' => 'Deletion queue',
     ],
 
     // ── Layout (shell fallbacks) ──
@@ -32,6 +33,10 @@ return [
     // ── Dashboard ──
     'dashboard' => [
         'title'               => 'Dashboard',
+        'good_morning'        => 'Good morning',
+        'good_afternoon'      => 'Good afternoon',
+        'good_evening'        => 'Good evening',
+        'greeting_subtitle'   => 'Here\'s your :app_name overview.',
         'active_tenants'      => 'Active Tenants',
         'bookings_today'      => 'Bookings Today',
         'this_week'           => 'This Week',
