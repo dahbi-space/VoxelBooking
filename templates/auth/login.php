@@ -6,6 +6,10 @@
  * Gradient mesh background. Staggered entrance animation.
  * Shake on error. No visible card border in light mode.
  *
+ * All styles in admin.css (compiled by Vite).
+ * Inline SVGs: voxel logo (brand mark), mail/lock field icons (Lucide
+ * not available on login — no app.js loaded), sun/moon theme toggle.
+ *
  * Variables: $csrfToken, $error
  */
 $error = $error ?? null;
@@ -20,156 +24,8 @@ $csrfToken = $csrfToken ?? '';
     <meta name="description" content="<?= __('auth.meta_description', ['app_name' => app_name()]) ?>">
     <title><?= __('auth.page_title', ['app_name' => app_name()]) ?></title>
     <?php include dirname(__DIR__) . '/partials/admin-head.php'; ?>
-    <style>
-        /* ── Login Layout — §15 ── */
-        body { background: var(--vb-admin-bg-base); min-height: 100vh; display: flex; overflow: hidden; }
-
-        /* Environmental panel */
-        .login-env {
-            flex: 1; display: flex; align-items: center; justify-content: center;
-            position: relative; overflow: hidden;
-            background:
-                radial-gradient(ellipse at 20% 50%, rgba(79, 70, 229, 0.06) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(129, 140, 248, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 60% 80%, rgba(99, 102, 241, 0.04) 0%, transparent 50%),
-                var(--vb-admin-bg-base);
-        }
-        [data-theme="dark"] .login-env {
-            background:
-                radial-gradient(ellipse at 20% 50%, rgba(129, 140, 248, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
-                radial-gradient(ellipse at 60% 80%, rgba(79, 70, 229, 0.06) 0%, transparent 50%),
-                var(--vb-admin-bg-base);
-        }
-
-        /* Geometric grid (isometric voxel lines at 3% opacity) */
-        .login-env::before {
-            content: '';
-            position: absolute; inset: 0;
-            background-image:
-                linear-gradient(30deg, var(--vb-admin-accent) 1px, transparent 1px),
-                linear-gradient(150deg, var(--vb-admin-accent) 1px, transparent 1px);
-            background-size: 60px 104px;
-            opacity: 0.025;
-        }
-        [data-theme="dark"] .login-env::before { opacity: 0.04; }
-
-        /* Floating voxel (environmental decoration) */
-        .login-env-voxel {
-            color: var(--vb-admin-accent); opacity: 0.08;
-            animation: vb-float 8s ease-in-out infinite;
-        }
-        [data-theme="dark"] .login-env-voxel { opacity: 0.12; }
-
-        /* Form panel */
-        .login-panel {
-            width: 480px; min-height: 100vh;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 3rem 3rem;
-            background: var(--vb-admin-bg-surface);
-            border-left: 1px solid var(--vb-admin-border-subtle);
-            position: relative;
-        }
-
-        .login-inner { width: 100%; max-width: 340px; }
-
-        /* Hero logo */
-        .login-hero {
-            display: flex; flex-direction: column; align-items: center;
-            gap: 0.75rem; margin-bottom: 2.5rem;
-            animation: vb-fade-in var(--vb-duration-normal) var(--vb-ease-out) 100ms both;
-        }
-        .login-hero-cube {
-            filter: drop-shadow(0 8px 24px var(--vb-admin-accent-glow));
-            animation: vb-float 4s ease-in-out infinite;
-        }
-        .login-hero-name {
-            font-size: var(--vb-text-3xl); font-weight: 700;
-            letter-spacing: -0.03em; color: var(--vb-admin-text-primary);
-        }
-        .login-hero-sub {
-            font-size: var(--vb-text-sm); color: var(--vb-admin-text-tertiary);
-            font-weight: 400; margin-top: -0.25rem;
-        }
-
-        /* Form card — no border in light mode per §14 */
-        .login-form-card {
-            animation: vb-fade-in-up 250ms var(--vb-ease-out) 200ms both;
-        }
-
-        .login-form-card h2 {
-            font-size: var(--vb-text-xl); font-weight: 600;
-            letter-spacing: var(--vb-tracking-tight); margin-bottom: 1.75rem;
-            color: var(--vb-admin-text-primary);
-        }
-
-        /* Input overrides for login (larger per §15) */
-        .login-form-card .vb-input { height: 44px; font-size: var(--vb-text-md); }
-        .login-form-card .vb-input-icon { padding-left: 2.75rem; }
-        .login-form-card .vb-form-group { margin-bottom: 1.25rem; }
-
-        /* Submit button (full width, xl size) */
-        .login-submit {
-            width: 100%; height: 48px; margin-top: 0.75rem;
-            font-size: var(--vb-text-md); font-weight: 600;
-            animation: vb-fade-in-up var(--vb-duration-slow) var(--vb-ease-out) 440ms both;
-        }
-        .login-submit:hover { transform: translateY(-1px); box-shadow: var(--vb-admin-shadow-md); }
-        .login-submit:active { transform: scale(0.98); box-shadow: none; }
-
-        /* Stagger form fields */
-        .login-field-1 { animation: vb-fade-in-up var(--vb-duration-slow) var(--vb-ease-out) 320ms both; }
-        .login-field-2 { animation: vb-fade-in-up var(--vb-duration-slow) var(--vb-ease-out) 380ms both; }
-
-        /* Error alert */
-        .login-error {
-            margin-bottom: 1.25rem;
-            animation: vb-fade-in-down var(--vb-duration-normal) var(--vb-ease-out) both;
-        }
-
-        /* Theme toggle */
-        .login-theme-toggle {
-            position: absolute; top: 1.5rem; right: 1.5rem;
-            width: 40px; height: 40px; border-radius: var(--vb-radius-full);
-            display: flex; align-items: center; justify-content: center;
-            background: transparent; border: 1px solid var(--vb-admin-border-subtle);
-            cursor: pointer; transition: background var(--vb-duration-fast);
-            color: var(--vb-admin-text-secondary); z-index: 10;
-        }
-        .login-theme-toggle:hover { background: var(--vb-admin-bg-hover); }
-        .login-theme-toggle .icon-sun,
-        .login-theme-toggle .icon-moon { position: absolute; transition: opacity var(--vb-duration-fast), transform var(--vb-duration-fast); }
-        .login-theme-toggle .icon-sun { opacity: 1; transform: rotate(0deg); }
-        .login-theme-toggle .icon-moon { opacity: 0; transform: rotate(-90deg); }
-        [data-theme="dark"] .login-theme-toggle .icon-sun { opacity: 0; transform: rotate(90deg); }
-        [data-theme="dark"] .login-theme-toggle .icon-moon { opacity: 1; transform: rotate(0deg); }
-
-        /* Footer */
-        .login-footer {
-            margin-top: 2rem; text-align: center;
-            font-size: var(--vb-text-xs); color: var(--vb-admin-text-ghost);
-            animation: vb-fade-in var(--vb-duration-normal) var(--vb-ease-out) 600ms both;
-        }
-
-        /* ── Mobile ── */
-        @media (max-width: 768px) {
-            .login-env { display: none; }
-            .login-panel {
-                width: 100%; border-left: none;
-                background:
-                    radial-gradient(ellipse at 50% 0%, rgba(79, 70, 229, 0.04) 0%, transparent 50%),
-                    var(--vb-admin-bg-surface);
-            }
-            [data-theme="dark"] .login-panel {
-                background:
-                    radial-gradient(ellipse at 50% 0%, rgba(129, 140, 248, 0.06) 0%, transparent 50%),
-                    var(--vb-admin-bg-surface);
-            }
-        }
-        @media (max-width: 400px) {
-            .login-panel { padding: 2rem 1.5rem; }
-        }
-    </style>
+    <link rel="stylesheet" href="/assets/css/admin-css.css">
+    <style>body { background: var(--vb-bg-base); min-height: 100vh; display: flex; overflow: hidden; }</style>
 </head>
 <body>
     <!-- Environmental Panel -->
@@ -192,9 +48,9 @@ $csrfToken = $csrfToken ?? '';
             <!-- Hero Logo -->
             <div class="login-hero">
                 <svg class="login-hero-cube" width="56" height="60" viewBox="0 0 48 52" xmlns="http://www.w3.org/2000/svg">
-                    <polygon points="24,2 46,14 24,26 2,14" fill="var(--vb-admin-accent)" opacity="1.0"/>
-                    <polygon points="2,14 24,26 24,50 2,38" fill="var(--vb-admin-accent)" opacity="0.7"/>
-                    <polygon points="46,14 24,26 24,50 46,38" fill="var(--vb-admin-accent)" opacity="0.4"/>
+                    <polygon points="24,2 46,14 24,26 2,14" fill="var(--vb-accent)" opacity="1.0"/>
+                    <polygon points="2,14 24,26 24,50 2,38" fill="var(--vb-accent)" opacity="0.7"/>
+                    <polygon points="46,14 24,26 24,50 46,38" fill="var(--vb-accent)" opacity="0.4"/>
                 </svg>
                 <span class="login-hero-name"><?= app_name() ?></span>
                 <span class="login-hero-sub"><?= __('auth.hero_sub') ?></span>

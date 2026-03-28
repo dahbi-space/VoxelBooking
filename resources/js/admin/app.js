@@ -76,6 +76,7 @@ import {
     Server,
     Zap,
     HelpCircle,
+    Lock,
 } from 'lucide';
 
 const ICON_SET = {
@@ -86,7 +87,7 @@ const ICON_SET = {
     Building2, UserPlus, FileText, Download, Upload,
     RefreshCw, MoreVertical, Minus, ExternalLink, Copy, Sun, Moon,
     Palette, Globe, Activity, TrendingUp, BarChart3, Hash,
-    Bookmark, Briefcase, ShieldCheck, ScrollText, Server, Zap, HelpCircle,
+    Bookmark, Briefcase, ShieldCheck, ScrollText, Server, Zap, HelpCircle, Lock,
 };
 
 // ── Alpine: CSP-safe component registration ──
