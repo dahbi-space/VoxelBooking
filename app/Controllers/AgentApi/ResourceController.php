@@ -144,9 +144,9 @@ final class ResourceController
         }
 
         $availability = Database::query(
-            'SELECT `staff_id`, `day_of_week`, `start_time`, `end_time`, `is_active`
+            'SELECT `staff_id`, `day_of_week`, `start_time`, `end_time`, `is_available`
              FROM `availability`
-             WHERE `tenant_id` = ? AND `is_active` = 1
+             WHERE `tenant_id` = ? AND `is_available` = 1
              ORDER BY `day_of_week` ASC, `start_time` ASC',
             [$tenantId]
         );

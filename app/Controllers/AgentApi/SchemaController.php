@@ -21,11 +21,12 @@ final class SchemaController
     public function index(Request $request): Response
     {
         $baseUrl = rtrim($_ENV['APP_URL'] ?? '', '/');
+        $appName = app_name();
 
         $schema = [
             'openapi' => '3.0.3',
             'info' => [
-                'title'       => 'VoxelBooking Agent API',
+                'title'       => $appName . ' Agent API',
                 'version'     => '1.0.0',
                 'description' => 'Read-only API for external agents and integrations. Authenticate with Bearer token.',
             ],

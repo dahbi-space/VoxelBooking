@@ -349,7 +349,7 @@ $customerId = $customer['id'] ?? '';
         </div>
 
         <div class="privacy-footer">
-            <?= __('booking.footer.powered_by') ?> VoxelBooking · <?= str_replace(':business', View::e($tenant['name'] ?? 'this business'), __('booking.privacy.footer_server')) ?>
+            <?= __('booking.footer.powered_by') ?> <?= app_name() ?> · <?= str_replace(':business', View::e($tenant['name'] ?? 'this business'), __('booking.privacy.footer_server')) ?>
         </div>
     </div>
 </body>

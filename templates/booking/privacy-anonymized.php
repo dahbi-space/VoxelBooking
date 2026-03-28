@@ -79,7 +79,7 @@ $brandColor = $tenant['brand_color'] ?? '#4F46E5';
         </p>
 
         <div class="privacy-footer">
-            <?= __('booking.footer.powered_by') ?> VoxelBooking · <?= View::e($tenant['name'] ?? '') ?>
+            <?= __('booking.footer.powered_by') ?> <?= app_name() ?> · <?= View::e($tenant['name'] ?? '') ?>
         </div>
     </div>
 </body>

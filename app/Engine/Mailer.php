@@ -96,7 +96,7 @@ final class Mailer
 
             // Sender
             $fromAddress = $config['mail_from_address'] ?: 'noreply@' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
-            $fromName    = $config['mail_from_name'] ?: 'VoxelBooking';
+            $fromName    = $config['mail_from_name'] ?: app_name();
             $mail->setFrom($fromAddress, $fromName);
 
             // Recipient

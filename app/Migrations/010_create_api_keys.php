@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Migration 023: Create api_keys table.
+ * Migration 010: Create api_keys table.
  *
  * Per PRD §XII and .ai/22-VoxelBooking-Agent-API-Checklist.md:
  * Bearer token authentication for the Agent API.

@@ -8,6 +8,7 @@ declare(strict_types=1);
  * Available in all templates and controllers via Composer autoload.
  */
 
+use App\Engine\Database;
 use App\Engine\Locale;
 use App\Engine\View;
 
@@ -110,4 +111,36 @@ function __dl(\DateTimeInterface $dt): string
 function __t(\DateTimeInterface $dt): string
 {
     return Locale::time($dt);
+}
+
+/**
+ * Get the configured application name.
+ *
+ * Reads app_name from the settings table (cached per-request).
+ * Falls back to APP_NAME env var, then generic default.
+ * Used for white-label support: operators set the name during installation
+ * or in Admin → Settings → General.
+ */
+function app_name(): string
+{
+    static $cached = null;
+
+    if ($cached !== null) {
+        return $cached;
+    }
+
+    try {
+        $rows = Database::query(
+            "SELECT `value` FROM `settings` WHERE `key` = 'app_name' LIMIT 1"
+        );
+        if (!empty($rows) && !empty($rows[0]['value'])) {
+            $cached = $rows[0]['value'];
+            return $cached;
+        }
+    } catch (\Throwable) {
+        // DB unavailable (pre-install, test context) — fall through
+    }
+
+    $cached = $_ENV['APP_NAME'] ?? 'Booking System';
+    return $cached;
 }

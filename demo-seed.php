@@ -53,6 +53,22 @@ CREATE TABLE operators (
 ");
 
 $pdo->exec("
+CREATE TABLE business_users (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'manager',
+    is_active INTEGER NOT NULL DEFAULT 1,
+    force_password_change INTEGER NOT NULL DEFAULT 0,
+    last_login_at TEXT DEFAULT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+)
+");
+
+$pdo->exec("
 CREATE TABLE tenants (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -134,6 +150,23 @@ CREATE TABLE blocked_dates (
     staff_id TEXT DEFAULT NULL,
     blocked_date TEXT NOT NULL,
     reason TEXT DEFAULT NULL
+)
+");
+
+$pdo->exec("
+CREATE TABLE api_keys (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    key_hash TEXT NOT NULL UNIQUE,
+    key_prefix TEXT NOT NULL,
+    scopes TEXT NOT NULL DEFAULT '[]',
+    role TEXT NOT NULL DEFAULT 'viewer',
+    is_active INTEGER NOT NULL DEFAULT 1,
+    last_used_at TEXT DEFAULT NULL,
+    expires_at TEXT DEFAULT NULL,
+    created_by TEXT DEFAULT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
 )
 ");
 
