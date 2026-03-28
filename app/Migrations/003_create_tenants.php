@@ -18,6 +18,7 @@ return [
         `timezone` VARCHAR(100) NOT NULL DEFAULT 'UTC',
         `booking_pattern` ENUM('timeslot','resource','capacity','event') NOT NULL,
         `locale` VARCHAR(10) NOT NULL DEFAULT 'en',
+        `locale_override` VARCHAR(10) NULL DEFAULT NULL,
         `currency` VARCHAR(3) NOT NULL DEFAULT 'EUR',
         `brand_color` VARCHAR(7) NOT NULL DEFAULT '#2563EB',
         `brand_color_text` VARCHAR(7) NOT NULL DEFAULT '#FFFFFF',
