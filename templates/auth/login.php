@@ -17,8 +17,8 @@ $csrfToken = $csrfToken ?? '';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <meta name="description" content="<?= __('auth.meta_description') ?>">
-    <title><?= __('auth.page_title') ?></title>
+    <meta name="description" content="<?= __('auth.meta_description', ['app_name' => app_name()]) ?>">
+    <title><?= __('auth.page_title', ['app_name' => app_name()]) ?></title>
     <?php include dirname(__DIR__) . '/partials/admin-head.php'; ?>
     <style>
         /* ── Login Layout — §15 ── */
@@ -196,7 +196,7 @@ $csrfToken = $csrfToken ?? '';
                     <polygon points="2,14 24,26 24,50 2,38" fill="var(--vb-admin-accent)" opacity="0.7"/>
                     <polygon points="46,14 24,26 24,50 46,38" fill="var(--vb-admin-accent)" opacity="0.4"/>
                 </svg>
-                <span class="login-hero-name"><?= __('auth.hero_name') ?></span>
+                <span class="login-hero-name"><?= app_name() ?></span>
                 <span class="login-hero-sub"><?= __('auth.hero_sub') ?></span>
             </div>
 
@@ -235,7 +235,7 @@ $csrfToken = $csrfToken ?? '';
             </div>
 
             <div class="login-footer">
-                <?= __('auth.footer') ?>
+                <?= __('auth.footer', ['app_name' => app_name()]) ?>
             </div>
         </div>
     </div>

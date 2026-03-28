@@ -22,7 +22,7 @@ return [
     'deletion_pending'    => 'Your data deletion request is being processed. This will be completed within 30 days.',
     'data_anonymized'     => 'Your data has been anonymized.',
     'anonymized_note'     => 'Booking records are retained for operational purposes, but all personal information has been removed.',
-    'powered_by'          => 'Powered by VoxelBooking',
+    'powered_by'          => 'Powered by :app_name',
     'data_stored_on'      => 'Your data is stored on :name\'s server',
     'page_not_found'      => 'Page not found',
     'page_not_found_desc' => 'The booking page you\'re looking for doesn\'t exist or has been removed.',

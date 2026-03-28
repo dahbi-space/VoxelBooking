@@ -16,7 +16,7 @@ final class HealthController
     {
         return Response::json([
             'status' => 'ok',
-            'app'    => 'VoxelBooking',
+            'app'    => app_name(),
             'php'    => PHP_VERSION,
             'time'   => date('c'),
         ]);

@@ -11,7 +11,7 @@ $user = $user ?? null;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title><?= __('admin.errors.404_page_title') ?></title>
+    <title><?= __('admin.errors.404_page_title', ['app_name' => app_name()]) ?></title>
     <?php include dirname(__DIR__) . '/partials/admin-head.php'; ?>
     <style>
         body {

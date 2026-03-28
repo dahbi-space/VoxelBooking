@@ -48,7 +48,7 @@ return [
 
     // ── Wizard Template ──
     'wizard' => [
-        'page_title'             => 'Install — VoxelBooking',
+        'page_title'             => 'Install — :app_name',
         'complete_page_title'    => 'Installation Complete',
 
         // Step-bar short names (progress bar)
@@ -117,7 +117,7 @@ return [
 
         // Complete step
         'complete_title'         => 'Installation Complete',
-        'ready_message'          => 'VoxelBooking is ready to accept bookings.',
+        'ready_message'          => ':app_name is ready to accept bookings.',
         'go_to_dashboard'        => 'Go to Dashboard',
     ],
 ];

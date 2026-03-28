@@ -18,8 +18,8 @@ $stepTitles = [1 => __('install.wizard.step_bar_1'), 2 => __('install.wizard.ste
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <meta name="description" content="VoxelBooking Installation Wizard">
-    <title><?= __('install.wizard.page_title') ?></title>
+    <meta name="description" content="<?= ($_ENV['APP_NAME'] ?? 'VoxelBooking') ?> Installation Wizard">
+    <title><?= __('install.wizard.page_title', ['app_name' => $_ENV['APP_NAME'] ?? 'VoxelBooking']) ?></title>
     <style>
         /* ── Self-hosted Inter (PRD §II: WOFF2, self-hosted) ── */
         @font-face {
@@ -628,7 +628,7 @@ $stepTitles = [1 => __('install.wizard.step_bar_1'), 2 => __('install.wizard.ste
                     <path class="voxel-left"  d="M4 7.5L12 12L12 21L4 16.5Z" />
                     <path class="voxel-right" d="M20 7.5L12 12L12 21L20 16.5Z" />
                 </svg>
-                <div class="vb-hero-text">VoxelBooking</div>
+                <div class="vb-hero-text"><?= htmlspecialchars($_ENV['APP_NAME'] ?? 'VoxelBooking', ENT_QUOTES, 'UTF-8') ?></div>
             </div>
 
             <?php if ($step === 'complete'): ?>
@@ -796,7 +796,7 @@ $stepTitles = [1 => __('install.wizard.step_bar_1'), 2 => __('install.wizard.ste
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="mail_from_name"><?= __('install.wizard.mail_from_name') ?></label>
-                        <input type="text" id="mail_from_name" name="mail_from_name" class="form-input" value="VoxelBooking">
+                        <input type="text" id="mail_from_name" name="mail_from_name" class="form-input" value="<?= htmlspecialchars($_ENV['APP_NAME'] ?? 'VoxelBooking', ENT_QUOTES, 'UTF-8') ?>">
                     </div>
                 </div>
 
@@ -937,7 +937,7 @@ $stepTitles = [1 => __('install.wizard.step_bar_1'), 2 => __('install.wizard.ste
                 </svg>
 
                 <h2><?= __('install.wizard.complete_title') ?></h2>
-                <p><?= __('install.wizard.ready_message') ?></p>
+                <p><?= __('install.wizard.ready_message', ['app_name' => $_ENV['APP_NAME'] ?? 'VoxelBooking']) ?></p>
 
                 <?php if (!empty($session['tenant_slug'])): ?>
                 <div class="booking-url">

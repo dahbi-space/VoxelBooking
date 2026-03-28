@@ -60,7 +60,7 @@ ob_start();
         <path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>
     </svg>
     <div>
-        <div class="vb-empty-title"><?= __('admin.dashboard.welcome_title') ?></div>
+        <div class="vb-empty-title"><?= __('admin.dashboard.welcome_title', ['app_name' => app_name()]) ?></div>
         <div class="vb-empty-desc">
             <?= __('admin.dashboard.welcome_desc') ?>
         </div>

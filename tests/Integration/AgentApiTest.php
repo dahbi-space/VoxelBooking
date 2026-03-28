@@ -154,13 +154,31 @@ final class AgentApiTest extends TestCase
 
     public function testSchemaUsesConfigurableAppName(): void
     {
+        // Set a known app_name
+        try {
+            Database::execute(
+                "INSERT INTO `settings` (`key`, `value`, `updated_at`) VALUES ('app_name', 'TestBookingApp', NOW())
+                 ON DUPLICATE KEY UPDATE `value` = 'TestBookingApp', `updated_at` = NOW()"
+            );
+        } catch (\Throwable) {
+            $this->markTestSkipped('Cannot update settings');
+        }
+
         $response = $this->apiGet('/api/agent/v1/schema');
         $schema = json_decode($response['body'], true);
 
         $title = $schema['info']['title'] ?? '';
-        // Should NOT contain fixed 'VoxelBooking' unless that's the configured app_name
-        $this->assertStringContainsString('Agent API', $title);
-        $this->assertNotEmpty($title);
+        $this->assertSame('TestBookingApp Agent API', $title,
+            'Schema title must include the configured app_name');
+
+        // Restore original
+        try {
+            Database::execute(
+                "UPDATE `settings` SET `value` = 'VoxelBooking' WHERE `key` = 'app_name'"
+            );
+        } catch (\Throwable) {
+            // best-effort
+        }
     }
 
     // ════════════════════════════════════════════════════════════════

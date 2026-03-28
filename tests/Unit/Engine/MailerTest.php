@@ -137,8 +137,33 @@ final class MailerTest extends TestCase
         $this->assertStringContainsString('Test Title', $html);
         $this->assertStringContainsString('Test body content.', $html);
         $this->assertStringContainsString('Test footer note.', $html);
-        $this->assertStringContainsString('VoxelBooking', $html);
+        // Powered-by line now uses app_name() — in test context this is the env fallback
+        $this->assertStringContainsString('Powered by', $html);
         $this->assertStringContainsString('<html>', $html);
+    }
+
+    /**
+     * Email translations correctly substitute :app_name placeholder.
+     */
+    public function testEmailTranslationsSubstituteAppName(): void
+    {
+        $testName = 'MyTestApp';
+        $replacements = ['app_name' => $testName];
+
+        // Test subject
+        $subject = __('email.test.subject', $replacements);
+        $this->assertStringContainsString($testName, $subject);
+        $this->assertStringNotContainsString(':app_name', $subject);
+
+        // Common powered_by
+        $poweredBy = __('email.common.powered_by', $replacements);
+        $this->assertStringContainsString($testName, $poweredBy);
+        $this->assertStringNotContainsString(':app_name', $poweredBy);
+
+        // Operator deletion footer
+        $footer = __('email.operator_deletion.footer', $replacements);
+        $this->assertStringContainsString($testName, $footer);
+        $this->assertStringNotContainsString(':app_name', $footer);
     }
 
     /**

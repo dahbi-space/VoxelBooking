@@ -58,17 +58,17 @@ return [
         'detail_email'     => 'Email:',
         'detail_hashed'    => '(hashed)',
         'detail_tenant'    => 'Tenant:',
-        'footer'           => 'Log in to VoxelBooking and navigate to the Deletion Queue to process this request.',
+        'footer'           => 'Log in to :app_name and navigate to the Deletion Queue to process this request.',
     ],
 
     'test' => [
-        'subject' => 'VoxelBooking — SMTP Test',
+        'subject' => ':app_name — SMTP Test',
         'title'   => 'SMTP Configuration Verified',
         'body'    => 'This test email confirms your SMTP settings are working correctly.',
     ],
 
     'common' => [
         'regards'    => 'Best regards,',
-        'powered_by' => 'Powered by VoxelBooking',
+        'powered_by' => 'Powered by :app_name',
     ],
 ];

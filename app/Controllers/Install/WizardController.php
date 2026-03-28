@@ -125,7 +125,7 @@ final class WizardController
         $envPath = $basePath . '/.env';
 
         EnvWriter::setMultiple($envPath, [
-            'APP_NAME'     => 'VoxelBooking',
+            'APP_NAME'     => $_ENV['APP_NAME'] ?? 'VoxelBooking',
             'APP_URL'      => $appUrl,
             'APP_DEBUG'    => 'false',
             'APP_TIMEZONE' => 'UTC',
@@ -271,7 +271,8 @@ final class WizardController
         $locale = $request->string('locale', 'en') ?: 'en';
 
         $this->setSetting('operator_email', $request->string('email'));
-        $this->setSetting('app_name', $request->string('app_name', 'VoxelBooking') ?: 'VoxelBooking');
+        $defaultName = $_ENV['APP_NAME'] ?? 'VoxelBooking';
+        $this->setSetting('app_name', $request->string('app_name', $defaultName) ?: $defaultName);
         $this->setSetting('default_timezone', $timezone);
         $this->setSetting('default_locale', $locale);
         $this->setSetting('cron_secret', bin2hex(random_bytes(32)));

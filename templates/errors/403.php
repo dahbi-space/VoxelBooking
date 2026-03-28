@@ -8,7 +8,7 @@ $user = $user ?? null;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title><?= __('admin.errors.403_page_title') ?></title>
+    <title><?= __('admin.errors.403_page_title', ['app_name' => app_name()]) ?></title>
     <?php include dirname(__DIR__) . '/partials/admin-head.php'; ?>
     <style>
         body { font-family: var(--vb-font-sans); background: var(--vb-admin-bg-base); color: var(--vb-admin-text-primary); min-height: 100vh; display: flex; align-items: center; justify-content: center; -webkit-font-smoothing: antialiased; }

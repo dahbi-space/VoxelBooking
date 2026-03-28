@@ -139,11 +139,11 @@ final class Mailer
     {
         $result = self::send(
             $to,
-            __('email.test.subject'),
+            __('email.test.subject', ['app_name' => app_name()]),
             '<html><body>'
             . '<h2 style="font-family: -apple-system, sans-serif;">' . __('email.test.title') . '</h2>'
             . '<p style="font-family: -apple-system, sans-serif; color: #666;">' . __('email.test.body') . '</p>'
-            . '<p style="font-family: -apple-system, sans-serif; color: #999; font-size: 12px;">' . __('email.common.powered_by') . ' — ' . Locale::datetime(new \DateTimeImmutable()) . '</p>'
+            . '<p style="font-family: -apple-system, sans-serif; color: #999; font-size: 12px;">' . __('email.common.powered_by', ['app_name' => app_name()]) . ' — ' . Locale::datetime(new \DateTimeImmutable()) . '</p>'
             . '</body></html>',
             'test',
         );
@@ -236,7 +236,7 @@ final class Mailer
             . "<strong>" . __('email.operator_deletion.detail_customer') . "</strong> {$customerName}<br>"
             . "<strong>" . __('email.operator_deletion.detail_email') . "</strong> " . AuditLog::hashEmail($customerEmail) . " " . __('email.operator_deletion.detail_hashed') . "<br>"
             . "<strong>" . __('email.operator_deletion.detail_tenant') . "</strong> {$tenantName}",
-            __('email.operator_deletion.footer'),
+            __('email.operator_deletion.footer', ['app_name' => app_name()]),
         );
 
         return self::send($operatorEmail, $subject, $html, 'operator_notification', $tenantId);
@@ -357,7 +357,7 @@ final class Mailer
      */
     private static function renderPrivacyEmail(string $title, string $body, string $footer): string
     {
-        $poweredBy = __('email.common.powered_by');
+        $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
 
         return <<<HTML
         <html>

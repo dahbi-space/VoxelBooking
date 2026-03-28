@@ -6,8 +6,8 @@ declare(strict_types=1);
  * English translations: authentication.
  */
 return [
-    'page_title'          => 'Login — VoxelBooking',
-    'meta_description'    => 'VoxelBooking Admin Login',
+    'page_title'          => 'Login — :app_name',
+    'meta_description'    => ':app_name Admin Login',
     'hero_name'           => 'VoxelBooking',
     'hero_sub'            => 'Self-hosted booking platform',
     'login_heading'       => 'Sign in to your account',
@@ -21,6 +21,6 @@ return [
     'invalid_credentials' => 'Invalid email or password.',
     'rate_limited'        => 'Too many login attempts. Please try again later.',
     'session_expired'     => 'Your session has expired. Please sign in again.',
-    'footer'              => 'Powered by VoxelBooking · Self-hosted',
+    'footer'              => 'Powered by :app_name · Self-hosted',
     'toggle_theme'        => 'Toggle theme',
 ];
