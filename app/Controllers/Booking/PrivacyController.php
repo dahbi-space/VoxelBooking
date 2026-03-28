@@ -152,7 +152,7 @@ final class PrivacyController
             $tenant['id'],
         );
 
-        $filename = 'voxelbooking-data-' . \App\Engine\Locale::date(new \DateTimeImmutable()) . '.json';
+        $filename = 'voxelbooking-data-' . date('Y-m-d') . '.json';
 
         $response = Response::json(json_decode($json, true));
         $response->header('Content-Disposition', "attachment; filename=\"{$filename}\"");

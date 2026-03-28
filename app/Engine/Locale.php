@@ -268,6 +268,19 @@ final class Locale
     }
 
     /**
+     * Format datetime with seconds (audit-grade precision).
+     *
+     * Uses datetime_full_format from locale config, falling back to
+     * the standard datetime_format with seconds appended.
+     */
+    public static function datetimeFull(\DateTimeInterface $dt): string
+    {
+        $config = self::getConfig();
+
+        return $dt->format($config['datetime_full_format'] ?? ($config['datetime_format'] ?? 'Y-m-d H:i') . ':s');
+    }
+
+    /**
      * Get day name for a day of the week (0=Sunday, 6=Saturday).
      */
     public static function dayName(int $dayOfWeek): string

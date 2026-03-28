@@ -103,7 +103,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                         ?>
                         <tr class="vb-audit-row">
                             <td style="font-size: var(--vb-text-xs); color: var(--vb-admin-text-secondary); font-family: var(--vb-font-mono); white-space: nowrap;">
-                                <?= \App\Engine\Locale::datetime($createdAt) ?>
+                                <?= \App\Engine\Locale::datetimeFull($createdAt) ?>
                             </td>
                             <td>
                                 <span class="vb-audit-badge" style="
