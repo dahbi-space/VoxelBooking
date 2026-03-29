@@ -71,11 +71,18 @@ final class AuthController
     }
 
     /**
-     * Log out and redirect to login.
+     * Log out — or exit impersonation.
+     *
+     * If impersonating: exits impersonation, keeps operator session, redirects to /admin/tenants.
+     * Otherwise: real logout, redirects to /admin/login.
      */
     public function logout(Request $request): Response
     {
-        Auth::logout();
+        $wasImpersonating = Auth::logout();
+
+        if ($wasImpersonating) {
+            return Response::redirect('/admin/tenants');
+        }
 
         return Response::redirect('/admin/login');
     }

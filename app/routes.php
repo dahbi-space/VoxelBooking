@@ -113,6 +113,10 @@ return function (Router $router): void {
             // Calendar views — tenant-context (all business user roles + operator)
             $router->get('/admin/tenants/{tenant_id}/calendar', \App\Controllers\Admin\CalendarController::class, 'day');
             $router->get('/admin/tenants/{tenant_id}/calendar/week', \App\Controllers\Admin\CalendarController::class, 'week');
+
+            // Impersonation — operator-only (enforced in controller)
+            $router->post('/admin/tenants/{tenant_id}/impersonate', \App\Controllers\Admin\ImpersonationController::class, 'start');
+            $router->post('/admin/impersonate/exit', \App\Controllers\Admin\ImpersonationController::class, 'exit');
         });
 
         // ── Public booking pages ──

@@ -19,6 +19,10 @@ $pageTitle = $pageTitle ?? __('admin.layout.default_title');
 $activePage = $activePage ?? 'dashboard';
 $csrfToken = $csrfToken ?? '';
 
+$isImpersonating = \App\Engine\Auth::isImpersonating();
+$impersonatedTenantId = $isImpersonating ? \App\Engine\Auth::impersonatedTenantId() : null;
+$impersonatedTenantName = $isImpersonating ? \App\Engine\Auth::impersonatedTenantName() : null;
+
 $operatorName = htmlspecialchars($user['name'] ?? __('admin.layout.operator'), ENT_QUOTES, 'UTF-8');
 $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
 ?>
@@ -59,7 +63,34 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
 
         <nav class="vb-sidebar-nav">
             <div class="vb-sidebar-section">
-                <?php if (\App\Engine\Auth::isOperator()): ?>
+                <?php if ($isImpersonating): ?>
+                <!-- Impersonation: show tenant shell -->
+                <a href="/admin/tenants/<?= htmlspecialchars($impersonatedTenantId, ENT_QUOTES, 'UTF-8') ?>"
+                   class="vb-sidebar-link <?= $activePage === 'dashboard' ? 'active' : '' ?>">
+                    <i data-lucide="layout-dashboard"></i>
+                    <?= __('admin.nav.dashboard') ?>
+                </a>
+                <a href="/admin/tenants/<?= htmlspecialchars($impersonatedTenantId, ENT_QUOTES, 'UTF-8') ?>/bookings"
+                   class="vb-sidebar-link <?= $activePage === 'bookings' ? 'active' : '' ?>">
+                    <i data-lucide="list"></i>
+                    <?= __('admin.nav.bookings') ?>
+                </a>
+                <a href="/admin/tenants/<?= htmlspecialchars($impersonatedTenantId, ENT_QUOTES, 'UTF-8') ?>/calendar"
+                   class="vb-sidebar-link <?= $activePage === 'calendar' ? 'active' : '' ?>">
+                    <i data-lucide="calendar-days"></i>
+                    <?= __('admin.nav.calendar') ?>
+                </a>
+                <a href="/admin/tenants/<?= htmlspecialchars($impersonatedTenantId, ENT_QUOTES, 'UTF-8') ?>/customers"
+                   class="vb-sidebar-link <?= $activePage === 'customers' ? 'active' : '' ?>">
+                    <i data-lucide="contact"></i>
+                    <?= __('admin.nav.customers') ?>
+                </a>
+                <a href="/admin/tenants/<?= htmlspecialchars($impersonatedTenantId, ENT_QUOTES, 'UTF-8') ?>/users"
+                   class="vb-sidebar-link <?= $activePage === 'users' ? 'active' : '' ?>">
+                    <i data-lucide="users"></i>
+                    <?= __('admin.nav.team') ?>
+                </a>
+                <?php elseif (\App\Engine\Auth::isOperator()): ?>
                 <a href="/admin" class="vb-sidebar-link <?= $activePage === 'dashboard' ? 'active' : '' ?>">
                     <i data-lucide="layout-dashboard"></i>
                     <?= __('admin.nav.dashboard') ?>
@@ -102,7 +133,7 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                 <?php endif; ?>
                 <?php endif; ?>
             </div>
-            <?php if (\App\Engine\Auth::isOperator()): ?>
+            <?php if (\App\Engine\Auth::isOperator() && !$isImpersonating): ?>
             <div class="vb-sidebar-section">
                 <div class="vb-sidebar-section-label"><?= __('admin.nav.system') ?></div>
                 <a href="/admin/settings" class="vb-sidebar-link <?= str_starts_with($activePage, 'settings') ? 'active' : '' ?>">
@@ -205,6 +236,25 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                 <span class="vb-demo-banner-title"><?= __('admin.demo.banner_title') ?></span>
                 <span class="vb-demo-banner-desc"><?= __('admin.demo.banner_desc') ?></span>
             </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($isImpersonating): ?>
+        <div class="vb-impersonation-banner">
+            <div class="vb-impersonation-banner-content">
+                <i data-lucide="eye" class="vb-impersonation-banner-icon"></i>
+                <span>
+                    <?= __('admin.impersonation.banner_prefix') ?>
+                    <strong><?= htmlspecialchars($impersonatedTenantName ?? '', ENT_QUOTES, 'UTF-8') ?></strong>
+                </span>
+            </div>
+            <form method="POST" action="/admin/impersonate/exit" class="vb-form-flush">
+                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                <button type="submit" class="vb-btn vb-btn-sm vb-impersonation-exit-btn">
+                    <i data-lucide="log-out" style="width: 14px; height: 14px;"></i>
+                    <?= __('admin.impersonation.exit') ?>
+                </button>
+            </form>
         </div>
         <?php endif; ?>
 

@@ -125,6 +125,12 @@ ob_start();
                                    title="<?= __('admin.tenants.view_booking_page') ?>">
                                     <i data-lucide="external-link"></i>
                                 </a>
+                                <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/impersonate" class="vb-inline-form">
+                                    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                                    <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm" title="<?= __('admin.impersonation.start') ?>">
+                                        <i data-lucide="eye"></i>
+                                    </button>
+                                </form>
                                 <?php if ($tenant['status'] !== 'archived'): ?>
                                     <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/archive" class="vb-inline-form">
                                         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">

@@ -21,6 +21,11 @@ namespace App\Engine;
  * - auth_tenant_id: (business users only) Tenant ULID
  * - auth_role:      (business users only) 'owner' | 'manager'
  * - _last_activity: Unix timestamp of last verified request
+ *
+ * Impersonation keys (operator-only, layered on top):
+ * - impersonation_active:      bool — true while impersonating
+ * - impersonation_tenant_id:   ULID of the tenant being impersonated
+ * - impersonation_tenant_name: Display name of the tenant
  */
 final class Auth
 {
@@ -269,9 +274,19 @@ final class Auth
 
     /**
      * Log out: clear session data and destroy the session.
+     *
+     * If impersonation is active, this exits impersonation and keeps
+     * the operator session intact (does NOT destroy the session).
+     * Returns true if impersonation was exited, false if real logout.
      */
-    public static function logout(): void
+    public static function logout(): bool
     {
+        // If impersonating, exit impersonation instead of real logout
+        if (self::isImpersonating()) {
+            self::endImpersonation();
+            return true; // Signal: impersonation ended, session preserved
+        }
+
         AuditLog::logLogout();
 
         self::clearSession();
@@ -279,6 +294,8 @@ final class Auth
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_destroy();
         }
+
+        return false; // Signal: real logout
     }
 
     public static function isOperator(): bool
@@ -329,6 +346,106 @@ final class Auth
         }
 
         return $_SESSION['auth_tenant_id'] ?? null;
+    }
+
+    /**
+     * Get the effective tenant context.
+     *
+     * Returns the impersonated tenant ID if impersonating,
+     * the business user's tenant ID if authenticated as business user,
+     * or null for operators not impersonating.
+     */
+    public static function effectiveTenantId(): ?string
+    {
+        if (self::isImpersonating()) {
+            return $_SESSION['impersonation_tenant_id'] ?? null;
+        }
+
+        return self::tenantId();
+    }
+
+    // ── Impersonation ──
+
+    /**
+     * Start impersonating a tenant.
+     *
+     * Operator-only. Sets impersonation session keys without modifying
+     * the authentic operator session. Logs the event.
+     */
+    public static function startImpersonation(string $tenantId, string $tenantName): bool
+    {
+        if (!self::isOperator()) {
+            return false;
+        }
+
+        $_SESSION['impersonation_active']      = true;
+        $_SESSION['impersonation_tenant_id']   = $tenantId;
+        $_SESSION['impersonation_tenant_name'] = $tenantName;
+
+        AuditLog::log(
+            'impersonation.started',
+            'tenant',
+            $tenantId,
+            ['tenant_name' => $tenantName],
+            $tenantId,
+        );
+
+        return true;
+    }
+
+    /**
+     * End impersonation and return to operator context.
+     */
+    public static function endImpersonation(): void
+    {
+        $tenantId = $_SESSION['impersonation_tenant_id'] ?? null;
+        $tenantName = $_SESSION['impersonation_tenant_name'] ?? '';
+
+        unset(
+            $_SESSION['impersonation_active'],
+            $_SESSION['impersonation_tenant_id'],
+            $_SESSION['impersonation_tenant_name'],
+        );
+
+        if ($tenantId !== null) {
+            AuditLog::log(
+                'impersonation.ended',
+                'tenant',
+                $tenantId,
+                ['tenant_name' => $tenantName],
+                $tenantId,
+            );
+        }
+    }
+
+    /**
+     * Check if the current operator is impersonating a tenant.
+     */
+    public static function isImpersonating(): bool
+    {
+        return self::isOperator()
+            && !empty($_SESSION['impersonation_active'])
+            && !empty($_SESSION['impersonation_tenant_id']);
+    }
+
+    /**
+     * Get the impersonated tenant ID, or null if not impersonating.
+     */
+    public static function impersonatedTenantId(): ?string
+    {
+        return self::isImpersonating()
+            ? ($_SESSION['impersonation_tenant_id'] ?? null)
+            : null;
+    }
+
+    /**
+     * Get the impersonated tenant name, or null if not impersonating.
+     */
+    public static function impersonatedTenantName(): ?string
+    {
+        return self::isImpersonating()
+            ? ($_SESSION['impersonation_tenant_name'] ?? null)
+            : null;
     }
 
     /**
@@ -401,6 +518,7 @@ final class Auth
             'auth_type', 'auth_id', 'auth_name', 'auth_email',
             'auth_tenant_id', 'auth_role', '_last_activity',
             'force_password_change',
+            'impersonation_active', 'impersonation_tenant_id', 'impersonation_tenant_name',
         ];
 
         foreach ($authKeys as $key) {

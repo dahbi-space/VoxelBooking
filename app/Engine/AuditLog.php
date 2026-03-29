@@ -95,8 +95,11 @@ final class AuditLog
         }
 
         // Auto-detect tenant from session if not provided
+        // Check impersonation context first, then business user session
         if ($tenantId === null) {
-            $tenantId = $_SESSION['auth_tenant_id'] ?? null;
+            $tenantId = $_SESSION['impersonation_tenant_id']
+                ?? $_SESSION['auth_tenant_id']
+                ?? null;
         }
 
         // Auto-detect IP

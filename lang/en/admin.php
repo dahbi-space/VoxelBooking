@@ -514,4 +514,11 @@ return [
         'no_bookings'      => 'No bookings',
         'no_customer'      => 'Walk-in',
     ],
+
+    // ── Impersonation ──
+    'impersonation' => [
+        'start'            => 'Manage as tenant',
+        'exit'             => 'Exit impersonation',
+        'banner_prefix'    => 'You are viewing as',
+    ],
 ];
