@@ -28,6 +28,7 @@ final class AuthMiddleware
      */
     private const OPERATOR_ONLY_PREFIXES = [
         '/admin/settings',
+        '/admin/deletion-queue',
     ];
 
     public function handle(Request $request, callable $next): Response

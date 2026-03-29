@@ -22,6 +22,12 @@ final class DashboardController
 {
     public function index(Request $request): Response
     {
+        // Operator dashboard — business users should never reach this
+        // (AuthMiddleware redirects them to /admin/tenants/{id}, but belt-and-suspenders)
+        if (!Auth::isOperator()) {
+            return Response::redirect('/admin/login');
+        }
+
         $tenantCounts = Tenant::counts();
 
         $todayBookings = $this->queryCount(
