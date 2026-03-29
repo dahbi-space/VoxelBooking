@@ -80,8 +80,13 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                 </a>
                 <a href="/admin/tenants/<?= htmlspecialchars($_SESSION['auth_tenant_id'], ENT_QUOTES, 'UTF-8') ?>/bookings"
                    class="vb-sidebar-link <?= $activePage === 'bookings' ? 'active' : '' ?>">
-                    <i data-lucide="calendar"></i>
+                    <i data-lucide="list"></i>
                     <?= __('admin.nav.bookings') ?>
+                </a>
+                <a href="/admin/tenants/<?= htmlspecialchars($_SESSION['auth_tenant_id'], ENT_QUOTES, 'UTF-8') ?>/calendar"
+                   class="vb-sidebar-link <?= $activePage === 'calendar' ? 'active' : '' ?>">
+                    <i data-lucide="calendar-days"></i>
+                    <?= __('admin.nav.calendar') ?>
                 </a>
                 <a href="/admin/tenants/<?= htmlspecialchars($_SESSION['auth_tenant_id'], ENT_QUOTES, 'UTF-8') ?>/customers"
                    class="vb-sidebar-link <?= $activePage === 'customers' ? 'active' : '' ?>">

@@ -88,6 +88,11 @@ import {
     Archive,
     RotateCcw,
     CheckCircle,
+    CalendarX,
+    Contact,
+    StickyNote,
+    ArrowLeft,
+    List,
 } from 'lucide';
 
 const ICON_SET = {
@@ -101,6 +106,7 @@ const ICON_SET = {
     Palette, Globe, Activity, TrendingUp, BarChart3, Hash,
     Bookmark, Briefcase, ShieldCheck, ScrollText, Server, Zap, HelpCircle, Lock,
     UserCog, Layers, Filter, Award, Archive, RotateCcw, CheckCircle,
+    CalendarX, Contact, StickyNote, ArrowLeft, List,
 };
 
 // ── Alpine: CSP-safe component registration ──

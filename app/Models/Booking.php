@@ -264,4 +264,30 @@ final class Booking
 
         return [$where, $bindings];
     }
+
+    /**
+     * Get bookings for a tenant on a specific date.
+     *
+     * Used by calendar day view (single date) and week view (per-day).
+     * Excludes cancelled and rescheduled bookings from the visual timeline.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function forTenantDate(string $tenantId, string $date): array
+    {
+        return Database::query(
+            "SELECT b.`id`, b.`start_datetime`, b.`end_datetime`, b.`status`,
+                    b.`booking_pattern`,
+                    c.`name` AS `customer_name`, c.`email` AS `customer_email`,
+                    s.`name` AS `service_name`, s.`color` AS `service_color`
+             FROM `bookings` b
+             LEFT JOIN `customers` c ON c.`id` = b.`customer_id`
+             LEFT JOIN `services` s ON s.`id` = b.`service_id`
+             WHERE b.`tenant_id` = ?
+               AND DATE(b.`start_datetime`) = ?
+               AND b.`status` NOT IN ('cancelled', 'rescheduled')
+             ORDER BY b.`start_datetime` ASC",
+            [$tenantId, $date]
+        );
+    }
 }

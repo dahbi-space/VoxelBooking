@@ -109,6 +109,10 @@ return function (Router $router): void {
             // Customer management — tenant-context (all business user roles + operator)
             $router->get('/admin/tenants/{tenant_id}/customers', \App\Controllers\Admin\CustomersController::class, 'index');
             $router->get('/admin/tenants/{tenant_id}/customers/{id}', \App\Controllers\Admin\CustomersController::class, 'show');
+
+            // Calendar views — tenant-context (all business user roles + operator)
+            $router->get('/admin/tenants/{tenant_id}/calendar', \App\Controllers\Admin\CalendarController::class, 'day');
+            $router->get('/admin/tenants/{tenant_id}/calendar/week', \App\Controllers\Admin\CalendarController::class, 'week');
         });
 
         // ── Public booking pages ──

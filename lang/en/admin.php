@@ -27,6 +27,7 @@ return [
         'sign_out'       => 'Sign out',
         'deletion_queue' => 'Deletion queue',
         'team'           => 'Team',
+        'calendar'       => 'Calendar',
         'soon'           => 'Soon',
     ],
 
@@ -496,5 +497,21 @@ return [
         'bh_time'              => 'Time',
         'bh_service'           => 'Service',
         'bh_status'            => 'Status',
+    ],
+
+    // ── Calendar ──
+    'calendar' => [
+        'page_title'       => 'Calendar',
+        'today'            => 'Today',
+        'this_week'        => 'This week',
+        'view_day'         => 'Day',
+        'view_week'        => 'Week',
+        'prev_day'         => 'Previous day',
+        'next_day'         => 'Next day',
+        'prev_week'        => 'Previous week',
+        'next_week'        => 'Next week',
+        'empty_day_title'  => 'No bookings today',
+        'no_bookings'      => 'No bookings',
+        'no_customer'      => 'Walk-in',
     ],
 ];

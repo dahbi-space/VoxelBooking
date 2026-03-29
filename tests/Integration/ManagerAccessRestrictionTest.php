@@ -134,7 +134,7 @@ final class ManagerAccessRestrictionTest extends TestCase
     }
 
     /**
-     * Manager can access tenant dashboard, bookings, and customers.
+     * Manager can access tenant dashboard, bookings, customers, and calendar.
      */
     public function testManagerAllowedOnTenantRoutes(): void
     {
@@ -142,6 +142,8 @@ final class ManagerAccessRestrictionTest extends TestCase
             "/admin/tenants/" . self::$tenantId                     => 200,
             "/admin/tenants/" . self::$tenantId . "/bookings"       => 200,
             "/admin/tenants/" . self::$tenantId . "/customers"      => 200,
+            "/admin/tenants/" . self::$tenantId . "/calendar"       => 200,
+            "/admin/tenants/" . self::$tenantId . "/calendar/week"  => 200,
         ];
 
         foreach ($allowedRoutes as $path => $expectedCode) {
