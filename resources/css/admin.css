@@ -1350,3 +1350,133 @@
 .vb-inline-form {
     display: inline;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   BUSINESS USER CRUD — Team management surface
+   ══════════════════════════════════════════════════════════════ */
+
+/* Badge variants (extend admin-head.php .vb-badge) */
+.vb-badge-primary  { background: var(--vb-accent-subtle); color: var(--vb-accent); }
+.vb-badge-neutral  { background: var(--vb-bg-hover); color: var(--vb-text-secondary); }
+.vb-badge-danger   { background: var(--vb-error-bg); color: var(--vb-error); }
+
+/* Small avatar for table cells */
+.vb-avatar-xs {
+    width: 28px; height: 28px;
+    font-size: 0.625rem;
+}
+
+/* User cell — avatar + name inline */
+.vb-user-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.vb-user-name { font-weight: 500; }
+
+/* Role selection cards (invite form) */
+.vb-role-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+@media (max-width: 480px) { .vb-role-cards { grid-template-columns: 1fr; } }
+
+.vb-role-card {
+    border: 2px solid var(--vb-border-subtle);
+    border-radius: var(--vb-radius-md);
+    padding: 1rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.125rem;
+    color: var(--vb-text-secondary);
+}
+.vb-role-card:hover {
+    border-color: var(--vb-border-default);
+    background: var(--vb-bg-hover);
+}
+.vb-role-card.is-selected {
+    border-color: var(--vb-accent);
+    background: var(--vb-accent-subtle);
+    box-shadow: 0 0 0 3px var(--vb-accent-subtle);
+    color: var(--vb-accent);
+}
+.vb-role-card-title {
+    font-weight: 600;
+    font-size: var(--vb-text-sm);
+}
+.vb-role-card-desc {
+    font-size: 0.6875rem;
+    color: var(--vb-text-tertiary);
+    line-height: 1.35;
+}
+.vb-role-card.is-selected .vb-role-card-desc { color: var(--vb-accent); opacity: 0.8; }
+
+/* Credentials card (post-invite flash) */
+.vb-credentials-card {
+    margin-bottom: 1.5rem;
+}
+.vb-credentials-card .vb-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.vb-credentials-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.vb-credentials-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.vb-credentials-label {
+    font-size: var(--vb-text-xs);
+    font-weight: 600;
+    color: var(--vb-text-secondary);
+    min-width: 120px;
+}
+.vb-credentials-value {
+    font-family: var(--vb-font-mono, ui-monospace, monospace);
+    font-size: var(--vb-text-sm);
+    background: var(--vb-bg-well);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--vb-radius-xs);
+    word-break: break-all;
+}
+
+/* Empty state (centered, icon + text) */
+.vb-empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--vb-text-tertiary);
+}
+.vb-empty-state h3 {
+    font-size: var(--vb-text-md);
+    font-weight: 600;
+    color: var(--vb-text-secondary);
+    margin: 0.75rem 0 0.25rem;
+}
+.vb-empty-state p {
+    font-size: var(--vb-text-sm);
+}
+.vb-empty-icon {
+    width: 40px; height: 40px;
+    margin: 0 auto;
+    opacity: 0.3;
+    color: var(--vb-accent);
+}
+
+/* Danger text button (ghost button with error color) */
+.vb-btn-danger-text {
+    color: var(--vb-error);
+}
+.vb-btn-danger-text:hover {
+    background: var(--vb-error-bg);
+}

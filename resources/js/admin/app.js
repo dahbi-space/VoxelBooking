@@ -271,6 +271,56 @@ Alpine.data('ownerSetup', () => ({
     },
 }));
 
+// ── Alpine: Invite User (business user invite form) ──
+Alpine.data('inviteUser', () => ({
+    role: 'owner',
+    showPassword: false,
+    smtpConfigured: false,
+    sendEmail: false,
+
+    init() {
+        this.smtpConfigured = this.$el.dataset.smtpConfigured === '1';
+        this.sendEmail = this.smtpConfigured;
+        this.$nextTick(() => this.generatePassword());
+    },
+
+    // CSP-safe: property references for :class
+    get isOwner() { return this.role === 'owner'; },
+    get isManager() { return this.role === 'manager'; },
+    get roleOwnerClass() { return this.role === 'owner' ? 'is-selected' : ''; },
+    get roleManagerClass() { return this.role === 'manager' ? 'is-selected' : ''; },
+
+    // CSP-safe: referenced as @change="selectOwner"
+    selectOwner() { this.role = 'owner'; },
+    selectManager() { this.role = 'manager'; },
+
+    // CSP-safe: referenced as :disabled="smtpNotConfigured"
+    get smtpNotConfigured() { return !this.smtpConfigured; },
+
+    // CSP-safe: referenced as @change="onToggleSendEmail"
+    onToggleSendEmail() { this.sendEmail = !this.sendEmail; },
+
+    generatePassword() {
+        const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let pass = '';
+        const arr = new Uint32Array(16);
+        crypto.getRandomValues(arr);
+        for (let i = 0; i < 16; i++) {
+            pass += chars[arr[i] % chars.length];
+        }
+        if (this.$refs.passwordField) {
+            this.$refs.passwordField.value = pass;
+        }
+    },
+
+    togglePasswordVisibility() {
+        this.showPassword = !this.showPassword;
+        if (this.$refs.passwordField) {
+            this.$refs.passwordField.type = this.showPassword ? 'text' : 'password';
+        }
+    },
+}));
+
 // ── Alpine: start ──
 window.Alpine = Alpine;
 Alpine.start();

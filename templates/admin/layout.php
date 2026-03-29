@@ -83,6 +83,13 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                     <i data-lucide="calendar"></i>
                     <?= __('admin.nav.bookings') ?>
                 </a>
+                <?php if (\App\Engine\Auth::isOwner()): ?>
+                <a href="/admin/tenants/<?= htmlspecialchars($_SESSION['auth_tenant_id'], ENT_QUOTES, 'UTF-8') ?>/users"
+                   class="vb-sidebar-link <?= $activePage === 'users' ? 'active' : '' ?>">
+                    <i data-lucide="users"></i>
+                    <?= __('admin.nav.team') ?>
+                </a>
+                <?php endif; ?>
                 <?php endif; ?>
             </div>
             <?php if (\App\Engine\Auth::isOperator()): ?>
