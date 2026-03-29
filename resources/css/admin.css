@@ -1480,3 +1480,155 @@
 .vb-btn-danger-text:hover {
     background: var(--vb-error-bg);
 }
+
+/* ── Stats Grid ─────────────────────────────────────────────── */
+
+.vb-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.vb-stats-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 768px) {
+    .vb-stats-grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+.vb-stat-card {
+    background: var(--vb-card);
+    border: 1px solid var(--vb-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4) var(--space-5);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.vb-stat-card:hover {
+    border-color: var(--vb-accent);
+    box-shadow: 0 0 0 1px var(--vb-accent-faint);
+}
+
+.vb-stat-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--vb-muted);
+    margin-bottom: var(--space-1);
+}
+
+.vb-stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--vb-fg);
+    line-height: 1.2;
+}
+
+.vb-stat-value-sm {
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+/* ── Breadcrumb ─────────────────────────────────────────────── */
+
+.vb-breadcrumb {
+    margin-bottom: var(--space-4);
+}
+
+.vb-breadcrumb-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--vb-muted);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.vb-breadcrumb-link:hover {
+    color: var(--vb-accent);
+}
+
+/* ── Search Input ───────────────────────────────────────────── */
+
+.vb-search-input-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+}
+
+.vb-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: var(--vb-muted);
+    pointer-events: none;
+}
+
+.vb-search-input {
+    padding-left: 36px !important;
+}
+
+/* ── Filter Form ────────────────────────────────────────────── */
+
+.vb-filter-form {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+/* ── Clickable Table Rows ───────────────────────────────────── */
+
+.vb-clickable-row {
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.vb-clickable-row:hover {
+    background: var(--vb-hover) !important;
+}
+
+/* ── Section Header ─────────────────────────────────────────── */
+
+.vb-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+    margin-top: var(--space-6);
+}
+
+.vb-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--vb-fg);
+}
+
+/* ── Customer Header ────────────────────────────────────────── */
+
+.vb-customer-header-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+/* ── Avatar Large ───────────────────────────────────────────── */
+
+.vb-avatar-lg {
+    width: 48px;
+    height: 48px;
+    font-size: 1.25rem;
+    line-height: 48px;
+}
+
+/* ── Text Alignment ─────────────────────────────────────────── */
+
+.vb-text-center { text-align: center; }

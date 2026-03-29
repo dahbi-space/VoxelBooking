@@ -245,7 +245,6 @@ return [
         'no_reason'           => 'No reason provided',
     ],
 
-    // ── Common ──
     'common' => [
         'save'       => 'Save',
         'cancel'     => 'Cancel',
@@ -253,6 +252,10 @@ return [
         'edit'       => 'Edit',
         'create'     => 'Create',
         'search'     => 'Search…',
+        'clear'      => 'Clear',
+        'previous'   => 'Previous',
+        'next'       => 'Next',
+        'page_of'    => 'Page :page of :total',
         'actions'    => 'Actions',
         'confirm'    => 'Are you sure?',
         'loading'    => 'Loading…',
@@ -464,5 +467,34 @@ return [
         'error_role_invalid'      => 'Role must be owner or manager.',
         'error_password_short'    => 'Password must be at least 8 characters.',
         'error_self_deactivate'   => 'You cannot deactivate your own account.',
+    ],
+
+    // ── Customer management ──
+    'customers' => [
+        'page_title'           => 'Customers',
+        'showing_count'        => ':count customers',
+        'search_placeholder'   => 'Search by name, email, or phone…',
+        'col_name'             => 'Name',
+        'col_email'            => 'Email',
+        'col_phone'            => 'Phone',
+        'col_bookings'         => 'Bookings',
+        'col_last_booking'     => 'Last Booking',
+        'col_joined'           => 'Joined',
+        'empty_title'          => 'No customers yet',
+        'empty_desc'           => 'Customers will appear here when they book appointments.',
+        'empty_search_title'   => 'No customers found',
+        'empty_search_desc'    => 'Try a different search term.',
+        'stat_total_bookings'  => 'Total Bookings',
+        'stat_last_booking'    => 'Last Booking',
+        'stat_phone'           => 'Phone',
+        'stat_joined'          => 'Customer Since',
+        'notes_title'          => 'Notes',
+        'booking_history'      => 'Booking History',
+        'no_bookings_title'    => 'No bookings',
+        'no_bookings_desc'     => 'This customer has no booking history yet.',
+        'bh_date'              => 'Date',
+        'bh_time'              => 'Time',
+        'bh_service'           => 'Service',
+        'bh_status'            => 'Status',
     ],
 ];

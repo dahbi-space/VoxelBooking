@@ -105,6 +105,10 @@ return function (Router $router): void {
             $router->post('/admin/tenants/{tenant_id}/users/invite', \App\Controllers\Admin\BusinessUsersController::class, 'store');
             $router->post('/admin/tenants/{tenant_id}/users/{id}/deactivate', \App\Controllers\Admin\BusinessUsersController::class, 'deactivate');
             $router->post('/admin/tenants/{tenant_id}/users/{id}/activate', \App\Controllers\Admin\BusinessUsersController::class, 'activate');
+
+            // Customer management — tenant-context (all business user roles + operator)
+            $router->get('/admin/tenants/{tenant_id}/customers', \App\Controllers\Admin\CustomersController::class, 'index');
+            $router->get('/admin/tenants/{tenant_id}/customers/{id}', \App\Controllers\Admin\CustomersController::class, 'show');
         });
 
         // ── Public booking pages ──
