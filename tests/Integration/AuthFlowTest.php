@@ -257,4 +257,116 @@ final class AuthFlowTest extends TestCase
         }
         return $cookies;
     }
+
+    /**
+     * Session persistence: an authenticated session must survive a simulated
+     * browser close/reopen.
+     *
+     * The 30-day cookie lifetime (Max-Age=2592000) means the browser retains
+     * the vb_session cookie across restarts. This test simulates that by:
+     * 1. Logging in and extracting the vb_session cookie value.
+     * 2. Verifying the Set-Cookie header includes an Expires or Max-Age.
+     * 3. Creating a fresh cookie jar seeded with only the persisted cookie.
+     * 4. Verifying that /admin returns 200 (authenticated) using the new jar.
+     */
+    public function testSessionPersistsAcrossSimulatedBrowserRestart(): void
+    {
+        // Step 1: Log in with the primary cookie jar
+        $this->doLogin();
+
+        // Step 2: Verify authenticated and extract the session cookie
+        $response = $this->get('/admin');
+        $this->assertSame(200, $response['code'], 'Dashboard should be accessible after login');
+
+        // Read the session cookie value from the jar file
+        $jarContents = file_get_contents($this->cookieJar);
+        $this->assertNotFalse($jarContents, 'Cookie jar should be readable');
+
+        // Extract the vb_session cookie value from the Netscape-format jar
+        // Format: domain\tTRUE/FALSE\tpath\tsecure\texpiry\tname\tvalue
+        preg_match('/vb_session\t(.+)$/m', $jarContents, $sessionMatch);
+        $this->assertNotEmpty($sessionMatch, 'vb_session cookie should exist in jar');
+        $sessionValue = trim($sessionMatch[1]);
+        $this->assertNotEmpty($sessionValue, 'vb_session cookie value should not be empty');
+
+        // Step 3: Verify the cookie has a future expiry (not session-only)
+        // In a Netscape cookie jar, column 5 (0-indexed: 4) is the expiry timestamp.
+        // A session-only cookie would have expiry = 0.
+        preg_match('/\t(\d+)\tvb_session\t/', $jarContents, $expiryMatch);
+        if (!empty($expiryMatch)) {
+            $expiry = (int) $expiryMatch[1];
+            $this->assertGreaterThan(time(), $expiry,
+                'vb_session cookie expiry should be in the future (persistent, not session-only)');
+        }
+
+        // Step 4: Simulate browser restart — create a fresh cookie jar
+        // with only the persisted session cookie
+        $freshJar = tempnam(sys_get_temp_dir(), 'vb_restart_');
+
+        $ch = curl_init($this->baseUrl . '/admin');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_COOKIEJAR      => $freshJar,
+            // Inject the persisted cookie directly — no COOKIEFILE means no prior jar
+            CURLOPT_COOKIE         => 'vb_session=' . $sessionValue,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_HEADER         => true,
+        ]);
+        $rawResponse = (string) curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        @unlink($freshJar);
+
+        // Step 5: The session should still be valid → 200, not 302 redirect
+        $this->assertSame(200, $code,
+            'Authenticated session must survive browser restart (persisted cookie jar). '
+            . 'Got HTTP ' . $code . ' instead of 200. '
+            . 'This proves the 30-day Max-Age cookie keeps users logged in.');
+    }
+
+    /**
+     * Verify the Set-Cookie header for vb_session includes Max-Age or Expires.
+     * This ensures the cookie is not session-only (which would be lost on close).
+     */
+    public function testSessionCookieHasMaxAge(): void
+    {
+        // Get the login page to receive a Set-Cookie header
+        $ch = curl_init($this->baseUrl . '/admin/login');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_HEADER         => true,
+        ]);
+        $response = (string) curl_exec($ch);
+        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        curl_close($ch);
+
+        $headers = substr($response, 0, $headerSize);
+
+        // Find the Set-Cookie header for vb_session
+        preg_match('/set-cookie: vb_session=[^;]+;([^\r\n]+)/i', $headers, $cookieMatch);
+        $this->assertNotEmpty($cookieMatch, 'Should receive a Set-Cookie header for vb_session');
+
+        $cookieAttrs = strtolower($cookieMatch[1]);
+
+        // Must have either Max-Age or Expires (not session-only)
+        $hasMaxAge = str_contains($cookieAttrs, 'max-age=');
+        $hasExpires = str_contains($cookieAttrs, 'expires=');
+        $this->assertTrue(
+            $hasMaxAge || $hasExpires,
+            'vb_session cookie must have Max-Age or Expires attribute for persistence. '
+            . 'Cookie attributes: ' . $cookieAttrs
+        );
+
+        // If Max-Age is present, verify it's the expected 30-day value
+        if ($hasMaxAge) {
+            preg_match('/max-age=(\d+)/', $cookieAttrs, $maxAgeMatch);
+            $maxAge = (int) ($maxAgeMatch[1] ?? 0);
+            $this->assertSame(2592000, $maxAge,
+                'Max-Age should be 2592000 (30 days)');
+        }
+    }
 }

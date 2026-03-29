@@ -68,7 +68,7 @@
                         <input type="text" class="vb-book-tz-search" x-ref="tzSearch"
                                x-bind:value="tzSearchQuery"
                                @input="setTzSearchQuery($el.value)"
-                               placeholder="Search timezone…"
+                               placeholder="<?= __('booking.timezone.search') ?>"
                                autocomplete="off">
                     </div>
                     <div class="vb-book-tz-list">
