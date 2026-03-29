@@ -13,13 +13,10 @@ return [
         `id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL,
         `tenant_id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NULL DEFAULT NULL,
         `booking_id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NULL DEFAULT NULL,
-        `type` ENUM(
-            'confirmation','reminder','cancellation','reschedule','staff_notification',
-            'privacy_export','privacy_deletion','operator_notification','test'
-        ) NOT NULL,
+        `type` VARCHAR(30) NOT NULL COMMENT 'Valid: confirmation, reminder, cancellation, reschedule_confirmation, staff_notification, approval_request, approval_confirmed, privacy_export, privacy_deletion, operator_notification, test',
         `to_email` VARCHAR(255) NOT NULL,
         `subject` VARCHAR(500) NOT NULL,
-        `status` ENUM('sent','failed') NOT NULL DEFAULT 'sent',
+        `status` VARCHAR(10) NOT NULL DEFAULT 'sent' COMMENT 'Valid: sent, failed',
         `error` TEXT NULL DEFAULT NULL,
         `sent_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),

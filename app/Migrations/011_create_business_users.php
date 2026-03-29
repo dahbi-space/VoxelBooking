@@ -19,7 +19,7 @@ return [
         `name` VARCHAR(255) NOT NULL,
         `email` VARCHAR(255) NOT NULL,
         `password_hash` VARCHAR(255) NOT NULL,
-        `role` ENUM('owner','manager') NOT NULL DEFAULT 'manager',
+        `role` VARCHAR(10) NOT NULL DEFAULT 'manager' COMMENT 'Valid: owner, manager',
         `is_active` TINYINT(1) NOT NULL DEFAULT 1,
         `force_password_change` TINYINT(1) NOT NULL DEFAULT 0,
         `last_login_at` DATETIME NULL DEFAULT NULL,

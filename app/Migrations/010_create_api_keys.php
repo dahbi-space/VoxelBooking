@@ -19,7 +19,7 @@ return [
         `key_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL COMMENT 'SHA-256 of bearer token',
         `key_prefix` CHAR(8) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL COMMENT 'First 8 chars of key for identification',
         `scopes` JSON NOT NULL COMMENT 'Array of scope strings',
-        `role` ENUM('agent','viewer') NOT NULL DEFAULT 'viewer',
+        `role` VARCHAR(10) NOT NULL DEFAULT 'viewer' COMMENT 'Valid: agent, viewer',
         `is_active` TINYINT(1) NOT NULL DEFAULT 1,
         `last_used_at` DATETIME NULL DEFAULT NULL,
         `expires_at` DATETIME NULL DEFAULT NULL,

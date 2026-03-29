@@ -16,6 +16,7 @@ return [
         `email` VARCHAR(255) NOT NULL,
         `phone` VARCHAR(50) NULL DEFAULT NULL,
         `notes` TEXT NULL DEFAULT NULL,
+        `profile_data` JSON NULL DEFAULT NULL,
         `booking_count` INT NOT NULL DEFAULT 0,
         `last_booking_at` DATETIME NULL DEFAULT NULL,
         `is_anonymized` TINYINT(1) NOT NULL DEFAULT 0,

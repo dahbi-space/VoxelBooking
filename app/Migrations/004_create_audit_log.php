@@ -21,7 +21,7 @@ return [
     "CREATE TABLE IF NOT EXISTS `audit_log` (
         `id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL,
         `tenant_id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NULL DEFAULT NULL,
-        `actor_type` ENUM('operator','business_user','customer','system','api') NOT NULL,
+        `actor_type` VARCHAR(20) NOT NULL COMMENT 'Valid: operator, business_user, customer, system, api',
         `actor_id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NULL DEFAULT NULL,
         `action` VARCHAR(100) NOT NULL,
         `entity_type` VARCHAR(50) NOT NULL,
