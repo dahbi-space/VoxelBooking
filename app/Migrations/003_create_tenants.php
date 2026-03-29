@@ -53,6 +53,7 @@ return [
         `embed_button_position` VARCHAR(20) NOT NULL DEFAULT 'bottom-right' COMMENT 'Valid: bottom-right, bottom-left',
         `embed_button_label` VARCHAR(50) NOT NULL DEFAULT 'Book Now',
         `status` VARCHAR(20) NOT NULL DEFAULT 'active' COMMENT 'Valid: active, paused, archived',
+        `meta` JSON NULL DEFAULT NULL COMMENT 'Sparse extension data for future features',
         `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),

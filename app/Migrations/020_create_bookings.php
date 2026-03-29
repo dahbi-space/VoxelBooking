@@ -36,6 +36,7 @@ return [
         `cancelled_at` DATETIME NULL DEFAULT NULL,
         `cancellation_reason` VARCHAR(255) NULL DEFAULT NULL,
         `source` VARCHAR(10) NOT NULL DEFAULT 'web' COMMENT 'Valid: web, admin, api, embed',
+        `meta` JSON NULL DEFAULT NULL COMMENT 'Sparse extension data for future features',
         `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),

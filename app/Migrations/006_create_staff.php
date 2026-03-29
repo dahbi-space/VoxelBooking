@@ -20,6 +20,7 @@ return [
         `avatar_path` VARCHAR(500) NULL DEFAULT NULL,
         `sort_order` INT NOT NULL DEFAULT 0,
         `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+        `meta` JSON NULL DEFAULT NULL COMMENT 'Sparse extension data for future features',
         `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),

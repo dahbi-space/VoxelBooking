@@ -106,6 +106,7 @@ CREATE TABLE tenants (
     embed_button_position TEXT NOT NULL DEFAULT 'bottom-right',
     embed_button_label TEXT NOT NULL DEFAULT 'Book Now',
     status TEXT NOT NULL DEFAULT 'active',
+    meta TEXT DEFAULT NULL,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 )
@@ -148,6 +149,7 @@ CREATE TABLE services (
     is_virtual INTEGER NOT NULL DEFAULT 0,
     sort_order INTEGER NOT NULL DEFAULT 0,
     is_active INTEGER NOT NULL DEFAULT 1,
+    meta TEXT DEFAULT NULL,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 )
@@ -166,6 +168,7 @@ CREATE TABLE staff (
     avatar_path TEXT DEFAULT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0,
     is_active INTEGER NOT NULL DEFAULT 1,
+    meta TEXT DEFAULT NULL,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 )
@@ -301,6 +304,7 @@ CREATE TABLE bookings (
     cancelled_at TEXT DEFAULT NULL,
     cancellation_reason TEXT DEFAULT NULL,
     source TEXT NOT NULL DEFAULT 'web',
+    meta TEXT DEFAULT NULL,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 )
