@@ -98,6 +98,13 @@ return function (Router $router): void {
             $router->get('/admin/tenants/{tenant_id}/bookings', \App\Controllers\Admin\BookingsController::class, 'tenantIndex');
             $router->get('/admin/tenants/{tenant_id}/bookings/{id}', \App\Controllers\Admin\BookingsController::class, 'tenantShow');
             $router->post('/admin/tenants/{tenant_id}/bookings/{id}/status', \App\Controllers\Admin\BookingsController::class, 'tenantUpdateStatus');
+
+            // Business user management — tenant-context (operator + owner only, enforced in controller)
+            $router->get('/admin/tenants/{tenant_id}/users', \App\Controllers\Admin\BusinessUsersController::class, 'index');
+            $router->get('/admin/tenants/{tenant_id}/users/invite', \App\Controllers\Admin\BusinessUsersController::class, 'invite');
+            $router->post('/admin/tenants/{tenant_id}/users/invite', \App\Controllers\Admin\BusinessUsersController::class, 'store');
+            $router->post('/admin/tenants/{tenant_id}/users/{id}/deactivate', \App\Controllers\Admin\BusinessUsersController::class, 'deactivate');
+            $router->post('/admin/tenants/{tenant_id}/users/{id}/activate', \App\Controllers\Admin\BusinessUsersController::class, 'activate');
         });
 
         // ── Public booking pages ──
