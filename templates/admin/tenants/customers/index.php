@@ -95,13 +95,13 @@ ob_start();
                         </td>
                         <td class="vb-text-secondary">
                             <?php if ($c['last_booking_at']): ?>
-                                <?= htmlspecialchars(date('M j, Y', strtotime($c['last_booking_at'])), ENT_QUOTES, 'UTF-8') ?>
+                                <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($c['last_booking_at'])), ENT_QUOTES, 'UTF-8') ?>
                             <?php else: ?>
                                 <span class="vb-text-tertiary">—</span>
                             <?php endif; ?>
                         </td>
                         <td class="vb-text-secondary">
-                            <?= htmlspecialchars(date('M j, Y', strtotime($c['created_at'])), ENT_QUOTES, 'UTF-8') ?>
+                            <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($c['created_at'])), ENT_QUOTES, 'UTF-8') ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>

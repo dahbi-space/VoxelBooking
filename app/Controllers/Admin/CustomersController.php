@@ -81,11 +81,23 @@ final class CustomersController
 
         $bookings = Customer::bookingsForCustomer($customerId);
 
+        // Derive stats from live bookings so the stat cards and the
+        // history table below them are always self-consistent.
+        $liveBookingCount = count($bookings);
+        $liveLastBookingAt = null;
+        if ($liveBookingCount > 0) {
+            // Bookings are ordered DESC by start_datetime —
+            // first row is the most recent.
+            $liveLastBookingAt = $bookings[0]['start_datetime'];
+        }
+
         return $this->render('admin.tenants.customers.show', $customer['name'], [
-            'documentTitle' => $customer['name'] . ' — ' . __('admin.customers.page_title'),
-            'tenant'   => $tenant,
-            'customer' => $customer,
-            'bookings' => $bookings,
+            'documentTitle'     => $customer['name'] . ' — ' . __('admin.customers.page_title'),
+            'tenant'            => $tenant,
+            'customer'          => $customer,
+            'bookings'          => $bookings,
+            'liveBookingCount'  => $liveBookingCount,
+            'liveLastBookingAt' => $liveLastBookingAt,
         ], $tenantId);
     }
 

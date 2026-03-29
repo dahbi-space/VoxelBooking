@@ -2,11 +2,13 @@
 /**
  * Customer detail — booking history + profile.
  *
- * Variables: $tenant, $customer, $bookings, $tenantId, $csrfToken
+ * Variables: $tenant, $customer, $bookings, $liveBookingCount, $liveLastBookingAt, $tenantId, $csrfToken
  */
 $tenant = $tenant ?? [];
 $customer = $customer ?? [];
 $bookings = $bookings ?? [];
+$liveBookingCount = $liveBookingCount ?? 0;
+$liveLastBookingAt = $liveLastBookingAt ?? null;
 $tenantId = $tenantId ?? '';
 
 ob_start();
@@ -30,17 +32,17 @@ ob_start();
     </div>
 </div>
 
-<!-- Customer info cards -->
+<!-- Customer info cards — stats derived from live bookings, not denormalized columns -->
 <div class="vb-stats-grid vb-stats-grid-4">
     <div class="vb-stat-card vb-animate-in">
         <div class="vb-stat-label"><?= __('admin.customers.stat_total_bookings') ?></div>
-        <div class="vb-stat-value"><?= (int) $customer['booking_count'] ?></div>
+        <div class="vb-stat-value"><?= $liveBookingCount ?></div>
     </div>
     <div class="vb-stat-card vb-animate-in">
         <div class="vb-stat-label"><?= __('admin.customers.stat_last_booking') ?></div>
         <div class="vb-stat-value vb-stat-value-sm">
-            <?php if ($customer['last_booking_at']): ?>
-                <?= htmlspecialchars(date('M j, Y', strtotime($customer['last_booking_at'])), ENT_QUOTES, 'UTF-8') ?>
+            <?php if ($liveLastBookingAt): ?>
+                <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($liveLastBookingAt)), ENT_QUOTES, 'UTF-8') ?>
             <?php else: ?>
                 —
             <?php endif; ?>
@@ -59,7 +61,7 @@ ob_start();
     <div class="vb-stat-card vb-animate-in">
         <div class="vb-stat-label"><?= __('admin.customers.stat_joined') ?></div>
         <div class="vb-stat-value vb-stat-value-sm">
-            <?= htmlspecialchars(date('M j, Y', strtotime($customer['created_at'])), ENT_QUOTES, 'UTF-8') ?>
+            <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($customer['created_at'])), ENT_QUOTES, 'UTF-8') ?>
         </div>
     </div>
 </div>
@@ -101,14 +103,18 @@ ob_start();
                 </thead>
                 <tbody>
                     <?php foreach ($bookings as $i => $b): ?>
+                    <?php
+                    $startDt = new DateTimeImmutable($b['start_datetime']);
+                    $endDt   = new DateTimeImmutable($b['end_datetime']);
+                    ?>
                     <tr class="vb-fade-in-up stagger-<?= min($i + 1, 6) ?>">
                         <td>
-                            <?= htmlspecialchars(date('M j, Y', strtotime($b['start_datetime'])), ENT_QUOTES, 'UTF-8') ?>
+                            <?= htmlspecialchars(\App\Engine\Locale::dateLong($startDt), ENT_QUOTES, 'UTF-8') ?>
                         </td>
                         <td class="vb-text-secondary">
-                            <?= htmlspecialchars(date('H:i', strtotime($b['start_datetime'])), ENT_QUOTES, 'UTF-8') ?>
+                            <?= htmlspecialchars(\App\Engine\Locale::time($startDt), ENT_QUOTES, 'UTF-8') ?>
                             –
-                            <?= htmlspecialchars(date('H:i', strtotime($b['end_datetime'])), ENT_QUOTES, 'UTF-8') ?>
+                            <?= htmlspecialchars(\App\Engine\Locale::time($endDt), ENT_QUOTES, 'UTF-8') ?>
                         </td>
                         <td>
                             <?php if ($b['service_name']): ?>
