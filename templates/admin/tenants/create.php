@@ -194,6 +194,79 @@ ob_start();
             </div>
         </div>
 
+        <!-- Owner Access (Optional) -->
+        <div class="vb-owner-section" x-data="ownerSetup" data-smtp-configured="<?= \App\Engine\Mailer::isConfigured() ? '1' : '0' ?>">
+            <div class="vb-section-divider"></div>
+
+            <div class="vb-form-group">
+                <div class="vb-toggle-row">
+                    <input type="checkbox" id="create_owner_toggle"
+                           :checked="enabled" @change="onToggleEnabled" class="vb-checkbox">
+                    <input type="hidden" name="create_owner" :value="ownerFormValue">
+                    <label for="create_owner_toggle" style="cursor: pointer;">
+                        <span class="vb-label" style="margin-bottom: 0;">
+                            <i data-lucide="user-plus" style="width: 15px; height: 15px; display: inline; vertical-align: -2px; margin-right: 4px;"></i>
+                            <?= __('admin.tenants.owner_section_title') ?>
+                        </span>
+                        <span class="vb-hint" style="margin-top: 2px;"><?= __('admin.tenants.owner_section_desc') ?></span>
+                    </label>
+                </div>
+            </div>
+
+            <div x-show="enabled" x-transition.duration.200ms style="display: none;">
+                <div class="vb-form-group">
+                    <label for="owner_name" class="vb-label"><?= __('admin.tenants.owner_name') ?> *</label>
+                    <input type="text" id="owner_name" name="owner_name" class="vb-input"
+                           placeholder="Jane Doe" :required="enabled">
+                </div>
+
+                <div class="vb-form-group">
+                    <label for="owner_email" class="vb-label"><?= __('admin.tenants.owner_email') ?> *</label>
+                    <input type="email" id="owner_email" name="owner_email" class="vb-input"
+                           x-ref="ownerEmail" placeholder="owner@example.com" :required="enabled">
+                </div>
+
+                <div class="vb-form-group">
+                    <label for="owner_password" class="vb-label"><?= __('admin.tenants.owner_password') ?></label>
+                    <div class="vb-password-field">
+                        <input type="password" id="owner_password" name="owner_password" class="vb-input"
+                               x-ref="ownerPassword" autocomplete="new-password">
+                        <button type="button" class="vb-btn vb-btn-ghost vb-btn-sm" @click="togglePasswordVisibility"
+                                title="<?= __('admin.tenants.owner_toggle_visibility') ?>">
+                            <i data-lucide="eye" x-show="!showPassword"></i>
+                            <i data-lucide="eye-off" x-show="showPassword"></i>
+                        </button>
+                        <button type="button" class="vb-btn vb-btn-ghost vb-btn-sm" @click="generatePassword()"
+                                title="<?= __('admin.tenants.owner_generate_password') ?>">
+                            <i data-lucide="refresh-cw"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="vb-form-group">
+                    <div class="vb-toggle-row">
+                        <input type="checkbox" id="send_owner_email_toggle" name="send_owner_email" value="1"
+                               :checked="sendEmail"
+                               @change="onToggleSendEmail"
+                               :disabled="smtpNotConfigured"
+                               class="vb-checkbox">
+                        <label for="send_owner_email_toggle" style="cursor: pointer;">
+                            <span class="vb-label" style="margin-bottom: 0;">
+                                <i data-lucide="mail" style="width: 14px; height: 14px; display: inline; vertical-align: -2px; margin-right: 4px;"></i>
+                                <?= __('admin.tenants.owner_send_email') ?>
+                            </span>
+                            <?php if (!\App\Engine\Mailer::isConfigured()): ?>
+                                <span class="vb-hint vb-hint-warning" style="margin-top: 2px;">
+                                    <i data-lucide="alert-triangle" style="width: 12px; height: 12px; display: inline; vertical-align: -1px; margin-right: 3px;"></i>
+                                    <?= __('admin.tenants.owner_smtp_hint') ?>
+                                </span>
+                            <?php endif; ?>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="vb-form-actions">
             <button type="submit" class="vb-btn vb-btn-primary">
                 <i data-lucide="plus"></i>

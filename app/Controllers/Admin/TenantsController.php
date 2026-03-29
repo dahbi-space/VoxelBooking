@@ -6,7 +6,9 @@ namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
 use App\Engine\AuditLog;
+use App\Engine\Database;
 use App\Engine\Logger;
+use App\Engine\Mailer;
 use App\Engine\Request;
 use App\Engine\Response;
 use App\Engine\Version;
@@ -74,7 +76,7 @@ final class TenantsController
         $email   = trim($request->string('email'));
         $pattern = trim($request->string('booking_pattern'));
 
-        // Validate
+        // Validate tenant fields
         $errors = [];
         if ($name === '') {
             $errors[] = __('admin.tenants.flash_name_required');
@@ -91,28 +93,127 @@ final class TenantsController
             $pattern = 'timeslot';
         }
 
+        // Optional owner fields
+        $createOwner = $request->string('create_owner') === '1';
+        $ownerName   = trim($request->string('owner_name'));
+        $ownerEmail  = trim($request->string('owner_email'));
+        $ownerPass   = trim($request->string('owner_password'));
+        $sendEmail   = $request->string('send_owner_email') === '1';
+
+        // Validate owner fields if requested
+        if ($createOwner) {
+            if ($ownerName === '') {
+                $errors[] = __('admin.tenants.flash_owner_name_required');
+            }
+            if ($ownerEmail === '') {
+                $errors[] = __('admin.tenants.flash_email_required');
+            } elseif (!filter_var($ownerEmail, FILTER_VALIDATE_EMAIL)) {
+                $errors[] = __('admin.tenants.flash_owner_email_invalid');
+            }
+            if ($ownerPass === '') {
+                $ownerPass = bin2hex(random_bytes(8)); // 16-char random password
+            }
+        }
+
         if (!empty($errors)) {
             $this->setFlash('error', implode(' ', $errors));
             return Response::redirect('/admin/tenants/create');
         }
 
         try {
-            $id = Tenant::create([
-                'name'            => $name,
-                'slug'            => $slug,
-                'email'           => $email,
-                'booking_pattern' => $pattern,
-                'timezone'        => trim($request->string('timezone')) ?: 'UTC',
-                'currency'        => trim($request->string('currency')) ?: 'EUR',
-                'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
-            ]);
+            $tenantId = null;
+            $ownerId = null;
 
-            AuditLog::log('tenant.created', 'tenant', $id, [
-                'name' => $name, 'slug' => $slug, 'pattern' => $pattern,
-            ]);
+            Database::transaction(function () use (
+                $name, $slug, $email, $pattern, $request,
+                $createOwner, $ownerName, $ownerEmail, $ownerPass,
+                &$tenantId, &$ownerId
+            ) {
+                $tenantId = Tenant::create([
+                    'name'            => $name,
+                    'slug'            => $slug,
+                    'email'           => $email,
+                    'booking_pattern' => $pattern,
+                    'timezone'        => trim($request->string('timezone')) ?: 'UTC',
+                    'currency'        => trim($request->string('currency')) ?: 'EUR',
+                    'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
+                ]);
 
-            $this->setFlash('success', __('admin.tenants.flash_created'));
+                AuditLog::log('tenant.created', 'tenant', $tenantId, [
+                    'name' => $name, 'slug' => $slug, 'pattern' => $pattern,
+                ]);
+
+                // Create the first owner in the same transaction
+                if ($createOwner && $tenantId) {
+                    // Check for email collision within this tenant
+                    $existing = Database::query(
+                        'SELECT `id` FROM `business_users` WHERE `email` = ? LIMIT 1',
+                        [$ownerEmail]
+                    );
+
+                    if (!empty($existing)) {
+                        throw new \RuntimeException('owner_email_taken');
+                    }
+
+                    $ownerId = \App\Engine\Ulid::generate();
+                    Database::execute(
+                        "INSERT INTO `business_users`
+                         (`id`, `tenant_id`, `name`, `email`, `password_hash`, `role`, `force_password_change`, `is_active`)
+                         VALUES (?, ?, ?, ?, ?, 'owner', 1, 1)",
+                        [$ownerId, $tenantId, $ownerName, $ownerEmail, password_hash($ownerPass, PASSWORD_BCRYPT)]
+                    );
+
+                    AuditLog::log('business_user.created', 'business_user', $ownerId, [
+                        'tenant_id' => $tenantId,
+                        'name'      => $ownerName,
+                        'role'      => 'owner',
+                        'source'    => 'tenant_creation',
+                    ]);
+                }
+            });
+
+            // After commit: send welcome email if requested
+            if ($createOwner && $ownerId !== null) {
+                $emailResult = null;
+
+                if ($sendEmail && Mailer::isConfigured()) {
+                    $loginUrl = rtrim($_ENV['APP_URL'] ?? '', '/') . '/admin/login';
+                    $emailResult = Mailer::sendBusinessUserWelcome(
+                        $ownerEmail, $ownerName, $ownerPass, $loginUrl, $name, $tenantId
+                    );
+                }
+
+                if ($emailResult !== null && $emailResult['sent']) {
+                    // Email sent successfully
+                    $this->setFlash('success', __('admin.tenants.flash_created_with_owner')
+                        . ' ' . __('admin.tenants.flash_owner_email_sent'));
+                } else {
+                    // Email not sent (SMTP unconfigured, not requested, or failed)
+                    // Flash credentials so the operator can copy them
+                    $reason = !$sendEmail
+                        ? __('admin.tenants.flash_owner_email_skipped')
+                        : ($emailResult !== null
+                            ? __('admin.tenants.flash_owner_email_failed')
+                            : __('admin.tenants.flash_owner_email_skipped'));
+
+                    $this->setFlash('owner_credentials', json_encode([
+                        'message'  => __('admin.tenants.flash_created_with_owner') . ' ' . $reason,
+                        'email'    => $ownerEmail,
+                        'password' => $ownerPass,
+                        'login'    => rtrim($_ENV['APP_URL'] ?? '', '/') . '/admin/login',
+                    ]));
+                }
+            } else {
+                $this->setFlash('success', __('admin.tenants.flash_created'));
+            }
+
             return Response::redirect('/admin/tenants');
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() === 'owner_email_taken') {
+                $this->setFlash('error', __('admin.tenants.flash_owner_email_taken'));
+                return Response::redirect('/admin/tenants/create');
+            }
+            throw $e;
         } catch (\Throwable $e) {
             Logger::error('Tenant creation failed', ['error' => $e->getMessage()]);
             $this->setFlash('error', __('admin.tenants.flash_create_failed'));

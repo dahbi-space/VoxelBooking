@@ -242,6 +242,51 @@ final class Mailer
         return self::send($operatorEmail, $subject, $html, 'operator_notification', $tenantId);
     }
 
+    // ── Business user onboarding ──
+
+    /**
+     * Send a welcome email to a newly created business user with their login credentials.
+     *
+     * @param string $to           Business user email
+     * @param string $name         Business user display name
+     * @param string $tempPassword The temporary plaintext password
+     * @param string $loginUrl     Full URL to the login page (e.g. https://app.test/admin/login)
+     * @param string $tenantName   Tenant display name
+     * @param string $tenantId     Associated tenant ID
+     *
+     * @return array{sent: bool, error: string|null, log_id: string}
+     */
+    public static function sendBusinessUserWelcome(
+        string $to,
+        string $name,
+        string $tempPassword,
+        string $loginUrl,
+        string $tenantName,
+        string $tenantId,
+    ): array {
+        $subject = __('email.business_user_welcome.subject', ['tenant' => $tenantName]);
+
+        $body = __('email.business_user_welcome.greeting', ['name' => $name]) . '<br><br>'
+            . __('email.business_user_welcome.body', ['tenant' => '<strong>' . htmlspecialchars($tenantName, ENT_QUOTES, 'UTF-8') . '</strong>']) . '<br><br>'
+            . '<strong>' . __('email.business_user_welcome.detail_email') . '</strong> ' . htmlspecialchars($to, ENT_QUOTES, 'UTF-8') . '<br>'
+            . '<strong>' . __('email.business_user_welcome.detail_password') . '</strong> <code style="background:#f4f4f5;padding:2px 6px;border-radius:4px;font-family:monospace;">' . htmlspecialchars($tempPassword, ENT_QUOTES, 'UTF-8') . '</code><br>'
+            . '<strong>' . __('email.business_user_welcome.detail_login') . '</strong> <a href="' . htmlspecialchars($loginUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($loginUrl, ENT_QUOTES, 'UTF-8') . '</a><br><br>'
+            . '<em>' . __('email.business_user_welcome.change_password') . '</em>';
+
+        $footer = __('email.business_user_welcome.footer', [
+            'app_name' => app_name(),
+            'tenant'   => $tenantName,
+        ]);
+
+        $html = self::renderPrivacyEmail(
+            __('email.business_user_welcome.title', ['tenant' => $tenantName]),
+            $body,
+            $footer,
+        );
+
+        return self::send($to, $subject, $html, 'business_user_welcome', $tenantId);
+    }
+
     // ── Internal helpers ──
 
     /**

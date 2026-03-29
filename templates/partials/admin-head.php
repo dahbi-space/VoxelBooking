@@ -586,6 +586,62 @@
     .vb-alert-error { background: var(--vb-error-bg); color: var(--vb-error); }
     .vb-alert-warning { background: var(--vb-warning-bg); color: var(--vb-warning); }
     .vb-alert-info { background: var(--vb-info-bg); color: var(--vb-info); }
+    .vb-alert-info { align-items: flex-start; } /* multi-line info alerts align top */
+
+    /* Credential card (one-time post-creation display) */
+    .vb-credentials-card {
+        margin-top: 0.5rem; padding: 0.75rem 1rem;
+        background: var(--vb-surface); border-radius: var(--vb-radius-md);
+        border: 1px solid var(--vb-border);
+        font-family: var(--vb-font-mono, 'JetBrains Mono', monospace);
+    }
+    .vb-credentials-row {
+        display: flex; align-items: center; gap: 0.5rem;
+        padding: 0.25rem 0; font-size: var(--vb-text-sm);
+    }
+    .vb-credentials-label {
+        color: var(--vb-text-muted); font-weight: 500;
+        min-width: 10rem; font-family: var(--vb-font-sans, Inter, sans-serif);
+    }
+    .vb-credentials-value {
+        color: var(--vb-text); background: transparent;
+        padding: 0; font-size: var(--vb-text-sm);
+        user-select: all; /* easy copy */
+    }
+    .vb-credentials-hint {
+        margin: 0.5rem 0 0; font-size: 12px;
+        color: var(--vb-text-muted); font-style: italic;
+        font-family: var(--vb-font-sans, Inter, sans-serif);
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       OWNER SETUP — Toggle, password field, section divider
+       ══════════════════════════════════════════════════════════════ */
+    .vb-section-divider {
+        height: 1px; background: var(--vb-border);
+        margin: 1rem 0 1.25rem;
+    }
+    .vb-toggle-row {
+        display: flex; align-items: flex-start; gap: 0.75rem;
+        cursor: pointer; user-select: none;
+    }
+    .vb-checkbox {
+        width: 18px; height: 18px; flex-shrink: 0;
+        margin-top: 2px; accent-color: var(--vb-primary);
+        cursor: pointer;
+    }
+    .vb-password-field {
+        display: flex; align-items: center; gap: 0.375rem;
+    }
+    .vb-password-field .vb-input { flex: 1; }
+    .vb-password-field .vb-btn { padding: 0.375rem; }
+    .vb-password-field .vb-btn svg { width: 15px; height: 15px; }
+    .vb-hint-warning {
+        color: var(--vb-warning) !important;
+    }
+    .vb-owner-section {
+        margin-top: 0.5rem;
+    }
 
     /* ══════════════════════════════════════════════════════════════
        SETTINGS SYSTEM — Tabs, info rows, settings cards

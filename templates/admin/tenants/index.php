@@ -10,14 +10,39 @@ ob_start();
 ?>
 
 <?php if ($flash): ?>
-    <div class="vb-alert vb-alert-<?= $flash['type'] === 'success' ? 'success' : 'error' ?>">
-        <?php if ($flash['type'] === 'success'): ?>
-            <i data-lucide="check"></i>
-        <?php else: ?>
-            <i data-lucide="alert-circle"></i>
-        <?php endif; ?>
-        <?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?>
-    </div>
+    <?php if ($flash['type'] === 'owner_credentials'): ?>
+        <?php $creds = json_decode($flash['message'], true); ?>
+        <div class="vb-alert vb-alert-info vb-fade-in-up">
+            <i data-lucide="key"></i>
+            <div>
+                <div style="margin-bottom: 0.5rem;"><?= htmlspecialchars($creds['message'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
+                <div class="vb-credentials-card">
+                    <div class="vb-credentials-row">
+                        <span class="vb-credentials-label"><?= __('admin.tenants.owner_credentials_email') ?></span>
+                        <code class="vb-credentials-value"><?= htmlspecialchars($creds['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></code>
+                    </div>
+                    <div class="vb-credentials-row">
+                        <span class="vb-credentials-label"><?= __('admin.tenants.owner_credentials_password') ?></span>
+                        <code class="vb-credentials-value"><?= htmlspecialchars($creds['password'] ?? '', ENT_QUOTES, 'UTF-8') ?></code>
+                    </div>
+                    <div class="vb-credentials-row">
+                        <span class="vb-credentials-label"><?= __('admin.tenants.owner_credentials_login') ?></span>
+                        <code class="vb-credentials-value"><?= htmlspecialchars($creds['login'] ?? '', ENT_QUOTES, 'UTF-8') ?></code>
+                    </div>
+                    <p class="vb-credentials-hint"><?= __('admin.tenants.owner_credentials_hint') ?></p>
+                </div>
+            </div>
+        </div>
+    <?php else: ?>
+        <div class="vb-alert vb-alert-<?= $flash['type'] === 'success' ? 'success' : 'error' ?>">
+            <?php if ($flash['type'] === 'success'): ?>
+                <i data-lucide="check"></i>
+            <?php else: ?>
+                <i data-lucide="alert-circle"></i>
+            <?php endif; ?>
+            <?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?>
+        </div>
+    <?php endif; ?>
 <?php endif; ?>
 
 <div class="vb-page-header">

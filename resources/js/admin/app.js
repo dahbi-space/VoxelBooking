@@ -49,6 +49,7 @@ import {
     EyeOff,
     Check,
     AlertCircle,
+    AlertTriangle,
     Info,
     Shield,
     Key,
@@ -94,7 +95,7 @@ const ICON_SET = {
     User, Users, Settings, LogOut,
     ChevronDown, ChevronRight, ChevronLeft, Plus, Search,
     Bell, Menu, X, Edit, Pencil, Trash2, Eye, EyeOff,
-    Check, AlertCircle, Info, Shield, Key, Mail, Clock,
+    Check, AlertCircle, AlertTriangle, Info, Shield, Key, Mail, Clock,
     Building2, UserPlus, FileText, Download, Upload,
     RefreshCw, MoreVertical, Minus, ExternalLink, Copy, Sun, Moon,
     Palette, Globe, Activity, TrendingUp, BarChart3, Hash,
@@ -202,6 +203,70 @@ Alpine.data('colorSync', () => ({
             if (this.$refs.colorPicker) {
                 this.$refs.colorPicker.value = v;
             }
+        }
+    },
+}));
+
+// ── Alpine: Owner Setup (optional first-owner during tenant creation) ──
+Alpine.data('ownerSetup', () => ({
+    enabled: false,
+    showPassword: false,
+    smtpConfigured: false,
+    sendEmail: false,
+
+    init() {
+        this.smtpConfigured = this.$el.dataset.smtpConfigured === '1';
+        this.sendEmail = this.smtpConfigured;
+    },
+
+    // CSP-safe: referenced as @change="onToggleEnabled"
+    onToggleEnabled() {
+        this.enabled = !this.enabled;
+        if (this.enabled) {
+            this.$nextTick(() => {
+                const tenantEmail = document.getElementById('tenant_email');
+                const ownerEmail = this.$refs.ownerEmail;
+                if (tenantEmail && ownerEmail && !ownerEmail.value) {
+                    ownerEmail.value = tenantEmail.value;
+                }
+                this.generatePassword();
+                if (window.refreshIcons) window.refreshIcons();
+            });
+        }
+    },
+
+    // CSP-safe: referenced as :value="ownerFormValue"
+    get ownerFormValue() {
+        return this.enabled ? '1' : '0';
+    },
+
+    // CSP-safe: referenced as :disabled="smtpNotConfigured"
+    get smtpNotConfigured() {
+        return !this.smtpConfigured;
+    },
+
+    // CSP-safe: referenced as @change="onToggleSendEmail"
+    onToggleSendEmail() {
+        this.sendEmail = !this.sendEmail;
+    },
+
+    generatePassword() {
+        const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let pass = '';
+        const arr = new Uint32Array(16);
+        crypto.getRandomValues(arr);
+        for (let i = 0; i < 16; i++) {
+            pass += chars[arr[i] % chars.length];
+        }
+        if (this.$refs.ownerPassword) {
+            this.$refs.ownerPassword.value = pass;
+        }
+    },
+
+    togglePasswordVisibility() {
+        this.showPassword = !this.showPassword;
+        if (this.$refs.ownerPassword) {
+            this.$refs.ownerPassword.type = this.showPassword ? 'text' : 'password';
         }
     },
 }));

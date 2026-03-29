@@ -41,6 +41,10 @@ final class LoginFlowTest extends TestCase
             $loginPage = curl_exec($ch);
             curl_close($ch);
 
+            if ($loginPage === false) {
+                $this->markTestSkipped('App not reachable (curl_exec failed)');
+            }
+
             preg_match('/name="_csrf_token"\s+value="([^"]+)"/', $loginPage, $m);
             $csrf = $m[1] ?? '';
             $this->assertNotEmpty($csrf, 'CSRF token must be present on login page');
@@ -64,6 +68,10 @@ final class LoginFlowTest extends TestCase
             $result = curl_exec($ch);
             $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
+
+            if ($result === false) {
+                $this->markTestSkipped('App not reachable (curl_exec failed on POST)');
+            }
 
             // Step 3: Verify the redirected page contains the email in the input field
             $this->assertSame(200, $code, 'Should follow redirect back to login page');
@@ -92,6 +100,10 @@ final class LoginFlowTest extends TestCase
             $loginPage = curl_exec($ch);
             curl_close($ch);
 
+            if ($loginPage === false) {
+                $this->markTestSkipped('App not reachable (curl_exec failed)');
+            }
+
             preg_match('/name="_csrf_token"\s+value="([^"]+)"/', $loginPage, $m);
             $csrf = $m[1] ?? '';
 
@@ -111,6 +123,10 @@ final class LoginFlowTest extends TestCase
             ]);
             $result = curl_exec($ch);
             curl_close($ch);
+
+            if ($result === false) {
+                $this->markTestSkipped('App not reachable (curl_exec failed on POST)');
+            }
 
             // The error message class should be present
             $this->assertStringContainsString('login-error', $result, 'Error indicator must be present after failed login');

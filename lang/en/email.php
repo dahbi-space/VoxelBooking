@@ -61,6 +61,18 @@ return [
         'footer'           => 'Log in to :app_name and navigate to the Deletion Queue to process this request.',
     ],
 
+    'business_user_welcome' => [
+        'subject'          => 'Your :tenant login is ready',
+        'title'            => 'Welcome to :tenant',
+        'greeting'         => 'Hi :name,',
+        'body'             => 'An account has been created for you to manage bookings at :tenant.',
+        'detail_email'     => 'Email:',
+        'detail_password'  => 'Temporary Password:',
+        'detail_login'     => 'Login:',
+        'change_password'  => 'Please change your password after your first login.',
+        'footer'           => 'This email was sent by :app_name on behalf of :tenant.',
+    ],
+
     'test' => [
         'subject' => ':app_name — SMTP Test',
         'title'   => 'SMTP Configuration Verified',

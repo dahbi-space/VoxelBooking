@@ -55,7 +55,7 @@ final class AdminRoutesTest extends TestCase
 
     protected function tearDown(): void
     {
-        if (file_exists($this->cookieJar)) {
+        if (isset($this->cookieJar) && file_exists($this->cookieJar)) {
             unlink($this->cookieJar);
         }
     }
