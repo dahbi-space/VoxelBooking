@@ -126,8 +126,8 @@ final class ThrottleMiddleware
     private function recordHit(string $ip, string $group): void
     {
         Database::execute(
-            'INSERT INTO `rate_limits` (`ip`, `endpoint_group`, `created_at`) VALUES (?, ?, NOW())',
-            [$ip, $group]
+            'INSERT INTO `rate_limits` (`ip`, `endpoint_group`, `created_at`) VALUES (?, ?, ?)',
+            [$ip, $group, date('Y-m-d H:i:s')]
         );
     }
 

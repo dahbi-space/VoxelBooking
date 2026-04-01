@@ -31,22 +31,36 @@ final class DashboardController
 
         $tenantCounts = Tenant::counts();
 
+        $today = date('Y-m-d');
+        $todayEnd = $today . ' 23:59:59';
+        $now = date('Y-m-d H:i:s');
+        $weekStart = date('Y-m-d', strtotime('-6 days'));
+        $now24h = date('Y-m-d H:i:s', strtotime('+24 hours'));
+        $prevDay = date('Y-m-d', strtotime('-7 days'));
+        $prevWeekStart = date('Y-m-d', strtotime('-13 days'));
+        $prevWeekEnd = date('Y-m-d', strtotime('-7 days'));
+
         $todayBookings = $this->queryCount(
-            "SELECT COUNT(*) as cnt FROM `bookings` WHERE DATE(`start_datetime`) = CURDATE()"
+            "SELECT COUNT(*) as cnt FROM `bookings` WHERE DATE(`start_datetime`) = ?",
+            [$today]
         );
         $weekBookings = $this->queryCount(
-            "SELECT COUNT(*) as cnt FROM `bookings` WHERE `start_datetime` >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND `start_datetime` <= CONCAT(CURDATE(), ' 23:59:59')"
+            "SELECT COUNT(*) as cnt FROM `bookings` WHERE `start_datetime` >= ? AND `start_datetime` <= ?",
+            [$weekStart, $todayEnd]
         );
         $upcoming24h = $this->queryCount(
-            "SELECT COUNT(*) as cnt FROM `bookings` WHERE `start_datetime` BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 24 HOUR) AND `status` = 'confirmed'"
+            "SELECT COUNT(*) as cnt FROM `bookings` WHERE `start_datetime` BETWEEN ? AND ? AND `status` = 'confirmed'",
+            [$now, $now24h]
         );
 
         // Deltas: same-day-last-week for daily, previous-7-day-window for weekly
         $prevTodayBookings = $this->queryCount(
-            "SELECT COUNT(*) as cnt FROM `bookings` WHERE DATE(`start_datetime`) = DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
+            "SELECT COUNT(*) as cnt FROM `bookings` WHERE DATE(`start_datetime`) = ?",
+            [$prevDay]
         );
         $prevWeekBookings = $this->queryCount(
-            "SELECT COUNT(*) as cnt FROM `bookings` WHERE `start_datetime` >= DATE_SUB(CURDATE(), INTERVAL 13 DAY) AND `start_datetime` < DATE_SUB(CURDATE(), INTERVAL 6 DAY)"
+            "SELECT COUNT(*) as cnt FROM `bookings` WHERE `start_datetime` >= ? AND `start_datetime` < ?",
+            [$prevWeekStart, $prevWeekEnd]
         );
 
         $deltaToday = $todayBookings - $prevTodayBookings;
@@ -130,10 +144,10 @@ final class DashboardController
         ]);
     }
 
-    private function queryCount(string $sql): int
+    private function queryCount(string $sql, array $bindings = []): int
     {
         try {
-            $rows = Database::query($sql);
+            $rows = Database::query($sql, $bindings);
             return (int) ($rows[0]['cnt'] ?? 0);
         } catch (\Throwable) {
             return 0;

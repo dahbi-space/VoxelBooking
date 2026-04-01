@@ -344,16 +344,16 @@ CREATE TABLE business_users (
 )
 ");
 
-// 018: rate_limits
+// 018: rate_limits — mirrors 018_create_rate_limits.php
 $pdo->exec("
 CREATE TABLE rate_limits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    `key` TEXT NOT NULL,
-    attempts INTEGER NOT NULL DEFAULT 0,
-    expires_at TEXT NOT NULL,
-    UNIQUE(`key`)
+    ip TEXT NOT NULL,
+    endpoint_group TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
 )
 ");
+$pdo->exec("CREATE INDEX rate_limits_lookup ON rate_limits (ip, endpoint_group, created_at)");
 
 // 019: customers — mirrors 019_create_customers.php
 $pdo->exec("

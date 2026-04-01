@@ -23,6 +23,17 @@ final class Database
             return self::$pdo;
         }
 
+        // Demo mode: switch to pre-seeded SQLite database
+        if (DemoMode::isActive()) {
+            $dbPath = DemoMode::databasePath();
+            self::$pdo = new PDO('sqlite:' . $dbPath, options: [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            ]);
+
+            return self::$pdo;
+        }
+
         $host = $_ENV['DB_HOST'] ?? '127.0.0.1';
         $port = $_ENV['DB_PORT'] ?? '3306';
         $name = $_ENV['DB_DATABASE'] ?? 'voxelbooking';
@@ -118,17 +129,38 @@ final class Database
 
     /**
      * Check if a specific table exists.
+     *
+     * Uses information_schema on MySQL, PRAGMA on SQLite.
      */
     public static function tableExists(string $table): bool
     {
         try {
-            $result = self::query(
-                'SELECT COUNT(*) as cnt FROM information_schema.tables WHERE table_schema = ? AND table_name = ?',
-                [$_ENV['DB_DATABASE'] ?? 'voxelbooking', $table]
-            );
+            if (self::isSQLite()) {
+                $result = self::query(
+                    "SELECT COUNT(*) as cnt FROM sqlite_master WHERE type = 'table' AND name = ?",
+                    [$table]
+                );
+            } else {
+                $result = self::query(
+                    'SELECT COUNT(*) as cnt FROM information_schema.tables WHERE table_schema = ? AND table_name = ?',
+                    [$_ENV['DB_DATABASE'] ?? 'voxelbooking', $table]
+                );
+            }
 
             return ($result[0]['cnt'] ?? 0) > 0;
         } catch (PDOException) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if the current connection is SQLite.
+     */
+    public static function isSQLite(): bool
+    {
+        try {
+            return self::connect()->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite';
+        } catch (\Throwable) {
             return false;
         }
     }
