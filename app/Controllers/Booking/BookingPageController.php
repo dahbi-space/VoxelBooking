@@ -74,6 +74,15 @@ final class BookingPageController
             'allow_rescheduling'    => (bool) ($tenant['allow_rescheduling'] ?? true),
         ];
 
+        // Capacity pattern: inject max_party_size from slot configuration
+        if ($tenant['booking_pattern'] === 'capacity') {
+            $maxPartyRow = Database::query(
+                'SELECT MAX(`max_party_size`) AS `max_ps` FROM `capacity_slots` WHERE `tenant_id` = ? AND `is_active` = 1',
+                [$tenant['id']]
+            );
+            $tenantConfig['max_party_size'] = (int) ($maxPartyRow[0]['max_ps'] ?? 8);
+        }
+
         // Inject translations and formatting config for JS
         $translations = Locale::getTranslationsForDomain('booking');
         $formatting   = Locale::getFormattingConfig();

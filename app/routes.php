@@ -169,6 +169,12 @@ return function (Router $router): void {
             $router->post('/admin/tenants/{tenant_id}/resources/{id}/activate', \App\Controllers\Admin\ResourceController::class, 'activate');
             $router->post('/admin/tenants/{tenant_id}/resources/{id}/deactivate', \App\Controllers\Admin\ResourceController::class, 'deactivate');
 
+            // Capacity slot management — operator + owner only (enforced in controller)
+            $router->get('/admin/tenants/{tenant_id}/capacity-slots', \App\Controllers\Admin\CapacitySlotsController::class, 'index');
+            $router->post('/admin/tenants/{tenant_id}/capacity-slots', \App\Controllers\Admin\CapacitySlotsController::class, 'store');
+            $router->post('/admin/tenants/{tenant_id}/capacity-slots/{id}/toggle', \App\Controllers\Admin\CapacitySlotsController::class, 'toggleActive');
+            $router->post('/admin/tenants/{tenant_id}/capacity-slots/{id}/delete', \App\Controllers\Admin\CapacitySlotsController::class, 'delete');
+
             // Calendar views — tenant-context (all business user roles + operator)
             $router->get('/admin/tenants/{tenant_id}/calendar', \App\Controllers\Admin\CalendarController::class, 'day');
             $router->get('/admin/tenants/{tenant_id}/calendar/week', \App\Controllers\Admin\CalendarController::class, 'week');
@@ -191,6 +197,10 @@ return function (Router $router): void {
         // Resource-pattern public API (Phase R)
         $router->get('/api/{slug}/resources', \App\Controllers\Booking\BookingApiController::class, 'resources');
         $router->get('/api/{slug}/resources/{id}/availability', \App\Controllers\Booking\BookingApiController::class, 'resourceAvailability');
+
+        // Capacity-pattern public API (Phase C)
+        $router->get('/api/{slug}/capacity/available-dates', \App\Controllers\Booking\BookingApiController::class, 'capacityAvailableDates');
+        $router->get('/api/{slug}/capacity/slots', \App\Controllers\Booking\BookingApiController::class, 'capacitySlots');
 
         // ── Privacy endpoint (GDPR data-subject rights) ──
         // No auth — customer ULID is the bearer token (128-bit entropy)

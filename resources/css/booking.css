@@ -1302,6 +1302,146 @@ body {
   font-size: 0.875rem;
 }
 
+/* ── Capacity: Party Size Counter ── */
+.vb-book-party-size {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+}
+
+.vb-book-counter {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.vb-book-counter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--vb-border);
+  background: var(--vb-bg);
+  color: var(--vb-text);
+  cursor: pointer;
+  transition: all var(--vb-duration-fast) var(--vb-ease-out);
+}
+
+.vb-book-counter-btn:hover:not(:disabled) {
+  border-color: var(--vb-brand);
+  color: var(--vb-brand);
+  background: var(--vb-brand-light);
+  transform: scale(1.05);
+}
+
+.vb-book-counter-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.vb-book-counter-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.vb-book-counter-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.vb-book-counter-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--vb-text);
+  min-width: 60px;
+  text-align: center;
+  letter-spacing: -0.03em;
+  font-feature-settings: 'tnum' 1;
+}
+
+.vb-book-counter-label {
+  font-size: 0.875rem;
+  color: var(--vb-text-secondary);
+  text-transform: lowercase;
+}
+
+/* ── Capacity: Slot List & Cards ── */
+.vb-book-slot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vb-book-slot-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--vb-bg);
+  border: 1px solid var(--vb-border);
+  border-radius: var(--vb-radius-xl);
+  cursor: pointer;
+  transition: all var(--vb-duration-fast) var(--vb-ease-out);
+  font-family: var(--vb-font-sans);
+  width: 100%;
+  text-align: left;
+}
+
+.vb-book-slot-card:hover {
+  border-color: var(--vb-brand);
+  background: var(--vb-brand-light);
+  transform: translateY(-1px);
+  box-shadow: var(--vb-shadow-sm);
+}
+
+.vb-book-slot-card:active {
+  transform: scale(0.99);
+  box-shadow: none;
+}
+
+.vb-book-slot-card[aria-checked="true"] {
+  border-color: var(--vb-brand);
+  background: var(--vb-brand-light);
+  box-shadow: 0 0 0 2px var(--vb-brand);
+}
+
+.vb-book-slot-time {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vb-book-slot-time > span:first-child {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--vb-text);
+  letter-spacing: -0.011em;
+}
+
+.vb-book-slot-label {
+  font-size: 0.75rem;
+  color: var(--vb-text-tertiary);
+  font-weight: 400;
+}
+
+.vb-book-slot-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vb-book-slot-remaining {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--vb-success);
+  background: rgba(16, 185, 129, 0.1);
+  padding: 3px 10px;
+  border-radius: var(--vb-radius-full);
+}
+
 /* ── Focus states ── */
 /* Inputs and textareas use their own ring via box-shadow.
    Everything else (buttons, cards, calendar cells) gets the

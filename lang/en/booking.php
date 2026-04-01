@@ -39,6 +39,8 @@ return [
         'change_staff'       => '← Change team member',
         'change_date'        => '← Change date or time',
         'edit_details'       => '← Edit details',
+        'change_party_size'  => '← Change party size',
+        'change_date_cap'    => '← Change date',
     ],
 
     // ── Form Labels ──
@@ -65,6 +67,7 @@ return [
         'reschedule'       => 'Reschedule',
         'cancel_booking'   => 'Cancel booking',
         'pick_another_time'=> 'Pick another time',
+        'continue'         => 'Continue',
     ],
 
     // ── Confirmation ──
@@ -138,6 +141,23 @@ return [
         'no_resources'      => 'No rooms available',
         'no_resources_desc' => 'This business has not configured any rooms yet.',
         'no_dates'          => 'No available dates this month.',
+        // Capacity-pattern
+        'no_slots'          => 'No available time slots',
+        'no_slots_desc'     => 'This business has not configured any time slots yet.',
+        'no_slots_date'     => 'No available slots on this day.',
+    ],
+
+    // ── Capacity-Pattern Booking Page ──
+    'capacity' => [
+        'party_size_title'    => 'Party Size',
+        'party_size_label'    => 'How many guests?',
+        'party_size_hint'     => 'Select the number of guests in your party.',
+        'guest'               => 'guest',
+        'guests'              => 'guests',
+        'date_title'          => 'Select Date',
+        'time_title'          => 'Select Time',
+        'spots_remaining'     => ':count spots left',
+        'slot_full'           => 'Full',
     ],
 
     // ── Errors & Toasts ──
@@ -195,6 +215,11 @@ return [
         'check_out_required'    => 'Check-out date is required.',
         'guest_count_invalid'   => 'Guest count must be at least 1.',
         'resource_unavailable'  => 'This resource is not available for the selected dates.',
+        // Capacity-pattern
+        'slot_required'         => 'Please select a time slot.',
+        'date_required'         => 'Please select a date.',
+        'party_size_invalid'    => 'Party size must be at least 1.',
+        'capacity_exceeded'     => 'Not enough spots remaining for your party size.',
     ],
 
     // ── Recovery ──

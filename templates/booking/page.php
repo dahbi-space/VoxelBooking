@@ -251,6 +251,108 @@
                 </div>
             </div>
 
+            <!-- ═══ Capacity: Step 1 — Party Size ═══ -->
+            <div x-show="isPartySizeStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('capacity.party_size_title')"></div>
+                    <div class="vb-book-step-subtitle" x-text="t('capacity.party_size_hint')"></div>
+                </div>
+                <div class="vb-book-party-size">
+                    <div class="vb-book-counter">
+                        <button type="button" class="vb-book-counter-btn" @click="partySize = Math.max(1, partySize - 1)"
+                                x-bind:disabled="partySize <= 1">
+                            <i data-lucide="minus"></i>
+                        </button>
+                        <span class="vb-book-counter-value" x-text="partySize"></span>
+                        <button type="button" class="vb-book-counter-btn" @click="partySize = Math.min(maxPartySize, partySize + 1)"
+                                x-bind:disabled="partySize >= maxPartySize">
+                            <i data-lucide="plus"></i>
+                        </button>
+                    </div>
+                    <div class="vb-book-counter-label" x-text="partySize === 1 ? t('capacity.guest') : t('capacity.guests')"></div>
+                </div>
+                <div class="vb-book-form-actions" style="margin-top: 1.5rem;">
+                    <button type="button" class="vb-book-btn vb-book-btn-primary" @click="confirmPartySize"
+                            x-text="t('buttons.continue')"></button>
+                </div>
+            </div>
+
+            <!-- ═══ Capacity: Step 2 — Date Selection ═══ -->
+            <div x-show="isCapacityDateStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('capacity.date_title')"></div>
+                </div>
+                <div class="vb-book-calendar">
+                    <div class="vb-book-calendar-nav">
+                        <button type="button" class="vb-book-calendar-prev" @click="prevCapacityMonth" aria-label="<?= __('booking.calendar.prev_month') ?>">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
+                        <span class="vb-book-calendar-month" x-text="capacityMonthLabel"></span>
+                        <button type="button" class="vb-book-calendar-next" @click="nextCapacityMonth" aria-label="<?= __('booking.calendar.next_month') ?>">
+                            <i data-lucide="chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="vb-book-calendar-weekdays">
+                        <template x-for="d in dayNames"><span x-text="d"></span></template>
+                    </div>
+                    <div class="vb-book-calendar-grid">
+                        <template x-for="(cell, ci) in capacityCalendarGrid" x-bind:key="ci">
+                            <button type="button"
+                                    class="vb-book-calendar-day"
+                                    x-bind:class="{
+                                        'is-disabled': cell.disabled,
+                                        'is-today': cell.isToday,
+                                        'is-selected': cell.isSelected
+                                    }"
+                                    x-bind:disabled="cell.disabled || !cell.day"
+                                    x-text="cell.day || ''"
+                                    @click="selectCapacityDate(cell)">
+                            </button>
+                        </template>
+                    </div>
+                </div>
+                <div class="vb-book-form-actions" style="margin-top: 1rem;">
+                    <div class="vb-book-back-link">
+                        <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('party-size')"
+                                x-text="t('back.change_party_size')"></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Capacity: Step 3 — Time Slot Selection ═══ -->
+            <div x-show="isCapacityTimeStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('capacity.time_title')"></div>
+                    <div class="vb-book-step-subtitle" x-text="formatDateDisplay(selectedDate)"></div>
+                </div>
+                <div class="vb-book-slot-list" role="radiogroup">
+                    <template x-for="slot in capacitySlots" x-bind:key="slot.id">
+                        <button type="button"
+                                class="vb-book-slot-card"
+                                role="radio"
+                                x-bind:aria-checked="selectedCapacitySlot?.id === slot.id"
+                                @click="selectCapacitySlot(slot)">
+                            <div class="vb-book-slot-time">
+                                <span x-text="formatCapacitySlotTime(slot.time) + ' – ' + formatCapacitySlotTime(slot.end_time)"></span>
+                                <span class="vb-book-slot-label" x-show="slot.label" x-text="slot.label"></span>
+                            </div>
+                            <div class="vb-book-slot-meta">
+                                <span class="vb-book-slot-remaining" x-text="t('capacity.spots_remaining').replace(':count', slot.remaining)"></span>
+                            </div>
+                        </button>
+                    </template>
+                </div>
+                <div x-show="capacitySlots.length === 0" class="vb-book-empty">
+                    <span x-text="t('empty.no_slots_date')"></span>
+                </div>
+                <div class="vb-book-form-actions" style="margin-top: 1rem;">
+                    <div class="vb-book-back-link">
+                        <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('capacity-date')"
+                                x-text="t('back.change_date_cap')"></button>
+                    </div>
+                </div>
+            </div>
+
             <!-- ═══ Step 1: Service Selection ═══ -->
             <div x-show="isServiceStep" class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
@@ -651,7 +753,7 @@
             <template x-if="hasToast">
                 <div class="vb-book-toast is-visible" x-bind:class="toastClass" role="alert">
                     <span class="vb-book-toast-message" x-text="toast.message"></span>
-                    <button class="vb-book-toast-close" type="button" @click="dismissToast" aria-label="Dismiss">
+                    <button class="vb-book-toast-close" type="button" @click="dismissToast" aria-label="<?= __('booking.common.dismiss') ?>">
                         <i data-lucide="x"></i>
                     </button>
                 </div>
@@ -660,7 +762,7 @@
 
         <!-- ── Footer ── -->
         <footer class="vb-book-footer" x-show="!isLoading">
-            <span>Powered by</span>
+            <span><?= __('booking.footer.powered_by') ?></span>
             <a href="<?= htmlspecialchars(brand_url(), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><?= htmlspecialchars(app_name(), ENT_QUOTES, 'UTF-8') ?></a>
         </footer>
     </div>

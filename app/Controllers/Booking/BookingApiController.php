@@ -9,6 +9,7 @@ use App\Engine\Database;
 use App\Engine\Locale;
 use App\Engine\TimeSlotCalculator;
 use App\Engine\ResourceCalculator;
+use App\Engine\CapacityCalculator;
 use App\Engine\BookingService;
 use App\Engine\Ulid;
 use App\Engine\AuditLog;
@@ -265,6 +266,7 @@ final class BookingApiController
      * Dispatches to pattern-specific creation logic based on the tenant's booking_pattern.
      * Timeslot: double-booking prevention per PRD §III.
      * Resource: date-range availability check + capacity validation.
+     * Capacity: party-size slot availability + overbooking prevention.
      */
     public function createBooking(Request $request): Response
     {
@@ -330,6 +332,9 @@ final class BookingApiController
         $pattern = $tenant['booking_pattern'] ?? 'timeslot';
         if ($pattern === 'resource') {
             return $this->createResourceBooking($tenant, $input, $customerName, $customerEmail, $customerPhone);
+        }
+        if ($pattern === 'capacity') {
+            return $this->createCapacityBooking($tenant, $input, $customerName, $customerEmail, $customerPhone);
         }
 
         // ── Timeslot-specific validation and booking creation ──
@@ -749,5 +754,237 @@ final class BookingApiController
         }
     }
 
-}
+    // ── Capacity-pattern read endpoints ──
 
+    /**
+     * GET /api/{slug}/capacity/available-dates — dates with capacity remaining.
+     */
+    public function capacityAvailableDates(Request $request): Response
+    {
+        $slug = $request->getAttribute('slug');
+        $tenant = $this->resolveTenant($slug);
+        if (!$tenant) {
+            return Response::json(['error' => 'tenant_not_found'], 404);
+        }
+
+        $year = (int) ($request->string('year') ?: date('Y'));
+        $month = (int) ($request->string('month') ?: date('n'));
+        $partySize = max(1, (int) ($request->string('party_size') ?: 1));
+
+        if ($month < 1 || $month > 12 || $year < 2020 || $year > 2040) {
+            return Response::json(['error' => 'invalid_month'], 400);
+        }
+
+        $monthStr = sprintf('%04d-%02d', $year, $month);
+        $result = CapacityCalculator::getAvailableDates($tenant, $monthStr, $partySize);
+
+        return Response::json($result);
+    }
+
+    /**
+     * GET /api/{slug}/capacity/slots — available time slots for a date.
+     */
+    public function capacitySlots(Request $request): Response
+    {
+        $slug = $request->getAttribute('slug');
+        $tenant = $this->resolveTenant($slug);
+        if (!$tenant) {
+            return Response::json(['error' => 'tenant_not_found'], 404);
+        }
+
+        $date = $request->string('date');
+        $partySize = max(1, (int) ($request->string('party_size') ?: 1));
+
+        if (!$date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return Response::json(['error' => 'invalid_date'], 400);
+        }
+
+        $result = CapacityCalculator::getAvailableSlots($tenant, $date, $partySize);
+
+        return Response::json($result);
+    }
+
+    // ── Capacity-pattern booking creation ──
+
+    /**
+     * Create a capacity-pattern booking (restaurant, escape room, group class).
+     *
+     * Validates slot availability for the requested party size,
+     * checks capacity limits, and creates the booking.
+     */
+    private function createCapacityBooking(
+        array $tenant,
+        array $input,
+        string $customerName,
+        string $customerEmail,
+        string $customerPhone,
+    ): Response {
+        $slotId    = $input['slot_id'] ?? null;
+        $date      = $input['date'] ?? null;
+        $partySize = (int) ($input['party_size'] ?? 1);
+        $consentGiven = (bool) ($input['consent_given'] ?? false);
+
+        if (!$slotId) {
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.slot_required')], 422);
+        }
+        if (!$date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.date_required')], 422);
+        }
+        if ($partySize < 1) {
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.party_size_invalid')], 422);
+        }
+
+        // Pre-lock check for fast feedback
+        $availability = CapacityCalculator::checkSlotAvailability($tenant, $slotId, $date, $partySize);
+        if (!$availability['available']) {
+            return Response::json([
+                'error'   => $availability['error'],
+                'message' => __('booking.api.capacity_exceeded'),
+            ], 409);
+        }
+
+        // Load slot details for start/end time
+        $slotRows = Database::query(
+            'SELECT `start_time`, `end_time`, `label` FROM `capacity_slots` WHERE `id` = ? AND `tenant_id` = ?',
+            [$slotId, $tenant['id']]
+        );
+        if (empty($slotRows)) {
+            return Response::json(['error' => 'slot_not_found', 'message' => __('booking.api.slot_required')], 422);
+        }
+        $slot = $slotRows[0];
+
+        // Double-booking prevention: transaction + FOR UPDATE lock
+        $pdo = Database::connect();
+        $pdo->beginTransaction();
+
+        try {
+            // Lock existing capacity bookings for this slot time on this date
+            $startDt = $date . ' ' . $slot['start_time'];
+            $lockStmt = $pdo->prepare(
+                'SELECT `id` FROM `bookings`
+                 WHERE `tenant_id` = ? AND `booking_pattern` = \'capacity\'
+                 AND `start_datetime` = ? AND `status` IN (\'confirmed\', \'rescheduled\')
+                 FOR UPDATE'
+            );
+            $lockStmt->execute([$tenant['id'], $startDt]);
+
+            // Re-check availability inside the lock
+            $recheck = CapacityCalculator::checkSlotAvailability($tenant, $slotId, $date, $partySize);
+            if (!$recheck['available']) {
+                $pdo->rollBack();
+                return Response::json([
+                    'error'   => 'capacity_exceeded',
+                    'message' => __('booking.api.capacity_exceeded'),
+                ], 409);
+            }
+
+            // Find or create customer
+            $customerId = CustomerService::findOrCreate(
+                $tenant['id'],
+                $customerName,
+                $customerEmail,
+                $customerPhone,
+            );
+
+            // Build booking data
+            $endDt = $date . ' ' . $slot['end_time'];
+            $bookingData = [
+                'tenant_id'       => $tenant['id'],
+                'customer_id'     => $customerId,
+                'booking_pattern' => 'capacity',
+                'start_datetime'  => $startDt,
+                'end_datetime'    => $endDt,
+                'party_size'      => $partySize,
+                'source'          => 'web',
+            ];
+
+            $notes = trim($input['notes'] ?? '');
+            if ($notes !== '') {
+                $bookingData['notes'] = $notes;
+            }
+
+            $customFields = $input['custom_fields'] ?? null;
+            if ($customFields && is_array($customFields)) {
+                $bookingData['custom_field_data'] = $customFields;
+            }
+
+            $customerTimezone = trim($input['customer_timezone'] ?? '');
+            if ($customerTimezone !== '' && @timezone_open($customerTimezone)) {
+                $bookingData['customer_timezone'] = $customerTimezone;
+            }
+
+            $result = BookingService::createBooking($bookingData, $tenant, $consentGiven);
+
+            $pdo->commit();
+
+            // After commit: update customer stats
+            Database::execute(
+                'UPDATE `customers` SET `booking_count` = `booking_count` + 1, `last_booking_at` = NOW() WHERE `id` = ?',
+                [$customerId]
+            );
+
+            // After commit: dispatch confirmation email
+            $emailSent = false;
+            if (Mailer::isConfigured()) {
+                try {
+                    $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+                    $slotDt = new \DateTimeImmutable($startDt, $tz);
+                    $slotEndDt = new \DateTimeImmutable($endDt, $tz);
+
+                    $emailResult = Mailer::sendBookingConfirmation(
+                        $customerEmail,
+                        $customerName,
+                        [
+                            'date'           => $date,
+                            'formatted_date' => Locale::dateLong($slotDt),
+                            'time'           => substr($slot['start_time'], 0, 5),
+                            'end_time'       => substr($slot['end_time'], 0, 5),
+                            'duration'       => $partySize . ' ' . ($partySize === 1 ? __('booking.capacity.guest') : __('booking.capacity.guests')),
+                        ],
+                        $slot['label'] ?? null, // serviceName → slot label
+                        null, // no staff
+                        $tenant['name'],
+                        $tenant['id'],
+                        $result['id'],
+                        $tenant['brand_color'] ?? '#2563EB',
+                    );
+                    $emailSent = $emailResult['sent'] && Mailer::isProductionSmtp();
+                } catch (\Throwable $e) {
+                    Logger::error('Capacity confirmation email dispatch failed', [
+                        'booking' => $result['id'],
+                        'error'   => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            return Response::json([
+                'booking' => [
+                    'id'               => $result['id'],
+                    'date'             => $date,
+                    'time'             => substr($slot['start_time'], 0, 5),
+                    'end_time'         => substr($slot['end_time'], 0, 5),
+                    'label'            => $slot['label'],
+                    'party_size'       => $partySize,
+                    'consent_recorded' => $result['consent_recorded'],
+                    'email_sent'       => $emailSent,
+                ],
+            ], 201);
+
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            Logger::error('Capacity booking creation failed', [
+                'tenant' => $tenant['slug'] ?? '',
+                'error'  => $e->getMessage(),
+            ]);
+
+            return Response::json([
+                'error'   => 'booking_failed',
+                'message' => __('booking.api.booking_failed'),
+            ], 500);
+        }
+    }
+
+}

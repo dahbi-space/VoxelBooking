@@ -18,13 +18,13 @@ import { createIcons } from 'lucide';
 import {
     ChevronLeft, ChevronRight, ChevronDown, Clock, Globe, Check, X,
     AlertCircle, Info, AlertTriangle, Calendar as CalendarIcon,
-    User, Users, ExternalLink, Download,
+    User, Users, ExternalLink, Download, Plus, Minus,
 } from 'lucide';
 
 const ICON_SET = {
     ChevronLeft, ChevronRight, ChevronDown, Clock, Globe, Check, X,
     AlertCircle, Info, AlertTriangle, Calendar: CalendarIcon,
-    User, Users, ExternalLink, Download,
+    User, Users, ExternalLink, Download, Plus, Minus,
 };
 
 // ── Globals injected by PHP ──
@@ -138,6 +138,15 @@ Alpine.data('bookingWizard', () => ({
     checkInMonth: new Date().getMonth(),
     checkInYear: new Date().getFullYear(),
 
+    // Capacity pattern state
+    partySize: 2,
+    maxPartySize: 8,
+    capacitySlots: [],
+    selectedCapacitySlot: null,
+    capacityDates: [],
+    capacityMonth: new Date().getMonth(),
+    capacityYear: new Date().getFullYear(),
+
     // CSP-safe setters for x-model (nested property assignment is prohibited)
     setCustomerName(val) { this.customerName = val; },
     setCustomerEmail(val) { this.customerEmail = val; },
@@ -173,6 +182,9 @@ Alpine.data('bookingWizard', () => ({
     get isResourceStep() { return this.step === 'resource'; },
     get isResourceDateStep() { return this.step === 'resource-date'; },
     get isGuestStep() { return this.step === 'guests'; },
+    get isPartySizeStep() { return this.step === 'party-size'; },
+    get isCapacityDateStep() { return this.step === 'capacity-date'; },
+    get isCapacityTimeStep() { return this.step === 'capacity-time'; },
     get hasToast() { return !!this.toast; },
     get hasSelectedDate() { return !!this.selectedDate; },
     get hasNoSlots() { return this.availableSlots.length === 0 && !!this.selectedDate; },
@@ -193,6 +205,8 @@ Alpine.data('bookingWizard', () => ({
             this.loadServices();
         } else if (config.booking_pattern === 'resource') {
             this.loadResources();
+        } else if (config.booking_pattern === 'capacity') {
+            this.initCapacity();
         } else {
             this.step = 'unsupported';
         }
@@ -250,6 +264,9 @@ Alpine.data('bookingWizard', () => ({
     get progressSteps() {
         if (config.booking_pattern === 'resource') {
             return ['resource', 'resource-date', 'guests', 'details', 'review'];
+        }
+        if (config.booking_pattern === 'capacity') {
+            return ['party-size', 'capacity-date', 'capacity-time', 'details', 'review'];
         }
         const steps = ['service'];
         if (this.staff.length > 1) steps.push('staff');
@@ -795,8 +812,9 @@ Alpine.data('bookingWizard', () => ({
     get hasCalendarActions() {
         if (!this.booking) return false;
         const b = this.booking;
-        // Timeslot: needs date + time; Resource: needs check_in + check_out
+        // Timeslot: needs date + time; Resource: needs check_in + check_out; Capacity: needs date + time
         if (config.booking_pattern === 'resource') return !!(b.check_in && b.check_out);
+        if (config.booking_pattern === 'capacity') return !!(b.date && b.time && b.end_time);
         return !!(b.date && b.time && b.end_time);
     },
 
@@ -809,6 +827,13 @@ Alpine.data('bookingWizard', () => ({
             const start = b.check_in.replace(/-/g, '');
             const end = b.check_out.replace(/-/g, '');
             const title = encodeURIComponent(b.resource || config.name);
+            return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}`;
+        }
+
+        if (config.booking_pattern === 'capacity') {
+            const start = `${b.date.replace(/-/g, '')}T${b.time.replace(':', '')}00`;
+            const end = `${b.date.replace(/-/g, '')}T${b.end_time.replace(':', '')}00`;
+            const title = encodeURIComponent(b.label || config.name);
             return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}`;
         }
 
@@ -1158,20 +1183,23 @@ Alpine.data('bookingWizard', () => ({
     activeSubmitHandler() {
         if (config.booking_pattern === 'resource') {
             this.submitResourceBooking();
+        } else if (config.booking_pattern === 'capacity') {
+            this.submitCapacityBooking();
         } else {
             this.submitBooking();
         }
     },
 
-    // Resource pattern: review step uses resourceSummaryRows
     get activeReviewRows() {
         if (config.booking_pattern === 'resource') return this.resourceSummaryRows;
+        if (config.booking_pattern === 'capacity') return this.capacitySummaryRows;
         return this.summaryRows;
     },
 
     // Pattern-aware back target from details step
     get activeDetailsBackTarget() {
         if (config.booking_pattern === 'resource') return 'guests';
+        if (config.booking_pattern === 'capacity') return 'capacity-time';
         return 'date';
     },
 
@@ -1237,6 +1265,7 @@ Alpine.data('bookingWizard', () => ({
 
     get activeConfirmRows() {
         if (config.booking_pattern === 'resource') return this.resourceConfirmRows;
+        if (config.booking_pattern === 'capacity') return this.capacityConfirmRows;
         return this.confirmSummaryRows;
     },
 
@@ -1244,6 +1273,194 @@ Alpine.data('bookingWizard', () => ({
     get resourceDateBackTarget() {
         if (this.resources.length > 1) return 'resource';
         return null;
+    },
+
+    // ── Capacity pattern methods ──
+
+    initCapacity() {
+        // Set max party size from config if available
+        this.maxPartySize = config.max_party_size || 8;
+        this.partySize = 2;
+        this.goToStep('party-size');
+    },
+
+    selectPartySize(size) {
+        this.partySize = size;
+    },
+
+    confirmPartySize() {
+        this.loadCapacityDates();
+    },
+
+    async loadCapacityDates() {
+        this.step = 'loading';
+        try {
+            const year = this.capacityYear;
+            const month = this.capacityMonth + 1;
+            const res = await this.api(`/capacity/available-dates?year=${year}&month=${month}&party_size=${this.partySize}`);
+            this.capacityDates = res.dates || [];
+            this.selectedDate = null;
+            this.goToStep('capacity-date');
+        } catch (e) {
+            this.showToast(t('errors.connection'), 'error');
+            this.goToStep('party-size');
+        }
+    },
+
+    get capacityCalendarGrid() {
+        const year = this.capacityYear;
+        const month = this.capacityMonth;
+        const firstDay = new Date(year, month, 1);
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const weekStart = fmt.week_start ?? 0;
+        let startDow = (firstDay.getDay() - weekStart + 7) % 7;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const cells = [];
+        for (let i = 0; i < startDow; i++) cells.push({ day: null, disabled: true });
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dateObj = new Date(year, month, d);
+            const isPast = dateObj < today;
+            const isAvailable = this.capacityDates.includes(dateStr);
+            cells.push({
+                day: d,
+                dateStr,
+                disabled: isPast || !isAvailable,
+                isToday: dateObj.getTime() === today.getTime(),
+                isSelected: this.selectedDate === dateStr,
+            });
+        }
+        return cells;
+    },
+
+    prevCapacityMonth() {
+        if (this.capacityMonth === 0) {
+            this.capacityMonth = 11;
+            this.capacityYear--;
+        } else {
+            this.capacityMonth--;
+        }
+        this.loadCapacityDates();
+    },
+
+    nextCapacityMonth() {
+        if (this.capacityMonth === 11) {
+            this.capacityMonth = 0;
+            this.capacityYear++;
+        } else {
+            this.capacityMonth++;
+        }
+        this.loadCapacityDates();
+    },
+
+    get capacityMonthLabel() {
+        return new Date(this.capacityYear, this.capacityMonth).toLocaleDateString(config.locale || 'en', { month: 'long', year: 'numeric' });
+    },
+
+    selectCapacityDate(cell) {
+        if (cell.disabled || !cell.day) return;
+        this.selectedDate = cell.dateStr;
+        this.loadCapacitySlots();
+    },
+
+    async loadCapacitySlots() {
+        this.step = 'loading';
+        try {
+            const res = await this.api(`/capacity/slots?date=${this.selectedDate}&party_size=${this.partySize}`);
+            this.capacitySlots = res.slots || [];
+            this.selectedCapacitySlot = null;
+            this.goToStep('capacity-time');
+        } catch (e) {
+            this.showToast(t('errors.connection'), 'error');
+            this.goToStep('capacity-date');
+        }
+    },
+
+    selectCapacitySlot(slot) {
+        this.selectedCapacitySlot = slot;
+        this.goToStep('details');
+    },
+
+    formatCapacitySlotTime(time) {
+        return formatSlotDisplay(time, this.selectedDate, this.tenantTz, this.customerTz);
+    },
+
+    get capacitySummaryRows() {
+        const rows = [];
+        if (this.selectedCapacitySlot) {
+            if (this.selectedCapacitySlot.label) {
+                rows.push({ label: t('summary.service_label'), value: this.selectedCapacitySlot.label });
+            }
+            rows.push({ label: t('summary.date_label'), value: this.formatDateDisplay(this.selectedDate) });
+            const displayStart = formatSlotDisplay(this.selectedCapacitySlot.time, this.selectedDate, this.tenantTz, this.customerTz);
+            const displayEnd   = formatSlotDisplay(this.selectedCapacitySlot.end_time, this.selectedDate, this.tenantTz, this.customerTz);
+            rows.push({ label: t('summary.time_label'), value: `${displayStart} – ${displayEnd}` });
+            rows.push({ label: t('capacity.party_size_label'), value: `${this.partySize} ${this.partySize === 1 ? t('capacity.guest') : t('capacity.guests')}` });
+        }
+        return rows;
+    },
+
+    get capacityConfirmRows() {
+        if (!this.booking) return [];
+        const b = this.booking;
+        const rows = [];
+        if (b.label) rows.push({ label: t('summary.service_label'), value: b.label });
+        if (b.date) rows.push({ label: t('summary.date_label'), value: this.formatDateDisplay(b.date) });
+        if (b.time) {
+            const displayStart = formatSlotDisplay(b.time, b.date, this.tenantTz, this.customerTz);
+            const displayEnd   = formatSlotDisplay(b.end_time, b.date, this.tenantTz, this.customerTz);
+            rows.push({ label: t('summary.time_label'), value: `${displayStart} – ${displayEnd}` });
+        }
+        rows.push({ label: t('capacity.party_size_label'), value: `${b.party_size} ${b.party_size === 1 ? t('capacity.guest') : t('capacity.guests')}` });
+        return rows;
+    },
+
+    async submitCapacityBooking() {
+        if (config.is_demo) {
+            this.showToast(t('demo_notice'), 'error');
+            return;
+        }
+        if (this.submitting) return;
+        this.submitting = true;
+
+        const payload = {
+            slot_id: this.selectedCapacitySlot.id,
+            date: this.selectedDate,
+            party_size: this.partySize,
+            customer: {
+                name: this.customerName.trim(),
+                email: this.customerEmail.trim(),
+                phone: this.customerPhone.trim() || '',
+            },
+            notes: this.customerNotes.trim() || '',
+            custom_fields: Object.keys(this.customFields).length > 0 ? this.customFields : null,
+            consent_given: this.consentGiven,
+            customer_timezone: this.customerTz,
+            __ts: window.__VB_TS__,
+            __hp: this.$el.querySelector('[name="__hp"]')?.value || '',
+        };
+
+        try {
+            const data = await this.api('/bookings', {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            });
+
+            if (data.error) {
+                this.submitting = false;
+                this.showToast(data.message || t('errors.generic'), 'error');
+                return;
+            }
+
+            this.booking = data.booking;
+            this.goToStep('confirmed');
+            this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+        } catch {
+            this.submitting = false;
+            this.showToast(t('errors.connection'), 'error');
+        }
     },
 
     // ── Translation passthrough for templates ──
