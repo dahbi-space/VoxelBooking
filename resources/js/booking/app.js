@@ -504,7 +504,7 @@ Alpine.data('bookingWizard', () => ({
 
         // Empty cells
         for (let i = 0; i < firstDay; i++) {
-            cells.push({ day: '', dateStr: '', disabled: true, today: false, hasSlots: false, selected: false });
+            cells.push({ day: '', dateStr: '', disabled: true, today: false, hasSlots: false, selected: false, _key: 'empty-' + i });
         }
 
         for (let day = 1; day <= daysInMonth; day++) {
@@ -526,7 +526,7 @@ Alpine.data('bookingWizard', () => ({
 
     // CSP-safe helpers for template bindings
     cellKey(cell) {
-        return cell.dateStr || ('empty-' + cell.day);
+        return cell._key || cell.dateStr;
     },
 
     clickDate(cell) {
@@ -1162,7 +1162,7 @@ Alpine.data('bookingWizard', () => ({
         const cells = [];
 
         for (let i = 0; i < firstDay; i++) {
-            cells.push({ day: '', dateStr: '', disabled: true, today: false, hasSlots: false, selected: false, inRange: false });
+            cells.push({ day: '', dateStr: '', disabled: true, today: false, hasSlots: false, selected: false, inRange: false, _key: 'empty-' + i });
         }
 
         for (let day = 1; day <= daysInMonth; day++) {

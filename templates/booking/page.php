@@ -216,7 +216,7 @@
                 <div class="vb-book-summary" style="margin-bottom: 1.5rem;">
                     <div class="vb-book-summary-row">
                         <span class="vb-book-summary-label" x-text="t('resource.summary_resource')"></span>
-                        <span class="vb-book-summary-value" x-text="selectedResource?.name"></span>
+                        <span class="vb-book-summary-value" x-text="selectedResource ? selectedResource.name : ''"></span>
                     </div>
                     <div class="vb-book-summary-row">
                         <span class="vb-book-summary-label" x-text="t('resource.check_in_label')"></span>
@@ -237,7 +237,7 @@
                 <div class="vb-book-form-group" style="max-width: 200px;">
                     <label class="vb-book-label" for="vb-guests" x-text="t('resource.guests_label')"></label>
                     <input class="vb-book-input" id="vb-guests" type="number" min="1"
-                           x-bind:max="selectedResource?.capacity || 10"
+                           x-bind:max="(selectedResource && selectedResource.capacity) || 10"
                            x-bind:value="guestCount"
                            @input="setGuestCount($el.value)">
                 </div>
@@ -330,7 +330,7 @@
                         <button type="button"
                                 class="vb-book-slot-card"
                                 role="radio"
-                                x-bind:aria-checked="selectedCapacitySlot?.id === slot.id"
+                                x-bind:aria-checked="selectedCapacitySlot && selectedCapacitySlot.id === slot.id"
                                 @click="selectCapacitySlot(slot)">
                             <div class="vb-book-slot-time">
                                 <span x-text="formatCapacitySlotTime(slot.time) + ' – ' + formatCapacitySlotTime(slot.end_time)"></span>
@@ -407,29 +407,29 @@
                     <div class="vb-book-step-title" x-text="t('event.event_detail_title')"></div>
                 </div>
                 <div class="vb-book-event-detail" x-show="selectedEvent">
-                    <h3 class="vb-book-event-detail-name" x-text="selectedEvent?.name"></h3>
-                    <p class="vb-book-event-detail-desc" x-show="selectedEvent?.description" x-text="selectedEvent?.description"></p>
+                    <h3 class="vb-book-event-detail-name" x-text="selectedEvent ? selectedEvent.name : ''"></h3>
+                    <p class="vb-book-event-detail-desc" x-show="selectedEvent && selectedEvent.description" x-text="selectedEvent ? selectedEvent.description : ''"></p>
 
                     <div class="vb-book-event-detail-grid">
                         <div class="vb-book-event-detail-row">
                             <span class="vb-book-event-detail-label" x-text="t('event.date_label')"></span>
-                            <span x-text="formatEventDate(selectedEvent?.start_datetime)"></span>
+                            <span x-text="formatEventDate(selectedEvent ? selectedEvent.start_datetime : '')"></span>
                         </div>
                         <div class="vb-book-event-detail-row">
                             <span class="vb-book-event-detail-label" x-text="t('event.time_label')"></span>
-                            <span x-text="formatEventTime(selectedEvent?.start_datetime) + ' – ' + formatEventTime(selectedEvent?.end_datetime)"></span>
+                            <span x-text="(selectedEvent ? formatEventTime(selectedEvent.start_datetime) + ' – ' + formatEventTime(selectedEvent.end_datetime) : '')"></span>
                         </div>
-                        <div class="vb-book-event-detail-row" x-show="selectedEvent?.location">
+                        <div class="vb-book-event-detail-row" x-show="selectedEvent && selectedEvent.location">
                             <span class="vb-book-event-detail-label" x-text="t('event.location_label')"></span>
-                            <span x-text="selectedEvent?.location"></span>
+                            <span x-text="selectedEvent ? selectedEvent.location : ''"></span>
                         </div>
                         <div class="vb-book-event-detail-row">
                             <span class="vb-book-event-detail-label" x-text="t('event.price_label')"></span>
-                            <span x-text="formatEventPrice(selectedEvent?.price)"></span>
+                            <span x-text="formatEventPrice(selectedEvent ? selectedEvent.price : 0)"></span>
                         </div>
                         <div class="vb-book-event-detail-row">
                             <span class="vb-book-event-detail-label" x-text="t('event.spots_remaining').replace(':count', '')"></span>
-                            <span x-text="selectedEvent?.remaining + ' / ' + selectedEvent?.max_participants"></span>
+                            <span x-text="(selectedEvent ? selectedEvent.remaining + ' / ' + selectedEvent.max_participants : '')"></span>
                         </div>
                     </div>
 
