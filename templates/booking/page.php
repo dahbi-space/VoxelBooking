@@ -442,7 +442,7 @@
 
                     <div class="vb-book-form-actions" style="margin-top: 1.5rem;">
                         <button type="button" class="vb-book-btn vb-book-btn-primary" @click="confirmEventDetail"
-                                x-text="t('event.select_event')"></button>
+                                x-text="t('buttons.continue')"></button>
                         <div class="vb-book-back-link">
                             <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('event-list')"
                                     x-text="t('back.change_event')"></button>
