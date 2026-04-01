@@ -46,6 +46,9 @@ final class Mailer
         ?string $tenantId = null,
         ?string $bookingId = null,
         ?string $plainBody = null,
+        ?string $replyToEmail = null,
+        ?string $replyToName = null,
+        ?string $fromName = null,
     ): array {
         $config = self::loadConfig();
         $logId = Ulid::generate();
@@ -58,15 +61,8 @@ final class Mailer
             return ['sent' => true, 'error' => null, 'log_id' => $logId];
         }
 
-        // Mailpit transport: SMTP to localhost:1025, no auth, no encryption
-        // Overrides operator SMTP settings so captured emails always appear in the Mailpit UI
-        if ($transport === 'mailpit') {
-            $config['smtp_host'] = '127.0.0.1';
-            $config['smtp_port'] = '1025';
-            $config['smtp_username'] = '';
-            $config['smtp_password'] = '';
-            $config['smtp_encryption'] = 'none';
-        }
+        // Apply transport-specific config overrides (e.g. mailpit → localhost:1025)
+        $config = self::resolveEffectiveConfig($config);
 
         // If SMTP is not configured (and not mailpit), log the failure and return gracefully
         if (empty($config['smtp_host'])) {
@@ -94,10 +90,15 @@ final class Mailer
             $mail->Timeout    = 10;
             $mail->SMTPDebug  = 0;
 
-            // Sender
-            $fromAddress = $config['mail_from_address'] ?: 'noreply@' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
-            $fromName    = $config['mail_from_name'] ?: app_name();
-            $mail->setFrom($fromAddress, $fromName);
+            // Sender — tenant-scoped emails override the display name
+            $fromAddress   = $config['mail_from_address'] ?: 'noreply@' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+            $effectiveName = self::resolveEffectiveFromName($fromName, $config);
+            $mail->setFrom($fromAddress, $effectiveName);
+
+            // Reply-To: tenant contact email so customer replies reach the business
+            if ($replyToEmail !== null && $replyToEmail !== '') {
+                $mail->addReplyTo($replyToEmail, $replyToName ?? '');
+            }
 
             // Recipient
             $mail->addAddress($to);
@@ -152,6 +153,82 @@ final class Mailer
     }
 
     /**
+     * Send a booking confirmation email to the customer.
+     *
+     * Uses all five `email.booking_confirmation.*` translation keys and renders
+     * via `renderConfirmationEmail()` (branded layout) with an explicit
+     * plain-text fallback via `renderConfirmationPlainText()`.
+     *
+     * Brand color is sanitized via BrandColorHelper::derive() before injection.
+     *
+     * @param string      $to             Customer email
+     * @param string      $customerName   Customer display name (for greeting)
+     * @param array       $booking        Booking data (date, formatted_date, time, end_time)
+     * @param string|null $serviceName    Service name
+     * @param string|null $staffName      Staff name
+     * @param string      $tenantName     Tenant/business display name
+     * @param string      $tenantId       Tenant ULID
+     * @param string      $bookingId      Booking ULID
+     * @param string      $brandColor     Tenant brand_color hex (sanitized internally)
+     *
+     * @return array{sent: bool, error: string|null, log_id: string}
+     */
+    public static function sendBookingConfirmation(
+        string $to,
+        string $customerName,
+        array $booking,
+        ?string $serviceName,
+        ?string $staffName,
+        string $tenantName,
+        string $tenantId,
+        string $bookingId,
+        string $brandColor = '#2563EB',
+    ): array {
+        // Sanitize brand color — rejects non-hex input, falls back to default blue
+        $brandTokens = BrandColorHelper::derive($brandColor);
+        $safeBrandColor = $brandTokens['brand'];
+
+        $subject = __('email.booking_confirmation.subject', [
+            'service' => $serviceName ?? $tenantName,
+            'date'    => $booking['date'],
+        ]);
+
+        $heading        = __('email.booking_confirmation.body');
+        $greeting       = __('email.booking_confirmation.greeting', ['name' => $customerName]);
+        $bodyText       = __('email.booking_confirmation.body');
+        $detailsHeading = __('email.booking_confirmation.details');
+        $footer         = __('email.booking_confirmation.footer');
+
+        // Build ordered detail rows for the summary card
+        $displayDate = $booking['formatted_date'] ?? $booking['date'];
+        $details = [];
+        $details[__('email.common.date')] = $displayDate;
+        $details[__('email.common.time')] = $booking['time'] . "\xE2\x80\x93" . $booking['end_time'];
+        if ($serviceName) {
+            $details[__('email.common.service')] = $serviceName;
+        }
+        if ($staffName) {
+            $details[__('email.common.staff')] = $staffName;
+        }
+
+        $html = self::renderConfirmationEmail(
+            $safeBrandColor, $heading, $greeting, $bodyText,
+            $detailsHeading, $details, $footer, $tenantName, app_name(),
+        );
+
+        $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
+        $plainBody = self::renderConfirmationPlainText(
+            $heading, $greeting, $bodyText, $detailsHeading,
+            $details, $footer, $tenantName, $poweredBy,
+        );
+
+        // Resolve tenant Reply-To and From name: customer sees the business name
+        $replyTo = self::resolveTenantReplyTo($tenantId);
+
+        return self::send($to, $subject, $html, 'confirmation', $tenantId, $bookingId, $plainBody, $replyTo['email'], $replyTo['name'], $tenantName);
+    }
+
+    /**
      * Check if the mailer is configured and ready to send.
      *
      * - log: always configured (no outbound connection needed)
@@ -167,6 +244,21 @@ final class Mailer
             'log', 'mailpit' => true,
             default          => !empty($config['smtp_host']),
         };
+    }
+
+    /**
+     * Whether the active transport delivers email to a real customer inbox.
+     *
+     * Only 'smtp' with a configured host qualifies. 'mailpit' is a local dev
+     * capture tool (localhost:1025) and 'log' records without sending.
+     * Neither reaches the customer.
+     */
+    public static function isProductionSmtp(): bool
+    {
+        $config = self::loadConfig();
+        $transport = strtolower(trim($config['mail_transport'] ?? 'smtp'));
+
+        return $transport === 'smtp' && !empty($config['smtp_host']);
     }
 
     /**
@@ -191,7 +283,9 @@ final class Mailer
             __('email.export_acknowledgment.footer'),
         );
 
-        return self::send($to, $subject, $html, 'privacy_export', $tenantId);
+        $replyTo = self::resolveTenantReplyTo($tenantId);
+
+        return self::send($to, $subject, $html, 'privacy_export', $tenantId, null, null, $replyTo['email'], $replyTo['name'], $tenantName);
     }
 
     /**
@@ -206,7 +300,9 @@ final class Mailer
             __('email.deletion_acknowledgment.footer'),
         );
 
-        return self::send($to, $subject, $html, 'privacy_deletion', $tenantId);
+        $replyTo = self::resolveTenantReplyTo($tenantId);
+
+        return self::send($to, $subject, $html, 'privacy_deletion', $tenantId, null, null, $replyTo['email'], $replyTo['name'], $tenantName);
     }
 
     /**
@@ -239,7 +335,9 @@ final class Mailer
             __('email.operator_deletion.footer', ['app_name' => app_name()]),
         );
 
-        return self::send($operatorEmail, $subject, $html, 'operator_notification', $tenantId);
+        $replyTo = self::resolveTenantReplyTo($tenantId);
+
+        return self::send($operatorEmail, $subject, $html, 'operator_notification', $tenantId, null, null, $replyTo['email'], $replyTo['name'], $tenantName);
     }
 
     // ── Business user onboarding ──
@@ -284,10 +382,126 @@ final class Mailer
             $footer,
         );
 
-        return self::send($to, $subject, $html, 'business_user_welcome', $tenantId);
+        $replyTo = self::resolveTenantReplyTo($tenantId);
+
+        return self::send($to, $subject, $html, 'business_user_welcome', $tenantId, null, null, $replyTo['email'], $replyTo['name'], $tenantName);
+    }
+
+    // ── Passwordless login emails ──
+
+    /**
+     * Send a 6-digit OTP login code.
+     *
+     * @return array{sent: bool, error: string|null, log_id: string}
+     */
+    public static function sendLoginCode(string $to, string $code): array
+    {
+        $appName = app_name();
+        $subject = __('auth.otp_email_subject', ['app_name' => $appName]);
+
+        $body = __('auth.otp_email_body') . '<br><br>'
+            . '<div style="font-size: 32px; font-weight: 700; letter-spacing: 0.2em; text-align: center; color: #111827; padding: 16px 0;">'
+            . htmlspecialchars($code, ENT_QUOTES, 'UTF-8')
+            . '</div><br>'
+            . '<em>' . __('auth.otp_email_expiry') . '</em><br><br>'
+            . __('auth.otp_email_ignore');
+
+        $html = self::renderPrivacyEmail(
+            __('auth.otp_email_subject', ['app_name' => $appName]),
+            $body,
+            __('auth.footer', ['app_name' => $appName]),
+        );
+
+        return self::send($to, $subject, $html, 'login_code');
+    }
+
+    /**
+     * Send a magic login link.
+     *
+     * @return array{sent: bool, error: string|null, log_id: string}
+     */
+    public static function sendMagicLink(string $to, string $link): array
+    {
+        $appName = app_name();
+        $subject = __('auth.magic_link_email_subject', ['app_name' => $appName]);
+
+        $body = __('auth.magic_link_email_body') . '<br><br>'
+            . '<div style="text-align: center; padding: 16px 0;">'
+            . '<a href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '" style="display: inline-block; padding: 12px 32px; background: #2563EB; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px;">'
+            . __('auth.magic_link_email_cta', ['app_name' => $appName])
+            . '</a></div><br>'
+            . '<em>' . __('auth.magic_link_email_expiry') . '</em><br><br>'
+            . __('auth.magic_link_email_ignore');
+
+        $html = self::renderPrivacyEmail(
+            __('auth.magic_link_email_subject', ['app_name' => $appName]),
+            $body,
+            __('auth.footer', ['app_name' => $appName]),
+        );
+
+        return self::send($to, $subject, $html, 'magic_link');
     }
 
     // ── Internal helpers ──
+
+    /**
+     * Resolve tenant email and name for Reply-To header.
+     *
+     * Looks up the tenant's contact email (notification_email or email) and
+     * business name. Returns null values if tenant not found or tenantId is null.
+     *
+     * @return array{email: string|null, name: string|null}
+     */
+    private static function resolveTenantReplyTo(?string $tenantId): array
+    {
+        if ($tenantId === null) {
+            return ['email' => null, 'name' => null];
+        }
+
+        try {
+            $rows = Database::query(
+                'SELECT `email`, `name`, `notification_email` FROM `tenants` WHERE `id` = ? LIMIT 1',
+                [$tenantId]
+            );
+
+            if (empty($rows)) {
+                return ['email' => null, 'name' => null];
+            }
+
+            $tenant = $rows[0];
+            // Prefer notification_email (explicit contact address), fall back to tenant email
+            $email = !empty($tenant['notification_email']) ? $tenant['notification_email'] : $tenant['email'];
+
+            return ['email' => $email, 'name' => $tenant['name']];
+        } catch (\Throwable) {
+            // Database not available — skip Reply-To silently
+            return ['email' => null, 'name' => null];
+        }
+    }
+
+    /**
+     * Resolve the effective From display name.
+     *
+     * Priority: explicit $fromName (tenant business name for tenant-scoped emails)
+     * → global mail_from_name setting → app_name() fallback.
+     *
+     * Public so the unit test suite can verify resolution without requiring
+     * a live SMTP connection.
+     *
+     * @param string|null         $fromName Explicit override (tenant name), or null for global
+     * @param array<string,string>|null $config  SMTP config array; loaded from settings if null
+     */
+    public static function resolveEffectiveFromName(?string $fromName, ?array $config = null): string
+    {
+        if ($fromName !== null && $fromName !== '') {
+            return $fromName;
+        }
+
+        $config ??= self::loadConfig();
+        $globalName = $config['mail_from_name'] ?? '';
+
+        return $globalName !== '' ? $globalName : app_name();
+    }
 
     /**
      * Load SMTP configuration from the settings table.
@@ -331,6 +545,31 @@ final class Mailer
             'none', ''  => '',
             default     => PHPMailer::ENCRYPTION_STARTTLS,
         };
+    }
+
+    /**
+     * Apply transport-specific config overrides.
+     *
+     * For 'mailpit': overrides SMTP host/port/auth/encryption to localhost:1025.
+     * For 'log': no overrides (log transport early-returns before config is used).
+     * For 'smtp'/default: no overrides (uses operator-configured values).
+     *
+     * @param array<string, string> $config Raw config from loadConfig()
+     * @return array<string, string> Effective config with transport overrides applied
+     */
+    private static function resolveEffectiveConfig(array $config): array
+    {
+        $transport = strtolower(trim($config['mail_transport'] ?? 'smtp'));
+
+        if ($transport === 'mailpit') {
+            $config['smtp_host']       = '127.0.0.1';
+            $config['smtp_port']       = '1025';
+            $config['smtp_username']   = '';
+            $config['smtp_password']   = '';
+            $config['smtp_encryption'] = 'none';
+        }
+
+        return $config;
     }
 
     /**
@@ -395,6 +634,137 @@ final class Mailer
         }
 
         return $message;
+    }
+
+    /**
+     * Render a branded booking confirmation email.
+     *
+     * System-owned layout: branded header bar, status check, summary card, footer.
+     * All CSS is inline for email client compatibility.
+     *
+     * @param string $brandColor      Sanitized hex color (e.g. "#2563EB")
+     * @param string $heading         Confirmation heading text
+     * @param string $greeting        Customer greeting (e.g. "Hi Emma,")
+     * @param string $bodyText        Confirmation body copy
+     * @param string $detailsHeading  Section label above summary card (e.g. "Booking details")
+     * @param array  $details         Ordered label→value pairs for summary card
+     * @param string $footerText      Contact/change instruction text
+     * @param string $tenantName      Business display name for footer
+     * @param string $appName         App name for "Powered by" line
+     */
+    private static function renderConfirmationEmail(
+        string $brandColor,
+        string $heading,
+        string $greeting,
+        string $bodyText,
+        string $detailsHeading,
+        array $details,
+        string $footerText,
+        string $tenantName,
+        string $appName,
+    ): string {
+        $h = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+        $font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+        // Build detail rows
+        $detailRows = '';
+        $i = 0;
+        foreach ($details as $label => $value) {
+            $topPad = $i > 0 ? '16px' : '0';
+            $detailRows .= '<tr><td style="padding-top: ' . $topPad . '; font-size: 13px; color: #6B7280; font-weight: 500; font-family: ' . $font . '; vertical-align: top; width: 100px;">' . $h($label) . '</td>'
+                . '<td style="padding-top: ' . $topPad . '; font-size: 15px; color: #111827; font-weight: 500; font-family: ' . $font . '; vertical-align: top;">' . $h($value) . '</td></tr>';
+            $i++;
+        }
+
+        $poweredBy = __('email.common.powered_by', ['app_name' => $appName]);
+
+        return <<<HTML
+        <html>
+        <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+        <body style="margin: 0; padding: 0; font-family: {$font}; background: #F3F4F6;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="padding: 32px 16px;">
+                <tr><td align="center">
+                    <table width="560" cellpadding="0" cellspacing="0" style="background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                        <!-- Branded header bar -->
+                        <tr><td style="height: 40px; background: {$brandColor};"></td></tr>
+
+                        <!-- Status + Heading -->
+                        <tr><td style="padding: 32px 32px 0; text-align: center;">
+                            <div style="display: inline-block; width: 40px; height: 40px; line-height: 40px; border-radius: 50%; background: #ECFDF5; color: #059669; font-size: 20px; font-weight: 700; text-align: center;">✓</div>
+                            <h1 style="margin: 16px 0 0; font-size: 22px; font-weight: 700; color: #111827; line-height: 1.3; font-family: {$font};">{$h($heading)}</h1>
+                        </td></tr>
+
+                        <!-- Greeting + Body -->
+                        <tr><td style="padding: 24px 32px 0; text-align: center;">
+                            <p style="margin: 0; font-size: 15px; color: #374151; line-height: 1.5; font-family: {$font};">{$h($greeting)}<br>{$h($bodyText)}</p>
+                        </td></tr>
+
+                        <!-- Summary card -->
+                        <tr><td style="padding: 24px 32px 0;">
+                            <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; font-family: {$font};">{$h($detailsHeading)}</p>
+                        </td></tr>
+                        <tr><td style="padding: 0 32px 24px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px;">
+                                <tr><td style="padding: 20px 24px;">
+                                    <table width="100%" cellpadding="0" cellspacing="0">
+                                        {$detailRows}
+                                    </table>
+                                </td></tr>
+                            </table>
+                        </td></tr>
+
+                        <!-- Footer text -->
+                        <tr><td style="padding: 0 32px 24px; text-align: center;">
+                            <p style="margin: 0; font-size: 14px; color: #6B7280; line-height: 1.5; font-family: {$font};">{$h($footerText)}</p>
+                        </td></tr>
+
+                        <!-- Business footer -->
+                        <tr><td style="padding: 16px 32px; border-top: 1px solid #E5E7EB; text-align: center;">
+                            <p style="margin: 0 0 4px; font-size: 13px; color: #6B7280; font-family: {$font};">{$h($tenantName)}</p>
+                            <p style="margin: 0; font-size: 11px; color: #9CA3AF; font-family: {$font};">{$h($poweredBy)}</p>
+                        </td></tr>
+                    </table>
+                </td></tr>
+            </table>
+        </body>
+        </html>
+        HTML;
+    }
+
+    /**
+     * Render the plain-text version of a booking confirmation email.
+     *
+     * Used as the AltBody for email clients that strip HTML.
+     * Tested via reflection to ensure label:value rows don't collapse.
+     */
+    private static function renderConfirmationPlainText(
+        string $heading,
+        string $greeting,
+        string $bodyText,
+        string $detailsHeading,
+        array $details,
+        string $footerText,
+        string $tenantName,
+        string $poweredBy,
+    ): string {
+        $lines = [];
+        $lines[] = mb_strtoupper($heading);
+        $lines[] = '';
+        $lines[] = $greeting;
+        $lines[] = $bodyText;
+        $lines[] = '';
+        $lines[] = $detailsHeading;
+        foreach ($details as $label => $value) {
+            $lines[] = $label . ': ' . $value;
+        }
+        $lines[] = '';
+        $lines[] = $footerText;
+        $lines[] = '';
+        $lines[] = '—';
+        $lines[] = $tenantName;
+        $lines[] = $poweredBy;
+
+        return implode("\n", $lines);
     }
 
     /**

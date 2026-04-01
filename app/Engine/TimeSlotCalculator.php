@@ -200,11 +200,24 @@ final class TimeSlotCalculator
     private static function resolveEligibleStaff(string $tenantId, ?string $serviceId, ?string $staffId): array
     {
         if ($staffId !== null) {
-            // Specific staff requested — verify they exist and are active
-            $staff = Database::query(
-                'SELECT `id` FROM `staff` WHERE `id` = ? AND `tenant_id` = ? AND `is_active` = 1 LIMIT 1',
-                [$staffId, $tenantId]
-            );
+            // Specific staff requested — verify they exist, are active,
+            // AND are linked to the service (if a service is specified)
+            if ($serviceId !== null) {
+                $staff = Database::query(
+                    'SELECT s.`id`
+                     FROM `staff` s
+                     JOIN `service_staff` ss ON ss.`staff_id` = s.`id`
+                     WHERE s.`id` = ? AND s.`tenant_id` = ? AND s.`is_active` = 1
+                       AND ss.`service_id` = ?
+                     LIMIT 1',
+                    [$staffId, $tenantId, $serviceId]
+                );
+            } else {
+                $staff = Database::query(
+                    'SELECT `id` FROM `staff` WHERE `id` = ? AND `tenant_id` = ? AND `is_active` = 1 LIMIT 1',
+                    [$staffId, $tenantId]
+                );
+            }
             return !empty($staff) ? [$staffId] : [];
         }
 

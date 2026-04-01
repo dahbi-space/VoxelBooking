@@ -6,13 +6,16 @@
  * Gradient mesh background. Staggered entrance animation.
  * Shake on error. No visible card border in light mode.
  *
+ * Method selector: Password / Login Code / Magic Link tabs.
+ *
  * All styles in admin.css (compiled by Vite).
  * Inline SVGs: voxel logo (brand mark), mail/lock field icons (Lucide
  * not available on login — no app.js loaded), sun/moon theme toggle.
  *
- * Variables: $csrfToken, $error
+ * Variables: $csrfToken, $error, $success, $lastEmail
  */
 $error = $error ?? null;
+$success = $success ?? null;
 $csrfToken = $csrfToken ?? '';
 ?>
 <!DOCTYPE html>
@@ -67,7 +70,22 @@ $csrfToken = $csrfToken ?? '';
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" action="/admin/login" id="login-form">
+                <?php if ($success): ?>
+                    <div class="vb-alert vb-alert-success login-error">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>
+                        <?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Method tabs -->
+                <div class="login-method-tabs" id="login-method-tabs" role="tablist">
+                    <button type="button" role="tab" class="login-tab active" data-method="password" id="tab-password" aria-selected="true" aria-controls="panel-password"><?= __('auth.tab_password') ?></button>
+                    <button type="button" role="tab" class="login-tab" data-method="otp" id="tab-otp" aria-selected="false" aria-controls="panel-otp"><?= __('auth.tab_otp') ?></button>
+                    <button type="button" role="tab" class="login-tab" data-method="magic_link" id="tab-magic-link" aria-selected="false" aria-controls="panel-magic-link"><?= __('auth.tab_magic_link') ?></button>
+                </div>
+
+                <!-- Password form -->
+                <form method="POST" action="/admin/login" id="panel-password" class="login-method-panel" role="tabpanel" aria-labelledby="tab-password">
                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
                     <div class="vb-form-group login-field-1">
@@ -86,7 +104,53 @@ $csrfToken = $csrfToken ?? '';
                         </div>
                     </div>
 
+                    <div class="vb-form-group login-field-3">
+                        <label class="vb-checkbox-label">
+                            <input type="checkbox" name="remember_me" value="1">
+                            <?= __('auth.remember_me') ?>
+                        </label>
+                    </div>
+
                     <button type="submit" class="vb-btn vb-btn-primary login-submit"><?= __('auth.login_button') ?></button>
+                </form>
+
+                <!-- OTP form -->
+                <form method="POST" action="/admin/login/request-code" id="panel-otp" class="login-method-panel" role="tabpanel" aria-labelledby="tab-otp" style="display: none;">
+                    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                    <input type="hidden" name="method" value="otp">
+
+                    <div class="vb-form-group">
+                        <label for="otp-email" class="vb-label"><?= __('auth.email_label') ?></label>
+                        <div class="vb-input-wrap">
+                            <svg class="vb-icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                            <input type="email" id="otp-email" name="email" class="vb-input vb-input-icon" placeholder="<?= __('auth.email_placeholder') ?>" required autocomplete="email" value="<?= htmlspecialchars($lastEmail ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="vb-btn vb-btn-primary login-submit"><?= __('auth.send_code_button') ?></button>
+                </form>
+
+                <!-- Magic link form -->
+                <form method="POST" action="/admin/login/request-code" id="panel-magic-link" class="login-method-panel" role="tabpanel" aria-labelledby="tab-magic-link" style="display: none;">
+                    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                    <input type="hidden" name="method" value="magic_link">
+
+                    <div class="vb-form-group">
+                        <label for="ml-email" class="vb-label"><?= __('auth.email_label') ?></label>
+                        <div class="vb-input-wrap">
+                            <svg class="vb-icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                            <input type="email" id="ml-email" name="email" class="vb-input vb-input-icon" placeholder="<?= __('auth.email_placeholder') ?>" required autocomplete="email" value="<?= htmlspecialchars($lastEmail ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                        </div>
+                    </div>
+
+                    <div class="vb-form-group">
+                        <label class="vb-checkbox-label">
+                            <input type="checkbox" name="remember_me" value="1">
+                            <?= __('auth.remember_me') ?>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="vb-btn vb-btn-primary login-submit"><?= __('auth.send_link_button') ?></button>
                 </form>
             </div>
 
@@ -98,6 +162,7 @@ $csrfToken = $csrfToken ?? '';
 
     <script>
     (function() {
+        // Theme toggle
         var toggle = document.getElementById('theme-toggle');
         if (toggle) {
             toggle.addEventListener('click', function() {
@@ -108,6 +173,33 @@ $csrfToken = $csrfToken ?? '';
                 localStorage.setItem('vb-theme', next);
             });
         }
+
+        // Method tabs
+        var tabs = document.querySelectorAll('.login-tab');
+        var panels = document.querySelectorAll('.login-method-panel');
+
+        tabs.forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                var method = tab.getAttribute('data-method');
+
+                tabs.forEach(function(t) {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+
+                panels.forEach(function(p) {
+                    p.style.display = 'none';
+                });
+
+                var targetId = 'panel-' + method.replace('_', '-');
+                var target = document.getElementById(targetId);
+                if (target) {
+                    target.style.display = '';
+                }
+            });
+        });
     })();
     </script>
 </body>

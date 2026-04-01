@@ -2,8 +2,15 @@
 /**
  * Business user dashboard — tenant-scoped view.
  *
+ * Four rhythm bands:
+ *   1. Greeting (personalized hero)
+ *   2. Metrics (4 cards with deltas)
+ *   3. Today's schedule (compact strip with per-service-color pills)
+ *   4. Next Up + Quick Actions (two-column grid)
+ *
  * Variables: $user, $version, $csrfToken, $tenant, $todayBookings, $weekBookings,
- *            $statusCounts, $upcoming, $pageTitle, $activePage
+ *            $statusCounts, $upcoming, $pageTitle, $activePage,
+ *            $deltaToday, $deltaWeek, $todaySchedule
  */
 $activePage = 'dashboard';
 
@@ -18,6 +25,28 @@ if ($hour < 12) {
 $userName = htmlspecialchars($user['name'] ?? __('admin.layout.operator'), ENT_QUOTES, 'UTF-8');
 $tenantName = htmlspecialchars($tenant['name'] ?? '', ENT_QUOTES, 'UTF-8');
 
+/**
+ * Derive a pastel tint from a hex color for booking pills.
+ * Returns [background, foreground] CSS values.
+ */
+if (!function_exists('schedulePillColors')) {
+    function schedulePillColors(?string $hexColor): array
+    {
+        if ($hexColor !== null && preg_match('/^#?([0-9A-Fa-f]{6})$/', $hexColor, $m)) {
+            $hex = $m[1];
+            $r = hexdec(substr($hex, 0, 2));
+            $g = hexdec(substr($hex, 2, 2));
+            $b = hexdec(substr($hex, 4, 2));
+            return [
+                "rgba({$r}, {$g}, {$b}, 0.12)",
+                "#{$hex}",
+            ];
+        }
+        // Accent fallback
+        return ['var(--vb-accent-subtle)', 'var(--vb-accent)'];
+    }
+}
+
 ob_start();
 ?>
 
@@ -27,49 +56,126 @@ ob_start();
     <div class="vb-greeting-subtitle"><?= __('admin.dashboard.business_subtitle', ['tenant_name' => $tenantName]) ?></div>
 </div>
 
-<!-- Metric Band -->
+<!-- Metric Band — redesigned with header + delta badges -->
 <div class="vb-metrics">
     <div class="vb-metric vb-fade-in-up stagger-1">
-        <div class="vb-metric-accent"></div>
-        <div class="vb-metric-label"><?= __('admin.dashboard.bookings_today') ?></div>
-        <div class="vb-metric-value"><?= (int) $todayBookings ?></div>
-        <div class="vb-metric-trend">
-            <?php if ($todayBookings > 0): ?>
-                <i data-lucide="trending-up"></i>
-            <?php else: ?>
-                <i data-lucide="minus"></i>
-            <?php endif; ?>
-            <?= $todayBookings > 0 ? $todayBookings . ' today' : __('admin.dashboard.awaiting_first') ?>
+        <div class="vb-metric-header">
+            <i data-lucide="calendar-check" class="vb-metric-icon"></i>
+            <span class="vb-metric-label"><?= __('admin.dashboard.bookings_today') ?></span>
         </div>
+        <div class="vb-metric-value-row">
+            <span class="vb-metric-value"><?= (int) $todayBookings ?></span>
+            <?php if (($deltaToday ?? 0) !== 0): ?>
+            <span class="vb-metric-delta <?= $deltaToday > 0 ? 'is-up' : 'is-down' ?>">
+                <i data-lucide="<?= $deltaToday > 0 ? 'trending-up' : 'trending-down' ?>"></i>
+                <?= abs($deltaToday) ?>
+            </span>
+            <?php endif; ?>
+        </div>
+        <?php if (($deltaToday ?? 0) !== 0): ?>
+        <div class="vb-metric-context"><?= __('admin.dashboard.vs_last_period') ?></div>
+        <?php endif; ?>
+        <div class="vb-metric-accent"></div>
     </div>
     <div class="vb-metric vb-fade-in-up stagger-2">
-        <div class="vb-metric-label"><?= __('admin.dashboard.this_week') ?></div>
-        <div class="vb-metric-value"><?= (int) $weekBookings ?></div>
-        <div class="vb-metric-trend">
-            <?php if ($weekBookings > 0): ?>
-                <i data-lucide="trending-up"></i>
-            <?php else: ?>
-                <i data-lucide="minus"></i>
-            <?php endif; ?>
-            <?= $weekBookings > 0 ? $weekBookings . ' this week' : __('admin.dashboard.no_data_yet') ?>
+        <div class="vb-metric-header">
+            <i data-lucide="bar-chart-3" class="vb-metric-icon"></i>
+            <span class="vb-metric-label"><?= __('admin.dashboard.this_week') ?></span>
         </div>
+        <div class="vb-metric-value-row">
+            <span class="vb-metric-value"><?= (int) $weekBookings ?></span>
+            <?php if (($deltaWeek ?? 0) !== 0): ?>
+            <span class="vb-metric-delta <?= $deltaWeek > 0 ? 'is-up' : 'is-down' ?>">
+                <i data-lucide="<?= $deltaWeek > 0 ? 'trending-up' : 'trending-down' ?>"></i>
+                <?= abs($deltaWeek) ?>
+            </span>
+            <?php endif; ?>
+        </div>
+        <?php if (($deltaWeek ?? 0) !== 0): ?>
+        <div class="vb-metric-context"><?= __('admin.dashboard.vs_last_period') ?></div>
+        <?php endif; ?>
+        <div class="vb-metric-accent"></div>
     </div>
     <div class="vb-metric vb-fade-in-up stagger-3">
-        <div class="vb-metric-label"><?= __('admin.dashboard.confirmed') ?></div>
-        <div class="vb-metric-value"><?= (int) ($statusCounts['confirmed'] ?? 0) ?></div>
-        <div class="vb-metric-trend">
-            <i data-lucide="check-circle"></i>
-            <?= __('admin.bookings.status_confirmed') ?>
+        <div class="vb-metric-header">
+            <i data-lucide="check-circle" class="vb-metric-icon"></i>
+            <span class="vb-metric-label"><?= __('admin.dashboard.confirmed') ?></span>
         </div>
+        <div class="vb-metric-value-row">
+            <span class="vb-metric-value"><?= (int) ($statusCounts['confirmed'] ?? 0) ?></span>
+        </div>
+        <div class="vb-metric-accent"></div>
     </div>
     <div class="vb-metric vb-fade-in-up stagger-4">
-        <div class="vb-metric-label"><?= __('admin.dashboard.completed') ?></div>
-        <div class="vb-metric-value"><?= (int) ($statusCounts['completed'] ?? 0) ?></div>
-        <div class="vb-metric-trend">
-            <i data-lucide="award"></i>
-            <?= __('admin.bookings.status_completed') ?>
+        <div class="vb-metric-header">
+            <i data-lucide="award" class="vb-metric-icon"></i>
+            <span class="vb-metric-label"><?= __('admin.dashboard.completed') ?></span>
         </div>
+        <div class="vb-metric-value-row">
+            <span class="vb-metric-value"><?= (int) ($statusCounts['completed'] ?? 0) ?></span>
+        </div>
+        <div class="vb-metric-accent"></div>
     </div>
+</div>
+
+<!-- Today's Schedule Strip -->
+<div class="vb-card vb-fade-in-up stagger-5" style="margin-bottom: 1.5rem;">
+    <div class="vb-schedule-header">
+        <div class="vb-schedule-title"><?= __('admin.dashboard.schedule_today') ?></div>
+    </div>
+    <?php if (empty($todaySchedule)): ?>
+        <div style="padding: 1.5rem 0; text-align: center;">
+            <i data-lucide="calendar-off" style="width: 32px; height: 32px; color: var(--vb-text-ghost); margin-bottom: 0.5rem;"></i>
+            <div class="vb-cell-secondary"><?= __('admin.dashboard.no_schedule') ?></div>
+        </div>
+    <?php else: ?>
+        <?php
+        // Group bookings by hour for the schedule grid
+        $hourSlots = [];
+        $minHour = 23;
+        $maxHour = 0;
+        foreach ($todaySchedule as $booking) {
+            $h = (int) date('G', strtotime($booking['start_datetime']));
+            $hourSlots[$h][] = $booking;
+            $minHour = min($minHour, $h);
+            $maxHour = max($maxHour, $h);
+        }
+        // Show range from earliest hour to latest hour + 1
+        $startHour = max(0, $minHour);
+        $endHour = min(23, $maxHour + 1);
+        ?>
+        <div class="vb-schedule-grid" id="schedule-grid">
+            <?php for ($h = $startHour; $h <= $endHour; $h++): ?>
+            <div class="vb-schedule-hour-row">
+                <div class="vb-schedule-time-gutter"><?= sprintf('%02d:00', $h) ?></div>
+                <div class="vb-schedule-cells">
+                    <?php if (isset($hourSlots[$h])): ?>
+                        <?php foreach ($hourSlots[$h] as $booking):
+                            [$pillBg, $pillColor] = schedulePillColors($booking['service_color'] ?? null);
+                            $startTime = date('H:i', strtotime($booking['start_datetime']));
+                            $endTime = date('H:i', strtotime($booking['end_datetime']));
+                        ?>
+                        <div class="vb-schedule-pill"
+                             style="background: <?= $pillBg ?>; color: <?= $pillColor ?>;">
+                            <div class="vb-schedule-pill-title">
+                                <?= htmlspecialchars($booking['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+                            </div>
+                            <div class="vb-schedule-pill-time">
+                                <?= $startTime ?> – <?= $endTime ?> · <?= htmlspecialchars($booking['service_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                            </div>
+                            <?php if (!empty($booking['staff_name'])): ?>
+                            <div class="vb-schedule-pill-staff">
+                                <?= htmlspecialchars($booking['staff_name'], ENT_QUOTES, 'UTF-8') ?>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endfor; ?>
+        </div>
+    <?php endif; ?>
 </div>
 
 <!-- Next Up + Actions -->
@@ -91,12 +197,17 @@ ob_start();
                         <?php foreach ($upcoming as $b): ?>
                         <tr>
                             <td>
-                                <div class="vb-cell-name"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
-                                <div class="vb-cell-detail"><?= htmlspecialchars($b['service_name'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
+                                <div class="vb-cell-primary"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
+                                <div class="vb-cell-secondary"><?= htmlspecialchars($b['service_name'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
+                            </td>
+                            <td>
+                                <span class="vb-status vb-status-<?= htmlspecialchars($b['status'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <?= __('admin.bookings.status_' . $b['status']) ?>
+                                </span>
                             </td>
                             <td class="vb-text-right">
-                                <div class="vb-cell-name"><?= date('M j', strtotime($b['start_datetime'])) ?></div>
-                                <div class="vb-cell-detail"><?= date('H:i', strtotime($b['start_datetime'])) ?></div>
+                                <div class="vb-cell-primary"><?= date('M j', strtotime($b['start_datetime'])) ?></div>
+                                <div class="vb-cell-secondary"><?= date('H:i', strtotime($b['start_datetime'])) ?></div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -123,9 +234,65 @@ ob_start();
                 <i data-lucide="external-link"></i>
                 <?= __('admin.dashboard.view_booking_page') ?>
             </a>
+            <button type="button"
+                    class="vb-copy-btn"
+                    data-copy-url="<?= htmlspecialchars((isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/book/' . ($tenant['slug'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                    @click="copyBookingUrl"
+                    title="<?= __('admin.common.copy_booking_url') ?>">
+                <span class="vb-copy-icon"><i data-lucide="copy"></i></span>
+                <span class="vb-copy-check"><i data-lucide="check"></i></span>
+                <?= __('admin.common.copy_booking_url') ?>
+            </button>
         </div>
     </div>
 </div>
+
+<!-- Now-line updater (standalone, no Alpine) -->
+<script>
+(function() {
+    var grid = document.getElementById('schedule-grid');
+    if (!grid) return;
+    var rows = grid.querySelectorAll('.vb-schedule-hour-row');
+    if (!rows.length) return;
+
+    // Parse start/end hours from the grid
+    var firstGutter = rows[0].querySelector('.vb-schedule-time-gutter');
+    var lastGutter = rows[rows.length - 1].querySelector('.vb-schedule-time-gutter');
+    if (!firstGutter || !lastGutter) return;
+    var startHour = parseInt(firstGutter.textContent, 10);
+    var endHour = parseInt(lastGutter.textContent, 10) + 1;
+
+    // Create the now-line element
+    var nowLine = document.createElement('div');
+    nowLine.className = 'vb-schedule-now';
+    grid.style.position = 'relative';
+    grid.appendChild(nowLine);
+
+    function updateNowLine() {
+        var now = new Date();
+        var currentMinutes = now.getHours() * 60 + now.getMinutes();
+        var startMinutes = startHour * 60;
+        var endMinutes = endHour * 60;
+
+        if (currentMinutes < startMinutes || currentMinutes > endMinutes) {
+            nowLine.style.display = 'none';
+            return;
+        }
+
+        nowLine.style.display = '';
+        var totalHeight = grid.scrollHeight;
+        var fraction = (currentMinutes - startMinutes) / (endMinutes - startMinutes);
+        nowLine.style.top = (fraction * totalHeight) + 'px';
+        nowLine.setAttribute('data-time',
+            String(now.getHours()).padStart(2, '0') + ':' +
+            String(now.getMinutes()).padStart(2, '0')
+        );
+    }
+
+    updateNowLine();
+    setInterval(updateNowLine, 60000);
+})();
+</script>
 
 <?php
 $content = ob_get_clean();

@@ -145,9 +145,9 @@ final class TenantsController
 
                 // Create the first owner in the same transaction
                 if ($createOwner && $tenantId) {
-                    // Check for email collision within this tenant
+                    // Check for email collision via global registry
                     $existing = Database::query(
-                        'SELECT `id` FROM `business_users` WHERE `email` = ? LIMIT 1',
+                        'SELECT `email` FROM `auth_emails` WHERE `email` = ? LIMIT 1',
                         [$ownerEmail]
                     );
 
@@ -161,6 +161,12 @@ final class TenantsController
                          (`id`, `tenant_id`, `name`, `email`, `password_hash`, `role`, `force_password_change`, `is_active`)
                          VALUES (?, ?, ?, ?, ?, 'owner', 1, 1)",
                         [$ownerId, $tenantId, $ownerName, $ownerEmail, password_hash($ownerPass, PASSWORD_BCRYPT)]
+                    );
+
+                    // Register in auth_emails for passwordless login
+                    Database::execute(
+                        "INSERT INTO `auth_emails` (`email`, `user_type`, `user_id`) VALUES (?, 'business_user', ?)",
+                        [$ownerEmail, $ownerId]
                     );
 
                     AuditLog::log('business_user.created', 'business_user', $ownerId, [

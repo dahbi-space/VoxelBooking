@@ -3,33 +3,41 @@
  * Booking detail view.
  *
  * Two-column layout: left = booking info, right = status change.
+ * Below: event timeline from audit log.
  *
- * Variables: $user, $version, $csrfToken, $booking, $backUrl, $pageTitle, $activePage
+ * Variables: $user, $version, $csrfToken, $booking, $backUrl, $pageTitle,
+ *            $activePage, $flash, $timeline
  */
 $activePage = 'bookings';
 
-$statusClass = match ($booking['status']) {
-    'confirmed'   => 'vb-badge-success',
-    'pending'     => 'vb-badge-warning',
-    'cancelled'   => 'vb-badge-error',
-    'completed'   => 'vb-badge-default',
-    'no_show'     => 'vb-badge-error',
-    'rescheduled' => 'vb-badge-warning',
-    default       => 'vb-badge-default',
-};
+// Timeline label helper — maps audit action keys to translated labels
+if (!function_exists('bookingTimelineLabel')) {
+    function bookingTimelineLabel(array $event): string {
+        $details = !empty($event['details']) ? json_decode($event['details'], true) : [];
+
+        // Map audit action keys to existing admin.audit.* translation keys
+        $actionKey = 'admin.audit.action_' . str_replace('.', '_', $event['action']);
+        $label = __($actionKey);
+
+        // If translation returns the raw key (key not found), humanize the action
+        if ($label === $actionKey) {
+            $label = ucfirst(str_replace(['.', '_'], ' ', $event['action']));
+        }
+
+        // Append old→new for status changes, using translated status labels
+        if ($event['action'] === 'booking.status_changed'
+            && isset($details['old_status'], $details['new_status'])) {
+            $oldLabel = __('admin.bookings.status_' . $details['old_status']);
+            $newLabel = __('admin.bookings.status_' . $details['new_status']);
+            $label .= ': ' . $oldLabel . ' → ' . $newLabel;
+        }
+
+        return $label;
+    }
+}
 
 ob_start();
 ?>
-
-<div class="vb-page-header">
-    <div>
-        <a href="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>" class="vb-back-link">
-            <i data-lucide="chevron-left"></i>
-            <?= __('admin.bookings.back_to_list') ?>
-        </a>
-        <h2 class="vb-page-title"><?= __('admin.bookings.detail_title') ?></h2>
-    </div>
-</div>
 
 <?php if ($flash ?? null): ?>
     <div class="vb-alert vb-alert-<?= $flash['type'] === 'success' ? 'success' : 'error' ?>">
@@ -42,20 +50,45 @@ ob_start();
     </div>
 <?php endif; ?>
 
+<div class="vb-page-header">
+    <div>
+        <a href="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>" class="vb-back-link">
+            <i data-lucide="chevron-left"></i>
+            <?= __('admin.bookings.back_to_list') ?>
+        </a>
+        <h2 class="vb-page-title"><?= __('admin.bookings.detail_title') ?></h2>
+    </div>
+</div>
+
 <div class="vb-grid vb-grid-2 vb-fade-in-up">
     <!-- Booking Info -->
     <div class="vb-card">
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.bookings.customer') ?></span>
             <span class="vb-info-value">
-                <div class="vb-cell-name"><?= htmlspecialchars($booking['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
-                <div class="vb-cell-detail"><?= htmlspecialchars($booking['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
+                <?php if (!empty($booking['customer_id'])): ?>
+                    <div class="vb-cell-primary">
+                        <a href="/admin/tenants/<?= htmlspecialchars($booking['tenant_id'], ENT_QUOTES, 'UTF-8') ?>/customers/<?= htmlspecialchars($booking['customer_id'], ENT_QUOTES, 'UTF-8') ?>"
+                           class="vb-link">
+                            <?= htmlspecialchars($booking['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+                        </a>
+                    </div>
+                <?php else: ?>
+                    <div class="vb-cell-primary"><?= htmlspecialchars($booking['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
+                <?php endif; ?>
+                <div class="vb-cell-secondary"><?= htmlspecialchars($booking['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
             </span>
         </div>
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.bookings.service') ?></span>
             <span class="vb-info-value"><?= htmlspecialchars($booking['service_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></span>
         </div>
+        <?php if (!empty($booking['staff_name'])): ?>
+        <div class="vb-info-row">
+            <span class="vb-info-label"><?= __('admin.bookings.label_staff') ?></span>
+            <span class="vb-info-value"><?= htmlspecialchars($booking['staff_name'], ENT_QUOTES, 'UTF-8') ?></span>
+        </div>
+        <?php endif; ?>
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.bookings.date_time') ?></span>
             <span class="vb-info-value">
@@ -68,7 +101,9 @@ ob_start();
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.bookings.status') ?></span>
             <span class="vb-info-value">
-                <span class="vb-badge <?= $statusClass ?>"><?= __('admin.bookings.status_' . $booking['status']) ?></span>
+                <span class="vb-status vb-status-<?= htmlspecialchars($booking['status'], ENT_QUOTES, 'UTF-8') ?>">
+                    <?= __('admin.bookings.status_' . $booking['status']) ?>
+                </span>
             </span>
         </div>
         <div class="vb-info-row">
@@ -87,7 +122,7 @@ ob_start();
         </div>
         <?php if (!empty($booking['notes'])): ?>
         <div class="vb-info-row">
-            <span class="vb-info-label">Notes</span>
+            <span class="vb-info-label"><?= __('admin.bookings.label_notes') ?></span>
             <span class="vb-info-value"><?= nl2br(htmlspecialchars($booking['notes'], ENT_QUOTES, 'UTF-8')) ?></span>
         </div>
         <?php endif; ?>
@@ -121,6 +156,28 @@ ob_start();
         </form>
     </div>
 </div>
+
+<!-- Event Timeline -->
+<?php if (!empty($timeline)): ?>
+<div class="vb-card vb-fade-in-up stagger-3" style="margin-top: 1.5rem;">
+    <div class="vb-card-header">
+        <div class="vb-card-title"><?= __('admin.bookings.activity') ?></div>
+    </div>
+    <div class="vb-card-body">
+        <div class="vb-timeline">
+            <?php foreach ($timeline as $event): ?>
+            <div class="vb-timeline-entry <?= $event['action'] === 'booking.created' ? 'is-created' : (str_contains($event['action'], 'status') ? 'is-status' : '') ?>">
+                <div class="vb-timeline-action"><?= htmlspecialchars(bookingTimelineLabel($event), ENT_QUOTES, 'UTF-8') ?></div>
+                <div class="vb-timeline-meta">
+                    <?= date('M j, Y H:i', strtotime($event['created_at'])) ?>
+                    · <?= htmlspecialchars($event['actor_type'], ENT_QUOTES, 'UTF-8') ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php
 $content = ob_get_clean();

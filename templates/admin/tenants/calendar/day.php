@@ -49,6 +49,11 @@ ob_start();
         </h2>
     </div>
     <div class="vb-calendar-nav-right">
+        <a href="<?= $baseUrl ?>/bookings/create?date=<?= htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8') ?>"
+           class="vb-btn vb-btn-primary vb-btn-sm" id="btn-calendar-new-booking">
+            <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+            <?= __('admin.calendar.new_booking') ?>
+        </a>
         <div class="vb-segmented">
             <a href="<?= $baseUrl ?>/calendar?date=<?= htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8') ?>"
                class="vb-segmented-btn is-active"><?= __('admin.calendar.view_day') ?></a>
@@ -64,6 +69,11 @@ ob_start();
         <div class="vb-calendar-empty vb-animate-in">
             <i data-lucide="calendar-x" style="width: 32px; height: 32px; opacity: 0.3; color: var(--vb-accent);"></i>
             <h3><?= __('admin.calendar.empty_day_title') ?></h3>
+            <a href="<?= $baseUrl ?>/bookings/create?date=<?= htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8') ?>"
+               class="vb-btn vb-btn-primary vb-btn-sm" style="margin-top: 12px;">
+                <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                <?= __('admin.calendar.new_booking') ?>
+            </a>
         </div>
     </div>
 <?php else: ?>
@@ -74,12 +84,15 @@ ob_start();
             $totalMinutes = ($hourEnd - $hourStart + 1) * 60;
             foreach ($hours as $h):
                 $timeObj = new DateTimeImmutable(sprintf('%02d:00', $h));
+                $hourTime = sprintf('%02d:00', $h);
             ?>
             <div class="vb-calendar-hour-row">
                 <div class="vb-calendar-hour-label">
                     <?= htmlspecialchars(\App\Engine\Locale::time($timeObj), ENT_QUOTES, 'UTF-8') ?>
                 </div>
-                <div class="vb-calendar-hour-line"></div>
+                <a href="<?= $baseUrl ?>/bookings/create?date=<?= htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8') ?>&time=<?= $hourTime ?>"
+                   class="vb-calendar-hour-line vb-calendar-hour-link"
+                   title="<?= __('admin.calendar.new_booking') ?>"></a>
             </div>
             <?php endforeach; ?>
 

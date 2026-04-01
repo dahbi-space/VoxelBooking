@@ -207,6 +207,14 @@ ob_start();
                     /book/<?= htmlspecialchars($tenant['slug'] ?? '', ENT_QUOTES, 'UTF-8') ?>
                     <i data-lucide="external-link" class="vb-icon-inline"></i>
                 </a>
+                <button type="button"
+                        class="vb-copy-btn vb-copy-btn-ghost"
+                        data-copy-url="<?= htmlspecialchars((isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/book/' . ($tenant['slug'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                        @click="copyBookingUrl"
+                        title="<?= __('admin.common.copy_booking_url') ?>">
+                    <span class="vb-copy-icon"><i data-lucide="copy"></i></span>
+                    <span class="vb-copy-check"><i data-lucide="check"></i></span>
+                </button>
             </span>
         </div>
     </div>

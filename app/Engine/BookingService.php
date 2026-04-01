@@ -49,9 +49,12 @@ final class BookingService
         }
 
         // Consent enforcement: if tenant requires consent, it must be given
+        // Exception: admin-created bookings bypass consent (consent is a customer
+        // action, not an admin action). Consent can be captured later via recordConsent().
         $requiresConsent = (int) ($tenant['requires_consent'] ?? 1) === 1;
+        $isAdminSource = ($bookingData['source'] ?? 'web') === 'admin';
 
-        if ($requiresConsent && !$consentGiven) {
+        if ($requiresConsent && !$consentGiven && !$isAdminSource) {
             throw new \RuntimeException(
                 'Booking requires consent. The customer must agree to the privacy terms before booking.'
             );
@@ -117,13 +120,14 @@ final class BookingService
             $values
         );
 
-        // Audit log the booking creation with consent status
+        // Audit log the booking creation with consent status and source
         AuditLog::log(
             'booking.created',
             'booking',
             $bookingId,
             [
                 'booking_pattern'  => $bookingData['booking_pattern'],
+                'source'           => $bookingData['source'] ?? 'web',
                 'consent_given'    => $consentGiven,
                 'consent_recorded' => $consentGivenAt !== null,
             ],

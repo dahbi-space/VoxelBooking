@@ -139,6 +139,38 @@ final class ImpersonationTest extends TestCase
         );
     }
 
+    public function test_impersonation_hides_account_link_in_dropdown(): void
+    {
+        $this->doLoginOperator();
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+
+        $csrf = $this->getCsrf();
+        $this->post("/admin/tenants/{$tenantId}/impersonate", ['_csrf_token' => $csrf]);
+
+        $r = $this->get("/admin/tenants/{$tenantId}");
+
+        $this->assertSame(200, $r['code']);
+        $this->assertStringNotContainsString(
+            'href="/admin/settings/account"',
+            $r['body'],
+            'Account link should be hidden in dropdown during impersonation'
+        );
+    }
+
+    public function test_operator_sees_account_link_without_impersonation(): void
+    {
+        $this->doLoginOperator();
+
+        $r = $this->get('/admin');
+
+        $this->assertSame(200, $r['code']);
+        $this->assertStringContainsString(
+            'href="/admin/settings/account"',
+            $r['body'],
+            'Account link should be visible for operators not impersonating'
+        );
+    }
+
     public function test_impersonation_does_not_require_business_user_row(): void
     {
         $this->doLoginOperator();

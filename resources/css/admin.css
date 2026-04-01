@@ -171,7 +171,6 @@
     height: var(--vb-topbar-height);
     background: rgba(var(--vb-bg-surface-rgb), 0.72);
     backdrop-filter: blur(16px) saturate(1.4);
-    -webkit-backdrop-filter: blur(16px) saturate(1.4);
     border-bottom: 1px solid var(--vb-border-subtle);
     display: flex;
     align-items: center;
@@ -553,7 +552,6 @@
     background: rgba(0, 0, 0, 0.5);
     z-index: 35;
     backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     cursor: pointer;
 }
 
@@ -939,6 +937,80 @@
 }
 @media (max-width: 400px) {
     .login-panel { padding: 2rem 1.5rem; }
+}
+
+/* ── Login method tabs ──────────────────────────────────────── */
+.login-method-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--vb-border-subtle);
+    border-radius: var(--vb-radius-md);
+    overflow: hidden;
+}
+.login-tab {
+    flex: 1;
+    padding: 0.5rem 0.5rem;
+    font-size: var(--vb-text-xs);
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    background: var(--vb-bg-well);
+    color: var(--vb-text-secondary);
+    transition: background var(--vb-duration-fast), color var(--vb-duration-fast);
+}
+.login-tab + .login-tab {
+    border-left: 1px solid var(--vb-border-subtle);
+}
+.login-tab:hover {
+    background: var(--vb-bg-hover);
+}
+.login-tab.active {
+    background: var(--vb-bg-surface);
+    color: var(--vb-accent);
+    font-weight: 600;
+}
+
+/* ── Success alert ──────────────────────────────────────────── */
+.vb-alert-success {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 0.875rem;
+    font-size: var(--vb-text-sm);
+    border-radius: var(--vb-radius-md);
+    background: var(--vb-success-bg, hsla(142, 76%, 36%, 0.08));
+    color: var(--vb-success, #22c55e);
+    border: 1px solid var(--vb-success-border, hsla(142, 76%, 36%, 0.15));
+}
+.vb-alert-success svg {
+    width: 16px; height: 16px; flex-shrink: 0;
+}
+
+/* ── OTP digit inputs ───────────────────────────────────────── */
+.otp-inputs {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+.otp-digit {
+    width: 48px;
+    height: 56px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    border: 1px solid var(--vb-border-default);
+    border-radius: var(--vb-radius-md);
+    background: var(--vb-bg-surface);
+    color: var(--vb-text-primary);
+    transition: border-color var(--vb-duration-fast), box-shadow var(--vb-duration-fast);
+    outline: none;
+}
+.otp-digit:focus {
+    border-color: var(--vb-accent);
+    box-shadow: 0 0 0 3px var(--vb-accent-subtle);
 }
 
 /* ── Error Pages ─────────────────────────────────────────────── */
@@ -1653,6 +1725,7 @@
 .vb-calendar-nav-right {
     display: flex;
     align-items: center;
+    gap: var(--space-3);
 }
 
 .vb-calendar-nav-arrows {
@@ -1745,6 +1818,30 @@
 .vb-calendar-hour-line {
     flex: 1;
     border-top: 1px solid var(--vb-border);
+    display: block;
+    height: 100%;
+    text-decoration: none;
+}
+
+.vb-calendar-hour-link {
+    cursor: pointer;
+    transition: background 0.15s ease;
+    position: relative;
+}
+
+.vb-calendar-hour-link:hover {
+    background: var(--vb-accent-subtle, rgba(99, 102, 241, 0.06));
+}
+
+.vb-calendar-hour-link:hover::after {
+    content: '+';
+    position: absolute;
+    right: 12px;
+    top: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--vb-accent);
+    opacity: 0.7;
 }
 
 /* ── Booking Block (Day View) ───────────────────────────────── */
@@ -1959,10 +2056,14 @@
     justify-content: space-between;
     gap: var(--space-3);
     padding: 8px 20px;
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.08));
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.10), rgba(217, 119, 6, 0.06));
+    backdrop-filter: blur(16px) saturate(1.4);
     border-bottom: 1px solid rgba(245, 158, 11, 0.25);
     font-size: 0.8125rem;
     color: var(--vb-fg);
+    position: sticky;
+    top: var(--vb-topbar-height);
+    z-index: 29;
 }
 
 .vb-impersonation-banner-content {
@@ -2002,4 +2103,551 @@
 .vb-impersonation-exit-btn:hover {
     background: rgba(245, 158, 11, 0.12);
     border-color: rgba(245, 158, 11, 0.6);
+}
+
+.vb-impersonation-exit-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ── Staff Management ── */
+
+/* Sidebar back link */
+.vb-sidebar-back {
+    font-size: var(--vb-text-xs);
+    color: var(--vb-text-ghost);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    margin-bottom: 0.5rem;
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+}
+.vb-sidebar-back:hover {
+    color: var(--vb-text-tertiary);
+    background: transparent;
+}
+.vb-sidebar-back svg,
+.vb-sidebar-back [data-lucide] {
+    width: 13px;
+    height: 13px;
+}
+
+/* Inactive row */
+.vb-row-inactive {
+    opacity: 0.55;
+}
+.vb-row-inactive:hover {
+    opacity: 0.8;
+}
+
+/* Action group (inline buttons) */
+.vb-action-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    justify-content: flex-end;
+}
+
+/* Copy booking URL button */
+.vb-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: 4px 8px;
+    border: 1px solid var(--vb-border-subtle);
+    border-radius: var(--vb-radius-md);
+    background: transparent;
+    color: var(--vb-text-secondary);
+    cursor: pointer;
+    font-size: var(--vb-text-xs);
+    font-weight: 500;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.vb-copy-btn:hover {
+    color: var(--vb-text-primary);
+    border-color: var(--vb-border-default);
+    background: var(--vb-bg-surface);
+}
+
+.vb-copy-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.vb-copy-btn .vb-copy-check {
+    display: none;
+}
+
+.vb-copy-btn.is-copied {
+    color: var(--vb-success);
+    border-color: var(--vb-success);
+}
+
+.vb-copy-btn.is-copied .vb-copy-icon {
+    display: none;
+}
+
+.vb-copy-btn.is-copied .vb-copy-check {
+    display: inline-flex;
+}
+
+/* Inline copy button (no border, ghost style) */
+.vb-copy-btn-ghost {
+    border: none;
+    padding: 4px;
+}
+
+/* Cell meta (subtitle under name) */
+.vb-cell-meta {
+    display: block;
+    font-size: var(--vb-text-xs);
+    color: var(--vb-text-tertiary);
+    font-weight: 400;
+    line-height: 1.25;
+    margin-top: 0.0625rem;
+}
+
+/* Checkbox list for service assignments */
+.vb-checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.vb-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 1rem;
+    font-size: var(--vb-text-sm);
+    color: var(--vb-text-secondary);
+    cursor: pointer;
+    transition: background var(--vb-duration-fast) var(--vb-ease-out);
+    border-bottom: 1px solid var(--vb-border-subtle);
+}
+.vb-checkbox-item:last-child {
+    border-bottom: none;
+}
+.vb-checkbox-item:hover {
+    background: var(--vb-bg-hover);
+    color: var(--vb-text-primary);
+}
+.vb-checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--vb-accent);
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.vb-checkbox-label {
+    font-weight: 450;
+}
+
+/* Empty state inline (for cards without full-page treatment) */
+.vb-empty-state-inline {
+    text-align: center;
+    padding: 1.5rem 1rem;
+}
+
+/* Danger ghost button */
+.vb-btn-danger:hover {
+    color: var(--vb-error);
+    background: var(--vb-error-bg);
+}
+
+/* ── Availability Grid ── */
+
+.vb-availability-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.625rem;
+}
+@media (max-width: 1200px) {
+    .vb-availability-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+@media (max-width: 768px) {
+    .vb-availability-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+}
+
+.vb-availability-day {
+    background: var(--vb-bg-card);
+    border: 1px solid var(--vb-border-subtle);
+    border-radius: var(--vb-radius-lg);
+    padding: 0.75rem;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    transition:
+        border-color var(--vb-duration-fast) var(--vb-ease-out),
+        opacity var(--vb-duration-fast) var(--vb-ease-out),
+        box-shadow var(--vb-duration-fast) var(--vb-ease-out);
+}
+.vb-availability-day:hover {
+    border-color: var(--vb-border-default);
+    box-shadow: var(--vb-shadow-xs);
+}
+.vb-availability-day.is-closed {
+    opacity: 0.5;
+}
+.vb-availability-day.is-closed:hover {
+    opacity: 0.75;
+    border-color: var(--vb-border-default);
+}
+
+.vb-availability-day-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--vb-border-subtle);
+}
+
+.vb-availability-day-label-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.0625rem;
+}
+.vb-availability-day-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--vb-text-primary);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+.vb-availability-day-count {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--vb-text-ghost);
+    text-transform: lowercase;
+}
+
+.vb-availability-windows {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.vb-availability-closed {
+    font-size: 0.6875rem;
+    color: var(--vb-text-ghost);
+    text-align: center;
+    padding: 1rem 0;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin: 0;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vb-availability-window {
+    display: flex;
+    align-items: center;
+    gap: 0.1875rem;
+    margin-bottom: 0.375rem;
+    animation: vb-fade-in var(--vb-duration-fast) var(--vb-ease-out);
+}
+.vb-availability-window:last-of-type {
+    margin-bottom: 0;
+}
+
+.vb-availability-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.1875rem;
+    flex: 1;
+    min-width: 0;
+}
+.vb-availability-inputs .vb-input {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    padding: 0.25rem 0.3125rem;
+    text-align: center;
+    border-radius: var(--radius-md);
+}
+.vb-availability-inputs .vb-input:focus {
+    border-color: var(--vb-accent);
+    box-shadow: 0 0 0 2px var(--vb-accent-subtle);
+}
+
+.vb-availability-separator {
+    color: var(--vb-text-ghost);
+    font-size: 0.5625rem;
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+/* Badges */
+.vb-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1875rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+}
+.vb-badge-accent {
+    background: var(--vb-accent-subtle);
+    color: var(--vb-accent);
+}
+.vb-badge-muted {
+    background: var(--vb-bg-hover);
+    color: var(--vb-text-tertiary);
+}
+
+/* Extra-small button variant */
+.vb-btn-xs {
+    padding: 0.1875rem 0.375rem;
+    font-size: 0.6875rem;
+    gap: 0.125rem;
+    border-radius: var(--radius-md);
+}
+
+@keyframes vb-fade-in {
+    from { opacity: 0; transform: translateY(-2px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Card Header ── */
+
+.vb-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--vb-border-subtle);
+}
+.vb-card-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--vb-text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+/* ── Form Grid ── */
+
+.vb-form-grid {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+}
+.vb-form-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.vb-form-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.vb-form-grid-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 768px) {
+    .vb-form-grid-2,
+    .vb-form-grid-3,
+    .vb-form-grid-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.vb-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3125rem;
+}
+
+/* ── Blocked Dates Form ── */
+
+.vb-blocked-dates-form .vb-form-actions {
+    padding: 0 1.25rem 1rem;
+}
+.vb-blocked-dates-form .vb-form-group[x-show] {
+    padding: 0 1.25rem;
+}
+
+/* ── Tabular Nums ── */
+
+.vb-tabular {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Service Cell ── */
+
+.vb-service-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.vb-service-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ── Checkbox Grid ── */
+
+.vb-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.375rem;
+}
+.vb-checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.375rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background var(--vb-duration-fast) var(--vb-ease-out);
+    font-size: 0.8125rem;
+    color: var(--vb-text-primary);
+}
+.vb-checkbox-label:hover {
+    background: var(--vb-bg-hover);
+}
+.vb-checkbox-label input[type="checkbox"] {
+    margin-top: 0.125rem;
+    accent-color: var(--vb-accent);
+}
+.vb-checkbox-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.0625rem;
+    line-height: 1.3;
+}
+.vb-checkbox-meta {
+    font-size: 0.6875rem;
+    color: var(--vb-text-tertiary);
+}
+
+/* ── Label Hints ── */
+
+.vb-label-hint {
+    font-weight: 400;
+    color: var(--vb-text-ghost);
+    font-size: 0.6875rem;
+    margin-left: 0.25rem;
+}
+
+/* ─── Settings Surface ─── */
+
+.vb-settings-section {
+    margin-top: 1.5rem;
+}
+
+.vb-settings-section + .vb-settings-section {
+    margin-top: 1.25rem;
+}
+
+.vb-settings-section-title {
+    font-size: var(--vb-text-sm);
+    font-weight: 600;
+    color: var(--vb-text-primary);
+    letter-spacing: var(--vb-tracking-normal);
+    margin-bottom: 1rem;
+    padding-bottom: 0.625rem;
+    border-bottom: 1px solid var(--vb-border-subtle);
+}
+
+.vb-settings-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.vb-settings-field + .vb-settings-field {
+    margin-top: 1.25rem;
+}
+
+.vb-settings-hint {
+    font-size: var(--vb-text-xs);
+    color: var(--vb-text-tertiary);
+    line-height: var(--vb-leading-relaxed);
+    margin-top: 0.125rem;
+}
+
+.vb-settings-booking-url {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: 0.5rem;
+}
+
+.vb-settings-url-text {
+    font-size: var(--vb-text-xs);
+    color: var(--vb-text-secondary);
+    background: var(--vb-bg-secondary);
+    padding: 4px 8px;
+    border-radius: var(--vb-radius-md);
+    border: 1px solid var(--vb-border-subtle);
+    user-select: all;
+}
+
+.vb-settings-toggles {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.vb-settings-toggle-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.vb-settings-toggle-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    accent-color: var(--vb-accent);
+    cursor: pointer;
+}
+
+.vb-settings-toggle-label {
+    font-size: var(--vb-text-sm);
+    font-weight: 450;
+    color: var(--vb-text-primary);
+    line-height: var(--vb-leading-normal);
+}
+
+.vb-settings-toggle-desc {
+    font-size: var(--vb-text-xs);
+    color: var(--vb-text-tertiary);
+    margin-top: 0.125rem;
+}
+
+.vb-settings-color-pair {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.vb-settings-color-swatch {
+    width: 36px;
+    height: 36px;
+    padding: 2px;
+    border: none;
+    border-radius: var(--vb-radius-md);
+    cursor: pointer;
+    box-shadow: var(--vb-shadow-card);
+}
+
+.vb-settings-color-hex {
+    max-width: 90px;
+    font-family: var(--vb-font-mono);
+    font-size: var(--vb-text-xs);
+    letter-spacing: 0.02em;
 }

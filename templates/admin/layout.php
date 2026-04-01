@@ -63,33 +63,98 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
 
         <nav class="vb-sidebar-nav">
             <div class="vb-sidebar-section">
-                <?php if ($isImpersonating): ?>
-                <!-- Impersonation: show tenant shell -->
-                <a href="/admin/tenants/<?= htmlspecialchars($impersonatedTenantId, ENT_QUOTES, 'UTF-8') ?>"
+                <?php
+                // Determine if we're in a tenant context
+                $sidebarTenantId = $impersonatedTenantId ?? ($tenantId ?? ($_SESSION['auth_tenant_id'] ?? null));
+                $inTenantContext = $sidebarTenantId !== null && $sidebarTenantId !== '';
+                $canManage = \App\Engine\Auth::isOperator() || \App\Engine\Auth::isOwner();
+
+                // Resolve tenant booking pattern for pattern-specific nav
+                $tenantPattern = null;
+                if ($inTenantContext) {
+                    $tenantPattern = $tenant['booking_pattern']
+                        ?? (\App\Engine\Database::query(
+                            'SELECT `booking_pattern` FROM `tenants` WHERE `id` = ? LIMIT 1',
+                            [$sidebarTenantId]
+                        )[0]['booking_pattern'] ?? null);
+                }
+                $isTimeslot = $tenantPattern === 'timeslot';
+                ?>
+
+                <?php if ($inTenantContext): ?>
+                <?php if (\App\Engine\Auth::isOperator() && !$isImpersonating): ?>
+                <a href="/admin/tenants" class="vb-sidebar-link vb-sidebar-back">
+                    <i data-lucide="chevron-left"></i>
+                    <?= __('admin.nav.all_tenants') ?>
+                </a>
+                <?php endif; ?>
+                <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>"
                    class="vb-sidebar-link <?= $activePage === 'dashboard' ? 'active' : '' ?>">
                     <i data-lucide="layout-dashboard"></i>
                     <?= __('admin.nav.dashboard') ?>
                 </a>
-                <a href="/admin/tenants/<?= htmlspecialchars($impersonatedTenantId, ENT_QUOTES, 'UTF-8') ?>/bookings"
+                <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/bookings"
                    class="vb-sidebar-link <?= $activePage === 'bookings' ? 'active' : '' ?>">
                     <i data-lucide="list"></i>
                     <?= __('admin.nav.bookings') ?>
                 </a>
-                <a href="/admin/tenants/<?= htmlspecialchars($impersonatedTenantId, ENT_QUOTES, 'UTF-8') ?>/calendar"
+                <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/calendar"
                    class="vb-sidebar-link <?= $activePage === 'calendar' ? 'active' : '' ?>">
                     <i data-lucide="calendar-days"></i>
                     <?= __('admin.nav.calendar') ?>
                 </a>
-                <a href="/admin/tenants/<?= htmlspecialchars($impersonatedTenantId, ENT_QUOTES, 'UTF-8') ?>/customers"
+                <?php if ($canManage && $isTimeslot): ?>
+                <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/services"
+                   class="vb-sidebar-link <?= $activePage === 'services' ? 'active' : '' ?>">
+                    <i data-lucide="layers"></i>
+                    <?= __('admin.nav.services') ?>
+                </a>
+                <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/staff"
+                   class="vb-sidebar-link <?= $activePage === 'staff' ? 'active' : '' ?>">
+                    <i data-lucide="users"></i>
+                    <?= __('admin.nav.staff') ?>
+                </a>
+                <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/availability"
+                   class="vb-sidebar-link <?= $activePage === 'availability' ? 'active' : '' ?>">
+                    <i data-lucide="clock"></i>
+                    <?= __('admin.nav.availability') ?>
+                </a>
+                <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/blocked-dates"
+                   class="vb-sidebar-link <?= $activePage === 'blocked-dates' ? 'active' : '' ?>">
+                    <i data-lucide="calendar-x"></i>
+                    <?= __('admin.nav.blocked_dates') ?>
+                </a>
+                <?php endif; ?>
+                <?php if ($canManage && $tenantPattern === 'resource'): ?>
+                <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/resources"
+                   class="vb-sidebar-link <?= $activePage === 'resources' ? 'active' : '' ?>">
+                    <i data-lucide="bed"></i>
+                    <?= __('admin.nav.resources') ?>
+                </a>
+                <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/blocked-dates"
+                   class="vb-sidebar-link <?= $activePage === 'blocked-dates' ? 'active' : '' ?>">
+                    <i data-lucide="calendar-x"></i>
+                    <?= __('admin.nav.blocked_dates') ?>
+                </a>
+                <?php endif; ?>
+                <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/customers"
                    class="vb-sidebar-link <?= $activePage === 'customers' ? 'active' : '' ?>">
                     <i data-lucide="contact"></i>
                     <?= __('admin.nav.customers') ?>
                 </a>
-                <a href="/admin/tenants/<?= htmlspecialchars($impersonatedTenantId, ENT_QUOTES, 'UTF-8') ?>/users"
+                <?php if ($canManage): ?>
+                <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/users"
                    class="vb-sidebar-link <?= $activePage === 'users' ? 'active' : '' ?>">
-                    <i data-lucide="users"></i>
+                    <i data-lucide="user-cog"></i>
                     <?= __('admin.nav.team') ?>
                 </a>
+                <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/settings"
+                   class="vb-sidebar-link <?= $activePage === 'settings' ? 'active' : '' ?>">
+                    <i data-lucide="settings"></i>
+                    <?= __('admin.nav.settings') ?>
+                </a>
+                <?php endif; ?>
+
                 <?php elseif (\App\Engine\Auth::isOperator()): ?>
                 <a href="/admin" class="vb-sidebar-link <?= $activePage === 'dashboard' ? 'active' : '' ?>">
                     <i data-lucide="layout-dashboard"></i>
@@ -103,34 +168,6 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                     <i data-lucide="calendar"></i>
                     <?= __('admin.nav.all_bookings') ?>
                 </a>
-                <?php elseif (isset($_SESSION['auth_tenant_id'])): ?>
-                <a href="/admin/tenants/<?= htmlspecialchars($_SESSION['auth_tenant_id'], ENT_QUOTES, 'UTF-8') ?>"
-                   class="vb-sidebar-link <?= $activePage === 'dashboard' ? 'active' : '' ?>">
-                    <i data-lucide="layout-dashboard"></i>
-                    <?= __('admin.nav.dashboard') ?>
-                </a>
-                <a href="/admin/tenants/<?= htmlspecialchars($_SESSION['auth_tenant_id'], ENT_QUOTES, 'UTF-8') ?>/bookings"
-                   class="vb-sidebar-link <?= $activePage === 'bookings' ? 'active' : '' ?>">
-                    <i data-lucide="list"></i>
-                    <?= __('admin.nav.bookings') ?>
-                </a>
-                <a href="/admin/tenants/<?= htmlspecialchars($_SESSION['auth_tenant_id'], ENT_QUOTES, 'UTF-8') ?>/calendar"
-                   class="vb-sidebar-link <?= $activePage === 'calendar' ? 'active' : '' ?>">
-                    <i data-lucide="calendar-days"></i>
-                    <?= __('admin.nav.calendar') ?>
-                </a>
-                <a href="/admin/tenants/<?= htmlspecialchars($_SESSION['auth_tenant_id'], ENT_QUOTES, 'UTF-8') ?>/customers"
-                   class="vb-sidebar-link <?= $activePage === 'customers' ? 'active' : '' ?>">
-                    <i data-lucide="contact"></i>
-                    <?= __('admin.nav.customers') ?>
-                </a>
-                <?php if (\App\Engine\Auth::isOwner()): ?>
-                <a href="/admin/tenants/<?= htmlspecialchars($_SESSION['auth_tenant_id'], ENT_QUOTES, 'UTF-8') ?>/users"
-                   class="vb-sidebar-link <?= $activePage === 'users' ? 'active' : '' ?>">
-                    <i data-lucide="users"></i>
-                    <?= __('admin.nav.team') ?>
-                </a>
-                <?php endif; ?>
                 <?php endif; ?>
             </div>
             <?php if (\App\Engine\Auth::isOperator() && !$isImpersonating): ?>
@@ -203,7 +240,7 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                                 <span class="vb-profile-dropdown-hint icon-sun"><?= __('admin.nav.theme_light') ?></span>
                                 <span class="vb-profile-dropdown-hint icon-moon"><?= __('admin.nav.theme_dark') ?></span>
                             </button>
-                            <?php if (\App\Engine\Auth::isOperator()): ?>
+                            <?php if (\App\Engine\Auth::isOperator() && !$isImpersonating): ?>
                             <a href="/admin/settings/account" class="vb-profile-dropdown-item" @click="closeProfile">
                                 <span class="vb-profile-dropdown-icon">
                                     <i data-lucide="user-cog"></i>
@@ -251,7 +288,7 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
             <form method="POST" action="/admin/impersonate/exit" class="vb-form-flush">
                 <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                 <button type="submit" class="vb-btn vb-btn-sm vb-impersonation-exit-btn">
-                    <i data-lucide="log-out" style="width: 14px; height: 14px;"></i>
+                    <i data-lucide="log-out"></i>
                     <?= __('admin.impersonation.exit') ?>
                 </button>
             </form>

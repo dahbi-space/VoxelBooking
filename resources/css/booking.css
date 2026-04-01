@@ -628,8 +628,12 @@ body {
   opacity: 0.6;
 }
 
-.vb-book-calendar-fade {
-  animation: vb-calendar-fade 150ms var(--vb-ease-out);
+.vb-book-calendar-grid {
+  transition: opacity 150ms var(--vb-ease-out);
+}
+
+.vb-book-calendar-grid.is-fading {
+  opacity: 0;
 }
 
 @keyframes vb-calendar-fade {
@@ -941,6 +945,80 @@ body {
   text-align: right;
 }
 
+/* Preparation callout (service-level instruction on review step) */
+.vb-book-preparation-callout {
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: var(--vb-text-secondary);
+  background: var(--vb-bg-secondary);
+  border-left: 3px solid var(--vb-brand);
+  border-radius: var(--vb-radius-lg);
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  animation: vb-preparation-enter 300ms var(--vb-ease-out);
+}
+
+@keyframes vb-preparation-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Honeypot (invisible to humans, filled by bots) */
+.vb-book-hp {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Slot-taken recovery panel */
+.vb-book-slot-recovery {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: var(--vb-radius-lg);
+  padding: 16px;
+  margin-bottom: 20px;
+  animation: vb-preparation-enter 300ms var(--vb-ease-out);
+}
+
+.vb-book-slot-recovery-msg {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #92400E;
+  margin: 0 0 12px;
+}
+
+.vb-book-slot-recovery-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vb-book-slot-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--vb-brand);
+  background: var(--vb-bg);
+  border: 1px solid var(--vb-border);
+  border-radius: var(--vb-radius-full);
+  cursor: pointer;
+  transition: all var(--vb-duration-fast) var(--vb-ease-standard);
+}
+
+.vb-book-slot-pill:hover {
+  border-color: var(--vb-brand);
+  background: var(--vb-brand-light);
+}
+
+.vb-book-slot-pill:active {
+  transform: scale(0.97);
+}
+
 /* ── Confirmation ── */
 .vb-book-confirmation {
   text-align: center;
@@ -987,9 +1065,9 @@ body {
   to { stroke-dashoffset: 0; }
 }
 
-.vb-book-confirm-scale {
-  animation: vb-confirm-scale 200ms var(--vb-ease-overshoot) 600ms forwards;
-  transform: scale(1);
+.vb-book-checkmark-wrap {
+  display: inline-block;
+  animation: vb-confirm-scale 200ms var(--vb-ease-overshoot) 600ms both;
 }
 
 @keyframes vb-confirm-scale {
@@ -1032,6 +1110,49 @@ body {
   animation: vb-fade-in var(--vb-step-transition) var(--vb-ease-out) 800ms forwards;
 }
 
+/* Confirmation message (email-sent + custom message) */
+.vb-book-confirm-message {
+  color: var(--vb-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  text-align: center;
+  margin-top: 8px;
+  opacity: 0;
+  animation: vb-fade-in var(--vb-step-transition) var(--vb-ease-out) 650ms forwards;
+}
+
+.vb-book-confirm-message-custom {
+  color: var(--vb-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  text-align: center;
+  margin-top: 6px;
+  font-style: italic;
+  opacity: 0;
+  animation: vb-fade-in var(--vb-step-transition) var(--vb-ease-out) 700ms forwards;
+}
+
+/* Secondary action links (reschedule, cancel, book another) */
+.vb-book-confirm-actions-secondary {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  opacity: 0;
+  animation: vb-fade-in var(--vb-step-transition) var(--vb-ease-out) 900ms forwards;
+}
+
+.vb-book-confirm-actions-secondary .vb-book-btn-ghost {
+  font-size: 0.8125rem;
+  padding: 6px 2px;
+  color: var(--vb-text-tertiary);
+}
+
+.vb-book-confirm-actions-secondary .vb-book-btn-ghost:hover {
+  color: var(--vb-text-secondary);
+}
+
 @keyframes vb-fade-in {
   to { opacity: 1; }
 }
@@ -1055,6 +1176,51 @@ body {
   padding-top: 16px;
 }
 
+/* ── Cancellation Policy Disclosure ── */
+.vb-book-policy-wrap {
+  margin-top: 16px;
+  border-top: 1px solid var(--vb-border);
+  padding-top: 12px;
+}
+
+.vb-book-policy-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: var(--vb-text-tertiary);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  transition: color 150ms var(--vb-ease-out);
+}
+
+.vb-book-policy-toggle:hover {
+  color: var(--vb-text-secondary);
+}
+
+.vb-book-policy-toggle .vb-book-policy-chevron {
+  width: 14px;
+  height: 14px;
+  transition: transform 200ms var(--vb-ease-out);
+}
+
+.vb-book-policy-toggle.is-open .vb-book-policy-chevron {
+  transform: rotate(90deg);
+}
+
+.vb-book-policy-text {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--vb-text-secondary);
+  margin-top: 8px;
+  padding: 10px 14px;
+  background: var(--vb-bg-secondary);
+  border-radius: var(--vb-radius-lg);
+  white-space: pre-line;
+}
+
 /* ── Loading ── */
 .vb-book-loading {
   display: flex;
@@ -1070,6 +1236,44 @@ body {
   border-top-color: var(--vb-brand);
   border-radius: 50%;
   animation: vb-spin 0.6s linear infinite;
+}
+
+/* ── Shimmer Skeleton ── */
+.vb-book-shimmer-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.vb-book-shimmer-title {
+  height: 20px;
+  width: 160px;
+  border-radius: var(--vb-radius-md);
+  background: linear-gradient(90deg, var(--vb-bg-tertiary) 25%, var(--vb-bg-secondary) 50%, var(--vb-bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: vb-shimmer 1.5s ease-in-out infinite;
+}
+
+.vb-book-shimmer-card {
+  height: 64px;
+  border-radius: var(--vb-radius-xl);
+  background: linear-gradient(90deg, var(--vb-bg-tertiary) 25%, var(--vb-bg-secondary) 50%, var(--vb-bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: vb-shimmer 1.5s ease-in-out infinite;
+}
+
+.vb-book-shimmer-card:nth-child(2) { animation-delay: 100ms; }
+.vb-book-shimmer-card:nth-child(3) { animation-delay: 200ms; }
+.vb-book-shimmer-card:nth-child(4) { animation-delay: 300ms; }
+
+.vb-book-shimmer-card-short {
+  width: 75%;
+}
+
+@keyframes vb-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* ── Footer ── */

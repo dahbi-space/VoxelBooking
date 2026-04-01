@@ -51,6 +51,12 @@ return function (Router $router): void {
         $router->post('/admin/login', \App\Controllers\Auth\AuthController::class, 'login');
         $router->post('/auth/logout', \App\Controllers\Auth\AuthController::class, 'logout');
 
+        // ── Passwordless auth (OTP + magic link) ──
+        $router->post('/admin/login/request-code', \App\Controllers\Auth\AuthController::class, 'requestCode');
+        $router->get('/admin/login/verify-code', \App\Controllers\Auth\AuthController::class, 'showVerifyCode');
+        $router->post('/admin/login/verify-code', \App\Controllers\Auth\AuthController::class, 'verifyCode');
+        $router->get('/admin/login/verify', \App\Controllers\Auth\AuthController::class, 'verifyMagicLink');
+
         // ── Admin (protected by AuthMiddleware) ──
         $router->group([
             AuthMiddleware::class,
@@ -96,6 +102,8 @@ return function (Router $router): void {
 
             // Booking management — tenant-context routes (business user + operator)
             $router->get('/admin/tenants/{tenant_id}/bookings', \App\Controllers\Admin\BookingsController::class, 'tenantIndex');
+            $router->get('/admin/tenants/{tenant_id}/bookings/create', \App\Controllers\Admin\BookingsController::class, 'tenantCreate');
+            $router->post('/admin/tenants/{tenant_id}/bookings/create', \App\Controllers\Admin\BookingsController::class, 'tenantStore');
             $router->get('/admin/tenants/{tenant_id}/bookings/{id}', \App\Controllers\Admin\BookingsController::class, 'tenantShow');
             $router->post('/admin/tenants/{tenant_id}/bookings/{id}/status', \App\Controllers\Admin\BookingsController::class, 'tenantUpdateStatus');
 
@@ -106,9 +114,60 @@ return function (Router $router): void {
             $router->post('/admin/tenants/{tenant_id}/users/{id}/deactivate', \App\Controllers\Admin\BusinessUsersController::class, 'deactivate');
             $router->post('/admin/tenants/{tenant_id}/users/{id}/activate', \App\Controllers\Admin\BusinessUsersController::class, 'activate');
 
+            // Tenant settings — operator + owner only (enforced in controller)
+            $router->get('/admin/tenants/{tenant_id}/settings', \App\Controllers\Admin\TenantSettingsController::class, 'general');
+            $router->post('/admin/tenants/{tenant_id}/settings', \App\Controllers\Admin\TenantSettingsController::class, 'saveGeneral');
+            $router->get('/admin/tenants/{tenant_id}/settings/branding', \App\Controllers\Admin\TenantSettingsController::class, 'branding');
+            $router->post('/admin/tenants/{tenant_id}/settings/branding', \App\Controllers\Admin\TenantSettingsController::class, 'saveBranding');
+            $router->get('/admin/tenants/{tenant_id}/settings/booking', \App\Controllers\Admin\TenantSettingsController::class, 'booking');
+            $router->post('/admin/tenants/{tenant_id}/settings/booking', \App\Controllers\Admin\TenantSettingsController::class, 'saveBooking');
+            $router->get('/admin/tenants/{tenant_id}/settings/privacy', \App\Controllers\Admin\TenantSettingsController::class, 'privacy');
+            $router->post('/admin/tenants/{tenant_id}/settings/privacy', \App\Controllers\Admin\TenantSettingsController::class, 'savePrivacy');
+            $router->get('/admin/tenants/{tenant_id}/settings/notifications', \App\Controllers\Admin\TenantSettingsController::class, 'notifications');
+            $router->post('/admin/tenants/{tenant_id}/settings/notifications', \App\Controllers\Admin\TenantSettingsController::class, 'saveNotifications');
+
             // Customer management — tenant-context (all business user roles + operator)
             $router->get('/admin/tenants/{tenant_id}/customers', \App\Controllers\Admin\CustomersController::class, 'index');
             $router->get('/admin/tenants/{tenant_id}/customers/{id}', \App\Controllers\Admin\CustomersController::class, 'show');
+
+            // Service management — operator + owner only (enforced in controller)
+            $router->get('/admin/tenants/{tenant_id}/services', \App\Controllers\Admin\ServiceController::class, 'index');
+            $router->get('/admin/tenants/{tenant_id}/services/create', \App\Controllers\Admin\ServiceController::class, 'create');
+            $router->post('/admin/tenants/{tenant_id}/services', \App\Controllers\Admin\ServiceController::class, 'store');
+            $router->get('/admin/tenants/{tenant_id}/services/{id}/edit', \App\Controllers\Admin\ServiceController::class, 'edit');
+            $router->post('/admin/tenants/{tenant_id}/services/{id}', \App\Controllers\Admin\ServiceController::class, 'update');
+            $router->post('/admin/tenants/{tenant_id}/services/{id}/activate', \App\Controllers\Admin\ServiceController::class, 'activate');
+            $router->post('/admin/tenants/{tenant_id}/services/{id}/deactivate', \App\Controllers\Admin\ServiceController::class, 'deactivate');
+
+            // Staff management — operator + owner only (enforced in controller)
+            $router->get('/admin/tenants/{tenant_id}/staff', \App\Controllers\Admin\StaffController::class, 'index');
+            $router->get('/admin/tenants/{tenant_id}/staff/create', \App\Controllers\Admin\StaffController::class, 'create');
+            $router->post('/admin/tenants/{tenant_id}/staff/create', \App\Controllers\Admin\StaffController::class, 'store');
+            $router->get('/admin/tenants/{tenant_id}/staff/{id}/edit', \App\Controllers\Admin\StaffController::class, 'edit');
+            $router->post('/admin/tenants/{tenant_id}/staff/{id}/edit', \App\Controllers\Admin\StaffController::class, 'update');
+            $router->post('/admin/tenants/{tenant_id}/staff/{id}/activate', \App\Controllers\Admin\StaffController::class, 'activate');
+            $router->post('/admin/tenants/{tenant_id}/staff/{id}/deactivate', \App\Controllers\Admin\StaffController::class, 'deactivate');
+
+            // Availability management — operator + owner only (enforced in controller)
+            $router->get('/admin/tenants/{tenant_id}/availability', \App\Controllers\Admin\AvailabilityController::class, 'index');
+            $router->post('/admin/tenants/{tenant_id}/availability', \App\Controllers\Admin\AvailabilityController::class, 'save');
+            $router->get('/admin/tenants/{tenant_id}/availability/staff/{id}', \App\Controllers\Admin\AvailabilityController::class, 'staffOverride');
+            $router->post('/admin/tenants/{tenant_id}/availability/staff/{id}', \App\Controllers\Admin\AvailabilityController::class, 'saveStaffOverride');
+            $router->post('/admin/tenants/{tenant_id}/availability/staff/{id}/reset', \App\Controllers\Admin\AvailabilityController::class, 'resetStaffOverride');
+
+            // Blocked dates — operator + owner only (enforced in controller)
+            $router->get('/admin/tenants/{tenant_id}/blocked-dates', \App\Controllers\Admin\BlockedDatesController::class, 'index');
+            $router->post('/admin/tenants/{tenant_id}/blocked-dates', \App\Controllers\Admin\BlockedDatesController::class, 'store');
+            $router->post('/admin/tenants/{tenant_id}/blocked-dates/{id}/delete', \App\Controllers\Admin\BlockedDatesController::class, 'delete');
+
+            // Resource management — operator + owner only (enforced in controller)
+            $router->get('/admin/tenants/{tenant_id}/resources', \App\Controllers\Admin\ResourceController::class, 'index');
+            $router->get('/admin/tenants/{tenant_id}/resources/create', \App\Controllers\Admin\ResourceController::class, 'create');
+            $router->post('/admin/tenants/{tenant_id}/resources', \App\Controllers\Admin\ResourceController::class, 'store');
+            $router->get('/admin/tenants/{tenant_id}/resources/{id}/edit', \App\Controllers\Admin\ResourceController::class, 'edit');
+            $router->post('/admin/tenants/{tenant_id}/resources/{id}', \App\Controllers\Admin\ResourceController::class, 'update');
+            $router->post('/admin/tenants/{tenant_id}/resources/{id}/activate', \App\Controllers\Admin\ResourceController::class, 'activate');
+            $router->post('/admin/tenants/{tenant_id}/resources/{id}/deactivate', \App\Controllers\Admin\ResourceController::class, 'deactivate');
 
             // Calendar views — tenant-context (all business user roles + operator)
             $router->get('/admin/tenants/{tenant_id}/calendar', \App\Controllers\Admin\CalendarController::class, 'day');
@@ -128,6 +187,10 @@ return function (Router $router): void {
         $router->get('/api/{slug}/availability', \App\Controllers\Booking\BookingApiController::class, 'availability');
         $router->get('/api/{slug}/available-dates', \App\Controllers\Booking\BookingApiController::class, 'availableDates');
         $router->post('/api/{slug}/bookings', \App\Controllers\Booking\BookingApiController::class, 'createBooking');
+
+        // Resource-pattern public API (Phase R)
+        $router->get('/api/{slug}/resources', \App\Controllers\Booking\BookingApiController::class, 'resources');
+        $router->get('/api/{slug}/resources/{id}/availability', \App\Controllers\Booking\BookingApiController::class, 'resourceAvailability');
 
         // ── Privacy endpoint (GDPR data-subject rights) ──
         // No auth — customer ULID is the bearer token (128-bit entropy)

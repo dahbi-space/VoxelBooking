@@ -33,7 +33,7 @@
                         class="vb-book-logo"
                     >
                 <?php endif; ?>
-                <h1 class="vb-book-business-name"><?= htmlspecialchars($tenant['name']) ?></h1>
+                <h1 class="vb-book-business-name"><?= htmlspecialchars($tenant['booking_page_heading'] ?: $tenant['name']) ?></h1>
                 <?php if (!empty($tenant['booking_page_description'])): ?>
                     <p class="vb-book-business-desc"><?= htmlspecialchars($tenant['booking_page_description']) ?></p>
                 <?php endif; ?>
@@ -92,9 +92,14 @@
         <!-- ── Main Flow ── -->
         <main class="vb-book-flow" id="vb-book-flow">
 
-            <!-- Loading -->
-            <div x-show="isLoading" class="vb-book-loading">
-                <div class="vb-book-spinner"></div>
+            <!-- Loading shimmer skeleton -->
+            <div x-show="isLoading" class="vb-book-step">
+                <div class="vb-book-shimmer-block">
+                    <div class="vb-book-shimmer-title"></div>
+                    <div class="vb-book-shimmer-card"></div>
+                    <div class="vb-book-shimmer-card"></div>
+                    <div class="vb-book-shimmer-card vb-book-shimmer-card-short"></div>
+                </div>
             </div>
 
             <!-- Empty state -->
@@ -113,15 +118,149 @@
                 </div>
             </div>
 
+            <!-- ═══ Resource Step 1: Room Selection ═══ -->
+            <div x-show="isResourceStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('steps.resource_title')"></div>
+                </div>
+                <div class="vb-book-service-list" role="radiogroup">
+                    <template x-for="(resource, ri) in resources" x-bind:key="resource.id">
+                        <div class="vb-book-service-card"
+                             x-bind:class="{ 'is-selected': isResourceSelected(resource) }"
+                             x-bind:style="serviceAnimDelay(ri)"
+                             @click="selectResource(resource)"
+                             role="radio" tabindex="0"
+                             x-bind:aria-checked="isResourceSelected(resource)"
+                             @keydown.enter="selectResource(resource)"
+                             @keydown.space.prevent="selectResource(resource)">
+                            <div class="vb-book-service-info">
+                                <div class="vb-book-service-name" x-text="resource.name"></div>
+                                <div class="vb-book-service-meta">
+                                    <span x-text="t('resource.capacity_label', { count: resource.capacity })"></span>
+                                    <template x-if="resource.min_stay_nights || resource.max_stay_nights">
+                                        <span>· <span x-text="t('resource.stay_range', { min: resource.min_stay_nights, max: resource.max_stay_nights })"></span></span>
+                                    </template>
+                                </div>
+                                <template x-if="resource.description">
+                                    <div class="vb-book-service-desc" x-text="resource.description"></div>
+                                </template>
+                            </div>
+                            <template x-if="resource.price_per_night">
+                                <div class="vb-book-service-price" x-text="formatPrice(resource.price_per_night) + t('resource.per_night')"></div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- ═══ Resource Step 2: Date Range ═══ -->
+            <div x-show="isResourceDateStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('steps.dates_title')"></div>
+                    <div class="vb-book-step-subtitle" x-text="checkInDate ? t('resource.select_check_out') : t('resource.select_check_in')"></div>
+                </div>
+
+                <!-- Calendar (reused structure) -->
+                <div class="vb-book-calendar" role="grid">
+                    <div class="vb-book-calendar-nav">
+                        <button class="vb-book-calendar-btn" @click="prevResourceMonth" x-bind:disabled="!canPrevResourceMonth" aria-label="Previous month">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
+                        <span class="vb-book-calendar-month" x-text="resourceMonthLabel"></span>
+                        <button class="vb-book-calendar-btn" @click="nextResourceMonth" aria-label="Next month">
+                            <i data-lucide="chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="vb-book-calendar-grid">
+                        <!-- Day name headers -->
+                        <template x-for="d in dayNames" x-bind:key="d">
+                            <div class="vb-book-calendar-dayname" x-text="d"></div>
+                        </template>
+                        <!-- Calendar cells -->
+                        <template x-for="cell in resourceCalendarCells" x-bind:key="cellKey(cell)">
+                            <div class="vb-book-calendar-cell"
+                                 x-bind:class="{
+                                     'is-disabled': cell.disabled,
+                                     'is-today': cell.today,
+                                     'has-slots': cell.hasSlots,
+                                     'is-selected': cell.selected,
+                                     'is-range': cell.inRange
+                                 }"
+                                 x-bind:tabindex="cellTabindex(cell)"
+                                 x-bind:role="cellRole(cell)"
+                                 x-bind:aria-disabled="cell.disabled"
+                                 x-bind:aria-selected="cell.selected"
+                                 @click="clickResourceDate(cell)"
+                                 @keydown.enter="clickResourceDate(cell)"
+                                 @keydown.space.prevent="clickResourceDate(cell)"
+                                 x-text="cell.day">
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Back link -->
+                <template x-if="resourceDateBackTarget">
+                    <div class="vb-book-back-link">
+                        <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack(resourceDateBackTarget)" x-text="t('back.change_service')"></button>
+                    </div>
+                </template>
+            </div>
+
+            <!-- ═══ Resource Step 3: Guest Count ═══ -->
+            <div x-show="isGuestStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('steps.guests_title')"></div>
+                </div>
+
+                <div class="vb-book-summary" style="margin-bottom: 1.5rem;">
+                    <div class="vb-book-summary-row">
+                        <span class="vb-book-summary-label" x-text="t('resource.summary_resource')"></span>
+                        <span class="vb-book-summary-value" x-text="selectedResource?.name"></span>
+                    </div>
+                    <div class="vb-book-summary-row">
+                        <span class="vb-book-summary-label" x-text="t('resource.check_in_label')"></span>
+                        <span class="vb-book-summary-value" x-text="formatDateDisplay(checkInDate)"></span>
+                    </div>
+                    <div class="vb-book-summary-row">
+                        <span class="vb-book-summary-label" x-text="t('resource.check_out_label')"></span>
+                        <span class="vb-book-summary-value" x-text="formatDateDisplay(checkOutDate)"></span>
+                    </div>
+                    <template x-if="resourceAvailability">
+                        <div class="vb-book-summary-row">
+                            <span class="vb-book-summary-label" x-text="t('resource.total_label')"></span>
+                            <span class="vb-book-summary-value" x-text="formatPrice(resourceAvailability.total)"></span>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="vb-book-form-group" style="max-width: 200px;">
+                    <label class="vb-book-label" for="vb-guests" x-text="t('resource.guests_label')"></label>
+                    <input class="vb-book-input" id="vb-guests" type="number" min="1"
+                           x-bind:max="selectedResource?.capacity || 10"
+                           x-bind:value="guestCount"
+                           @input="setGuestCount($el.value)">
+                </div>
+
+                <div class="vb-book-form-actions" style="margin-top: 1rem;">
+                    <button type="button" class="vb-book-btn vb-book-btn-primary" @click="submitGuests"
+                            x-text="t('buttons.review')"></button>
+                    <div class="vb-book-back-link">
+                        <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('resource-date')" x-text="t('back.change_date')"></button>
+                    </div>
+                </div>
+            </div>
+
             <!-- ═══ Step 1: Service Selection ═══ -->
             <div x-show="isServiceStep" class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.service_title')"></div>
                 </div>
                 <div class="vb-book-service-list" role="radiogroup">
-                    <template x-for="service in services" x-bind:key="service.id">
+                    <template x-for="(service, si) in services" x-bind:key="service.id">
                         <div class="vb-book-service-card"
                              x-bind:class="{ 'is-selected': isServiceSelected(service) }"
+                             x-bind:style="serviceAnimDelay(si)"
                              @click="selectService(service)"
                              role="radio" tabindex="0"
                              x-bind:aria-checked="isServiceSelected(service)"
@@ -218,7 +357,8 @@
                             <i data-lucide="chevron-right"></i>
                         </button>
                     </div>
-                    <div class="vb-book-calendar-grid">
+                    <div class="vb-book-calendar-grid"
+                         x-bind:class="{ 'is-fading': isCalendarFading }">
                         <!-- Day name headers -->
                         <template x-for="d in dayNames" x-bind:key="d">
                             <div class="vb-book-calendar-dayname" x-text="d"></div>
@@ -360,12 +500,17 @@
                         </div>
                     </template>
 
+                    <!-- Honeypot: invisible to humans, caught by bots -->
+                    <div class="vb-book-hp" aria-hidden="true" tabindex="-1">
+                        <input type="text" name="__hp" autocomplete="off" tabindex="-1">
+                    </div>
+
                     <div class="vb-book-form-actions">
                         <button type="submit" class="vb-book-btn vb-book-btn-primary">
                             <span class="vb-book-btn-text" x-text="t('buttons.review')"></span>
                         </button>
                         <div class="vb-book-back-link">
-                            <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('date')" x-text="t('back.change_date')"></button>
+                            <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack(activeDetailsBackTarget)" x-text="t('back.change_date')"></button>
                         </div>
                     </div>
                 </form>
@@ -379,7 +524,7 @@
                 </div>
 
                 <div class="vb-book-summary">
-                    <template x-for="row in summaryRows" x-bind:key="row.label">
+                    <template x-for="row in activeReviewRows" x-bind:key="row.label">
                         <div class="vb-book-summary-row">
                             <span class="vb-book-summary-label" x-text="row.label"></span>
                             <span class="vb-book-summary-value" x-text="row.value"></span>
@@ -387,8 +532,27 @@
                     </template>
                 </div>
 
+                <!-- Preparation callout (service-level, e.g. "Please arrive 10 minutes early") -->
+                <template x-if="preparationText">
+                    <div class="vb-book-preparation-callout" x-text="preparationText"></div>
+                </template>
+
+                <!-- Slot-taken recovery panel -->
+                <template x-if="slotAlternatives.length > 0">
+                    <div class="vb-book-slot-recovery">
+                        <p class="vb-book-slot-recovery-msg" x-text="t('recovery.slot_taken')"></p>
+                        <div class="vb-book-slot-recovery-pills">
+                            <template x-for="alt in slotAlternatives" x-bind:key="alt.time">
+                                <button type="button" class="vb-book-slot-pill"
+                                        @click="selectAlternative(alt)"
+                                        x-text="formatSlotTime(alt.time)"></button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
                 <div class="vb-book-form-actions">
-                    <button class="vb-book-btn vb-book-btn-primary" @click="submitBooking"
+                    <button class="vb-book-btn vb-book-btn-primary" @click="activeSubmitHandler()"
                             x-bind:disabled="submitting"
                             x-bind:class="{ 'is-loading': submitting }">
                         <span class="vb-book-btn-text" x-text="t('buttons.confirm')"></span>
@@ -396,26 +560,52 @@
                     <div class="vb-book-back-link">
                         <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('details')" x-text="t('back.edit_details')"></button>
                     </div>
+
+                    <!-- Cancellation policy disclosure -->
+                    <template x-if="hasCancellationPolicy">
+                        <div class="vb-book-policy-wrap">
+                            <button type="button" class="vb-book-policy-toggle"
+                                    x-bind:class="{ 'is-open': policyOpen }"
+                                    @click="togglePolicy"
+                                    x-bind:aria-expanded="policyOpen">
+                                <svg class="vb-book-policy-chevron" viewBox="0 0 16 16" fill="none">
+                                    <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span x-text="t('review.cancellation_policy_label')"></span>
+                            </button>
+                            <div class="vb-book-policy-text" x-show="policyOpen" x-transition
+                                 x-text="cancellationPolicyText"></div>
+                        </div>
+                    </template>
                 </div>
             </div>
 
             <!-- ═══ Step 6: Confirmation ═══ -->
             <div x-show="isConfirmedStep" class="vb-book-step" x-transition>
                 <div class="vb-book-confirmation">
-                    <div class="vb-book-checkmark-wrap vb-book-confirm-scale">
+                    <div class="vb-book-checkmark-wrap">
                         <svg class="vb-book-checkmark" viewBox="0 0 64 64">
                             <circle class="vb-book-checkmark-circle" cx="32" cy="32" r="28"/>
                             <path class="vb-book-checkmark-check" d="M20 33 L28 41 L44 25"/>
                         </svg>
                     </div>
                     <div class="vb-book-confirm-heading" x-text="t('confirmed.heading')"></div>
+
+                    <!-- Email-sent message (only when API confirms dispatch) -->
+                    <div class="vb-book-confirm-message" x-show="confirmEmailSent" x-text="confirmEmailSent"></div>
+
+                    <!-- Custom confirmation message (tenant-configurable) -->
+                    <template x-if="confirmCustomMessage">
+                        <div class="vb-book-confirm-message-custom" x-text="confirmCustomMessage"></div>
+                    </template>
+
                     <template x-if="booking">
                         <div class="vb-book-confirm-ref" x-text="booking.id"></div>
                     </template>
 
                     <div class="vb-book-confirm-summary">
                         <div class="vb-book-summary">
-                            <template x-for="row in confirmSummaryRows" x-bind:key="row.label">
+                            <template x-for="row in activeConfirmRows" x-bind:key="row.label">
                                 <div class="vb-book-summary-row">
                                     <span class="vb-book-summary-label" x-text="row.label"></span>
                                     <span class="vb-book-summary-value" x-text="row.value"></span>
@@ -424,11 +614,32 @@
                         </div>
                     </div>
 
-                    <div class="vb-book-confirm-actions">
-                        <a x-bind:href="gcalUrl" target="_blank" rel="noopener" class="vb-book-btn vb-book-btn-secondary">
-                            <i data-lucide="calendar" class="vb-book-btn-icon"></i>
-                            <span class="vb-book-btn-text" x-text="t('buttons.add_to_calendar')"></span>
-                        </a>
+                    <!-- Primary calendar actions (hidden when no calendar data) -->
+                    <template x-if="hasCalendarActions">
+                        <div class="vb-book-confirm-actions">
+                            <a x-bind:href="gcalUrl" target="_blank" rel="noopener" class="vb-book-btn vb-book-btn-secondary">
+                                <i data-lucide="calendar" class="vb-book-btn-icon"></i>
+                                <span class="vb-book-btn-text" x-text="t('buttons.add_to_calendar')"></span>
+                            </a>
+                            <button type="button" class="vb-book-btn vb-book-btn-secondary" @click="downloadIcs">
+                                <i data-lucide="download" class="vb-book-btn-icon"></i>
+                                <span class="vb-book-btn-text" x-text="t('buttons.download_ics')"></span>
+                            </button>
+                        </div>
+                    </template>
+
+                    <!-- Secondary actions: book another, reschedule, cancel -->
+                    <div class="vb-book-confirm-actions-secondary">
+                        <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="bookAnother"
+                                x-text="t('buttons.book_another')"></button>
+                        <template x-if="showReschedule">
+                            <a x-bind:href="bookingPageUrl" class="vb-book-btn vb-book-btn-ghost"
+                               x-text="t('buttons.reschedule')"></a>
+                        </template>
+                        <template x-if="showCancel">
+                            <a x-bind:href="bookingPageUrl" class="vb-book-btn vb-book-btn-ghost"
+                               x-text="t('buttons.cancel_booking')"></a>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -448,7 +659,7 @@
         </div>
 
         <!-- ── Footer ── -->
-        <footer class="vb-book-footer">
+        <footer class="vb-book-footer" x-show="!isLoading">
             <span>Powered by</span>
             <a href="<?= htmlspecialchars(brand_url(), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><?= htmlspecialchars(app_name(), ENT_QUOTES, 'UTF-8') ?></a>
         </footer>

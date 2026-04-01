@@ -312,6 +312,26 @@ final class AuditLog
     }
 
     /**
+     * Get audit log entries for a specific entity.
+     *
+     * Used by booking detail to render an event timeline.
+     * Returns only display-safe columns (no IP, no request_id).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function forEntity(string $entityType, string $entityId, int $limit = 20): array
+    {
+        return Database::query(
+            'SELECT `action`, `actor_type`, `details`, `created_at`
+             FROM `audit_log`
+             WHERE `entity_type` = ? AND `entity_id` = ?
+             ORDER BY `created_at` DESC
+             LIMIT ?',
+            [$entityType, $entityId, $limit]
+        );
+    }
+
+    /**
      * Delete audit log entries older than the given number of days.
      * The cleanup itself is logged.
      *

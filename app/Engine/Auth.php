@@ -219,6 +219,65 @@ final class Auth
     }
 
     /**
+     * Log in by email alone (passwordless — OTP / magic link).
+     *
+     * Resolves the user type via the auth_emails registry, then creates
+     * the session exactly as login() does for password auth.
+     *
+     * @return array{success: bool, error?: string}
+     */
+    public static function loginByEmail(string $email): array
+    {
+        $reg = Database::query(
+            'SELECT `user_type`, `user_id` FROM `auth_emails` WHERE `email` = ? LIMIT 1',
+            [$email]
+        );
+
+        if (empty($reg)) {
+            return ['success' => false, 'error' => 'No account found for this email.'];
+        }
+
+        $userType = $reg[0]['user_type'];
+        $userId   = $reg[0]['user_id'];
+
+        if ($userType === 'operator') {
+            $operator = Database::query(
+                'SELECT `id`, `name`, `email` FROM `operators` WHERE `id` = ? LIMIT 1',
+                [$userId]
+            );
+            if (empty($operator)) {
+                return ['success' => false, 'error' => 'Account not found.'];
+            }
+            self::regenerateSession();
+            self::setSession('operator', $operator[0]['id'], $operator[0]['name'], $operator[0]['email']);
+            AuditLog::logLogin('operator', $operator[0]['id'], AuditLog::hashEmail($email));
+            return ['success' => true];
+        }
+
+        // business_user
+        $bu = Database::query(
+            "SELECT `id`, `name`, `email`, `tenant_id`, `role`, `force_password_change`
+             FROM `business_users` WHERE `id` = ? AND `is_active` = 1 LIMIT 1",
+            [$userId]
+        );
+        if (empty($bu)) {
+            return ['success' => false, 'error' => 'Account not found or deactivated.'];
+        }
+        self::regenerateSession();
+        self::setSession('business_user', $bu[0]['id'], $bu[0]['name'], $bu[0]['email'], $bu[0]['tenant_id'], $bu[0]['role']);
+        if (!empty($bu[0]['force_password_change'])) {
+            $_SESSION['force_password_change'] = true;
+        }
+        try {
+            Database::execute('UPDATE `business_users` SET `last_login_at` = NOW() WHERE `id` = ?', [$bu[0]['id']]);
+        } catch (\Throwable) {
+            // Non-fatal
+        }
+        AuditLog::logLogin('business_user', $bu[0]['id'], AuditLog::hashEmail($email));
+        return ['success' => true];
+    }
+
+    /**
      * Check if the current session is authenticated and not expired.
      *
      * Updates _last_activity on valid sessions (sliding window).
@@ -234,8 +293,10 @@ final class Auth
             return false;
         }
 
-        // Server-side expiry check: 8 hours of inactivity
-        if ($lastActivity !== null && (time() - $lastActivity) > self::SESSION_TIMEOUT) {
+        // Server-side expiry check: 8 hours of inactivity (unless remember_me)
+        if ($lastActivity !== null
+            && empty($_SESSION['remember_me'])
+            && (time() - $lastActivity) > self::SESSION_TIMEOUT) {
             self::clearSession();
             return false;
         }
@@ -517,7 +578,7 @@ final class Auth
         $authKeys = [
             'auth_type', 'auth_id', 'auth_name', 'auth_email',
             'auth_tenant_id', 'auth_role', '_last_activity',
-            'force_password_change',
+            'force_password_change', 'remember_me',
             'impersonation_active', 'impersonation_tenant_id', 'impersonation_tenant_name',
         ];
 

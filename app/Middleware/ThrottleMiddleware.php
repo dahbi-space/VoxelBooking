@@ -26,6 +26,7 @@ final class ThrottleMiddleware
 {
     /** @var array<string, array{limit: int, window: int}> */
     private static array $limits = [
+        'auth_verify' => ['limit' => 5,  'window' => 900],
         'admin'       => ['limit' => 120, 'window' => 60],
         'public_get'  => ['limit' => 60,  'window' => 60],
         'public_post' => ['limit' => 10,  'window' => 60],
@@ -78,6 +79,11 @@ final class ThrottleMiddleware
 
     private function resolveGroup(string $path, string $method): string
     {
+        // Auth verification endpoints — stricter than generic admin
+        if ($path === '/admin/login/verify-code' && $method === 'POST') {
+            return 'auth_verify';
+        }
+
         if (str_starts_with($path, '/admin')) {
             return 'admin';
         }

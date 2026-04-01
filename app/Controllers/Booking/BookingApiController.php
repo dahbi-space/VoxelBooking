@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Controllers\Booking;
 
+use App\Engine\CustomerService;
 use App\Engine\Database;
 use App\Engine\Locale;
 use App\Engine\TimeSlotCalculator;
+use App\Engine\ResourceCalculator;
 use App\Engine\BookingService;
 use App\Engine\Ulid;
 use App\Engine\AuditLog;
 use App\Engine\Logger;
+use App\Engine\Mailer;
 use App\Engine\Request;
 use App\Engine\Response;
 
@@ -63,7 +66,7 @@ final class BookingApiController
         }
 
         $services = Database::query(
-            'SELECT `id`, `name`, `description`, `duration_minutes`, `price`, `price_label`, `category`
+            'SELECT `id`, `name`, `description`, `duration_minutes`, `price`, `price_label`, `category`, `preparation_text`
              FROM `services`
              WHERE `tenant_id` = ? AND `is_active` = 1
              ORDER BY `sort_order` ASC, `name` ASC',
@@ -171,6 +174,98 @@ final class BookingApiController
      * 5. Commit
      * 6. After commit: dispatch emails
      */
+    // ── Resource-pattern endpoints ──
+
+    /**
+     * GET /api/{slug}/resources — list active resources.
+     */
+    public function resources(Request $request): Response
+    {
+        $slug = $request->getAttribute('slug');
+        $tenant = $this->resolveTenant($slug);
+        if (!$tenant) {
+            return Response::json(['error' => 'tenant_not_found'], 404);
+        }
+
+        $resources = Database::query(
+            'SELECT `id`, `name`, `description`, `capacity`, `cover_image_path`, `amenities`,
+                    `price_per_night`, `min_stay_nights`, `max_stay_nights`
+             FROM `resources`
+             WHERE `tenant_id` = ? AND `is_active` = 1
+             ORDER BY `sort_order` ASC, `name` ASC',
+            [$tenant['id']]
+        );
+
+        // Decode amenities JSON for each resource
+        foreach ($resources as &$r) {
+            $r['amenities'] = $r['amenities'] ? json_decode($r['amenities'], true) : [];
+            $r['price_per_night'] = $r['price_per_night'] !== null ? (float) $r['price_per_night'] : null;
+            $r['capacity'] = (int) $r['capacity'];
+            $r['min_stay_nights'] = (int) $r['min_stay_nights'];
+            $r['max_stay_nights'] = (int) $r['max_stay_nights'];
+        }
+        unset($r);
+
+        return Response::json(['resources' => $resources]);
+    }
+
+    /**
+     * GET /api/{slug}/resources/{id}/availability — available dates for a resource.
+     */
+    public function resourceAvailability(Request $request): Response
+    {
+        $slug = $request->getAttribute('slug');
+        $tenant = $this->resolveTenant($slug);
+        if (!$tenant) {
+            return Response::json(['error' => 'tenant_not_found'], 404);
+        }
+
+        $resourceId = $request->getAttribute('id');
+
+        // Range-check mode: check_in + check_out → full availability + pricing
+        $checkIn = $request->string('check_in');
+        $checkOut = $request->string('check_out');
+
+        if ($checkIn && $checkOut) {
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkIn) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkOut)) {
+                return Response::json(['error' => 'invalid_date_range'], 400);
+            }
+
+            $guestCount = max(1, (int) ($request->string('guests') ?: 1));
+
+            $result = ResourceCalculator::checkAvailability(
+                $tenant,
+                $resourceId,
+                $checkIn,
+                $checkOut,
+                $guestCount,
+            );
+
+            return Response::json($result);
+        }
+
+        // Month-view mode: year + month → list of available dates
+        $year = (int) ($request->string('year') ?: date('Y'));
+        $month = (int) ($request->string('month') ?: date('n'));
+
+        if ($month < 1 || $month > 12 || $year < 2020 || $year > 2040) {
+            return Response::json(['error' => 'invalid_month'], 400);
+        }
+
+        $result = ResourceCalculator::getAvailableDates($tenant, $resourceId, $year, $month);
+
+        return Response::json($result);
+    }
+
+    // ── Booking creation ──
+
+    /**
+     * POST /api/{slug}/bookings — create a booking.
+     *
+     * Dispatches to pattern-specific creation logic based on the tenant's booking_pattern.
+     * Timeslot: double-booking prevention per PRD §III.
+     * Resource: date-range availability check + capacity validation.
+     */
     public function createBooking(Request $request): Response
     {
         $slug = $request->getAttribute('slug');
@@ -198,6 +293,21 @@ final class BookingApiController
             return Response::json(['error' => 'spam_detected', 'message' => __('booking.api.spam_retry')], 422);
         }
 
+        // Anti-spam: honeypot (hidden field — bots fill it, humans don't)
+        if (trim($input['__hp'] ?? '') !== '') {
+            return Response::json(['error' => 'spam_detected', 'message' => __('booking.api.spam_detected')], 422);
+        }
+
+        // CSRF: manually validate for booking POST (API routes skip middleware CSRF)
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $sessionToken = $_SESSION['_csrf_token'] ?? '';
+        $submittedToken = $request->header('X-CSRF-Token') ?? '';
+        if ($sessionToken === '' || $submittedToken === '' || !hash_equals($sessionToken, $submittedToken)) {
+            return Response::json(['error' => 'csrf_mismatch', 'message' => __('booking.api.csrf_mismatch')], 403);
+        }
+
         // Validate required fields
         $customer = $input['customer'] ?? [];
         $customerName = trim($customer['name'] ?? '');
@@ -215,6 +325,14 @@ final class BookingApiController
         if ((int) $tenant['require_phone'] === 1 && $customerPhone === '') {
             return Response::json(['error' => 'validation', 'message' => __('booking.api.phone_required')], 422);
         }
+
+        // Pattern dispatch: route to pattern-specific creation logic
+        $pattern = $tenant['booking_pattern'] ?? 'timeslot';
+        if ($pattern === 'resource') {
+            return $this->createResourceBooking($tenant, $input, $customerName, $customerEmail, $customerPhone);
+        }
+
+        // ── Timeslot-specific validation and booking creation ──
 
         $serviceId = $input['service_id'] ?? null;
         $staffId = $input['staff_id'] ?? null;
@@ -283,7 +401,7 @@ final class BookingApiController
                 $pdo->rollBack();
 
                 $alternatives = array_slice(
-                    array_map(fn($s) => ['time' => $s['time'], 'staff_id' => $s['staff_id']], $availResult['slots']),
+                    array_map(fn($s) => ['time' => $s['time'], 'end_time' => $s['end_time'], 'staff_id' => $s['staff_id']], $availResult['slots']),
                     0,
                     3
                 );
@@ -296,18 +414,42 @@ final class BookingApiController
             }
 
             // Find or create customer
-            $customerId = $this->findOrCreateCustomer(
+            $customerId = CustomerService::findOrCreate(
                 $tenant['id'],
                 $customerName,
                 $customerEmail,
                 $customerPhone,
             );
 
+            // Transaction-safe daily limit: lock customer row, then count
+            $maxPerDay = (int) ($tenant['max_bookings_per_customer_per_day'] ?? 3);
+            if ($maxPerDay > 0) {
+                // Serialize concurrent requests for this customer within the transaction
+                Database::query(
+                    'SELECT `id` FROM `customers` WHERE `id` = ? FOR UPDATE',
+                    [$customerId]
+                );
+
+                $countRows = Database::query(
+                    'SELECT COUNT(*) AS `cnt` FROM `bookings` WHERE `customer_id` = ? AND `tenant_id` = ? AND DATE(`start_datetime`) = ? AND `status` IN (?, ?)',
+                    [$customerId, $tenant['id'], $startDt->format('Y-m-d'), 'confirmed', 'rescheduled']
+                );
+                $existingCount = (int) ($countRows[0]['cnt'] ?? 0);
+
+                if ($existingCount >= $maxPerDay) {
+                    $pdo->rollBack();
+                    return Response::json([
+                        'error'   => 'max_bookings_exceeded',
+                        'message' => __('booking.api.max_bookings_exceeded'),
+                    ], 422);
+                }
+            }
+
             // Create booking via BookingService (handles consent evidence)
             $bookingData = [
                 'tenant_id'       => $tenant['id'],
                 'customer_id'     => $customerId,
-                'booking_pattern' => 'timeslot',
+                'booking_pattern' => $tenant['booking_pattern'] ?? 'timeslot',
                 'start_datetime'  => $startDt->format('Y-m-d H:i:s'),
                 'end_datetime'    => $endDt->format('Y-m-d H:i:s'),
                 'source'          => 'web',
@@ -359,6 +501,37 @@ final class BookingApiController
                 $staffName = $stf[0]['name'] ?? null;
             }
 
+            // After commit: dispatch confirmation email (never inside transaction — PRD §III)
+            $emailSent = false;
+            if (Mailer::isConfigured()) {
+                try {
+                    $emailResult = Mailer::sendBookingConfirmation(
+                        $customerEmail,
+                        $customerName,
+                        [
+                            'date'           => $startDt->format('Y-m-d'),
+                            'formatted_date' => Locale::dateLong($startDt),
+                            'time'           => $startDt->format('H:i'),
+                            'end_time'       => $endDt->format('H:i'),
+                            'duration'       => $serviceDuration,
+                        ],
+                        $serviceName,
+                        $staffName,
+                        $tenant['name'],
+                        $tenant['id'],
+                        $result['id'],
+                        $tenant['brand_color'] ?? '#2563EB',
+                    );
+                    // Customer-facing flag: true only when email reached a real inbox
+                    $emailSent = $emailResult['sent'] && Mailer::isProductionSmtp();
+                } catch (\Throwable $e) {
+                    Logger::error('Confirmation email dispatch failed', [
+                        'booking' => $result['id'],
+                        'error'   => $e->getMessage(),
+                    ]);
+                }
+            }
+
             return Response::json([
                 'booking' => [
                     'id'               => $result['id'],
@@ -369,6 +542,7 @@ final class BookingApiController
                     'end_time'         => $endDt->format('H:i'),
                     'duration'         => $serviceDuration,
                     'consent_recorded' => $result['consent_recorded'],
+                    'email_sent'       => $emailSent,
                 ],
             ], 201);
 
@@ -389,34 +563,191 @@ final class BookingApiController
         }
     }
 
-    /**
-     * Find or create a customer for a tenant.
-     */
-    private function findOrCreateCustomer(
-        string $tenantId,
-        string $name,
-        string $email,
-        string $phone,
-    ): string {
-        $existing = Database::query(
-            'SELECT `id` FROM `customers` WHERE `tenant_id` = ? AND `email` = ? LIMIT 1',
-            [$tenantId, $email]
-        );
+    // ── Resource-pattern booking creation ──
 
-        if (!empty($existing)) {
-            Database::execute(
-                'UPDATE `customers` SET `name` = ?, `phone` = ?, `updated_at` = NOW() WHERE `id` = ?',
-                [$name, $phone ?: null, $existing[0]['id']]
-            );
-            return $existing[0]['id'];
+    /**
+     * Create a resource-pattern booking (hotel room, meeting room, etc.).
+     *
+     * Validates resource availability for the requested date range,
+     * checks guest capacity, and creates the booking with date-based datetimes.
+     */
+    private function createResourceBooking(
+        array $tenant,
+        array $input,
+        string $customerName,
+        string $customerEmail,
+        string $customerPhone,
+    ): Response {
+        $resourceId = $input['resource_id'] ?? null;
+        $checkIn = $input['check_in'] ?? null;
+        $checkOut = $input['check_out'] ?? null;
+        $guestCount = (int) ($input['guest_count'] ?? 1);
+        $consentGiven = (bool) ($input['consent_given'] ?? false);
+
+        if (!$resourceId) {
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.resource_required')], 422);
+        }
+        if (!$checkIn || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkIn)) {
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.check_in_required')], 422);
+        }
+        if (!$checkOut || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkOut)) {
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.check_out_required')], 422);
+        }
+        if ($guestCount < 1) {
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.guest_count_invalid')], 422);
         }
 
-        $customerId = Ulid::generate();
-        Database::execute(
-            'INSERT INTO `customers` (`id`, `tenant_id`, `name`, `email`, `phone`) VALUES (?, ?, ?, ?, ?)',
-            [$customerId, $tenantId, $name, $email, $phone ?: null]
+        // Check availability via ResourceCalculator
+        $availability = ResourceCalculator::checkAvailability(
+            $tenant,
+            $resourceId,
+            $checkIn,
+            $checkOut,
+            $guestCount,
         );
 
-        return $customerId;
+        if (!$availability['available']) {
+            return Response::json([
+                'error'   => $availability['error'],
+                'message' => __('booking.api.resource_unavailable'),
+            ], 409);
+        }
+
+        // Double-booking prevention: transaction + FOR UPDATE lock
+        $pdo = Database::connect();
+        $pdo->beginTransaction();
+
+        try {
+            // Lock existing bookings for this resource in the date range
+            $lockStmt = $pdo->prepare(
+                'SELECT `id` FROM `bookings`
+                 WHERE `tenant_id` = ? AND `resource_id` = ?
+                 AND `status` IN (\'confirmed\', \'rescheduled\')
+                 AND `start_datetime` < ? AND `end_datetime` > ?
+                 FOR UPDATE'
+            );
+            $lockStmt->execute([$tenant['id'], $resourceId, $checkOut . ' 00:00:00', $checkIn . ' 00:00:00']);
+
+            // Re-check availability inside the lock
+            $recheck = ResourceCalculator::checkAvailability($tenant, $resourceId, $checkIn, $checkOut, $guestCount);
+            if (!$recheck['available']) {
+                $pdo->rollBack();
+                return Response::json([
+                    'error'   => 'resource_unavailable',
+                    'message' => __('booking.api.resource_unavailable'),
+                ], 409);
+            }
+
+            // Find or create customer
+            $customerId = CustomerService::findOrCreate(
+                $tenant['id'],
+                $customerName,
+                $customerEmail,
+                $customerPhone,
+            );
+
+            // Build booking data
+            $bookingData = [
+                'tenant_id'       => $tenant['id'],
+                'customer_id'     => $customerId,
+                'booking_pattern' => 'resource',
+                'resource_id'     => $resourceId,
+                'start_datetime'  => $checkIn . ' 00:00:00',
+                'end_datetime'    => $checkOut . ' 00:00:00',
+                'party_size'      => $guestCount,
+                'source'          => 'web',
+            ];
+
+            $notes = trim($input['notes'] ?? '');
+            if ($notes !== '') {
+                $bookingData['notes'] = $notes;
+            }
+
+            $customFields = $input['custom_fields'] ?? null;
+            if ($customFields && is_array($customFields)) {
+                $bookingData['custom_field_data'] = $customFields;
+            }
+
+            $customerTimezone = trim($input['customer_timezone'] ?? '');
+            if ($customerTimezone !== '' && @timezone_open($customerTimezone)) {
+                $bookingData['customer_timezone'] = $customerTimezone;
+            }
+
+            $result = BookingService::createBooking($bookingData, $tenant, $consentGiven);
+
+            $pdo->commit();
+
+            // After commit: update customer stats
+            Database::execute(
+                'UPDATE `customers` SET `booking_count` = `booking_count` + 1, `last_booking_at` = NOW() WHERE `id` = ?',
+                [$customerId]
+            );
+
+            // After commit: dispatch confirmation email
+            $emailSent = false;
+            if (Mailer::isConfigured()) {
+                try {
+                    $resourceName = $availability['resource']['name'] ?? null;
+                    $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+                    $checkInDt = new \DateTimeImmutable($checkIn, $tz);
+                    $checkOutDt = new \DateTimeImmutable($checkOut, $tz);
+
+                    $emailResult = Mailer::sendBookingConfirmation(
+                        $customerEmail,
+                        $customerName,
+                        [
+                            'date'           => $checkIn,
+                            'formatted_date' => Locale::dateLong($checkInDt) . ' – ' . Locale::dateLong($checkOutDt),
+                            'time'           => '',
+                            'end_time'       => '',
+                            'duration'       => $availability['nights'] . ' ' . ($availability['nights'] === 1 ? 'night' : 'nights'),
+                        ],
+                        $resourceName,
+                        null, // no staff
+                        $tenant['name'],
+                        $tenant['id'],
+                        $result['id'],
+                        $tenant['brand_color'] ?? '#2563EB',
+                    );
+                    $emailSent = $emailResult['sent'] && Mailer::isProductionSmtp();
+                } catch (\Throwable $e) {
+                    Logger::error('Resource confirmation email dispatch failed', [
+                        'booking' => $result['id'],
+                        'error'   => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            return Response::json([
+                'booking' => [
+                    'id'               => $result['id'],
+                    'resource'         => $availability['resource']['name'] ?? null,
+                    'check_in'         => $checkIn,
+                    'check_out'        => $checkOut,
+                    'nights'           => $availability['nights'],
+                    'guest_count'      => $guestCount,
+                    'total'            => $availability['total'],
+                    'consent_recorded' => $result['consent_recorded'],
+                    'email_sent'       => $emailSent,
+                ],
+            ], 201);
+
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            Logger::error('Resource booking creation failed', [
+                'tenant' => $tenant['slug'] ?? '',
+                'error'  => $e->getMessage(),
+            ]);
+
+            return Response::json([
+                'error'   => 'booking_failed',
+                'message' => __('booking.api.booking_failed'),
+            ], 500);
+        }
     }
+
 }
+

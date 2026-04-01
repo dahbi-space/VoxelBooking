@@ -80,6 +80,10 @@ return [
     ],
 
     'common' => [
+        'date'       => 'Date',
+        'time'       => 'Time',
+        'service'    => 'Service',
+        'staff'      => 'Staff',
         'regards'    => 'Best regards,',
         'powered_by' => 'Powered by :app_name',
     ],

@@ -1,0 +1,294 @@
+<?php
+/**
+ * Admin — Blocked Dates Management
+ *
+ * Lists all blocked periods (tenant-level + staff/resource-level),
+ * with an inline form to add new entries.
+ *
+ * @var array  $tenant
+ * @var array  $upcoming     Upcoming/active blocked dates
+ * @var array  $past         Past blocked dates
+ * @var array  $staff        Active staff for scope selector (timeslot)
+ * @var array  $resources    Active resources for scope selector (resource)
+ * @var string $tenantId
+ * @var string $csrfToken
+ * @var array|null $flash
+ */
+$tenant = $tenant ?? [];
+$tenantId = $tenantId ?? '';
+$upcoming = $upcoming ?? [];
+$past = $past ?? [];
+$staff = $staff ?? [];
+$resources = $resources ?? [];
+$isResourcePattern = ($tenant['booking_pattern'] ?? '') === 'resource';
+
+ob_start();
+?>
+
+<div class="vb-page-header">
+    <div>
+        <h2 class="vb-page-title"><?= __('admin.blocked_dates.title') ?></h2>
+        <p class="vb-page-subtitle"><?= __('admin.blocked_dates.subtitle') ?></p>
+    </div>
+</div>
+
+<?php if ($flash): ?>
+<div class="vb-alert vb-alert-<?= $flash['type'] === 'success' ? 'success' : 'error' ?> vb-animate-in">
+    <?php if ($flash['type'] === 'success'): ?>
+        <i data-lucide="check"></i>
+    <?php else: ?>
+        <i data-lucide="alert-circle"></i>
+    <?php endif; ?>
+    <?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?>
+</div>
+<?php endif; ?>
+
+<!-- Add blocked date form -->
+<div class="vb-card vb-animate-in" style="margin-bottom: 1.5rem;">
+    <div class="vb-card-header">
+        <h3 class="vb-card-title">
+            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+            <?= __('admin.blocked_dates.add_title') ?>
+        </h3>
+    </div>
+    <form method="POST"
+          action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/blocked-dates"
+          class="vb-blocked-dates-form"
+          x-data="blockedDateScope">
+        <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+
+        <div class="vb-form-grid vb-form-grid-4">
+            <div class="vb-form-group">
+                <label class="vb-label" for="bd-start"><?= __('admin.blocked_dates.start_date') ?></label>
+                <input type="date"
+                       class="vb-input"
+                       id="bd-start"
+                       name="start_date"
+                       required
+                       min="<?= date('Y-m-d') ?>">
+            </div>
+
+            <div class="vb-form-group">
+                <label class="vb-label" for="bd-end"><?= __('admin.blocked_dates.end_date') ?></label>
+                <input type="date"
+                       class="vb-input"
+                       id="bd-end"
+                       name="end_date"
+                       required
+                       min="<?= date('Y-m-d') ?>">
+            </div>
+
+            <div class="vb-form-group">
+                <label class="vb-label" for="bd-reason"><?= __('admin.blocked_dates.reason') ?></label>
+                <input type="text"
+                       class="vb-input"
+                       id="bd-reason"
+                       name="reason"
+                       placeholder="<?= __('admin.blocked_dates.reason_placeholder') ?>"
+                       maxlength="255">
+            </div>
+
+            <div class="vb-form-group">
+                <label class="vb-label" for="bd-scope"><?= __('admin.blocked_dates.scope') ?></label>
+                <select class="vb-input"
+                        id="bd-scope"
+                        x-model="scope"
+                        @change="onScopeChange()">
+                    <option value="tenant"><?= __('admin.blocked_dates.scope_tenant') ?></option>
+                    <?php if (!empty($staff)): ?>
+                    <option value="staff"><?= __('admin.blocked_dates.scope_staff') ?></option>
+                    <?php endif; ?>
+                    <?php if (!empty($resources)): ?>
+                    <option value="resource"><?= __('admin.blocked_dates.scope_resource') ?></option>
+                    <?php endif; ?>
+                </select>
+            </div>
+        </div>
+
+        <?php if (!empty($staff)): ?>
+        <div class="vb-form-group" x-show="scope === 'staff'" x-cloak style="margin-top: 0.75rem; max-width: 320px;">
+            <select class="vb-input" id="bd-staff" name="staff_id">
+                <option value="">— <?= __('admin.blocked_dates.scope_staff') ?> —</option>
+                <?php foreach ($staff as $s): ?>
+                <option value="<?= htmlspecialchars($s['id'], ENT_QUOTES, 'UTF-8') ?>">
+                    <?= htmlspecialchars($s['name'], ENT_QUOTES, 'UTF-8') ?>
+                    <?php if ($s['title']): ?>(<?= htmlspecialchars($s['title'], ENT_QUOTES, 'UTF-8') ?>)<?php endif; ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($resources)): ?>
+        <div class="vb-form-group" x-show="scope === 'resource'" x-cloak style="margin-top: 0.75rem; max-width: 320px;">
+            <select class="vb-input" id="bd-resource" name="resource_id">
+                <option value="">— <?= __('admin.blocked_dates.scope_resource') ?> —</option>
+                <?php foreach ($resources as $r): ?>
+                <option value="<?= htmlspecialchars($r['id'], ENT_QUOTES, 'UTF-8') ?>">
+                    <?= htmlspecialchars($r['name'], ENT_QUOTES, 'UTF-8') ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <?php endif; ?>
+
+        <div class="vb-form-actions" style="margin-top: 1rem;">
+            <button type="submit" class="vb-btn vb-btn-primary" id="add-blocked-date-btn">
+                <i data-lucide="calendar-x" style="width: 16px; height: 16px;"></i>
+                <?= __('admin.blocked_dates.add') ?>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Upcoming / Active -->
+<?php if (!empty($upcoming)): ?>
+<div class="vb-card vb-animate-in">
+    <div class="vb-card-header">
+        <h3 class="vb-card-title"><?= __('admin.blocked_dates.upcoming') ?></h3>
+        <span class="vb-badge vb-badge-accent"><?= count($upcoming) ?></span>
+    </div>
+    <div class="vb-table-wrapper">
+        <table class="vb-table" id="blocked-dates-upcoming">
+            <thead>
+                <tr>
+                    <th><?= __('admin.blocked_dates.col_dates') ?></th>
+                    <th><?= __('admin.blocked_dates.col_scope') ?></th>
+                    <th><?= __('admin.blocked_dates.col_reason') ?></th>
+                    <th class="vb-text-right"><?= __('admin.blocked_dates.col_actions') ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($upcoming as $i => $bd): ?>
+                <tr class="vb-fade-in-up stagger-<?= min($i + 1, 6) ?>">
+                    <td>
+                        <span class="vb-cell-name vb-tabular">
+                            <?php if ($bd['start_date'] === $bd['end_date']): ?>
+                                <?= htmlspecialchars(date('M j, Y', strtotime($bd['start_date'])), ENT_QUOTES, 'UTF-8') ?>
+                            <?php else: ?>
+                                <?= htmlspecialchars(date('M j', strtotime($bd['start_date'])), ENT_QUOTES, 'UTF-8') ?>
+                                — <?= htmlspecialchars(date('M j, Y', strtotime($bd['end_date'])), ENT_QUOTES, 'UTF-8') ?>
+                            <?php endif; ?>
+                        </span>
+                    </td>
+                    <td>
+                        <?php if ($bd['resource_id']): ?>
+                            <span class="vb-badge vb-badge-muted">
+                                <i data-lucide="bed" style="width: 11px; height: 11px; margin-right: 0.1875rem;"></i>
+                                <?= htmlspecialchars($bd['resource_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+                            </span>
+                        <?php elseif ($bd['staff_id']): ?>
+                            <span class="vb-badge vb-badge-muted">
+                                <i data-lucide="user" style="width: 11px; height: 11px; margin-right: 0.1875rem;"></i>
+                                <?= htmlspecialchars($bd['staff_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+                            </span>
+                        <?php else: ?>
+                            <span class="vb-badge vb-badge-accent">
+                                <i data-lucide="building-2" style="width: 11px; height: 11px; margin-right: 0.1875rem;"></i>
+                                <?= __('admin.blocked_dates.tenant_level') ?>
+                            </span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="vb-text-secondary">
+                        <?= $bd['reason'] ? htmlspecialchars($bd['reason'], ENT_QUOTES, 'UTF-8') : '<span class="vb-text-ghost">—</span>' ?>
+                    </td>
+                    <td class="vb-text-right">
+                        <form method="POST"
+                              action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/blocked-dates/<?= htmlspecialchars($bd['id'], ENT_QUOTES, 'UTF-8') ?>/delete"
+                              class="vb-form-flush"
+                              onsubmit="return confirm('<?= __('admin.blocked_dates.delete_confirm') ?>')">
+                            <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                            <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-danger"
+                                    title="<?= __('admin.blocked_dates.delete') ?>">
+                                <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Past (collapsed by default) -->
+<?php if (!empty($past)): ?>
+<details class="vb-card vb-animate-in" style="margin-top: 1rem;">
+    <summary class="vb-card-header" style="cursor: pointer; user-select: none;">
+        <h3 class="vb-card-title"><?= __('admin.blocked_dates.past') ?></h3>
+        <span class="vb-badge vb-badge-muted"><?= count($past) ?></span>
+    </summary>
+    <div class="vb-table-wrapper">
+        <table class="vb-table">
+            <thead>
+                <tr>
+                    <th><?= __('admin.blocked_dates.col_dates') ?></th>
+                    <th><?= __('admin.blocked_dates.col_scope') ?></th>
+                    <th><?= __('admin.blocked_dates.col_reason') ?></th>
+                    <th class="vb-text-right"><?= __('admin.blocked_dates.col_actions') ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($past as $bd): ?>
+                <tr class="vb-row-inactive">
+                    <td>
+                        <span class="vb-cell-name vb-tabular">
+                            <?php if ($bd['start_date'] === $bd['end_date']): ?>
+                                <?= htmlspecialchars(date('M j, Y', strtotime($bd['start_date'])), ENT_QUOTES, 'UTF-8') ?>
+                            <?php else: ?>
+                                <?= htmlspecialchars(date('M j', strtotime($bd['start_date'])), ENT_QUOTES, 'UTF-8') ?>
+                                — <?= htmlspecialchars(date('M j, Y', strtotime($bd['end_date'])), ENT_QUOTES, 'UTF-8') ?>
+                            <?php endif; ?>
+                        </span>
+                    </td>
+                    <td>
+                        <?php if ($bd['resource_id']): ?>
+                            <span class="vb-badge vb-badge-muted">
+                                <?= htmlspecialchars($bd['resource_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+                            </span>
+                        <?php elseif ($bd['staff_id']): ?>
+                            <span class="vb-badge vb-badge-muted">
+                                <?= htmlspecialchars($bd['staff_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+                            </span>
+                        <?php else: ?>
+                            <span class="vb-badge vb-badge-muted">
+                                <?= __('admin.blocked_dates.tenant_level') ?>
+                            </span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="vb-text-secondary">
+                        <?= $bd['reason'] ? htmlspecialchars($bd['reason'], ENT_QUOTES, 'UTF-8') : '<span class="vb-text-ghost">—</span>' ?>
+                    </td>
+                    <td class="vb-text-right">
+                        <form method="POST"
+                              action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/blocked-dates/<?= htmlspecialchars($bd['id'], ENT_QUOTES, 'UTF-8') ?>/delete"
+                              class="vb-form-flush"
+                              onsubmit="return confirm('<?= __('admin.blocked_dates.delete_confirm') ?>')">
+                            <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                            <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-danger"
+                                    title="<?= __('admin.blocked_dates.delete') ?>">
+                                <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</details>
+<?php endif; ?>
+
+<!-- Empty state -->
+<?php if (empty($upcoming) && empty($past)): ?>
+<div class="vb-empty-state vb-animate-in">
+    <i data-lucide="calendar-x" class="vb-empty-icon"></i>
+    <h3><?= __('admin.blocked_dates.empty_title') ?></h3>
+    <p><?= __('admin.blocked_dates.empty_desc') ?></p>
+</div>
+<?php endif; ?>
+
+<?php
+$content = ob_get_clean();
+include dirname(__DIR__, 3) . '/admin/layout.php';

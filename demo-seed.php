@@ -60,6 +60,30 @@ CREATE TABLE operators (
 )
 ");
 
+// 002b: auth_emails — global email uniqueness for passwordless login
+$pdo->exec("
+CREATE TABLE auth_emails (
+    email TEXT PRIMARY KEY,
+    user_type TEXT NOT NULL,
+    user_id TEXT NOT NULL
+)
+");
+
+// 002c: login_tokens — OTP codes and magic-link tokens
+$pdo->exec("
+CREATE TABLE login_tokens (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    type TEXT NOT NULL,
+    token_hash TEXT NOT NULL,
+    remember_me INTEGER NOT NULL DEFAULT 0,
+    expires_at TEXT NOT NULL,
+    used_at TEXT DEFAULT NULL,
+    ip_address TEXT DEFAULT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+)
+");
+
 // 003: tenants — mirrors 003_create_tenants.php
 $pdo->exec("
 CREATE TABLE tenants (
@@ -211,6 +235,40 @@ CREATE TABLE blocked_dates (
 )
 ");
 
+// 023: resources — mirrors 023_create_resources.php
+$pdo->exec("
+CREATE TABLE resources (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT DEFAULT NULL,
+    capacity INTEGER NOT NULL DEFAULT 1,
+    cover_image_path TEXT DEFAULT NULL,
+    amenities TEXT DEFAULT NULL,
+    price_per_night REAL DEFAULT NULL,
+    min_stay_nights INTEGER NOT NULL DEFAULT 1,
+    max_stay_nights INTEGER NOT NULL DEFAULT 30,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+)
+");
+
+// 024: seasonal_pricing — mirrors 024_create_seasonal_pricing.php
+$pdo->exec("
+CREATE TABLE seasonal_pricing (
+    id TEXT PRIMARY KEY,
+    resource_id TEXT NOT NULL,
+    tenant_id TEXT NOT NULL,
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL,
+    price_per_night REAL NOT NULL,
+    label TEXT DEFAULT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+)
+");
+
 // 010: api_keys
 $pdo->exec("
 CREATE TABLE api_keys (
@@ -350,7 +408,7 @@ CREATE TABLE tenant_email_templates (
 // Settings
 $settings = [
     ['installed_at', date('Y-m-d H:i:s')],
-    ['db_version', '22'],
+    ['db_version', '24'],
     ['app_name', 'VoxelBooking Demo'],
     ['timezone', 'Europe/Amsterdam'],
     ['locale', 'en'],
@@ -361,10 +419,14 @@ foreach ($settings as [$k, $v]) {
     $stmt->execute([$k, $v]);
 }
 
-// Operator (password: demo)
+// Operator (password: welcome3210)
 $operatorId = '01JDEMO0001OPERATOR001';
 $pdo->prepare("INSERT INTO operators (id, name, email, password_hash) VALUES (?, ?, ?, ?)")
-    ->execute([$operatorId, 'Demo Admin', 'demo@voxelbooking.com', password_hash('demo', PASSWORD_BCRYPT)]);
+    ->execute([$operatorId, 'Demo Admin', 'demo@voxelbooking.com', password_hash('welcome3210', PASSWORD_BCRYPT)]);
+
+// Register operator in auth_emails for passwordless login
+$pdo->prepare("INSERT INTO auth_emails (email, user_type, user_id) VALUES (?, 'operator', ?)")
+    ->execute(['demo@voxelbooking.com', $operatorId]);
 
 // Tenant
 $tenantId = '01JDEMO0001TENANT00001';
@@ -410,11 +472,26 @@ foreach ($services as [$svcId]) {
     }
 }
 
-// Availability (Mon-Fri 9:00-17:00 for all staff — is_available, not is_active)
+// Availability (Mon-Fri 9:00-17:00 — is_available, not is_active)
+// day_of_week: 0=Mon, 6=Sun (see 008_create_availability.php)
 $stmt = $pdo->prepare("INSERT INTO availability (id, tenant_id, staff_id, day_of_week, start_time, end_time, is_available) VALUES (?, ?, ?, ?, ?, ?, 1)");
 $availId = 1;
+
+// Tenant-level defaults (staff_id NULL)
+for ($day = 0; $day <= 4; $day++) {
+    $stmt->execute([
+        sprintf('01JDEMO0001TAVAIL%05d', $day),
+        $tenantId,
+        null,
+        $day,
+        '09:00',
+        '17:00'
+    ]);
+}
+
+// Staff-level availability
 foreach ($staffMembers as [$staffId]) {
-    for ($day = 1; $day <= 5; $day++) {
+    for ($day = 0; $day <= 4; $day++) {
         $stmt->execute([
             sprintf('01JDEMO0001AVAIL%06d', $availId++),
             $tenantId,
@@ -487,11 +564,244 @@ $stmt->execute([
     1,
 ]);
 
+// ══════════════════════════════════════════════════════════════════════
+// Demo Studio expansion — custom field, cancellation policy, owner
+// ══════════════════════════════════════════════════════════════════════
+
+$pdo->prepare("UPDATE tenants SET
+    custom_fields = ?,
+    cancellation_policy = ?,
+    confirmation_message = ?
+WHERE id = ?")->execute([
+    json_encode([
+        ['name' => 'allergies', 'type' => 'text', 'label' => 'Allergies or special requirements', 'required' => false],
+    ]),
+    'Cancellations must be made at least 24 hours in advance. Late cancellations may be charged the full service fee.',
+    'We look forward to seeing you!',
+    $tenantId,
+]);
+
+// Business user: Demo Studio owner
+$demoOwnerId = '01JDEMO0001BUSER000001';
+$pdo->prepare("INSERT INTO business_users (id, tenant_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?, 'owner')")
+    ->execute([$demoOwnerId, $tenantId, 'Demo Owner', 'owner@demo-studio.test', password_hash('welcome3210', PASSWORD_BCRYPT)]);
+$pdo->prepare("INSERT INTO auth_emails (email, user_type, user_id) VALUES (?, 'business_user', ?)")
+    ->execute(['owner@demo-studio.test', $demoOwnerId]);
+
+// ======================================================================
+// Tenant 2: Hotel Marina (resource pattern)
+// ======================================================================
+
+$hotelId = '01JDEMO0002TENANT00001';
+$pdo->prepare("
+    INSERT INTO tenants (id, name, slug, email, status, timezone, locale, currency, brand_color, booking_pattern,
+                         require_phone, requires_consent, consent_text, cancellation_policy, confirmation_message)
+    VALUES (?, 'Hotel Marina', 'hotel-marina', 'info@hotelmarina.example', 'active',
+            'Europe/Rome', 'en', 'EUR', '#0EA5E9', 'resource',
+            1, 1, 'I consent to the processing of my personal data for this reservation.',
+            'Free cancellation up to 48 hours before check-in.',
+            'Your room is reserved. We look forward to welcoming you!')
+")->execute([$hotelId]);
+
+
+// Hotel Marina — resources (rooms)
+$hotelResources = [
+    ['01JDEMO0002RES00000001', 'Sea View Suite', 'Spacious suite with panoramic sea view, private balcony, and marble bathroom.', 2, 185.00, 2, 14],
+    ['01JDEMO0002RES00000002', 'Garden Room', 'Quiet room overlooking the Mediterranean garden with private patio.', 2, 120.00, 1, 30],
+    ['01JDEMO0002RES00000003', 'Family Apartment', 'Two-bedroom apartment with kitchen, living area, and terrace.', 5, 250.00, 3, 21],
+];
+$stmtRes = $pdo->prepare("
+    INSERT INTO resources (id, tenant_id, name, description, capacity, price_per_night, min_stay_nights, max_stay_nights, amenities, sort_order, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+");
+$stmtRes->execute([$hotelResources[0][0], $hotelId, $hotelResources[0][1], $hotelResources[0][2], $hotelResources[0][3], $hotelResources[0][4], $hotelResources[0][5], $hotelResources[0][6], json_encode(['Wi-Fi', 'Sea view', 'Balcony', 'Air conditioning', 'Mini-bar']), 1]);
+$stmtRes->execute([$hotelResources[1][0], $hotelId, $hotelResources[1][1], $hotelResources[1][2], $hotelResources[1][3], $hotelResources[1][4], $hotelResources[1][5], $hotelResources[1][6], json_encode(['Wi-Fi', 'Garden view', 'Patio', 'Air conditioning']), 2]);
+$stmtRes->execute([$hotelResources[2][0], $hotelId, $hotelResources[2][1], $hotelResources[2][2], $hotelResources[2][3], $hotelResources[2][4], $hotelResources[2][5], $hotelResources[2][6], json_encode(['Wi-Fi', 'Kitchen', 'Terrace', 'Air conditioning', 'Washing machine']), 3]);
+
+// Hotel Marina — seasonal pricing (high season for Sea View Suite)
+$pdo->prepare("
+    INSERT INTO seasonal_pricing (id, resource_id, tenant_id, start_date, end_date, price_per_night, label)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+")->execute(['01JDEMO0002SEAS0000001', $hotelResources[0][0], $hotelId, date('Y') . '-07-01', date('Y') . '-08-31', 249.00, 'High Season']);
+$pdo->prepare("
+    INSERT INTO seasonal_pricing (id, resource_id, tenant_id, start_date, end_date, price_per_night, label)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+")->execute(['01JDEMO0002SEAS0000002', $hotelResources[0][0], $hotelId, date('Y') . '-12-20', (date('Y') + 1) . '-01-05', 279.00, 'Holiday Rate']);
+
+// Hotel Marina — blocked date (maintenance)
+$pdo->prepare("INSERT INTO blocked_dates (id, tenant_id, resource_id, start_date, end_date, reason) VALUES (?, ?, ?, ?, ?, ?)")
+    ->execute(['01JDEMO0002BLOCK000001', $hotelId, $hotelResources[1][0], date('Y-m', strtotime('+2 months')) . '-10', date('Y-m', strtotime('+2 months')) . '-15', 'Garden renovation']);
+
+// Hotel Marina — customers
+$hotelCustomers = [
+    ['01JDEMO0002CUST0000001', 'Laura Rossi', 'laura.rossi@example.com', '+39 333 000 0001'],
+    ['01JDEMO0002CUST0000002', 'Marco Bianchi', 'marco.bianchi@example.com', '+39 333 000 0002'],
+    ['01JDEMO0002CUST0000003', 'Giulia Ferrara', 'giulia.ferrara@example.com', '+39 333 000 0003'],
+];
+$stmt = $pdo->prepare("INSERT INTO customers (id, tenant_id, name, email, phone, booking_count) VALUES (?, ?, ?, ?, ?, ?)");
+$stmt->execute([$hotelCustomers[0][0], $hotelId, $hotelCustomers[0][1], $hotelCustomers[0][2], $hotelCustomers[0][3], 2]);
+$stmt->execute([$hotelCustomers[1][0], $hotelId, $hotelCustomers[1][1], $hotelCustomers[1][2], $hotelCustomers[1][3], 2]);
+$stmt->execute([$hotelCustomers[2][0], $hotelId, $hotelCustomers[2][1], $hotelCustomers[2][2], $hotelCustomers[2][3], 1]);
+
+// Hotel Marina — bookings (date-range stays, linked to resources)
+$hotelBookings = [
+    ['01JDEMO0002BOOK0000001', $hotelCustomers[0][0], '+3 days', '+5 days', 'confirmed', 2, $hotelResources[0][0]],
+    ['01JDEMO0002BOOK0000002', $hotelCustomers[1][0], '+7 days', '+10 days', 'confirmed', 1, $hotelResources[1][0]],
+    ['01JDEMO0002BOOK0000003', $hotelCustomers[2][0], '+1 day', '+2 days', 'confirmed', 3, $hotelResources[2][0]],
+    ['01JDEMO0002BOOK0000004', $hotelCustomers[0][0], '-10 days', '-7 days', 'completed', 2, $hotelResources[0][0]],
+    ['01JDEMO0002BOOK0000005', $hotelCustomers[1][0], '-3 days', '-1 day', 'cancelled', 1, $hotelResources[1][0]],
+];
+$stmt = $pdo->prepare("
+    INSERT INTO bookings (id, tenant_id, booking_pattern, customer_id, resource_id, start_datetime, end_datetime,
+                          party_size, status, source, customer_timezone,
+                          consent_given_at, consent_text_shown)
+    VALUES (?, ?, 'resource', ?, ?, ?, ?, ?, ?, 'web', 'Europe/Rome',
+            datetime('now'), 'I consent to the processing of my personal data for this reservation.')
+");
+foreach ($hotelBookings as [$id, $custId, $checkIn, $checkOut, $status, $partySize, $resourceId]) {
+    $startDate = (clone $today)->modify($checkIn)->format('Y-m-d');
+    $endDate = (clone $today)->modify($checkOut)->format('Y-m-d');
+    $stmt->execute([$id, $hotelId, $custId, $resourceId, "{$startDate} 00:00:00", "{$endDate} 00:00:00", $partySize, $status]);
+}
+
+// Hotel Marina — owner
+$hotelOwnerId = '01JDEMO0002BUSER000001';
+$pdo->prepare("INSERT INTO business_users (id, tenant_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?, 'owner')")
+    ->execute([$hotelOwnerId, $hotelId, 'Marina Manager', 'owner@hotel-marina.test', password_hash('welcome3210', PASSWORD_BCRYPT)]);
+$pdo->prepare("INSERT INTO auth_emails (email, user_type, user_id) VALUES (?, 'business_user', ?)")
+    ->execute(['owner@hotel-marina.test', $hotelOwnerId]);
+
+// ══════════════════════════════════════════════════════════════════════
+// Tenant 3: Trattoria Roma (capacity pattern)
+// ══════════════════════════════════════════════════════════════════════
+
+$trattoriaId = '01JDEMO0003TENANT00001';
+$pdo->prepare("
+    INSERT INTO tenants (id, name, slug, email, status, timezone, locale, currency, brand_color, booking_pattern,
+                         require_phone, requires_consent, consent_text, cancellation_policy, confirmation_message,
+                         custom_fields)
+    VALUES (?, 'Trattoria Roma', 'trattoria-roma', 'info@trattoriaroma.example', 'active',
+            'Europe/Rome', 'en', 'EUR', '#F97316', 'capacity',
+            1, 1, 'I agree to the terms and conditions of this reservation.',
+            'Cancellations must be made at least 4 hours before your reservation.',
+            'Your table is reserved. Buon appetito!',
+            ?)
+")->execute([$trattoriaId, json_encode([
+    ['name' => 'dietary_requirements', 'type' => 'text', 'label' => 'Dietary requirements', 'required' => false],
+    ['name' => 'occasion', 'type' => 'text', 'label' => 'Special occasion (birthday, anniversary, etc.)', 'required' => false],
+])]);
+
+// Trattoria Roma — customers
+$trattoriaCustomers = [
+    ['01JDEMO0003CUST0000001', 'Antonio Verdi', 'antonio.verdi@example.com', '+39 06 000 0001'],
+    ['01JDEMO0003CUST0000002', 'Francesca Conti', 'francesca.conti@example.com', '+39 06 000 0002'],
+    ['01JDEMO0003CUST0000003', 'Roberto Moretti', 'roberto.moretti@example.com', '+39 06 000 0003'],
+];
+$stmt = $pdo->prepare("INSERT INTO customers (id, tenant_id, name, email, phone, booking_count) VALUES (?, ?, ?, ?, ?, ?)");
+$stmt->execute([$trattoriaCustomers[0][0], $trattoriaId, $trattoriaCustomers[0][1], $trattoriaCustomers[0][2], $trattoriaCustomers[0][3], 2]);
+$stmt->execute([$trattoriaCustomers[1][0], $trattoriaId, $trattoriaCustomers[1][1], $trattoriaCustomers[1][2], $trattoriaCustomers[1][3], 2]);
+$stmt->execute([$trattoriaCustomers[2][0], $trattoriaId, $trattoriaCustomers[2][1], $trattoriaCustomers[2][2], $trattoriaCustomers[2][3], 1]);
+
+// Trattoria Roma — bookings (dinner reservations, party sizes)
+$trattoriaBookings = [
+    ['01JDEMO0003BOOK0000001', $trattoriaCustomers[0][0], '+1 day', '19:00', '21:00', 'confirmed', 4],
+    ['01JDEMO0003BOOK0000002', $trattoriaCustomers[1][0], '+2 days', '20:00', '22:00', 'confirmed', 2],
+    ['01JDEMO0003BOOK0000003', $trattoriaCustomers[2][0], '+4 days', '19:30', '21:30', 'confirmed', 6],
+    ['01JDEMO0003BOOK0000004', $trattoriaCustomers[0][0], '-3 days', '20:00', '22:00', 'completed', 3],
+    ['01JDEMO0003BOOK0000005', $trattoriaCustomers[1][0], '-1 day', '19:00', '21:00', 'no-show', 2],
+];
+$stmt = $pdo->prepare("
+    INSERT INTO bookings (id, tenant_id, booking_pattern, customer_id, start_datetime, end_datetime,
+                          party_size, status, source, customer_timezone,
+                          consent_given_at, consent_text_shown)
+    VALUES (?, ?, 'capacity', ?, ?, ?, ?, ?, 'web', 'Europe/Rome',
+            datetime('now'), 'I agree to the terms and conditions of this reservation.')
+");
+foreach ($trattoriaBookings as [$id, $custId, $dateOffset, $start, $end, $status, $partySize]) {
+    $date = (clone $today)->modify($dateOffset)->format('Y-m-d');
+    $stmt->execute([$id, $trattoriaId, $custId, "{$date} {$start}:00", "{$date} {$end}:00", $partySize, $status]);
+}
+
+// Trattoria Roma — owner
+$trattoriaOwnerId = '01JDEMO0003BUSER000001';
+$pdo->prepare("INSERT INTO business_users (id, tenant_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?, 'owner')")
+    ->execute([$trattoriaOwnerId, $trattoriaId, 'Roma Manager', 'owner@trattoria-roma.test', password_hash('welcome3210', PASSWORD_BCRYPT)]);
+$pdo->prepare("INSERT INTO auth_emails (email, user_type, user_id) VALUES (?, 'business_user', ?)")
+    ->execute(['owner@trattoria-roma.test', $trattoriaOwnerId]);
+
+// ══════════════════════════════════════════════════════════════════════
+// Tenant 4: Workshop Studio (event pattern)
+// ══════════════════════════════════════════════════════════════════════
+
+$workshopId = '01JDEMO0004TENANT00001';
+$pdo->prepare("
+    INSERT INTO tenants (id, name, slug, email, status, timezone, locale, currency, brand_color, booking_pattern,
+                         require_phone, requires_consent, consent_text, cancellation_policy, confirmation_message)
+    VALUES (?, 'Workshop Studio', 'workshop-studio', 'hello@workshopstudio.example', 'active',
+            'Europe/Berlin', 'en', 'EUR', '#8B5CF6', 'event',
+            0, 1, 'I agree to the workshop terms and conditions.',
+            'Full refund if cancelled 7 days before the event. 50% refund within 3-7 days. No refund within 3 days.',
+            'You are registered! Check your email for event details and materials list.')
+")->execute([$workshopId]);
+
+// Workshop Studio — customers
+$workshopCustomers = [
+    ['01JDEMO0004CUST0000001', 'Hannah Weber', 'hannah.weber@example.com', null],
+    ['01JDEMO0004CUST0000002', 'Thomas Meier', 'thomas.meier@example.com', null],
+    ['01JDEMO0004CUST0000003', 'Lena Fischer', 'lena.fischer@example.com', '+49 170 000 0003'],
+];
+$stmt = $pdo->prepare("INSERT INTO customers (id, tenant_id, name, email, phone, booking_count) VALUES (?, ?, ?, ?, ?, ?)");
+$stmt->execute([$workshopCustomers[0][0], $workshopId, $workshopCustomers[0][1], $workshopCustomers[0][2], $workshopCustomers[0][3], 2]);
+$stmt->execute([$workshopCustomers[1][0], $workshopId, $workshopCustomers[1][1], $workshopCustomers[1][2], $workshopCustomers[1][3], 2]);
+$stmt->execute([$workshopCustomers[2][0], $workshopId, $workshopCustomers[2][1], $workshopCustomers[2][2], $workshopCustomers[2][3], 1]);
+
+// Workshop Studio — bookings (half-day and full-day workshops)
+$workshopBookings = [
+    ['01JDEMO0004BOOK0000001', $workshopCustomers[0][0], '+5 days', '09:00', '13:00', 'confirmed', 1],
+    ['01JDEMO0004BOOK0000002', $workshopCustomers[1][0], '+5 days', '09:00', '13:00', 'confirmed', 1],
+    ['01JDEMO0004BOOK0000003', $workshopCustomers[2][0], '+12 days', '10:00', '17:00', 'confirmed', 1],
+    ['01JDEMO0004BOOK0000004', $workshopCustomers[0][0], '-7 days', '09:00', '16:00', 'completed', 1],
+    ['01JDEMO0004BOOK0000005', $workshopCustomers[1][0], '-14 days', '10:00', '15:00', 'rescheduled', 1],
+];
+$stmt = $pdo->prepare("
+    INSERT INTO bookings (id, tenant_id, booking_pattern, customer_id, start_datetime, end_datetime,
+                          party_size, status, source, customer_timezone,
+                          consent_given_at, consent_text_shown)
+    VALUES (?, ?, 'event', ?, ?, ?, ?, ?, 'web', 'Europe/Berlin',
+            datetime('now'), 'I agree to the workshop terms and conditions.')
+");
+foreach ($workshopBookings as [$id, $custId, $dateOffset, $start, $end, $status, $partySize]) {
+    $date = (clone $today)->modify($dateOffset)->format('Y-m-d');
+    $stmt->execute([$id, $workshopId, $custId, "{$date} {$start}:00", "{$date} {$end}:00", $partySize, $status]);
+}
+
+// Workshop Studio — owner
+$workshopOwnerId = '01JDEMO0004BUSER000001';
+$pdo->prepare("INSERT INTO business_users (id, tenant_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?, 'owner')")
+    ->execute([$workshopOwnerId, $workshopId, 'Workshop Admin', 'owner@workshop-studio.test', password_hash('welcome3210', PASSWORD_BCRYPT)]);
+$pdo->prepare("INSERT INTO auth_emails (email, user_type, user_id) VALUES (?, 'business_user', ?)")
+    ->execute(['owner@workshop-studio.test', $workshopOwnerId]);
+
+// ══════════════════════════════════════════════════════════════════════
+// Summary
+// ══════════════════════════════════════════════════════════════════════
+
+$tenantCount = (int) $pdo->query("SELECT COUNT(*) FROM tenants")->fetchColumn();
+$customerCount = (int) $pdo->query("SELECT COUNT(*) FROM customers")->fetchColumn();
+$bookingCount = (int) $pdo->query("SELECT COUNT(*) FROM bookings")->fetchColumn();
+$businessUserCount = (int) $pdo->query("SELECT COUNT(*) FROM business_users")->fetchColumn();
+
 echo "✓ Demo database seeded at: {$demoDb}\n";
-echo "  Operator: demo@voxelbooking.com / demo\n";
-echo "  Tenant: Demo Studio (slug: demo)\n";
-echo "  Services: " . count($services) . "\n";
-echo "  Staff: " . count($staffMembers) . "\n";
-echo "  Customers: " . count($customers) . "\n";
-echo "  Bookings: " . count($bookings) . "\n";
-echo "  Audit entries: " . count($logEntries) . "\n";
+echo "  Operator:       demo@voxelbooking.com / welcome3210\n";
+echo "  Tenants:        {$tenantCount}\n";
+echo "    Demo Studio     (timeslot) — owner@demo-studio.test / welcome3210\n";
+echo "    Hotel Marina    (resource) — owner@hotel-marina.test / welcome3210\n";
+echo "    Trattoria Roma  (capacity) — owner@trattoria-roma.test / welcome3210\n";
+echo "    Workshop Studio (event)    — owner@workshop-studio.test / welcome3210\n";
+echo "  Services:       " . count($services) . " (timeslot only)\n";
+echo "  Staff:          " . count($staffMembers) . " (timeslot only)\n";
+echo "  Customers:      {$customerCount}\n";
+echo "  Bookings:       {$bookingCount}\n";
+echo "  Business users: {$businessUserCount}\n";
+echo "  Audit entries:  " . count($logEntries) . "\n";
+

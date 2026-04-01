@@ -46,13 +46,23 @@ final class TestFixtures
      */
     public static function provision(): void
     {
-        if (self::$provisioned) {
-            return;
-        }
-
+        // Always clean transient tables, even on repeat calls, so later
+        // test classes don't inherit stale rate-limit or token rows from
+        // earlier classes that share this process.
         require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
         EnvLoader::load(dirname(__DIR__, 2) . '/.env');
         Database::connect();
+
+        try {
+            Database::execute('TRUNCATE TABLE `rate_limits`');
+        } catch (\Throwable) {}
+        try {
+            Database::execute('TRUNCATE TABLE `login_tokens`');
+        } catch (\Throwable) {}
+
+        if (self::$provisioned) {
+            return;
+        }
 
         $hash = password_hash(self::OPERATOR_PASSWORD, PASSWORD_BCRYPT, ['cost' => 12]);
 
@@ -92,6 +102,20 @@ final class TestFixtures
             [self::BUSINESS_USER_ID, self::BUSINESS_TENANT_ID, self::BUSINESS_EMAIL, $hash]
         );
 
+        // ── Auth emails: clean + insert for both accounts ──
+        Database::execute(
+            "DELETE FROM `auth_emails` WHERE `email` IN (?, ?)",
+            [self::OPERATOR_EMAIL, self::BUSINESS_EMAIL]
+        );
+        Database::execute(
+            "INSERT INTO `auth_emails` (`email`, `user_type`, `user_id`) VALUES (?, 'operator', ?)",
+            [self::OPERATOR_EMAIL, self::OPERATOR_ID]
+        );
+        Database::execute(
+            "INSERT INTO `auth_emails` (`email`, `user_type`, `user_id`) VALUES (?, 'business_user', ?)",
+            [self::BUSINESS_EMAIL, self::BUSINESS_USER_ID]
+        );
+
         // ── Customer + booking: delete then insert fresh ──
         Database::execute(
             "DELETE FROM `bookings` WHERE `id` = ?",
@@ -116,9 +140,6 @@ final class TestFixtures
               'confirmed', 'web')",
             [self::BOOKING_ID, self::BUSINESS_TENANT_ID, self::CUSTOMER_ID]
         );
-
-        // Clear rate limits for clean test runs
-        Database::execute('TRUNCATE TABLE `rate_limits`');
 
         self::$provisioned = true;
     }

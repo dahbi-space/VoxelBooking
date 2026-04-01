@@ -266,6 +266,12 @@ final class WizardController
             [$operatorId, $request->string('name'), $request->string('email'), $passwordHash]
         );
 
+        // Register in the global email registry for passwordless login
+        Database::execute(
+            "INSERT INTO `auth_emails` (`email`, `user_type`, `user_id`) VALUES (?, 'operator', ?)",
+            [$request->string('email'), $operatorId]
+        );
+
         // Store global settings
         $timezone = $request->string('timezone', 'UTC') ?: 'UTC';
         $locale = $request->string('locale', 'en') ?: 'en';

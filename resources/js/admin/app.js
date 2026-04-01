@@ -92,7 +92,13 @@ import {
     Contact,
     StickyNote,
     ArrowLeft,
+    ArrowRight,
     List,
+    Save,
+    CalendarOff,
+    PlusCircle,
+    UserCheck,
+    UserMinus,
 } from 'lucide';
 
 const ICON_SET = {
@@ -106,7 +112,8 @@ const ICON_SET = {
     Palette, Globe, Activity, TrendingUp, BarChart3, Hash,
     Bookmark, Briefcase, ShieldCheck, ScrollText, Server, Zap, HelpCircle, Lock,
     UserCog, Layers, Filter, Award, Archive, RotateCcw, CheckCircle,
-    CalendarX, Contact, StickyNote, ArrowLeft, List,
+    CalendarX, Contact, StickyNote, ArrowLeft, ArrowRight, List, Save,
+    CalendarOff, PlusCircle, UserCheck, UserMinus,
 };
 
 // ── Alpine: CSP-safe component registration ──
@@ -168,6 +175,17 @@ Alpine.data('adminShell', () => ({
     switchTheme() {
         this.toggleTheme();
         this.closeProfile();
+    },
+
+    copyBookingUrl(event) {
+        const btn = event.currentTarget;
+        const url = btn.getAttribute('data-copy-url');
+        if (!url) return;
+
+        navigator.clipboard.writeText(url).then(() => {
+            btn.classList.add('is-copied');
+            setTimeout(() => btn.classList.remove('is-copied'), 1500);
+        });
     },
 }));
 
@@ -323,6 +341,167 @@ Alpine.data('inviteUser', () => ({
         this.showPassword = !this.showPassword;
         if (this.$refs.passwordField) {
             this.$refs.passwordField.type = this.showPassword ? 'text' : 'password';
+        }
+    },
+}));
+
+// ── Alpine: Availability Grid (weekly hours editor) ──
+Alpine.data('availabilityGrid', () => ({
+    days: [],
+    dayLabels: [],
+
+    init() {
+        const raw = this.$el.dataset.schedule;
+        if (raw) {
+            try { this.days = JSON.parse(raw); }
+            catch { this.days = [[], [], [], [], [], [], []]; }
+        } else {
+            this.days = [[], [], [], [], [], [], []];
+        }
+
+        const labels = this.$el.dataset.dayLabels;
+        if (labels) {
+            try { this.dayLabels = JSON.parse(labels); }
+            catch { this.dayLabels = []; }
+        }
+    },
+
+    addWindow(day) {
+        this.days[day].push({ start: '09:00', end: '17:00' });
+        this.$nextTick(() => { if (window.refreshIcons) window.refreshIcons(); });
+    },
+
+    removeWindow(day, idx) {
+        this.days[day].splice(idx, 1);
+    },
+}));
+
+// ── Alpine: Blocked Date Scope (scope toggle for tenant vs staff) ──
+Alpine.data('blockedDateScope', () => ({
+    scope: 'tenant',
+
+    onScopeChange() {
+        // Clear both entity selectors when switching scope
+        const staffEl = document.getElementById('bd-staff');
+        const resourceEl = document.getElementById('bd-resource');
+        if (staffEl) staffEl.value = '';
+        if (resourceEl) resourceEl.value = '';
+    },
+}));
+
+// ── Alpine: Booking Create (manual admin booking form) ──
+Alpine.data('bookingCreate', () => ({
+    slug: '',
+    locale: 'en',
+    staffMap: {},
+    allStaff: [],
+    serviceId: '',
+    staffId: '',
+    date: '',
+    time: '',
+    slots: [],
+    loadingSlots: false,
+
+    get filteredStaff() {
+        if (!this.serviceId) return this.allStaff;
+        const linked = this.staffMap[this.serviceId];
+        if (!Array.isArray(linked)) return [];
+        return this.allStaff.filter(m => linked.includes(m.id));
+    },
+
+    init() {
+        // Hydrate from data attributes
+        const el = this.$el;
+        this.slug = el.dataset.slug || '';
+        this.locale = el.dataset.locale || 'en';
+
+        try { this.staffMap = JSON.parse(el.dataset.staffMap || '{}'); }
+        catch { this.staffMap = {}; }
+
+        try { this.allStaff = JSON.parse(el.dataset.allStaff || '[]'); }
+        catch { this.allStaff = []; }
+
+        try {
+            const old = JSON.parse(el.dataset.old || '{}');
+            this.serviceId = old.service_id || '';
+            this.staffId = old.staff_id || '';
+            this.date = old.date || '';
+            this.time = old.time || '';
+        } catch { /* no old values */ }
+
+        // Normalize stale staffId
+        if (this.staffId && this.serviceId) {
+            if (!this.filteredStaff.some(m => m.id === this.staffId)) {
+                this.staffId = '';
+            }
+        }
+        if (this.serviceId && this.date) {
+            this.fetchSlots();
+        }
+    },
+
+    formatTime(timeStr) {
+        try {
+            const [h, m] = timeStr.split(':').map(Number);
+            const d = new Date(2000, 0, 1, h, m);
+            return d.toLocaleTimeString(this.locale, { hour: '2-digit', minute: '2-digit' });
+        } catch {
+            return timeStr;
+        }
+    },
+
+    async onServiceChange() {
+        if (this.staffId && !this.filteredStaff.some(m => m.id === this.staffId)) {
+            this.staffId = '';
+        }
+        this.time = '';
+        this.slots = [];
+        if (this.serviceId && this.date) {
+            await this.fetchSlots();
+        }
+    },
+
+    async onStaffChange() {
+        this.time = '';
+        this.slots = [];
+        if (this.serviceId && this.date) {
+            await this.fetchSlots();
+        }
+    },
+
+    async onDateChange() {
+        this.time = '';
+        this.slots = [];
+        if (this.serviceId && this.date) {
+            await this.fetchSlots();
+        }
+    },
+
+    async fetchSlots() {
+        this.loadingSlots = true;
+        this.slots = [];
+
+        try {
+            const params = new URLSearchParams({
+                date: this.date,
+                service_id: this.serviceId,
+            });
+            if (this.staffId) {
+                params.set('staff_id', this.staffId);
+            }
+
+            const res = await fetch('/api/' + encodeURIComponent(this.slug) + '/availability?' + params);
+            if (res.ok) {
+                const data = await res.json();
+                this.slots = (data.slots || []).map(slot => ({
+                    ...slot,
+                    label: this.formatTime(slot.time) + ' \u2013 ' + this.formatTime(slot.end_time),
+                }));
+            }
+        } catch (e) {
+            console.error('Failed to fetch availability:', e);
+        } finally {
+            this.loadingSlots = false;
         }
     },
 }));

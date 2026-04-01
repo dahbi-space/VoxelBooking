@@ -22,7 +22,9 @@ return [
         PRIMARY KEY (`id`),
         KEY `blocked_dates_tenant_idx` (`tenant_id`, `start_date`, `end_date`),
         KEY `blocked_dates_staff_idx` (`staff_id`, `start_date`, `end_date`),
+        KEY `blocked_dates_resource_idx` (`resource_id`, `start_date`, `end_date`),
         CONSTRAINT `blocked_dates_tenant_fk` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
-        CONSTRAINT `blocked_dates_staff_fk` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE
+        CONSTRAINT `blocked_dates_staff_fk` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE CASCADE,
+        CONSTRAINT `blocked_dates_resource_fk` FOREIGN KEY (`resource_id`) REFERENCES `resources` (`id`) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 ];

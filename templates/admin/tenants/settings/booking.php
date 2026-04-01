@@ -1,0 +1,80 @@
+<?php
+/**
+ * Tenant Settings — Booking Rules tab (timeslot pattern only).
+ *
+ * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old
+ */
+$tenant   = $tenant ?? [];
+$tenantId = $tenantId ?? '';
+
+ob_start();
+?>
+
+<div class="vb-page-header">
+    <div>
+        <h2 class="vb-page-title"><?= __('admin.tenant_settings.title') ?></h2>
+        <p class="vb-page-subtitle"><?= e($tenant['name'] ?? '') ?></p>
+    </div>
+</div>
+
+<?php if ($flash): ?>
+    <div class="vb-alert vb-alert-<?= $flash['type'] === 'success' ? 'success' : ($flash['type'] === 'info' ? 'info' : 'error') ?>">
+        <i data-lucide="<?= $flash['type'] === 'success' ? 'check' : ($flash['type'] === 'info' ? 'info' : 'alert-circle') ?>"></i>
+        <?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?>
+    </div>
+<?php endif; ?>
+
+<?php include __DIR__ . '/_tabs.php'; ?>
+
+<form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/settings/booking" class="vb-animate-in">
+    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+
+    <div class="vb-settings-section">
+        <div class="vb-card">
+            <div class="vb-form-grid vb-form-grid-2">
+                <div class="vb-settings-field">
+                    <label class="vb-label" for="ts-slot-duration"><?= __('admin.tenant_settings.field_slot_duration') ?></label>
+                    <input type="number" class="vb-input" id="ts-slot-duration" name="slot_duration_minutes"
+                           value="<?= e((string) ($tenant['slot_duration_minutes'] ?? '30')) ?>"
+                           min="5" step="5" style="max-width: 100px;">
+                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_slot_duration_hint') ?></span>
+                </div>
+
+                <div class="vb-settings-field">
+                    <label class="vb-label" for="ts-buffer"><?= __('admin.tenant_settings.field_buffer') ?></label>
+                    <input type="number" class="vb-input" id="ts-buffer" name="buffer_minutes"
+                           value="<?= e((string) ($tenant['buffer_minutes'] ?? '0')) ?>"
+                           min="0" step="5" style="max-width: 100px;">
+                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_buffer_hint') ?></span>
+                </div>
+
+                <div class="vb-settings-field">
+                    <label class="vb-label" for="ts-min-advance"><?= __('admin.tenant_settings.field_min_advance') ?></label>
+                    <input type="number" class="vb-input" id="ts-min-advance" name="min_advance_hours"
+                           value="<?= e((string) ($tenant['min_advance_hours'] ?? '1')) ?>"
+                           min="0" step="1" style="max-width: 100px;">
+                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_min_advance_hint') ?></span>
+                </div>
+
+                <div class="vb-settings-field">
+                    <label class="vb-label" for="ts-max-advance"><?= __('admin.tenant_settings.field_max_advance') ?></label>
+                    <input type="number" class="vb-input" id="ts-max-advance" name="max_advance_days"
+                           value="<?= e((string) ($tenant['max_advance_days'] ?? '90')) ?>"
+                           min="1" step="1" style="max-width: 100px;">
+                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_max_advance_hint') ?></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="vb-form-actions">
+        <button type="submit" class="vb-btn vb-btn-primary" id="save-booking-btn">
+            <i data-lucide="save" style="width: 15px; height: 15px;"></i>
+            <?= __('admin.settings.save_button') ?>
+        </button>
+    </div>
+</form>
+
+<?php
+$content = ob_get_clean();
+include dirname(__DIR__, 3) . '/admin/layout.php';

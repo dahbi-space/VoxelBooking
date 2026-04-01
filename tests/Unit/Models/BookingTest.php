@@ -198,6 +198,124 @@ final class BookingTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════
+    // Booking::forTenantDate() — dashboard schedule strip
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_for_tenant_date_returns_service_color(): void
+    {
+        // The seeded service has no color set — we update it for this test
+        Database::execute(
+            "UPDATE `services` SET `color` = '#FF5733' WHERE `id` = '01BTESTSRV00000000000000'"
+        );
+
+        $tomorrow = date('Y-m-d', strtotime('+1 day'));
+        $results = Booking::forTenantDate(self::$tenantA, $tomorrow);
+
+        $this->assertNotEmpty($results);
+        $this->assertArrayHasKey('service_color', $results[0]);
+        $this->assertSame('#FF5733', $results[0]['service_color']);
+
+        // Clean up
+        Database::execute(
+            "UPDATE `services` SET `color` = NULL WHERE `id` = '01BTESTSRV00000000000000'"
+        );
+    }
+
+    public function test_for_tenant_date_returns_staff_name(): void
+    {
+        $tomorrow = date('Y-m-d', strtotime('+1 day'));
+        $results = Booking::forTenantDate(self::$tenantA, $tomorrow);
+
+        $this->assertNotEmpty($results);
+        // staff_name key must exist (null when booking has no staff)
+        $this->assertArrayHasKey('staff_name', $results[0]);
+    }
+
+    public function test_for_tenant_date_excludes_cancelled(): void
+    {
+        $lastWeek = date('Y-m-d', strtotime('-3 days'));
+        $results = Booking::forTenantDate(self::$tenantA, $lastWeek);
+
+        // The cancelled booking was seeded as bookingIds[2] on this date.
+        // forTenantDate() must exclude it regardless of result set size.
+        $returnedIds = array_column($results, 'id');
+        $this->assertNotContains(
+            self::$bookingIds[2],
+            $returnedIds,
+            'Cancelled booking must not appear in forTenantDate() results'
+        );
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Booking::allUpcoming() — operator dashboard
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_all_upcoming_returns_cross_tenant_confirmed(): void
+    {
+        $results = Booking::allUpcoming(date('Y-m-d H:i:s'), 50);
+
+        // Should include bookings from both tenants (seeded confirmed, future bookings)
+        $tenantIds = array_unique(array_column($results, 'tenant_id'));
+        // At minimum, our two test tenants should both have future confirmed bookings
+        $this->assertContains(self::$tenantA, $tenantIds);
+        $this->assertContains(self::$tenantB, $tenantIds);
+
+        // All results must be confirmed
+        foreach ($results as $row) {
+            $this->assertSame('confirmed', $row['status']);
+        }
+    }
+
+    public function test_all_upcoming_respects_limit(): void
+    {
+        $results = Booking::allUpcoming(date('Y-m-d H:i:s'), 2);
+        $this->assertLessThanOrEqual(2, count($results));
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Booking::all() — sort support
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_all_sorts_by_customer_name(): void
+    {
+        // Default sort is start_datetime DESC; switch to customer ASC
+        $resultsAsc = Booking::all(null, null, null, null, 50, 0, 'customer', 'ASC');
+
+        if (count($resultsAsc) < 2) {
+            $this->markTestSkipped('Need at least 2 bookings to test sort order');
+        }
+
+        $names = array_column($resultsAsc, 'customer_name');
+        $sorted = $names;
+        sort($sorted, SORT_STRING | SORT_FLAG_CASE);
+
+        $this->assertSame($sorted, $names, 'Results should be sorted by customer name ASC');
+    }
+
+    public function test_all_rejects_invalid_sort_column(): void
+    {
+        // Malicious input must not cause SQL error — falls back to start_datetime
+        $results = Booking::all(null, null, null, null, 5, 0, "'; DROP TABLE bookings; --", 'ASC');
+
+        $this->assertIsArray($results, 'Invalid sort column must not cause an error');
+    }
+    // ════════════════════════════════════════════════════════════════
+    // Booking::find() — staff join
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_find_returns_staff_name(): void
+    {
+        // Use any of our seeded booking IDs
+        if (empty(self::$bookingIds)) {
+            $this->markTestSkipped('No seeded bookings available');
+        }
+
+        $booking = Booking::find(self::$bookingIds[0]);
+        $this->assertNotNull($booking, 'Seeded booking must be findable');
+        $this->assertArrayHasKey('staff_name', $booking, 'find() must include staff_name from LEFT JOIN staff');
+    }
+
+    // ════════════════════════════════════════════════════════════════
     // Seed helper
     // ════════════════════════════════════════════════════════════════
 
@@ -217,3 +335,4 @@ final class BookingTest extends TestCase
         self::$bookingIds[] = $id;
     }
 }
+

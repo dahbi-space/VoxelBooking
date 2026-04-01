@@ -26,6 +26,7 @@ final class TimezoneBookingTest extends TestCase
 {
     private string $baseUrl;
     private array $cleanupIds = [];
+    private ?string $csrfCookieFile = null;
 
     private static bool $appReachable = false;
     private static bool $dbReady = false;
@@ -103,6 +104,11 @@ final class TimezoneBookingTest extends TestCase
                 // best-effort
             }
         }
+
+        if ($this->csrfCookieFile && file_exists($this->csrfCookieFile)) {
+            @unlink($this->csrfCookieFile);
+            $this->csrfCookieFile = null;
+        }
     }
 
     public static function tearDownAfterClass(): void
@@ -141,7 +147,8 @@ final class TimezoneBookingTest extends TestCase
             'customer_timezone' => 'America/New_York',
         ]);
 
-        $res = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload);
+        $csrf = $this->fetchCsrfContext();
+        $res = $this->httpPostJsonWithCsrf('/api/' . self::$seed['slug'] . '/bookings', $payload, $csrf);
         $this->assertSame(201, $res['code'], 'Booking with valid TZ must succeed. Body: ' . $res['body']);
 
         $data = json_decode($res['body'], true);
@@ -170,7 +177,8 @@ final class TimezoneBookingTest extends TestCase
             'customer_timezone' => 'Europe/London',
         ]);
 
-        $res = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload);
+        $csrf = $this->fetchCsrfContext();
+        $res = $this->httpPostJsonWithCsrf('/api/' . self::$seed['slug'] . '/bookings', $payload, $csrf);
         $this->assertSame(201, $res['code'], 'Booking with EU DST zone must succeed. Body: ' . $res['body']);
 
         $data = json_decode($res['body'], true);
@@ -196,7 +204,8 @@ final class TimezoneBookingTest extends TestCase
             'customer_timezone' => 'America/Chicago',
         ]);
 
-        $res = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload);
+        $csrf = $this->fetchCsrfContext();
+        $res = $this->httpPostJsonWithCsrf('/api/' . self::$seed['slug'] . '/bookings', $payload, $csrf);
         $this->assertSame(201, $res['code'], 'Booking with US DST zone must succeed. Body: ' . $res['body']);
 
         $data = json_decode($res['body'], true);
@@ -222,7 +231,8 @@ final class TimezoneBookingTest extends TestCase
             'customer_timezone' => 'Not/A_Real_Zone',
         ]);
 
-        $res = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload);
+        $csrf = $this->fetchCsrfContext();
+        $res = $this->httpPostJsonWithCsrf('/api/' . self::$seed['slug'] . '/bookings', $payload, $csrf);
         $this->assertSame(201, $res['code'], 'Booking with invalid TZ must still succeed. Body: ' . $res['body']);
 
         $data = json_decode($res['body'], true);
@@ -250,7 +260,8 @@ final class TimezoneBookingTest extends TestCase
             'customer_timezone' => '',
         ]);
 
-        $res = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload);
+        $csrf = $this->fetchCsrfContext();
+        $res = $this->httpPostJsonWithCsrf('/api/' . self::$seed['slug'] . '/bookings', $payload, $csrf);
         $this->assertSame(201, $res['code'], 'Booking with empty TZ must succeed. Body: ' . $res['body']);
 
         $data = json_decode($res['body'], true);
@@ -286,7 +297,8 @@ final class TimezoneBookingTest extends TestCase
             '__ts'          => (time() - 10) * 1000,
         ];
 
-        $res = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload);
+        $csrf = $this->fetchCsrfContext();
+        $res = $this->httpPostJsonWithCsrf('/api/' . self::$seed['slug'] . '/bookings', $payload, $csrf);
         $this->assertSame(201, $res['code'], 'Booking without TZ field must succeed. Body: ' . $res['body']);
 
         $data = json_decode($res['body'], true);
@@ -320,7 +332,8 @@ final class TimezoneBookingTest extends TestCase
             'customer_timezone' => 'Pacific/Auckland', // UTC+12/+13 — large offset
         ]);
 
-        $res = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload);
+        $csrf = $this->fetchCsrfContext();
+        $res = $this->httpPostJsonWithCsrf('/api/' . self::$seed['slug'] . '/bookings', $payload, $csrf);
         $this->assertSame(201, $res['code'], 'Body: ' . $res['body']);
 
         $data = json_decode($res['body'], true);
@@ -371,7 +384,8 @@ final class TimezoneBookingTest extends TestCase
             'customer_timezone' => 'America/Los_Angeles', // UTC-7/-8 — would be previous day
         ]);
 
-        $res = $this->httpPostJson('/api/' . self::$seed['slug'] . '/bookings', $payload);
+        $csrf = $this->fetchCsrfContext();
+        $res = $this->httpPostJsonWithCsrf('/api/' . self::$seed['slug'] . '/bookings', $payload, $csrf);
         $this->assertSame(201, $res['code'], 'Late slot booking must succeed. Body: ' . $res['body']);
 
         $booking = json_decode($res['body'], true)['booking'];
@@ -462,10 +476,42 @@ final class TimezoneBookingTest extends TestCase
         ]);
     }
 
+    private function httpPostJsonWithCsrf(string $path, array $payload, array $csrf): array
+    {
+        return $this->request('POST', $path, $payload, [
+            'Content-Type: application/json',
+            'Accept: application/json',
+            'X-CSRF-Token: ' . $csrf['token'],
+        ], $csrf['cookieFile']);
+    }
+
+    private function fetchCsrfContext(): array
+    {
+        $cookieFile = sys_get_temp_dir() . '/vb_csrf_' . bin2hex(random_bytes(8)) . '.txt';
+        $this->csrfCookieFile = $cookieFile;
+
+        $ch = curl_init($this->baseUrl . '/book/' . self::$seed['slug']);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_COOKIEJAR      => $cookieFile,
+            CURLOPT_COOKIEFILE     => $cookieFile,
+        ]);
+        $body = (string) curl_exec($ch);
+        curl_close($ch);
+
+        preg_match('/window\.__VB_CSRF__\s*=\s*"([^"]+)"/', $body, $m);
+        $token = $m[1] ?? '';
+        $this->assertNotEmpty($token, 'CSRF token must be present in booking page');
+
+        return ['token' => $token, 'cookieFile' => $cookieFile];
+    }
+
     /**
      * @return array{code: int, headers: string, body: string}
      */
-    private function request(string $method, string $path, array $data = [], array $headers = []): array
+    private function request(string $method, string $path, array $data = [], array $headers = [], ?string $cookieFile = null): array
     {
         $ch = curl_init($this->baseUrl . $path);
         curl_setopt_array($ch, [
@@ -475,6 +521,11 @@ final class TimezoneBookingTest extends TestCase
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_HEADER         => true,
         ]);
+
+        if ($cookieFile) {
+            curl_setopt($ch, CURLOPT_COOKIEFILE, $cookieFile);
+            curl_setopt($ch, CURLOPT_COOKIEJAR, $cookieFile);
+        }
 
         if (!empty($headers)) {
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);

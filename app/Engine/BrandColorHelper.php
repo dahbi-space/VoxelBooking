@@ -26,7 +26,7 @@ final class BrandColorHelper
     public static function derive(string $hex): array
     {
         $hex = ltrim($hex, '#');
-        if (strlen($hex) !== 6) {
+        if (!preg_match('/^[0-9A-Fa-f]{6}$/', $hex)) {
             $hex = '2563EB'; // Default blue
         }
 

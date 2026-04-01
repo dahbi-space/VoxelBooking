@@ -125,6 +125,14 @@ ob_start();
                                    title="<?= __('admin.tenants.view_booking_page') ?>">
                                     <i data-lucide="external-link"></i>
                                 </a>
+                                <button type="button"
+                                        class="vb-copy-btn vb-copy-btn-ghost"
+                                        data-copy-url="<?= htmlspecialchars((isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/book/' . $tenant['slug'], ENT_QUOTES, 'UTF-8') ?>"
+                                        @click="copyBookingUrl"
+                                        title="<?= __('admin.common.copy_booking_url') ?>">
+                                    <span class="vb-copy-icon"><i data-lucide="copy"></i></span>
+                                    <span class="vb-copy-check"><i data-lucide="check"></i></span>
+                                </button>
                                 <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/impersonate" class="vb-inline-form">
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm" title="<?= __('admin.impersonation.start') ?>">

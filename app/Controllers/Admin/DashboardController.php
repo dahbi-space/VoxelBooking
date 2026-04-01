@@ -16,7 +16,8 @@ use App\Models\Tenant;
 /**
  * Operator dashboard controller.
  *
- * Queries real tenant/booking metrics from the database.
+ * Queries real tenant/booking metrics from the database,
+ * including week-over-week deltas and upcoming bookings.
  */
 final class DashboardController
 {
@@ -34,11 +35,25 @@ final class DashboardController
             "SELECT COUNT(*) as cnt FROM `bookings` WHERE DATE(`start_datetime`) = CURDATE()"
         );
         $weekBookings = $this->queryCount(
-            "SELECT COUNT(*) as cnt FROM `bookings` WHERE `start_datetime` >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND `start_datetime` <= CONCAT(CURDATE(), ' 23:59:59')"
+            "SELECT COUNT(*) as cnt FROM `bookings` WHERE `start_datetime` >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND `start_datetime` <= CONCAT(CURDATE(), ' 23:59:59')"
         );
         $upcoming24h = $this->queryCount(
             "SELECT COUNT(*) as cnt FROM `bookings` WHERE `start_datetime` BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 24 HOUR) AND `status` = 'confirmed'"
         );
+
+        // Deltas: same-day-last-week for daily, previous-7-day-window for weekly
+        $prevTodayBookings = $this->queryCount(
+            "SELECT COUNT(*) as cnt FROM `bookings` WHERE DATE(`start_datetime`) = DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
+        );
+        $prevWeekBookings = $this->queryCount(
+            "SELECT COUNT(*) as cnt FROM `bookings` WHERE `start_datetime` >= DATE_SUB(CURDATE(), INTERVAL 13 DAY) AND `start_datetime` < DATE_SUB(CURDATE(), INTERVAL 6 DAY)"
+        );
+
+        $deltaToday = $todayBookings - $prevTodayBookings;
+        $deltaWeek = $weekBookings - $prevWeekBookings;
+
+        // Cross-tenant upcoming bookings list
+        $upcoming = Booking::allUpcoming(date('Y-m-d H:i:s'), 10);
 
         return View::response('admin.dashboard', [
             'user'           => Auth::user(),
@@ -48,6 +63,9 @@ final class DashboardController
             'todayBookings'  => $todayBookings,
             'weekBookings'   => $weekBookings,
             'upcoming24h'    => $upcoming24h,
+            'deltaToday'     => $deltaToday,
+            'deltaWeek'      => $deltaWeek,
+            'upcoming'       => $upcoming,
         ]);
     }
 
@@ -75,20 +93,40 @@ final class DashboardController
         }
 
         $today = date('Y-m-d');
-        $weekAgo = date('Y-m-d', strtotime('-7 days'));
+        $weekStart = date('Y-m-d', strtotime('-6 days'));
         $now = date('Y-m-d H:i:s');
 
+        $todayBookings = Booking::countForTenant($tenantId, null, $today, $today);
+        $weekBookings = Booking::countForTenant($tenantId, null, $weekStart, $today);
+
+        // Deltas: same-day-last-week for daily, previous-7-day-window for weekly
+        $prevDay = date('Y-m-d', strtotime('-7 days'));
+        $prevWeekStart = date('Y-m-d', strtotime('-13 days'));
+        $prevWeekEnd = date('Y-m-d', strtotime('-7 days'));
+
+        $prevTodayBookings = Booking::countForTenant($tenantId, null, $prevDay, $prevDay);
+        $prevWeekBookings = Booking::countForTenant($tenantId, null, $prevWeekStart, $prevWeekEnd);
+
+        $deltaToday = $todayBookings - $prevTodayBookings;
+        $deltaWeek = $weekBookings - $prevWeekBookings;
+
+        // Today's schedule for the schedule strip
+        $todaySchedule = Booking::forTenantDate($tenantId, $today);
+
         return View::response('admin.dashboard-business', [
-            'user'          => Auth::user(),
-            'version'       => Version::get(),
-            'pageTitle'     => $tenant['name'],
-            'activePage'    => 'dashboard',
-            'csrfToken'     => \App\Middleware\CsrfMiddleware::generateToken(),
-            'tenant'        => $tenant,
-            'todayBookings' => Booking::countForTenant($tenantId, null, $today, $today),
-            'weekBookings'  => Booking::countForTenant($tenantId, null, $weekAgo, $today),
-            'statusCounts'  => Booking::statusCounts($tenantId),
-            'upcoming'      => Booking::forTenantUpcoming($tenantId, $now, 5),
+            'user'           => Auth::user(),
+            'version'        => Version::get(),
+            'pageTitle'      => $tenant['name'],
+            'activePage'     => 'dashboard',
+            'csrfToken'      => \App\Middleware\CsrfMiddleware::generateToken(),
+            'tenant'         => $tenant,
+            'todayBookings'  => $todayBookings,
+            'weekBookings'   => $weekBookings,
+            'statusCounts'   => Booking::statusCounts($tenantId),
+            'upcoming'       => Booking::forTenantUpcoming($tenantId, $now, 5),
+            'deltaToday'     => $deltaToday,
+            'deltaWeek'      => $deltaWeek,
+            'todaySchedule'  => $todaySchedule,
         ]);
     }
 

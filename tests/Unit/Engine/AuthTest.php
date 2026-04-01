@@ -349,4 +349,71 @@ final class AuthTest extends TestCase
 
         $this->assertFalse(Auth::canManageTenant());
     }
+
+    // ── remember_me ──
+
+    public function testCheckSurvivesWithRememberMe(): void
+    {
+        $_SESSION['auth_type'] = 'operator';
+        $_SESSION['auth_id'] = '01HXYZ1234567890ABCDEF';
+        $_SESSION['auth_name'] = 'Test Operator';
+        $_SESSION['auth_email'] = 'op@example.com';
+        $_SESSION['_last_activity'] = time() - (12 * 3600); // 12h ago — past 8h timeout
+        $_SESSION['remember_me'] = true;
+
+        $this->assertTrue(Auth::check(), 'remember_me should skip inactivity timeout');
+    }
+
+    public function testClearSessionRemovesRememberMe(): void
+    {
+        $_SESSION['auth_type'] = 'operator';
+        $_SESSION['auth_id'] = '01HXYZ1234567890ABCDEF';
+        $_SESSION['_last_activity'] = time();
+        $_SESSION['remember_me'] = true;
+
+        Auth::clearSession();
+
+        $this->assertArrayNotHasKey('remember_me', $_SESSION);
+    }
+
+    // ── loginByEmail() ──
+    // These tests require DB. Skipped if DB unavailable.
+
+    private function ensureDb(): void
+    {
+        try {
+            \App\Engine\EnvLoader::load(dirname(__DIR__, 3) . '/.env');
+            \App\Engine\Database::connect();
+        } catch (\Throwable) {
+            $this->markTestSkipped('Database not available');
+        }
+    }
+
+    public function testLoginByEmailSucceedsForOperator(): void
+    {
+        $this->ensureDb();
+        \Tests\Integration\TestFixtures::provision();
+
+        $result = Auth::loginByEmail('operator@example.com');
+        $this->assertTrue($result['success']);
+        $this->assertSame('operator', $_SESSION['auth_type'] ?? null);
+    }
+
+    public function testLoginByEmailSucceedsForBusinessUser(): void
+    {
+        $this->ensureDb();
+        \Tests\Integration\TestFixtures::provision();
+
+        $result = Auth::loginByEmail('business@example.com');
+        $this->assertTrue($result['success']);
+        $this->assertSame('business_user', $_SESSION['auth_type'] ?? null);
+    }
+
+    public function testLoginByEmailFailsForUnknownEmail(): void
+    {
+        $this->ensureDb();
+
+        $result = Auth::loginByEmail('nonexistent@example.com');
+        $this->assertFalse($result['success']);
+    }
 }

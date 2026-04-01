@@ -530,6 +530,204 @@
     }
     .vb-metric:hover .vb-metric-accent { opacity: 1; }
 
+    /* ── Metric card: redesigned layout with header + delta ── */
+    .vb-metric-header {
+        display: flex; align-items: center; gap: 0.375rem;
+        margin-bottom: 0.5rem;
+    }
+    .vb-metric-icon {
+        width: 16px; height: 16px;
+        color: var(--vb-text-tertiary);
+    }
+    .vb-metric-value-row {
+        display: flex; align-items: baseline; gap: 0.5rem;
+    }
+    .vb-metric-delta {
+        display: inline-flex; align-items: center; gap: 0.125rem;
+        font-size: var(--vb-text-2xs); font-weight: 600;
+        padding: 0.125rem 0.375rem; border-radius: var(--vb-radius-sm);
+    }
+    .vb-metric-delta svg { width: 11px; height: 11px; }
+    .vb-metric-delta.is-up { background: var(--vb-success-bg); color: var(--vb-success); }
+    .vb-metric-delta.is-down { background: var(--vb-error-bg); color: var(--vb-error); }
+
+    /* ══════════════════════════════════════════════════════════════
+       STATUS CHIPS — Dot + label booking status (PRD §VI)
+       ══════════════════════════════════════════════════════════════ */
+    .vb-status {
+        display: inline-flex; align-items: center; gap: 0.375rem;
+        font-size: var(--vb-text-xs); font-weight: 500;
+    }
+    .vb-status::before {
+        content: ''; width: 6px; height: 6px;
+        border-radius: 50%; flex-shrink: 0;
+    }
+    .vb-status-confirmed::before { background: var(--vb-success); }
+    .vb-status-confirmed { color: var(--vb-success); }
+    .vb-status-pending::before { background: var(--vb-warning); }
+    .vb-status-pending { color: var(--vb-warning); }
+    .vb-status-cancelled::before { background: var(--vb-error); }
+    .vb-status-cancelled { color: var(--vb-error); }
+    .vb-status-completed::before { background: var(--vb-text-tertiary); }
+    .vb-status-completed { color: var(--vb-text-tertiary); }
+    .vb-status-no_show::before { background: var(--vb-warning); }
+    .vb-status-no_show { color: var(--vb-warning); }
+    .vb-status-rescheduled::before { background: var(--vb-info); }
+    .vb-status-rescheduled { color: var(--vb-info); }
+
+    /* ══════════════════════════════════════════════════════════════
+       FILTER PILLS — Capsule-style filter bar
+       ══════════════════════════════════════════════════════════════ */
+    .vb-filter-pills {
+        display: flex; align-items: center; gap: 0.5rem;
+        flex-wrap: wrap; margin-bottom: 1rem;
+    }
+    .vb-filter-pill {
+        display: inline-flex; align-items: center; gap: 0.375rem;
+        padding: 0.4375rem 0.75rem;
+        font-size: var(--vb-text-sm); font-weight: 450;
+        color: var(--vb-text-secondary);
+        background: var(--vb-bg-surface);
+        border: 1px solid var(--vb-border-subtle);
+        border-radius: var(--vb-radius-full); cursor: pointer;
+        transition: border-color var(--vb-duration-fast), box-shadow var(--vb-duration-fast);
+    }
+    .vb-filter-pill:hover {
+        border-color: var(--vb-border-default);
+        box-shadow: var(--vb-shadow-xs);
+    }
+    .vb-filter-pill.is-active {
+        border-color: var(--vb-accent); color: var(--vb-accent);
+        background: var(--vb-accent-subtle);
+    }
+    .vb-filter-pill svg, .vb-filter-pill [data-lucide] { width: 14px; height: 14px; }
+
+    /* ══════════════════════════════════════════════════════════════
+       CELL STACK — Two-line compact table cells
+       ══════════════════════════════════════════════════════════════ */
+    .vb-cell-primary {
+        font-size: var(--vb-text-sm); font-weight: 500;
+        color: var(--vb-text-primary);
+    }
+    .vb-cell-secondary {
+        font-size: var(--vb-text-xs); color: var(--vb-text-tertiary);
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       SORTABLE HEADERS — Click-to-sort column headers
+       ══════════════════════════════════════════════════════════════ */
+    .vb-th-sort {
+        cursor: pointer; user-select: none;
+        display: inline-flex; align-items: center; gap: 0.25rem;
+        color: inherit; text-decoration: none;
+    }
+    .vb-th-sort::after {
+        content: ''; display: inline-block;
+        width: 0; height: 0;
+        border-left: 3.5px solid transparent;
+        border-right: 3.5px solid transparent;
+        border-bottom: 5px solid var(--vb-text-ghost);
+        transition: transform var(--vb-duration-fast), border-color var(--vb-duration-fast);
+    }
+    .vb-th-sort:hover::after { border-bottom-color: var(--vb-text-tertiary); }
+    .vb-th-sort.is-asc::after { border-bottom-color: var(--vb-accent); }
+    .vb-th-sort.is-desc::after { border-bottom-color: var(--vb-accent); transform: rotate(180deg); }
+
+    /* ══════════════════════════════════════════════════════════════
+       EVENT TIMELINE — Audit log vertical timeline
+       ══════════════════════════════════════════════════════════════ */
+    .vb-timeline {
+        position: relative;
+        padding-left: 1.5rem;
+    }
+    .vb-timeline::before {
+        content: ''; position: absolute; left: 0.375rem; top: 0; bottom: 0;
+        width: 1px; background: var(--vb-border-subtle);
+    }
+    .vb-timeline-entry {
+        position: relative;
+        padding: 0.5rem 0 0.5rem 0.5rem;
+    }
+    .vb-timeline-entry::before {
+        content: ''; position: absolute;
+        left: -1.125rem; top: 0.875rem;
+        width: 7px; height: 7px; border-radius: 50%;
+        background: var(--vb-text-ghost);
+        border: 1.5px solid var(--vb-bg-card);
+    }
+    .vb-timeline-entry.is-created::before { background: var(--vb-accent); }
+    .vb-timeline-entry.is-status::before { background: var(--vb-success); }
+    .vb-timeline-action {
+        font-size: var(--vb-text-sm); font-weight: 500;
+        color: var(--vb-text-primary);
+    }
+    .vb-timeline-meta {
+        font-size: var(--vb-text-xs); color: var(--vb-text-tertiary);
+        margin-top: 0.125rem;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       SCHEDULE PANEL — Day-view foundation
+       ══════════════════════════════════════════════════════════════ */
+    .vb-schedule-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.75rem 0; margin-bottom: 0.5rem;
+    }
+    .vb-schedule-title {
+        font-size: var(--vb-text-md); font-weight: 600;
+        letter-spacing: var(--vb-tracking-tight);
+    }
+    .vb-schedule-grid {
+        position: relative;
+        border: 1px solid var(--vb-border-subtle);
+        border-radius: var(--vb-radius-lg);
+        overflow: hidden;
+    }
+    .vb-schedule-hour-row {
+        display: flex; min-height: 60px;
+        border-bottom: 1px solid var(--vb-border-subtle);
+    }
+    .vb-schedule-hour-row:last-child { border-bottom: none; }
+    .vb-schedule-time-gutter {
+        width: 56px; flex-shrink: 0;
+        padding: 0.375rem 0.5rem 0 0; text-align: right;
+        font-size: var(--vb-text-xs); font-weight: 500;
+        color: var(--vb-text-tertiary);
+        font-variant-numeric: tabular-nums;
+    }
+    .vb-schedule-cells {
+        flex: 1; position: relative;
+        border-left: 1px solid var(--vb-border-subtle);
+        padding: 0.25rem;
+    }
+    .vb-schedule-pill {
+        border-radius: var(--vb-radius-md);
+        padding: 0.375rem 0.5rem;
+        font-size: var(--vb-text-xs); font-weight: 500;
+        line-height: var(--vb-leading-tight);
+        cursor: pointer; margin-bottom: 0.25rem;
+        transition: box-shadow var(--vb-duration-fast);
+    }
+    .vb-schedule-pill:last-child { margin-bottom: 0; }
+    .vb-schedule-pill:hover { box-shadow: var(--vb-shadow-sm); }
+    .vb-schedule-pill-title { font-weight: 600; }
+    .vb-schedule-pill-time { font-size: var(--vb-text-2xs); opacity: 0.7; }
+    .vb-schedule-pill-staff { font-size: var(--vb-text-2xs); opacity: 0.6; margin-top: 0.0625rem; }
+
+    /* Current-time indicator */
+    .vb-schedule-now {
+        position: absolute; left: 56px; right: 0;
+        height: 2px; background: var(--vb-accent); z-index: 5;
+        pointer-events: none;
+    }
+    .vb-schedule-now::before {
+        content: attr(data-time);
+        position: absolute; left: -56px; top: -8px;
+        font-size: var(--vb-text-2xs); font-weight: 700;
+        color: var(--vb-accent); background: var(--vb-accent-subtle);
+        padding: 0.0625rem 0.25rem; border-radius: var(--vb-radius-xs);
+    }
+
     /* ══════════════════════════════════════════════════════════════
        EMPTY STATE — Onboarding & placeholder
        ══════════════════════════════════════════════════════════════ */

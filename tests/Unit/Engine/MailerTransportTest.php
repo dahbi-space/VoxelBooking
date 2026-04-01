@@ -55,37 +55,66 @@ final class MailerTransportTest extends TestCase
     }
 
     /**
-     * Mailpit transport: config resolves to localhost:1025, no auth, no encryption.
+     * Mailpit transport: resolveEffectiveConfig overrides production values.
      *
-     * Verifies the config override logic: production SMTP settings are replaced
-     * with Mailpit defaults (127.0.0.1:1025, no auth, no encryption).
-     * Whether Mailpit is actually running doesn't affect this test — we verify
-     * that the send never uses the production SMTP host.
+     * Verifies the 5 overrides applied by the mailpit branch:
+     * host → 127.0.0.1, port → 1025, username → '', password → '', encryption → 'none'.
+     * No network connection is made.
      */
-    public function testMailpitTransportResolvesToLocalhost1025(): void
+    public function testMailpitTransportOverridesConfig(): void
     {
-        // Set mailpit transport with production values that should be overridden
-        $configProp = new \ReflectionProperty(Mailer::class, 'configCache');
-        $configProp->setValue(null, [
-            'mail_transport'   => 'mailpit',
-            // These production values must be overridden by the mailpit branch
-            'smtp_host'        => 'smtp.production.com',
-            'smtp_port'        => '587',
-            'smtp_username'    => 'prod@example.com',
-            'smtp_password'    => 'prodpassword',
-            'smtp_encryption'  => 'tls',
-            'mail_from_address' => 'test@example.com',
-            'mail_from_name'   => 'Test',
-        ]);
+        $method = new \ReflectionMethod(Mailer::class, 'resolveEffectiveConfig');
 
-        $result = Mailer::send('test@example.com', 'Test', '<p>Body</p>', 'test');
+        $input = [
+            'mail_transport'    => 'mailpit',
+            'smtp_host'         => 'smtp.production.com',
+            'smtp_port'         => '587',
+            'smtp_username'     => 'prod@example.com',
+            'smtp_password'     => 'prodpassword',
+            'smtp_encryption'   => 'tls',
+            'mail_from_address' => 'from@example.com',
+            'mail_from_name'    => 'Prod Sender',
+        ];
 
-        // Whether Mailpit is running or not, the production host must NOT be used
-        $this->assertStringNotContainsString('smtp.production.com', $result['error'] ?? '', 'Mailpit must override production SMTP host');
+        $effective = $method->invoke(null, $input);
 
-        // If Mailpit is running locally, send succeeds; if not, it fails with a connection error
-        // Either outcome is valid — the key assertion is that production credentials are not used
-        $this->assertNotEmpty($result['log_id'], 'Send must always produce a log_id');
+        // Mailpit overrides
+        $this->assertSame('127.0.0.1', $effective['smtp_host'], 'Mailpit must override host to localhost');
+        $this->assertSame('1025', $effective['smtp_port'], 'Mailpit must override port to 1025');
+        $this->assertSame('', $effective['smtp_username'], 'Mailpit must clear username');
+        $this->assertSame('', $effective['smtp_password'], 'Mailpit must clear password');
+        $this->assertSame('none', $effective['smtp_encryption'], 'Mailpit must set encryption to none');
+
+        // Non-overridden values preserved
+        $this->assertSame('from@example.com', $effective['mail_from_address'], 'From address must be preserved');
+        $this->assertSame('Prod Sender', $effective['mail_from_name'], 'From name must be preserved');
+    }
+
+    /**
+     * Non-mailpit transports: resolveEffectiveConfig returns config unchanged.
+     */
+    public function testNonMailpitTransportPreservesConfig(): void
+    {
+        $method = new \ReflectionMethod(Mailer::class, 'resolveEffectiveConfig');
+
+        $input = [
+            'mail_transport'    => 'smtp',
+            'smtp_host'         => 'smtp.production.com',
+            'smtp_port'         => '587',
+            'smtp_username'     => 'prod@example.com',
+            'smtp_password'     => 'prodpassword',
+            'smtp_encryption'   => 'tls',
+            'mail_from_address' => 'from@example.com',
+            'mail_from_name'    => 'Prod Sender',
+        ];
+
+        $effective = $method->invoke(null, $input);
+        $this->assertSame($input, $effective, 'SMTP transport must not modify config');
+
+        // Also verify log transport
+        $input['mail_transport'] = 'log';
+        $effective = $method->invoke(null, $input);
+        $this->assertSame($input, $effective, 'Log transport must not modify config');
     }
 
     /**
@@ -238,5 +267,93 @@ final class MailerTransportTest extends TestCase
         ]);
 
         $this->assertTrue(Mailer::isConfigured(), 'SMTP transport with host is configured');
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // isProductionSmtp — customer-facing delivery truthfulness
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * isProductionSmtp returns true for smtp transport with a configured host.
+     */
+    public function testIsProductionSmtpTrueForConfiguredSmtp(): void
+    {
+        $configProp = new \ReflectionProperty(Mailer::class, 'configCache');
+        $configProp->setValue(null, [
+            'mail_transport'   => 'smtp',
+            'smtp_host'        => 'smtp.example.com',
+            'smtp_port'        => '587',
+            'smtp_username'    => '',
+            'smtp_password'    => '',
+            'smtp_encryption'  => 'tls',
+            'mail_from_address' => '',
+            'mail_from_name'   => '',
+        ]);
+
+        $this->assertTrue(Mailer::isProductionSmtp(),
+            'SMTP transport with configured host is production SMTP');
+    }
+
+    /**
+     * isProductionSmtp returns false for mailpit — dev capture, not customer delivery.
+     */
+    public function testIsProductionSmtpFalseForMailpit(): void
+    {
+        $configProp = new \ReflectionProperty(Mailer::class, 'configCache');
+        $configProp->setValue(null, [
+            'mail_transport'   => 'mailpit',
+            'smtp_host'        => 'smtp.production.com',
+            'smtp_port'        => '587',
+            'smtp_username'    => '',
+            'smtp_password'    => '',
+            'smtp_encryption'  => '',
+            'mail_from_address' => '',
+            'mail_from_name'   => '',
+        ]);
+
+        $this->assertFalse(Mailer::isProductionSmtp(),
+            'Mailpit is dev capture, not production SMTP');
+    }
+
+    /**
+     * isProductionSmtp returns false for log transport.
+     */
+    public function testIsProductionSmtpFalseForLog(): void
+    {
+        $configProp = new \ReflectionProperty(Mailer::class, 'configCache');
+        $configProp->setValue(null, [
+            'mail_transport'   => 'log',
+            'smtp_host'        => '',
+            'smtp_port'        => '',
+            'smtp_username'    => '',
+            'smtp_password'    => '',
+            'smtp_encryption'  => '',
+            'mail_from_address' => '',
+            'mail_from_name'   => '',
+        ]);
+
+        $this->assertFalse(Mailer::isProductionSmtp(),
+            'Log transport is not production SMTP');
+    }
+
+    /**
+     * isProductionSmtp returns false for smtp transport with no host.
+     */
+    public function testIsProductionSmtpFalseForSmtpWithNoHost(): void
+    {
+        $configProp = new \ReflectionProperty(Mailer::class, 'configCache');
+        $configProp->setValue(null, [
+            'mail_transport'   => 'smtp',
+            'smtp_host'        => '',
+            'smtp_port'        => '',
+            'smtp_username'    => '',
+            'smtp_password'    => '',
+            'smtp_encryption'  => '',
+            'mail_from_address' => '',
+            'mail_from_name'   => '',
+        ]);
+
+        $this->assertFalse(Mailer::isProductionSmtp(),
+            'SMTP with no host is not production SMTP');
     }
 }

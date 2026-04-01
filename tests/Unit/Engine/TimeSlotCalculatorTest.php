@@ -23,12 +23,17 @@ class TimeSlotCalculatorTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
-        EnvLoader::load(__DIR__ . '/../../../.env');
+        try {
+            EnvLoader::load(__DIR__ . '/../../../.env');
 
-        $rows = Database::query(
-            'SELECT * FROM tenants WHERE slug = ? LIMIT 1',
-            ['salon-bella']
-        );
+            $rows = Database::query(
+                'SELECT * FROM tenants WHERE slug = ? LIMIT 1',
+                ['salon-bella']
+            );
+        } catch (\Throwable) {
+            self::markTestSkipped('Database not available');
+            return;
+        }
 
         if (empty($rows)) {
             self::markTestSkipped('Salon Bella tenant not seeded.');

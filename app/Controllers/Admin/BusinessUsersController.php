@@ -120,22 +120,13 @@ final class BusinessUsersController
             $errors[] = __('admin.users.error_password_short');
         }
 
-        // Check email uniqueness
+        // Check email uniqueness via auth_emails (PK enforces global uniqueness)
         if ($email !== '' && empty($errors)) {
             $existing = Database::query(
-                'SELECT `id` FROM `business_users` WHERE `email` = ? LIMIT 1',
+                'SELECT `email` FROM `auth_emails` WHERE `email` = ? LIMIT 1',
                 [$email]
             );
             if (!empty($existing)) {
-                $errors[] = __('admin.users.error_email_taken');
-            }
-
-            // Also check operators table
-            $existingOp = Database::query(
-                'SELECT `id` FROM `operators` WHERE `email` = ? LIMIT 1',
-                [$email]
-            );
-            if (!empty($existingOp)) {
                 $errors[] = __('admin.users.error_email_taken');
             }
         }
@@ -154,6 +145,12 @@ final class BusinessUsersController
              (`id`, `tenant_id`, `name`, `email`, `password_hash`, `role`, `is_active`, `force_password_change`)
              VALUES (?, ?, ?, ?, ?, ?, 1, 1)",
             [$userId, $tenantId, $name, $email, $passwordHash, $role]
+        );
+
+        // Register in auth_emails for passwordless login
+        Database::execute(
+            "INSERT INTO `auth_emails` (`email`, `user_type`, `user_id`) VALUES (?, 'business_user', ?)",
+            [$email, $userId]
         );
 
         AuditLog::log('business_user.created', 'business_user', $userId, [

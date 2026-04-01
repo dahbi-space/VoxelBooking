@@ -21,6 +21,11 @@ return [
         'details_subtitle' => 'We\'ll send a confirmation to your email.',
         'confirm_title'    => 'Confirm your booking',
         'confirm_subtitle' => 'Please review the details below.',
+        // Resource-pattern
+        'resource_title'    => 'Choose a room',
+        'dates_title'       => 'Select dates',
+        'dates_subtitle'    => 'Pick your check-in and check-out dates.',
+        'guests_title'      => 'Number of guests',
     ],
 
     // ── Staff ──
@@ -56,6 +61,9 @@ return [
         'confirm'          => 'Confirm booking',
         'book_another'     => 'Book another appointment',
         'add_to_calendar'  => 'Add to Google Calendar',
+        'download_ics'     => 'Download for Calendar',
+        'reschedule'       => 'Reschedule',
+        'cancel_booking'   => 'Cancel booking',
         'pick_another_time'=> 'Pick another time',
     ],
 
@@ -63,17 +71,56 @@ return [
     'confirmed' => [
         'heading'           => 'Booking confirmed',
         'message'           => 'A confirmation has been sent to :email.',
+        'email_sent'        => 'A confirmation has been sent to :email.',
         'reference_label'   => 'Reference',
+    ],
+
+    // ── Review ──
+    'review' => [
+        'cancellation_policy_label' => 'Cancellation policy',
     ],
 
     // ── Summary ──
     'summary' => [
-        'service_label'  => 'Service',
-        'with_label'     => 'With',
-        'date_label'     => 'Date',
-        'time_label'     => 'Time',
-        'duration_label' => 'Duration',
-        'price_label'    => 'Price',
+        'service_label'    => 'Service',
+        'with_label'       => 'With',
+        'date_label'       => 'Date',
+        'time_label'       => 'Time',
+        'duration_label'   => 'Duration',
+        'price_label'      => 'Price',
+        // Resource-pattern
+        'resource_label'   => 'Room',
+        'check_in_label'   => 'Check-in',
+        'check_out_label'  => 'Check-out',
+        'nights_label'     => 'Nights',
+        'guests_label'     => 'Guests',
+        'total_label'      => 'Total',
+        'per_night'        => '/night',
+    ],
+
+    // ── Resource Pattern ──
+    'resource' => [
+        'summary_resource'  => 'Room',
+        'check_in_label'    => 'Check-in',
+        'check_out_label'   => 'Check-out',
+        'nights_label'      => 'Nights',
+        'guests_label'      => 'Guests',
+        'total_label'       => 'Total',
+        'per_night'         => '/night',
+        'select_check_in'   => 'Select check-in date',
+        'select_check_out'  => 'Now select your check-out date',
+        'amenities_label'   => 'Amenities',
+        'capacity_label'    => 'Up to :count guests',
+        'stay_range'        => ':min–:max nights',
+        'error_resource_not_found'    => 'Room not found.',
+        'error_invalid_date_range'    => 'Check-out must be after check-in.',
+        'error_min_stay_violation'    => 'Minimum stay not met.',
+        'error_max_stay_violation'    => 'Maximum stay exceeded.',
+        'error_capacity_exceeded'     => 'Too many guests for this room.',
+        'error_too_soon'              => 'Check-in date is too soon.',
+        'error_too_far'               => 'Check-in date is too far ahead.',
+        'error_date_blocked'          => 'One or more dates are blocked.',
+        'error_already_booked'        => 'This room is already booked for those dates.',
     ],
 
     // ── Empty States ──
@@ -87,6 +134,10 @@ return [
         '404_title'         => 'Page not found',
         '404_desc'          => 'This booking page doesn\'t exist or is no longer active.',
         '404_help'          => 'If you followed a link here, please contact the business directly.',
+        // Resource-pattern
+        'no_resources'      => 'No rooms available',
+        'no_resources_desc' => 'This business has not configured any rooms yet.',
+        'no_dates'          => 'No available dates this month.',
     ],
 
     // ── Errors & Toasts ──
@@ -136,6 +187,19 @@ return [
         'invalid_json'        => 'Invalid request body.',
         'spam_detected'       => 'Invalid request.',
         'spam_retry'          => 'Please try again.',
+        'max_bookings_exceeded' => 'You have reached the maximum number of bookings for this day.',
+        'csrf_mismatch'       => 'Invalid security token. Please refresh and try again.',
+        // Resource-pattern
+        'resource_required'     => 'Please select a resource.',
+        'check_in_required'     => 'Check-in date is required.',
+        'check_out_required'    => 'Check-out date is required.',
+        'guest_count_invalid'   => 'Guest count must be at least 1.',
+        'resource_unavailable'  => 'This resource is not available for the selected dates.',
+    ],
+
+    // ── Recovery ──
+    'recovery' => [
+        'slot_taken' => 'That time was just booked. Try one of these instead:',
     ],
 
     // ── Calendar ──
