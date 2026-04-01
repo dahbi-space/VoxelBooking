@@ -282,32 +282,39 @@
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('capacity.date_title')"></div>
                 </div>
-                <div class="vb-book-calendar">
+                <div class="vb-book-calendar" role="grid">
                     <div class="vb-book-calendar-nav">
-                        <button type="button" class="vb-book-calendar-prev" @click="prevCapacityMonth" aria-label="<?= __('booking.calendar.prev_month') ?>">
+                        <button type="button" class="vb-book-calendar-btn" @click="prevCapacityMonth" aria-label="<?= __('booking.calendar.prev_month') ?>">
                             <i data-lucide="chevron-left"></i>
                         </button>
                         <span class="vb-book-calendar-month" x-text="capacityMonthLabel"></span>
-                        <button type="button" class="vb-book-calendar-next" @click="nextCapacityMonth" aria-label="<?= __('booking.calendar.next_month') ?>">
+                        <button type="button" class="vb-book-calendar-btn" @click="nextCapacityMonth" aria-label="<?= __('booking.calendar.next_month') ?>">
                             <i data-lucide="chevron-right"></i>
                         </button>
                     </div>
-                    <div class="vb-book-calendar-weekdays">
-                        <template x-for="d in dayNames"><span x-text="d"></span></template>
-                    </div>
                     <div class="vb-book-calendar-grid">
+                        <!-- Day name headers -->
+                        <template x-for="d in dayNames" x-bind:key="d">
+                            <div class="vb-book-calendar-dayname" x-text="d"></div>
+                        </template>
+                        <!-- Calendar cells -->
                         <template x-for="(cell, ci) in capacityCalendarGrid" x-bind:key="ci">
-                            <button type="button"
-                                    class="vb-book-calendar-day"
-                                    x-bind:class="{
-                                        'is-disabled': cell.disabled,
-                                        'is-today': cell.isToday,
-                                        'is-selected': cell.isSelected
-                                    }"
-                                    x-bind:disabled="cell.disabled || !cell.day"
-                                    x-text="cell.day || ''"
-                                    @click="selectCapacityDate(cell)">
-                            </button>
+                            <div class="vb-book-calendar-cell"
+                                 x-bind:class="{
+                                     'is-disabled': cell.disabled,
+                                     'is-today': cell.isToday,
+                                     'has-slots': !cell.disabled && cell.day,
+                                     'is-selected': cell.isSelected
+                                 }"
+                                 x-bind:tabindex="cell.day && !cell.disabled ? 0 : -1"
+                                 x-bind:role="cell.day ? 'gridcell' : 'presentation'"
+                                 x-bind:aria-disabled="cell.disabled"
+                                 x-bind:aria-selected="cell.isSelected"
+                                 @click="selectCapacityDate(cell)"
+                                 @keydown.enter="selectCapacityDate(cell)"
+                                 @keydown.space.prevent="selectCapacityDate(cell)"
+                                 x-text="cell.day || ''">
+                            </div>
                         </template>
                     </div>
                 </div>
