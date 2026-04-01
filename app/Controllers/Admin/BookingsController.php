@@ -915,12 +915,81 @@ final class BookingsController
                 'old_status' => $oldStatus,
                 'new_status' => $newStatus,
             ]);
+
+            // Waitlisted → confirmed: send confirmation email
+            if ($oldStatus === 'waitlisted' && $newStatus === 'confirmed') {
+                $this->sendPromotionEmail($booking);
+            }
+
             $this->setFlash('success', __('admin.bookings.flash_status_updated'));
         } else {
             $this->setFlash('error', __('admin.bookings.flash_status_failed'));
         }
 
         return Response::redirect("{$redirectBase}/{$id}");
+    }
+
+    /**
+     * Send a booking confirmation email when a waitlisted booking is promoted.
+     */
+    private function sendPromotionEmail(array $booking): void
+    {
+        if (!\App\Engine\Mailer::isConfigured()) {
+            return;
+        }
+
+        try {
+            $tenant = $this->loadTenant($booking['tenant_id']);
+            if ($tenant === null) {
+                return;
+            }
+
+            $customer = Database::query(
+                'SELECT `name`, `email` FROM `customers` WHERE `id` = ? LIMIT 1',
+                [$booking['customer_id']]
+            );
+            if (empty($customer) || empty($customer[0]['email'])) {
+                return;
+            }
+
+            $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+            $startDt = new \DateTimeImmutable($booking['start_datetime'], $tz);
+            $endDt = new \DateTimeImmutable($booking['end_datetime'], $tz);
+
+            $serviceName = '';
+            if ($booking['booking_pattern'] === 'event' && !empty($booking['event_name'])) {
+                $serviceName = $booking['event_name'];
+            } elseif (!empty($booking['service_name'])) {
+                $serviceName = $booking['service_name'];
+            } elseif (!empty($booking['resource_name'])) {
+                $serviceName = $booking['resource_name'];
+            }
+
+            $emailBookingData = [
+                'date'           => $startDt->format('Y-m-d'),
+                'formatted_date' => \App\Engine\Locale::dateLong($startDt),
+                'time'           => $startDt->format('H:i'),
+                'end_time'       => $endDt->format('H:i'),
+                'duration'       => (string) ($booking['party_size'] ?? 1),
+            ];
+
+            \App\Engine\Mailer::sendBookingConfirmation(
+                $customer[0]['email'],
+                $customer[0]['name'],
+                $emailBookingData,
+                $serviceName,
+                null,
+                $tenant['name'],
+                $tenant['id'],
+                $booking['id'],
+                $tenant['brand_color'] ?? '#2563EB',
+            );
+        } catch (\Throwable $e) {
+            Logger::error('Promotion confirmation email failed', [
+                'booking' => $booking['id'],
+                'error'   => $e->getMessage(),
+            ]);
+        }
     }
 
     private function render(string $template, string $pageTitle, array $extra = []): Response

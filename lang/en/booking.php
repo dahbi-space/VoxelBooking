@@ -183,7 +183,7 @@ return [
         'time_label'          => 'Time',
         'per_person'          => 'per person',
         'free'                => 'Free',
-        'select_event'        => 'Select',
+        'select_event'        => 'Select an event…',
         'full_badge'          => 'Full',
         'waitlist_badge'      => 'Waitlist',
     ],

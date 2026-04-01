@@ -129,4 +129,4 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
-include dirname(__DIR__, 2) . '/admin/layout.php';
+include dirname(__DIR__, 3) . '/admin/layout.php';
