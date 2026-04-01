@@ -229,6 +229,60 @@ final class Mailer
     }
 
     /**
+     * Send a waitlist notification email to the customer.
+     *
+     * Same branded layout as booking confirmation, but with waitlist-specific
+     * subject, heading, and body text so the customer knows they are on the
+     * waitlist rather than confirmed.
+     */
+    public static function sendWaitlistConfirmation(
+        string $to,
+        string $customerName,
+        array $booking,
+        ?string $eventName,
+        string $tenantName,
+        string $tenantId,
+        string $bookingId,
+        string $brandColor = '#2563EB',
+    ): array {
+        $brandTokens = BrandColorHelper::derive($brandColor);
+        $safeBrandColor = $brandTokens['brand'];
+
+        $subject = __('email.waitlist_confirmation.subject', [
+            'event' => $eventName ?? $tenantName,
+        ]);
+
+        $heading        = __('email.waitlist_confirmation.heading');
+        $greeting       = __('email.waitlist_confirmation.greeting', ['name' => $customerName]);
+        $bodyText       = __('email.waitlist_confirmation.body');
+        $detailsHeading = __('email.booking_confirmation.details');
+        $footer         = __('email.waitlist_confirmation.footer');
+
+        $displayDate = $booking['formatted_date'] ?? $booking['date'];
+        $details = [];
+        $details[__('email.common.date')] = $displayDate;
+        $details[__('email.common.time')] = $booking['time'] . "\xE2\x80\x93" . $booking['end_time'];
+        if ($eventName) {
+            $details[__('email.common.service')] = $eventName;
+        }
+
+        $html = self::renderConfirmationEmail(
+            $safeBrandColor, $heading, $greeting, $bodyText,
+            $detailsHeading, $details, $footer, $tenantName, app_name(),
+        );
+
+        $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
+        $plainBody = self::renderConfirmationPlainText(
+            $heading, $greeting, $bodyText, $detailsHeading,
+            $details, $footer, $tenantName, $poweredBy,
+        );
+
+        $replyTo = self::resolveTenantReplyTo($tenantId);
+
+        return self::send($to, $subject, $html, 'waitlist', $tenantId, $bookingId, $plainBody, $replyTo['email'], $replyTo['name'], $tenantName);
+    }
+
+    /**
      * Check if the mailer is configured and ready to send.
      *
      * - log: always configured (no outbound connection needed)

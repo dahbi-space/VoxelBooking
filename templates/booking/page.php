@@ -353,6 +353,132 @@
                 </div>
             </div>
 
+            <!-- ═══ Event Step 1: Event List ═══ -->
+            <div x-show="isEventListStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('event.events_title')"></div>
+                </div>
+                <div class="vb-book-event-list">
+                    <template x-for="(event, i) in eventList" :key="event.id + (event.instance_date || '')">
+                        <button type="button"
+                                class="vb-book-event-card"
+                                @click="selectEvent(event)"
+                                :class="{ 'is-full': event.remaining <= 0 && !event.allow_waitlist }">
+                            <div class="vb-book-event-card-header">
+                                <span class="vb-book-event-name" x-text="event.name"></span>
+                                <span class="vb-book-event-price" x-text="formatEventPrice(event.price)"></span>
+                            </div>
+                            <div class="vb-book-event-card-meta">
+                                <span class="vb-book-event-date">
+                                    <i data-lucide="calendar" style="width:14px;height:14px;"></i>
+                                    <span x-text="formatEventDate(event.start_datetime)"></span>
+                                </span>
+                                <span class="vb-book-event-time">
+                                    <i data-lucide="clock" style="width:14px;height:14px;"></i>
+                                    <span x-text="formatEventTime(event.start_datetime) + ' – ' + formatEventTime(event.end_datetime)"></span>
+                                </span>
+                                <span x-show="event.location" class="vb-book-event-location">
+                                    <i data-lucide="map-pin" style="width:14px;height:14px;"></i>
+                                    <span x-text="event.location"></span>
+                                </span>
+                            </div>
+                            <div class="vb-book-event-card-footer">
+                                <span x-show="event.remaining > 0"
+                                      class="vb-book-event-spots"
+                                      x-text="t('event.spots_remaining').replace(':count', event.remaining)"></span>
+                                <span x-show="event.remaining <= 0 && event.allow_waitlist"
+                                      class="vb-book-event-badge vb-book-event-badge-waitlist"
+                                      x-text="t('event.waitlist_badge')"></span>
+                                <span x-show="event.remaining <= 0 && !event.allow_waitlist"
+                                      class="vb-book-event-badge vb-book-event-badge-full"
+                                      x-text="t('event.full_badge')"></span>
+                            </div>
+                        </button>
+                    </template>
+                </div>
+                <div x-show="eventList.length === 0" class="vb-book-empty">
+                    <span x-text="t('empty.no_events')"></span>
+                </div>
+            </div>
+
+            <!-- ═══ Event Step 2: Event Detail ═══ -->
+            <div x-show="isEventDetailStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('event.event_detail_title')"></div>
+                </div>
+                <div class="vb-book-event-detail" x-show="selectedEvent">
+                    <h3 class="vb-book-event-detail-name" x-text="selectedEvent?.name"></h3>
+                    <p class="vb-book-event-detail-desc" x-show="selectedEvent?.description" x-text="selectedEvent?.description"></p>
+
+                    <div class="vb-book-event-detail-grid">
+                        <div class="vb-book-event-detail-row">
+                            <span class="vb-book-event-detail-label" x-text="t('event.date_label')"></span>
+                            <span x-text="formatEventDate(selectedEvent?.start_datetime)"></span>
+                        </div>
+                        <div class="vb-book-event-detail-row">
+                            <span class="vb-book-event-detail-label" x-text="t('event.time_label')"></span>
+                            <span x-text="formatEventTime(selectedEvent?.start_datetime) + ' – ' + formatEventTime(selectedEvent?.end_datetime)"></span>
+                        </div>
+                        <div class="vb-book-event-detail-row" x-show="selectedEvent?.location">
+                            <span class="vb-book-event-detail-label" x-text="t('event.location_label')"></span>
+                            <span x-text="selectedEvent?.location"></span>
+                        </div>
+                        <div class="vb-book-event-detail-row">
+                            <span class="vb-book-event-detail-label" x-text="t('event.price_label')"></span>
+                            <span x-text="formatEventPrice(selectedEvent?.price)"></span>
+                        </div>
+                        <div class="vb-book-event-detail-row">
+                            <span class="vb-book-event-detail-label" x-text="t('event.spots_remaining').replace(':count', '')"></span>
+                            <span x-text="selectedEvent?.remaining + ' / ' + selectedEvent?.max_participants"></span>
+                        </div>
+                    </div>
+
+                    <div class="vb-book-form-actions" style="margin-top: 1.5rem;">
+                        <button type="button" class="vb-book-btn vb-book-btn-primary" @click="confirmEventDetail"
+                                x-text="t('event.select_event')"></button>
+                        <div class="vb-book-back-link">
+                            <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('event-list')"
+                                    x-text="t('back.change_event')"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Event Step 3: Spot Count ═══ -->
+            <div x-show="isEventSpotsStep" class="vb-book-step" x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('event.spots_title')"></div>
+                </div>
+                <div class="vb-book-party-size">
+                    <div class="vb-book-party-control">
+                        <button type="button" class="vb-book-party-btn"
+                                @click="decrementEventSpots"
+                                :disabled="eventSpotCount <= 1"
+                                aria-label="<?= __('booking.capacity.party_size_hint') ?>">
+                            <i data-lucide="minus"></i>
+                        </button>
+                        <div class="vb-book-party-count">
+                            <span class="vb-book-party-number" x-text="eventSpotCount"></span>
+                            <span class="vb-book-party-label" x-text="eventSpotCount === 1 ? t('event.spot') : t('event.spots')"></span>
+                        </div>
+                        <button type="button" class="vb-book-party-btn"
+                                @click="incrementEventSpots"
+                                :disabled="selectedEvent && eventSpotCount >= selectedEvent.remaining"
+                                aria-label="<?= __('booking.capacity.party_size_hint') ?>">
+                            <i data-lucide="plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="vb-book-form-actions" style="margin-top: 1.5rem;">
+                    <button type="button" class="vb-book-btn vb-book-btn-primary" @click="confirmEventSpots"
+                            x-text="t('buttons.continue')"></button>
+                    <div class="vb-book-back-link">
+                        <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('event-detail')"
+                                x-text="t('back.change_event')"></button>
+                    </div>
+                </div>
+            </div>
+
             <!-- ═══ Step 1: Service Selection ═══ -->
             <div x-show="isServiceStep" class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
@@ -691,10 +817,14 @@
                             <path class="vb-book-checkmark-check" d="M20 33 L28 41 L44 25"/>
                         </svg>
                     </div>
-                    <div class="vb-book-confirm-heading" x-text="t('confirmed.heading')"></div>
+                    <div class="vb-book-confirm-heading"
+                         x-text="eventIsWaitlisted ? t('event.waitlisted_title') : t('confirmed.heading')"></div>
 
                     <!-- Email-sent message (only when API confirms dispatch) -->
-                    <div class="vb-book-confirm-message" x-show="confirmEmailSent" x-text="confirmEmailSent"></div>
+                    <div class="vb-book-confirm-message" x-show="eventIsWaitlisted"
+                         x-text="t('event.waitlisted_message')"></div>
+                    <div class="vb-book-confirm-message" x-show="!eventIsWaitlisted && confirmEmailSent"
+                         x-text="confirmEmailSent"></div>
 
                     <!-- Custom confirmation message (tenant-configurable) -->
                     <template x-if="confirmCustomMessage">

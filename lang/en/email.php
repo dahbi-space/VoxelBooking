@@ -73,6 +73,14 @@ return [
         'footer'           => 'This email was sent by :app_name on behalf of :tenant.',
     ],
 
+    'waitlist_confirmation' => [
+        'subject'  => 'Waitlisted — :event',
+        'heading'  => "You're on the waitlist",
+        'greeting' => 'Hi :name,',
+        'body'     => "The event is currently full, but you've been added to the waitlist. We'll notify you if a spot opens up.",
+        'footer'   => 'If you have any questions, please contact us.',
+    ],
+
     'test' => [
         'subject' => ':app_name — SMTP Test',
         'title'   => 'SMTP Configuration Verified',

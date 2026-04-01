@@ -67,7 +67,7 @@ $pillBase = array_filter($pillFilters, fn($v) => $v !== null && $v !== '');
        class="vb-filter-pill <?= empty($filters['status']) ? 'is-active' : '' ?>">
         <?= __('admin.bookings.filter_all') ?>
     </a>
-    <?php foreach (['confirmed', 'pending', 'cancelled', 'completed', 'no_show', 'rescheduled'] as $s): ?>
+    <?php foreach (['confirmed', 'pending', 'waitlisted', 'cancelled', 'completed', 'no_show', 'rescheduled'] as $s): ?>
         <a href="<?= htmlspecialchars($baseUrl . '?' . http_build_query(array_filter(array_merge($pillBase, ['status' => $s, 'page' => 1]), fn($v) => $v !== null && $v !== '')), ENT_QUOTES, 'UTF-8') ?>"
            class="vb-filter-pill <?= ($filters['status'] ?? '') === $s ? 'is-active' : '' ?>">
             <?= __('admin.bookings.status_' . $s) ?>
@@ -141,7 +141,17 @@ $pillBase = array_filter($pillFilters, fn($v) => $v !== null && $v !== '');
                             <div class="vb-cell-primary"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
                             <div class="vb-cell-secondary"><?= htmlspecialchars($b['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
                         </td>
-                        <td><?= htmlspecialchars($b['service_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></td>
+                        <td>
+                            <?php
+                            $itemName = match ($b['booking_pattern'] ?? 'timeslot') {
+                                'resource' => $b['resource_name'] ?? '—',
+                                'event'    => $b['event_name'] ?? '—',
+                                'capacity' => __('admin.bookings.capacity_booking'),
+                                default    => $b['service_name'] ?? '—',
+                            };
+                            ?>
+                            <?= htmlspecialchars($itemName, ENT_QUOTES, 'UTF-8') ?>
+                        </td>
                         <td>
                             <div class="vb-cell-primary"><?= date('M j, Y', strtotime($b['start_datetime'])) ?></div>
                             <div class="vb-cell-secondary">

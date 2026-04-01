@@ -88,7 +88,7 @@ final class BookingService
         // Optional fields
         $optionalFields = [
             'service_id', 'staff_id', 'resource_id', 'event_id',
-            'party_size', 'notes', 'customer_timezone', 'source',
+            'party_size', 'notes', 'customer_timezone', 'source', 'status',
         ];
 
         foreach ($optionalFields as $field) {

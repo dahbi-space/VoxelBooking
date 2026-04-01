@@ -1700,3 +1700,148 @@ body {
   flex: 1;
   min-width: 200px;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   EVENT PATTERN — Card list, detail, and badge styles
+   ═══════════════════════════════════════════════════════════ */
+
+.vb-book-event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vb-book-event-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 24px;
+  background: var(--vb-bg);
+  border: 1px solid var(--vb-border);
+  border-radius: var(--vb-radius-xl);
+  cursor: pointer;
+  transition: all var(--vb-duration-fast) var(--vb-ease-out);
+  font-family: var(--vb-font-sans);
+  width: 100%;
+  text-align: left;
+}
+
+.vb-book-event-card:hover {
+  border-color: var(--vb-brand);
+  background: var(--vb-brand-light);
+  transform: translateY(-1px);
+  box-shadow: var(--vb-shadow-sm);
+}
+
+.vb-book-event-card:active {
+  transform: translateY(0);
+}
+
+.vb-book-event-card.is-full {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.vb-book-event-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vb-book-event-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--vb-text);
+}
+
+.vb-book-event-price {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--vb-brand);
+}
+
+.vb-book-event-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: var(--vb-text-secondary);
+}
+
+.vb-book-event-card-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vb-book-event-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.vb-book-event-spots {
+  font-size: 0.75rem;
+  color: var(--vb-accent, #10B981);
+  font-weight: 500;
+}
+
+.vb-book-event-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 50px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.vb-book-event-badge-waitlist {
+  background: #EDE9FE;
+  color: #7C3AED;
+}
+
+.vb-book-event-badge-full {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+/* Event Detail */
+
+.vb-book-event-detail-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--vb-text);
+  margin: 0 0 8px;
+}
+
+.vb-book-event-detail-desc {
+  font-size: 0.9rem;
+  color: var(--vb-text-secondary);
+  margin: 0 0 20px;
+  line-height: 1.6;
+}
+
+.vb-book-event-detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vb-book-event-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--vb-border);
+  font-size: 0.9rem;
+}
+
+.vb-book-event-detail-row:last-child {
+  border-bottom: none;
+}
+
+.vb-book-event-detail-label {
+  color: var(--vb-text-secondary);
+  font-weight: 500;
+}

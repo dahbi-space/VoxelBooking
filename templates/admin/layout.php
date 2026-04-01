@@ -144,6 +144,13 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                     <?= __('admin.nav.capacity_slots') ?>
                 </a>
                 <?php endif; ?>
+                <?php if ($canManage && $tenantPattern === 'event'): ?>
+                <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/events"
+                   class="vb-sidebar-link <?= $activePage === 'events' ? 'active' : '' ?>">
+                    <i data-lucide="ticket"></i>
+                    <?= __('admin.nav.events') ?>
+                </a>
+                <?php endif; ?>
                 <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/customers"
                    class="vb-sidebar-link <?= $activePage === 'customers' ? 'active' : '' ?>">
                     <i data-lucide="contact"></i>

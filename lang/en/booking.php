@@ -41,6 +41,7 @@ return [
         'edit_details'       => '← Edit details',
         'change_party_size'  => '← Change party size',
         'change_date_cap'    => '← Change date',
+        'change_event'       => '← Change event',
     ],
 
     // ── Form Labels ──
@@ -145,6 +146,9 @@ return [
         'no_slots'          => 'No available time slots',
         'no_slots_desc'     => 'This business has not configured any time slots yet.',
         'no_slots_date'     => 'No available slots on this day.',
+        // Event-pattern
+        'no_events'         => 'No upcoming events',
+        'no_events_desc'    => 'This business has no upcoming events scheduled.',
     ],
 
     // ── Capacity-Pattern Booking Page ──
@@ -158,6 +162,30 @@ return [
         'time_title'          => 'Select Time',
         'spots_remaining'     => ':count spots left',
         'slot_full'           => 'Full',
+    ],
+
+    // ── Event-Pattern Booking Page ──
+    'event' => [
+        'events_title'        => 'Upcoming Events',
+        'event_detail_title'  => 'Event Details',
+        'spots_title'         => 'How Many Spots?',
+        'spot'                => 'spot',
+        'spots'               => 'spots',
+        'spots_remaining'     => ':count spots left',
+        'event_full'          => 'This event is full.',
+        'join_waitlist'       => 'Join Waitlist',
+        'waitlist_notice'     => 'You will be added to the waitlist.',
+        'waitlisted_title'    => 'You\'re on the Waitlist',
+        'waitlisted_message'  => 'We\'ll notify you when a spot opens up.',
+        'location_label'      => 'Location',
+        'price_label'         => 'Price',
+        'date_label'          => 'Date',
+        'time_label'          => 'Time',
+        'per_person'          => 'per person',
+        'free'                => 'Free',
+        'select_event'        => 'Select',
+        'full_badge'          => 'Full',
+        'waitlist_badge'      => 'Waitlist',
     ],
 
     // ── Errors & Toasts ──
@@ -220,6 +248,12 @@ return [
         'date_required'         => 'Please select a date.',
         'party_size_invalid'    => 'Party size must be at least 1.',
         'capacity_exceeded'     => 'Not enough spots remaining for your party size.',
+        // Event-pattern
+        'event_required'        => 'Please select an event.',
+        'spot_count_invalid'    => 'Spot count must be at least 1.',
+        'event_full'            => 'This event is full.',
+        'event_cancelled'       => 'This event has been cancelled.',
+        'waitlist_full'         => 'The waitlist for this event is full.',
     ],
 
     // ── Recovery ──

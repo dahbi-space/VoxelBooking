@@ -286,6 +286,29 @@ CREATE TABLE capacity_slots (
 )
 ");
 
+// 026: events
+$pdo->exec("
+CREATE TABLE events (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT DEFAULT NULL,
+    location TEXT DEFAULT NULL,
+    price TEXT DEFAULT NULL,
+    max_participants INTEGER NOT NULL DEFAULT 20,
+    start_datetime TEXT NOT NULL,
+    end_datetime TEXT NOT NULL,
+    is_recurring INTEGER NOT NULL DEFAULT 0,
+    rrule TEXT DEFAULT NULL,
+    exception_dates TEXT DEFAULT NULL,
+    allow_waitlist INTEGER NOT NULL DEFAULT 0,
+    waitlist_max INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+)
+");
+
 // 010: api_keys
 $pdo->exec("
 CREATE TABLE api_keys (
@@ -425,7 +448,7 @@ CREATE TABLE tenant_email_templates (
 // Settings
 $settings = [
     ['installed_at', date('Y-m-d H:i:s')],
-    ['db_version', '24'],
+    ['db_version', '26'],
     ['app_name', 'VoxelBooking Demo'],
     ['timezone', 'Europe/Amsterdam'],
     ['locale', 'en'],
@@ -803,24 +826,51 @@ $stmt->execute([$workshopCustomers[0][0], $workshopId, $workshopCustomers[0][1],
 $stmt->execute([$workshopCustomers[1][0], $workshopId, $workshopCustomers[1][1], $workshopCustomers[1][2], $workshopCustomers[1][3], 2]);
 $stmt->execute([$workshopCustomers[2][0], $workshopId, $workshopCustomers[2][1], $workshopCustomers[2][2], $workshopCustomers[2][3], 1]);
 
-// Workshop Studio — bookings (half-day and full-day workshops)
+// Workshop Studio — events
+$workshopEvents = [
+    // One-off half-day: Woodworking 101
+    ['01JDEMO0004EVT00000001', 'Woodworking 101', 'Build your very first cutting board from European beech. All tools and materials provided.', 'Workshop Room A', 55.00, 12, '+5 days', '09:00', '13:00', 0, null, null, 0, 0],
+    // One-off full-day: Watercolor Landscapes
+    ['01JDEMO0004EVT00000002', 'Watercolor Landscapes', 'Capture the essence of light and shadow in a full-day plein-air painting session.', 'Art Studio', 85.00, 8, '+12 days', '10:00', '17:00', 0, null, null, 1, 3],
+    // Recurring weekly: Morning Yoga Flow
+    ['01JDEMO0004EVT00000003', 'Morning Yoga Flow', 'Energizing vinyasa class suitable for all levels. Bring your own mat or borrow one from us.', 'Studio B', 15.00, 20, '+3 days', '08:00', '09:00', 1, 'FREQ=WEEKLY;COUNT=12', null, 1, 5],
+    // One-off evening: Wine & Cheese Tasting
+    ['01JDEMO0004EVT00000004', 'Wine & Cheese Tasting', 'Explore five premier cru wines paired with artisan cheeses from the region.', 'Tasting Room', 45.00, 16, '+8 days', '19:00', '21:30', 0, null, null, 1, 4],
+    // One-off: Pottery Wheel Basics (nearly full — great for waitlist demo)
+    ['01JDEMO0004EVT00000005', 'Pottery Wheel Basics', 'Get your hands dirty! Learn centering, pulling, and trimming on the wheel.', 'Ceramics Lab', 65.00, 4, '+15 days', '14:00', '18:00', 0, null, null, 1, 2],
+];
+$eventStmt = $pdo->prepare("
+    INSERT INTO events (id, tenant_id, name, description, location, price,
+                        max_participants, start_datetime, end_datetime,
+                        is_recurring, rrule, exception_dates,
+                        allow_waitlist, waitlist_max, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+");
+foreach ($workshopEvents as [$eid, $name, $desc, $loc, $price, $maxP, $dateOff, $start, $end, $isRec, $rrule, $exc, $wl, $wlMax]) {
+    $date = (clone $today)->modify($dateOff)->format('Y-m-d');
+    $eventStmt->execute([$eid, $workshopId, $name, $desc, $loc, $price, $maxP,
+                         "{$date} {$start}:00", "{$date} {$end}:00",
+                         $isRec, $rrule, $exc, $wl, $wlMax]);
+}
+
+// Workshop Studio — bookings linked to events
 $workshopBookings = [
-    ['01JDEMO0004BOOK0000001', $workshopCustomers[0][0], '+5 days', '09:00', '13:00', 'confirmed', 1],
-    ['01JDEMO0004BOOK0000002', $workshopCustomers[1][0], '+5 days', '09:00', '13:00', 'confirmed', 1],
-    ['01JDEMO0004BOOK0000003', $workshopCustomers[2][0], '+12 days', '10:00', '17:00', 'confirmed', 1],
-    ['01JDEMO0004BOOK0000004', $workshopCustomers[0][0], '-7 days', '09:00', '16:00', 'completed', 1],
-    ['01JDEMO0004BOOK0000005', $workshopCustomers[1][0], '-14 days', '10:00', '15:00', 'rescheduled', 1],
+    ['01JDEMO0004BOOK0000001', $workshopCustomers[0][0], '01JDEMO0004EVT00000001', '+5 days', '09:00', '13:00', 'confirmed', 1],
+    ['01JDEMO0004BOOK0000002', $workshopCustomers[1][0], '01JDEMO0004EVT00000001', '+5 days', '09:00', '13:00', 'confirmed', 2],
+    ['01JDEMO0004BOOK0000003', $workshopCustomers[2][0], '01JDEMO0004EVT00000002', '+12 days', '10:00', '17:00', 'confirmed', 1],
+    ['01JDEMO0004BOOK0000004', $workshopCustomers[0][0], '01JDEMO0004EVT00000005', '+15 days', '14:00', '18:00', 'confirmed', 1],
+    ['01JDEMO0004BOOK0000005', $workshopCustomers[1][0], '01JDEMO0004EVT00000005', '+15 days', '14:00', '18:00', 'waitlisted', 1],
 ];
 $stmt = $pdo->prepare("
-    INSERT INTO bookings (id, tenant_id, booking_pattern, customer_id, start_datetime, end_datetime,
+    INSERT INTO bookings (id, tenant_id, booking_pattern, event_id, customer_id, start_datetime, end_datetime,
                           party_size, status, source, customer_timezone,
                           consent_given_at, consent_text_shown)
-    VALUES (?, ?, 'event', ?, ?, ?, ?, ?, 'web', 'Europe/Berlin',
+    VALUES (?, ?, 'event', ?, ?, ?, ?, ?, ?, 'web', 'Europe/Berlin',
             datetime('now'), 'I agree to the workshop terms and conditions.')
 ");
-foreach ($workshopBookings as [$id, $custId, $dateOffset, $start, $end, $status, $partySize]) {
+foreach ($workshopBookings as [$id, $custId, $eventId, $dateOffset, $start, $end, $status, $partySize]) {
     $date = (clone $today)->modify($dateOffset)->format('Y-m-d');
-    $stmt->execute([$id, $workshopId, $custId, "{$date} {$start}:00", "{$date} {$end}:00", $partySize, $status]);
+    $stmt->execute([$id, $workshopId, $eventId, $custId, "{$date} {$start}:00", "{$date} {$end}:00", $partySize, $status]);
 }
 
 // Workshop Studio — owner
@@ -837,6 +887,7 @@ $pdo->prepare("INSERT INTO auth_emails (email, user_type, user_id) VALUES (?, 'b
 $tenantCount = (int) $pdo->query("SELECT COUNT(*) FROM tenants")->fetchColumn();
 $customerCount = (int) $pdo->query("SELECT COUNT(*) FROM customers")->fetchColumn();
 $bookingCount = (int) $pdo->query("SELECT COUNT(*) FROM bookings")->fetchColumn();
+$eventCount = (int) $pdo->query("SELECT COUNT(*) FROM events")->fetchColumn();
 $businessUserCount = (int) $pdo->query("SELECT COUNT(*) FROM business_users")->fetchColumn();
 
 echo "✓ Demo database seeded at: {$demoDb}\n";
@@ -848,6 +899,7 @@ echo "    Trattoria Roma  (capacity) — owner@trattoria-roma.test / welcome3210
 echo "    Workshop Studio (event)    — owner@workshop-studio.test / welcome3210\n";
 echo "  Services:       " . count($services) . " (timeslot only)\n";
 echo "  Staff:          " . count($staffMembers) . " (timeslot only)\n";
+echo "  Events:         {$eventCount} (event only)\n";
 echo "  Customers:      {$customerCount}\n";
 echo "  Bookings:       {$bookingCount}\n";
 echo "  Business users: {$businessUserCount}\n";

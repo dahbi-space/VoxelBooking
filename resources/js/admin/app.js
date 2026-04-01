@@ -99,6 +99,9 @@ import {
     PlusCircle,
     UserCheck,
     UserMinus,
+    Ticket,
+    Bed,
+    Grid3X3,
 } from 'lucide';
 
 const ICON_SET = {
@@ -114,6 +117,7 @@ const ICON_SET = {
     UserCog, Layers, Filter, Award, Archive, RotateCcw, CheckCircle,
     CalendarX, Contact, StickyNote, ArrowLeft, ArrowRight, List, Save,
     CalendarOff, PlusCircle, UserCheck, UserMinus,
+    Ticket, Bed, Grid3X3,
 };
 
 // ── Alpine: CSP-safe component registration ──

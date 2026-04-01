@@ -18,13 +18,13 @@ import { createIcons } from 'lucide';
 import {
     ChevronLeft, ChevronRight, ChevronDown, Clock, Globe, Check, X,
     AlertCircle, Info, AlertTriangle, Calendar as CalendarIcon,
-    User, Users, ExternalLink, Download, Plus, Minus,
+    User, Users, ExternalLink, Download, Plus, Minus, MapPin, Ticket,
 } from 'lucide';
 
 const ICON_SET = {
     ChevronLeft, ChevronRight, ChevronDown, Clock, Globe, Check, X,
     AlertCircle, Info, AlertTriangle, Calendar: CalendarIcon,
-    User, Users, ExternalLink, Download, Plus, Minus,
+    User, Users, ExternalLink, Download, Plus, Minus, MapPin, Ticket,
 };
 
 // ── Globals injected by PHP ──
@@ -147,6 +147,12 @@ Alpine.data('bookingWizard', () => ({
     capacityMonth: new Date().getMonth(),
     capacityYear: new Date().getFullYear(),
 
+    // Event pattern state
+    eventList: [],
+    selectedEvent: null,
+    eventSpotCount: 1,
+    eventIsWaitlisted: false,
+
     // CSP-safe setters for x-model (nested property assignment is prohibited)
     setCustomerName(val) { this.customerName = val; },
     setCustomerEmail(val) { this.customerEmail = val; },
@@ -185,6 +191,9 @@ Alpine.data('bookingWizard', () => ({
     get isPartySizeStep() { return this.step === 'party-size'; },
     get isCapacityDateStep() { return this.step === 'capacity-date'; },
     get isCapacityTimeStep() { return this.step === 'capacity-time'; },
+    get isEventListStep() { return this.step === 'event-list'; },
+    get isEventDetailStep() { return this.step === 'event-detail'; },
+    get isEventSpotsStep() { return this.step === 'event-spots'; },
     get hasToast() { return !!this.toast; },
     get hasSelectedDate() { return !!this.selectedDate; },
     get hasNoSlots() { return this.availableSlots.length === 0 && !!this.selectedDate; },
@@ -207,6 +216,8 @@ Alpine.data('bookingWizard', () => ({
             this.loadResources();
         } else if (config.booking_pattern === 'capacity') {
             this.initCapacity();
+        } else if (config.booking_pattern === 'event') {
+            this.loadEvents();
         } else {
             this.step = 'unsupported';
         }
@@ -267,6 +278,9 @@ Alpine.data('bookingWizard', () => ({
         }
         if (config.booking_pattern === 'capacity') {
             return ['party-size', 'capacity-date', 'capacity-time', 'details', 'review'];
+        }
+        if (config.booking_pattern === 'event') {
+            return ['event-list', 'event-detail', 'event-spots', 'details', 'review'];
         }
         const steps = ['service'];
         if (this.staff.length > 1) steps.push('staff');
@@ -815,6 +829,7 @@ Alpine.data('bookingWizard', () => ({
         // Timeslot: needs date + time; Resource: needs check_in + check_out; Capacity: needs date + time
         if (config.booking_pattern === 'resource') return !!(b.check_in && b.check_out);
         if (config.booking_pattern === 'capacity') return !!(b.date && b.time && b.end_time);
+        if (config.booking_pattern === 'event') return !!(b.date && b.time && b.end_time);
         return !!(b.date && b.time && b.end_time);
     },
 
@@ -834,6 +849,13 @@ Alpine.data('bookingWizard', () => ({
             const start = `${b.date.replace(/-/g, '')}T${b.time.replace(':', '')}00`;
             const end = `${b.date.replace(/-/g, '')}T${b.end_time.replace(':', '')}00`;
             const title = encodeURIComponent(b.label || config.name);
+            return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}`;
+        }
+
+        if (config.booking_pattern === 'event') {
+            const start = `${b.date.replace(/-/g, '')}T${b.time.replace(':', '')}00`;
+            const end = `${b.date.replace(/-/g, '')}T${b.end_time.replace(':', '')}00`;
+            const title = encodeURIComponent(b.event_name || config.name);
             return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}`;
         }
 
@@ -1185,6 +1207,8 @@ Alpine.data('bookingWizard', () => ({
             this.submitResourceBooking();
         } else if (config.booking_pattern === 'capacity') {
             this.submitCapacityBooking();
+        } else if (config.booking_pattern === 'event') {
+            this.submitEventBooking();
         } else {
             this.submitBooking();
         }
@@ -1193,6 +1217,7 @@ Alpine.data('bookingWizard', () => ({
     get activeReviewRows() {
         if (config.booking_pattern === 'resource') return this.resourceSummaryRows;
         if (config.booking_pattern === 'capacity') return this.capacitySummaryRows;
+        if (config.booking_pattern === 'event') return this.eventSummaryRows;
         return this.summaryRows;
     },
 
@@ -1200,6 +1225,7 @@ Alpine.data('bookingWizard', () => ({
     get activeDetailsBackTarget() {
         if (config.booking_pattern === 'resource') return 'guests';
         if (config.booking_pattern === 'capacity') return 'capacity-time';
+        if (config.booking_pattern === 'event') return 'event-spots';
         return 'date';
     },
 
@@ -1266,6 +1292,7 @@ Alpine.data('bookingWizard', () => ({
     get activeConfirmRows() {
         if (config.booking_pattern === 'resource') return this.resourceConfirmRows;
         if (config.booking_pattern === 'capacity') return this.capacityConfirmRows;
+        if (config.booking_pattern === 'event') return this.eventConfirmRows;
         return this.confirmSummaryRows;
     },
 
@@ -1455,6 +1482,167 @@ Alpine.data('bookingWizard', () => ({
             }
 
             this.booking = data.booking;
+            this.goToStep('confirmed');
+            this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+        } catch {
+            this.submitting = false;
+            this.showToast(t('errors.connection'), 'error');
+        }
+    },
+
+    // ── Event pattern methods ──
+
+    async loadEvents() {
+        this.step = 'loading';
+        try {
+            const data = await this.api('/events');
+            this.eventList = data.events || [];
+            if (this.eventList.length === 0) {
+                this.step = 'empty';
+            } else {
+                this.goToStep('event-list');
+            }
+        } catch {
+            this.showToast(t('errors.connection'), 'error');
+            this.step = 'empty';
+        }
+    },
+
+    selectEvent(event) {
+        this.selectedEvent = event;
+        this.eventSpotCount = 1;
+        this.goToStep('event-detail');
+    },
+
+    confirmEventDetail() {
+        this.goToStep('event-spots');
+    },
+
+    incrementEventSpots() {
+        const max = this.selectedEvent ? this.selectedEvent.remaining : 10;
+        if (this.eventSpotCount < max) {
+            this.eventSpotCount++;
+        }
+    },
+
+    decrementEventSpots() {
+        if (this.eventSpotCount > 1) {
+            this.eventSpotCount--;
+        }
+    },
+
+    confirmEventSpots() {
+        this.goToStep('details');
+    },
+
+    formatEventDate(dateStr) {
+        try {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString(config.locale || 'en', { weekday: 'short', month: 'short', day: 'numeric' });
+        } catch {
+            return dateStr;
+        }
+    },
+
+    formatEventTime(dateStr) {
+        try {
+            const d = new Date(dateStr);
+            return d.toLocaleTimeString(config.locale || 'en', { hour: '2-digit', minute: '2-digit' });
+        } catch {
+            return '';
+        }
+    },
+
+    formatEventPrice(price) {
+        if (!price || parseFloat(price) === 0) return t('event.free');
+        return this.formatPrice(price);
+    },
+
+    get eventSummaryRows() {
+        const rows = [];
+        if (this.selectedEvent) {
+            rows.push({ label: t('summary.service_label'), value: this.selectedEvent.name });
+            rows.push({ label: t('event.date_label'), value: this.formatEventDate(this.selectedEvent.start_datetime) });
+            rows.push({
+                label: t('event.time_label'),
+                value: `${this.formatEventTime(this.selectedEvent.start_datetime)} – ${this.formatEventTime(this.selectedEvent.end_datetime)}`
+            });
+            if (this.selectedEvent.location) {
+                rows.push({ label: t('event.location_label'), value: this.selectedEvent.location });
+            }
+            rows.push({
+                label: t('event.spots_title'),
+                value: `${this.eventSpotCount} ${this.eventSpotCount === 1 ? t('event.spot') : t('event.spots')}`
+            });
+            if (this.selectedEvent.price && parseFloat(this.selectedEvent.price) > 0) {
+                rows.push({ label: t('event.price_label'), value: this.formatPrice(this.selectedEvent.price) });
+            }
+        }
+        return rows;
+    },
+
+    get eventConfirmRows() {
+        if (!this.booking) return [];
+        const b = this.booking;
+        const rows = [];
+        if (b.event_name) rows.push({ label: t('summary.service_label'), value: b.event_name });
+        if (b.date) rows.push({ label: t('event.date_label'), value: this.formatDateDisplay(b.date) });
+        if (b.time) {
+            rows.push({ label: t('event.time_label'), value: `${b.time} – ${b.end_time}` });
+        }
+        rows.push({
+            label: t('event.spots_title'),
+            value: `${b.spot_count} ${b.spot_count === 1 ? t('event.spot') : t('event.spots')}`
+        });
+        if (b.waitlisted) {
+            rows.push({ label: t('event.waitlist_badge'), value: t('event.waitlisted_message') });
+        }
+        return rows;
+    },
+
+    async submitEventBooking() {
+        if (config.is_demo) {
+            this.showToast(t('demo_notice'), 'error');
+            return;
+        }
+        if (this.submitting) return;
+        this.submitting = true;
+
+        // Determine event date for the API
+        const eventDate = this.selectedEvent.date
+            || this.selectedEvent.start_datetime.substring(0, 10);
+
+        const payload = {
+            event_id: this.selectedEvent.id,
+            date: eventDate,
+            spot_count: this.eventSpotCount,
+            customer: {
+                name: this.customerName.trim(),
+                email: this.customerEmail.trim(),
+                phone: this.customerPhone.trim() || '',
+            },
+            notes: this.customerNotes.trim() || '',
+            custom_fields: Object.keys(this.customFields).length > 0 ? this.customFields : null,
+            consent_given: this.consentGiven,
+            customer_timezone: this.customerTz,
+            __ts: window.__VB_TS__,
+            __hp: this.$el.querySelector('[name="__hp"]')?.value || '',
+        };
+
+        try {
+            const data = await this.api('/bookings', {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            });
+
+            if (data.error) {
+                this.submitting = false;
+                this.showToast(data.message || t('errors.generic'), 'error');
+                return;
+            }
+
+            this.booking = data.booking;
+            this.eventIsWaitlisted = data.booking.waitlisted || false;
             this.goToStep('confirmed');
             this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
         } catch {

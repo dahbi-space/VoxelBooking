@@ -574,6 +574,8 @@
     .vb-status-no_show { color: var(--vb-warning); }
     .vb-status-rescheduled::before { background: var(--vb-info); }
     .vb-status-rescheduled { color: var(--vb-info); }
+    .vb-status-waitlisted::before { background: #8B5CF6; }
+    .vb-status-waitlisted { color: #8B5CF6; }
 
     /* ══════════════════════════════════════════════════════════════
        FILTER PILLS — Capsule-style filter bar

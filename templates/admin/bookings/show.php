@@ -81,7 +81,17 @@ ob_start();
         </div>
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.bookings.service') ?></span>
-            <span class="vb-info-value"><?= htmlspecialchars($booking['service_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="vb-info-value">
+                <?php
+                $itemLabel = match ($booking['booking_pattern'] ?? 'timeslot') {
+                    'resource' => $booking['resource_name'] ?? '—',
+                    'event'    => $booking['event_name'] ?? '—',
+                    'capacity' => __('admin.bookings.capacity_booking'),
+                    default    => $booking['service_name'] ?? '—',
+                };
+                ?>
+                <?= htmlspecialchars($itemLabel, ENT_QUOTES, 'UTF-8') ?>
+            </span>
         </div>
         <?php if (!empty($booking['staff_name'])): ?>
         <div class="vb-info-row">
@@ -139,7 +149,7 @@ ob_start();
             <div class="vb-form-group">
                 <label for="booking_status" class="vb-label"><?= __('admin.bookings.status') ?></label>
                 <select id="booking_status" name="status" class="vb-select">
-                    <?php foreach (['pending','confirmed','cancelled','completed','no_show','rescheduled'] as $s): ?>
+                    <?php foreach (['pending','confirmed','cancelled','completed','no_show','rescheduled','waitlisted'] as $s): ?>
                         <option value="<?= $s ?>" <?= $booking['status'] === $s ? 'selected' : '' ?>>
                             <?= __('admin.bookings.status_' . $s) ?>
                         </option>

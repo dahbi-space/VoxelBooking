@@ -175,6 +175,15 @@ return function (Router $router): void {
             $router->post('/admin/tenants/{tenant_id}/capacity-slots/{id}/toggle', \App\Controllers\Admin\CapacitySlotsController::class, 'toggleActive');
             $router->post('/admin/tenants/{tenant_id}/capacity-slots/{id}/delete', \App\Controllers\Admin\CapacitySlotsController::class, 'delete');
 
+            // Events management (Phase E — event-pattern tenants)
+            $router->get('/admin/tenants/{tenant_id}/events', \App\Controllers\Admin\EventsController::class, 'index');
+            $router->get('/admin/tenants/{tenant_id}/events/create', \App\Controllers\Admin\EventsController::class, 'create');
+            $router->post('/admin/tenants/{tenant_id}/events', \App\Controllers\Admin\EventsController::class, 'store');
+            $router->get('/admin/tenants/{tenant_id}/events/{id}/edit', \App\Controllers\Admin\EventsController::class, 'edit');
+            $router->post('/admin/tenants/{tenant_id}/events/{id}', \App\Controllers\Admin\EventsController::class, 'update');
+            $router->post('/admin/tenants/{tenant_id}/events/{id}/toggle', \App\Controllers\Admin\EventsController::class, 'toggleActive');
+            $router->post('/admin/tenants/{tenant_id}/events/{id}/delete', \App\Controllers\Admin\EventsController::class, 'delete');
+
             // Calendar views — tenant-context (all business user roles + operator)
             $router->get('/admin/tenants/{tenant_id}/calendar', \App\Controllers\Admin\CalendarController::class, 'day');
             $router->get('/admin/tenants/{tenant_id}/calendar/week', \App\Controllers\Admin\CalendarController::class, 'week');
@@ -201,6 +210,10 @@ return function (Router $router): void {
         // Capacity-pattern public API (Phase C)
         $router->get('/api/{slug}/capacity/available-dates', \App\Controllers\Booking\BookingApiController::class, 'capacityAvailableDates');
         $router->get('/api/{slug}/capacity/slots', \App\Controllers\Booking\BookingApiController::class, 'capacitySlots');
+
+        // Event-pattern public API (Phase E)
+        $router->get('/api/{slug}/events', \App\Controllers\Booking\BookingApiController::class, 'events');
+        $router->get('/api/{slug}/events/{id}', \App\Controllers\Booking\BookingApiController::class, 'eventDetail');
 
         // ── Privacy endpoint (GDPR data-subject rights) ──
         // No auth — customer ULID is the bearer token (128-bit entropy)

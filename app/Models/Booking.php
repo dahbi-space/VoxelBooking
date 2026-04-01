@@ -20,7 +20,7 @@ final class Booking
 {
     /** Valid booking statuses */
     private const VALID_STATUSES = [
-        'pending', 'confirmed', 'cancelled', 'completed', 'no_show', 'rescheduled',
+        'pending', 'confirmed', 'cancelled', 'completed', 'no_show', 'rescheduled', 'waitlisted',
     ];
 
     /** Allowlisted sort columns (prevents SQL injection) */
@@ -43,12 +43,16 @@ final class Booking
             "SELECT b.*, t.`name` AS `tenant_name`, t.`slug` AS `tenant_slug`,
                     c.`name` AS `customer_name`, c.`email` AS `customer_email`,
                     s.`name` AS `service_name`,
-                    st.`name` AS `staff_name`
+                    st.`name` AS `staff_name`,
+                    r.`name` AS `resource_name`,
+                    ev.`name` AS `event_name`
              FROM `bookings` b
              LEFT JOIN `tenants` t ON t.`id` = b.`tenant_id`
              LEFT JOIN `customers` c ON c.`id` = b.`customer_id`
              LEFT JOIN `services` s ON s.`id` = b.`service_id`
              LEFT JOIN `staff` st ON st.`id` = b.`staff_id`
+             LEFT JOIN `resources` r ON r.`id` = b.`resource_id`
+             LEFT JOIN `events` ev ON ev.`id` = b.`event_id`
              WHERE b.`id` = ?
              LIMIT 1",
             [$id]
@@ -80,11 +84,15 @@ final class Booking
         return Database::query(
             "SELECT b.*, t.`name` AS `tenant_name`, t.`slug` AS `tenant_slug`,
                     c.`name` AS `customer_name`, c.`email` AS `customer_email`,
-                    s.`name` AS `service_name`
+                    s.`name` AS `service_name`,
+                    r.`name` AS `resource_name`,
+                    ev.`name` AS `event_name`
              FROM `bookings` b
              LEFT JOIN `tenants` t ON t.`id` = b.`tenant_id`
              LEFT JOIN `customers` c ON c.`id` = b.`customer_id`
              LEFT JOIN `services` s ON s.`id` = b.`service_id`
+             LEFT JOIN `resources` r ON r.`id` = b.`resource_id`
+             LEFT JOIN `events` ev ON ev.`id` = b.`event_id`
              {$whereClause}
              ORDER BY {$orderCol} {$orderDir}
              LIMIT ? OFFSET ?",
@@ -138,11 +146,15 @@ final class Booking
         return Database::query(
             "SELECT b.*, t.`name` AS `tenant_name`, t.`slug` AS `tenant_slug`,
                     c.`name` AS `customer_name`, c.`email` AS `customer_email`,
-                    s.`name` AS `service_name`
+                    s.`name` AS `service_name`,
+                    r.`name` AS `resource_name`,
+                    ev.`name` AS `event_name`
              FROM `bookings` b
              LEFT JOIN `tenants` t ON t.`id` = b.`tenant_id`
              LEFT JOIN `customers` c ON c.`id` = b.`customer_id`
              LEFT JOIN `services` s ON s.`id` = b.`service_id`
+             LEFT JOIN `resources` r ON r.`id` = b.`resource_id`
+             LEFT JOIN `events` ev ON ev.`id` = b.`event_id`
              {$whereClause}
              ORDER BY {$orderCol} {$orderDir}
              LIMIT ? OFFSET ?",

@@ -14,6 +14,7 @@ use App\Engine\Request;
 use App\Engine\Response;
 use App\Engine\ResourceCalculator;
 use App\Engine\CapacityCalculator;
+use App\Engine\EventCalculator;
 use App\Engine\TimeSlotCalculator;
 use App\Engine\Ulid;
 use App\Engine\Version;
@@ -233,6 +234,29 @@ final class BookingsController
             ]);
         }
 
+        // Event pattern: load events
+        $isEventPattern = ($tenant['booking_pattern'] ?? '') === 'event';
+        if ($isEventPattern) {
+            $events = Database::query(
+                'SELECT `id`, `name`, `max_participants`, `start_datetime`, `end_datetime`, `allow_waitlist`
+                 FROM `events`
+                 WHERE `tenant_id` = ? AND `is_active` = 1
+                 ORDER BY `start_datetime` ASC',
+                [$tenantId]
+            );
+
+            $old = $_SESSION['_old_input'] ?? [];
+
+            return $this->render('admin.tenants.bookings.create-event', __('admin.bookings.create_title'), [
+                'documentTitle' => __('admin.bookings.create_title'),
+                'tenant'        => $tenant,
+                'tenantId'      => $tenantId,
+                'events'        => $events,
+                'flash'         => $this->flash(),
+                'old'           => $old,
+            ]);
+        }
+
         // Timeslot pattern: services + staff
         $services = Database::query(
             'SELECT `id`, `name`, `duration_minutes`, `price`, `price_label`
@@ -311,6 +335,9 @@ final class BookingsController
         }
         if ($pattern === 'capacity') {
             return $this->storeCapacityBooking($request, $tenant, $tenantId);
+        }
+        if ($pattern === 'event') {
+            return $this->storeEventBooking($request, $tenant, $tenantId);
         }
 
         // Collect input
@@ -753,6 +780,112 @@ final class BookingsController
             }
 
             Logger::error('Admin capacity booking creation failed', [
+                'tenant' => $tenantId,
+                'error'  => $e->getMessage(),
+            ]);
+
+            $this->setFlash('error', __('admin.bookings.flash_create_failed'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+        }
+    }
+
+    /**
+     * Store an event-pattern booking (admin manual entry).
+     */
+    private function storeEventBooking(Request $request, array $tenant, string $tenantId): Response
+    {
+        $this->storeOldInput($request);
+
+        $eventId       = $request->string('event_id') ?: null;
+        $date          = trim($request->string('date'));
+        $spotCount     = max(1, (int) $request->string('spot_count'));
+        $customerName  = trim($request->string('customer_name'));
+        $customerEmail = trim($request->string('customer_email'));
+        $customerPhone = trim($request->string('customer_phone'));
+        $notes         = trim($request->string('notes'));
+
+        // Validation
+        if (!$eventId) {
+            $this->setFlash('error', __('admin.events.error_name_required'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+        }
+        if (!$customerName || !$customerEmail) {
+            $this->setFlash('error', __('admin.bookings.flash_create_failed'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+        }
+
+        // Load event
+        $events = Database::query(
+            'SELECT * FROM `events` WHERE `id` = ? AND `tenant_id` = ? AND `is_active` = 1',
+            [$eventId, $tenantId]
+        );
+        if (empty($events)) {
+            $this->setFlash('error', __('admin.events.error_name_required'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+        }
+        $event = $events[0];
+
+        // Determine date (one-off: use event date; recurring: require date input)
+        if (!$date) {
+            $date = date('Y-m-d', strtotime($event['start_datetime']));
+        }
+
+        // Check availability
+        $availability = EventCalculator::checkAvailability($tenant, $eventId, $date, $spotCount);
+        if (!$availability['available']) {
+            $this->setFlash('error', __('booking.api.event_full'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+        }
+
+        $isWaitlisted = $availability['waitlisted'];
+
+        // Build booking
+        $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+        $origStart = new \DateTimeImmutable($event['start_datetime'], $tz);
+        $origEnd = new \DateTimeImmutable($event['end_datetime'], $tz);
+        $startDt = $date . ' ' . $origStart->format('H:i:s');
+        $endDt = $date . ' ' . $origEnd->format('H:i:s');
+
+        $pdo = Database::connect();
+        $pdo->beginTransaction();
+
+        try {
+            $customerId = CustomerService::findOrCreate($tenantId, $customerName, $customerEmail, $customerPhone);
+
+            $bookingData = [
+                'tenant_id'       => $tenantId,
+                'customer_id'     => $customerId,
+                'booking_pattern' => 'event',
+                'event_id'        => $eventId,
+                'start_datetime'  => $startDt,
+                'end_datetime'    => $endDt,
+                'party_size'      => $spotCount,
+                'status'          => $isWaitlisted ? 'waitlisted' : 'confirmed',
+                'source'          => 'admin',
+            ];
+
+            if ($notes !== '') {
+                $bookingData['notes'] = $notes;
+            }
+
+            $result = BookingService::createBooking($bookingData, $tenant, false);
+            $pdo->commit();
+
+            Database::execute(
+                'UPDATE `customers` SET `booking_count` = `booking_count` + 1, `last_booking_at` = NOW() WHERE `id` = ?',
+                [$customerId]
+            );
+
+            unset($_SESSION['_old_input']);
+            $this->setFlash('success', __('admin.bookings.flash_created'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/{$result['id']}");
+
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            Logger::error('Admin event booking creation failed', [
                 'tenant' => $tenantId,
                 'error'  => $e->getMessage(),
             ]);

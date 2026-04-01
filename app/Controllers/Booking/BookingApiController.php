@@ -10,6 +10,7 @@ use App\Engine\Locale;
 use App\Engine\TimeSlotCalculator;
 use App\Engine\ResourceCalculator;
 use App\Engine\CapacityCalculator;
+use App\Engine\EventCalculator;
 use App\Engine\BookingService;
 use App\Engine\Ulid;
 use App\Engine\AuditLog;
@@ -335,6 +336,9 @@ final class BookingApiController
         }
         if ($pattern === 'capacity') {
             return $this->createCapacityBooking($tenant, $input, $customerName, $customerEmail, $customerPhone);
+        }
+        if ($pattern === 'event') {
+            return $this->createEventBooking($tenant, $input, $customerName, $customerEmail, $customerPhone);
         }
 
         // ── Timeslot-specific validation and booking creation ──
@@ -976,6 +980,278 @@ final class BookingApiController
             }
 
             Logger::error('Capacity booking creation failed', [
+                'tenant' => $tenant['slug'] ?? '',
+                'error'  => $e->getMessage(),
+            ]);
+
+            return Response::json([
+                'error'   => 'booking_failed',
+                'message' => __('booking.api.booking_failed'),
+            ], 500);
+        }
+    }
+
+    // ── Event-pattern read endpoints ──
+
+    /**
+     * GET /api/{slug}/events
+     *
+     * Returns upcoming events with remaining spots, sorted chronologically.
+     * Recurring events are expanded from RRULE into concrete instances.
+     */
+    public function events(Request $request): Response
+    {
+        $slug = $request->getAttribute('slug');
+        $tenant = $this->resolveTenant($slug);
+        if (!$tenant) {
+            return Response::json(['error' => 'tenant_not_found'], 404);
+        }
+
+        $this->resolveLocale($tenant, $request);
+
+        $result = EventCalculator::getUpcomingEvents($tenant);
+
+        return Response::json($result);
+    }
+
+    /**
+     * GET /api/{slug}/events/{id}
+     *
+     * Returns a single event detail with availability info.
+     * For recurring events, pass ?date=YYYY-MM-DD to select the instance.
+     */
+    public function eventDetail(Request $request): Response
+    {
+        $slug = $request->getAttribute('slug');
+        $tenant = $this->resolveTenant($slug);
+        if (!$tenant) {
+            return Response::json(['error' => 'tenant_not_found'], 404);
+        }
+
+        $this->resolveLocale($tenant, $request);
+
+        $eventId = $request->getAttribute('id');
+        $date = $request->string('date') ?: null;
+
+        $result = EventCalculator::getEventDetail($tenant, $eventId, $date);
+
+        if (!$result['event']) {
+            return Response::json(['error' => 'event_not_found'], 404);
+        }
+
+        return Response::json($result);
+    }
+
+    // ── Event-pattern booking creation ──
+
+    /**
+     * Create an event-pattern booking.
+     *
+     * Validates event availability and spot count, handles waitlist behavior.
+     * If event is full and allows waitlist, creates booking with status 'waitlisted'.
+     */
+    private function createEventBooking(
+        array $tenant,
+        array $input,
+        string $customerName,
+        string $customerEmail,
+        string $customerPhone,
+    ): Response {
+        $eventId   = $input['event_id'] ?? null;
+        $date      = $input['date'] ?? null;
+        $spotCount = (int) ($input['spot_count'] ?? 1);
+        $consentGiven = (bool) ($input['consent_given'] ?? false);
+
+        if (!$eventId) {
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.event_required')], 422);
+        }
+        if (!$date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.date_required')], 422);
+        }
+        if ($spotCount < 1) {
+            return Response::json(['error' => 'validation', 'message' => __('booking.api.spot_count_invalid')], 422);
+        }
+
+        // Pre-lock check for fast feedback
+        $availability = EventCalculator::checkAvailability($tenant, $eventId, $date, $spotCount);
+        if (!$availability['available']) {
+            $errorKey = $availability['error'] ?? 'event_full';
+            $messageKey = match ($errorKey) {
+                'waitlist_full' => 'booking.api.waitlist_full',
+                'instance_cancelled' => 'booking.api.event_cancelled',
+                default => 'booking.api.event_full',
+            };
+            return Response::json([
+                'error'   => $errorKey,
+                'message' => __($messageKey),
+            ], 409);
+        }
+
+        $isWaitlisted = $availability['waitlisted'];
+
+        // Load event details for datetime
+        $eventRows = Database::query(
+            'SELECT * FROM `events` WHERE `id` = ? AND `tenant_id` = ? AND `is_active` = 1',
+            [$eventId, $tenant['id']]
+        );
+        if (empty($eventRows)) {
+            return Response::json(['error' => 'event_not_found', 'message' => __('booking.api.event_required')], 422);
+        }
+        $event = $eventRows[0];
+
+        // Build start/end datetime from event time + instance date
+        $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+        $origStart = new \DateTimeImmutable($event['start_datetime'], $tz);
+        $origEnd = new \DateTimeImmutable($event['end_datetime'], $tz);
+        $startDt = $date . ' ' . $origStart->format('H:i:s');
+        $endDt = $date . ' ' . $origEnd->format('H:i:s');
+
+        // Double-booking prevention: transaction + FOR UPDATE lock
+        $pdo = Database::connect();
+        $pdo->beginTransaction();
+
+        try {
+            // Lock existing event bookings for this event+date
+            $lockStmt = $pdo->prepare(
+                'SELECT `id` FROM `bookings`
+                 WHERE `tenant_id` = ? AND `event_id` = ? AND `booking_pattern` = \'event\'
+                 AND DATE(`start_datetime`) = ? AND `status` IN (\'confirmed\', \'rescheduled\', \'waitlisted\')
+                 FOR UPDATE'
+            );
+            $lockStmt->execute([$tenant['id'], $eventId, $date]);
+
+            // Re-check availability inside the lock
+            $recheck = EventCalculator::checkAvailability($tenant, $eventId, $date, $spotCount);
+            if (!$recheck['available']) {
+                $pdo->rollBack();
+                $errorKey = $recheck['error'] ?? 'event_full';
+                $messageKey = match ($errorKey) {
+                    'waitlist_full' => 'booking.api.waitlist_full',
+                    default => 'booking.api.event_full',
+                };
+                return Response::json([
+                    'error'   => $errorKey,
+                    'message' => __($messageKey),
+                ], 409);
+            }
+
+            $isWaitlisted = $recheck['waitlisted'];
+
+            // Find or create customer
+            $customerId = CustomerService::findOrCreate(
+                $tenant['id'],
+                $customerName,
+                $customerEmail,
+                $customerPhone,
+            );
+
+            // Build booking data
+            $bookingData = [
+                'tenant_id'       => $tenant['id'],
+                'customer_id'     => $customerId,
+                'booking_pattern' => 'event',
+                'event_id'        => $eventId,
+                'start_datetime'  => $startDt,
+                'end_datetime'    => $endDt,
+                'party_size'      => $spotCount,
+                'status'          => $isWaitlisted ? 'waitlisted' : 'confirmed',
+                'source'          => 'web',
+            ];
+
+            $notes = trim($input['notes'] ?? '');
+            if ($notes !== '') {
+                $bookingData['notes'] = $notes;
+            }
+
+            $customFields = $input['custom_fields'] ?? null;
+            if ($customFields && is_array($customFields)) {
+                $bookingData['custom_field_data'] = $customFields;
+            }
+
+            $customerTimezone = trim($input['customer_timezone'] ?? '');
+            if ($customerTimezone !== '' && @timezone_open($customerTimezone)) {
+                $bookingData['customer_timezone'] = $customerTimezone;
+            }
+
+            $result = BookingService::createBooking($bookingData, $tenant, $consentGiven);
+
+            $pdo->commit();
+
+            // After commit: update customer stats
+            Database::execute(
+                'UPDATE `customers` SET `booking_count` = `booking_count` + 1, `last_booking_at` = NOW() WHERE `id` = ?',
+                [$customerId]
+            );
+
+            // After commit: dispatch confirmation email (different for waitlisted)
+            $emailSent = false;
+            if (Mailer::isConfigured()) {
+                try {
+                    $slotDt = new \DateTimeImmutable($startDt, $tz);
+                    $slotEndDt = new \DateTimeImmutable($endDt, $tz);
+
+                    $emailBookingData = [
+                        'date'           => $date,
+                        'formatted_date' => Locale::dateLong($slotDt),
+                        'time'           => $origStart->format('H:i'),
+                        'end_time'       => $origEnd->format('H:i'),
+                        'duration'       => $spotCount . ' ' . ($spotCount === 1 ? __('booking.event.spot') : __('booking.event.spots')),
+                    ];
+
+                    if ($isWaitlisted) {
+                        $emailResult = Mailer::sendWaitlistConfirmation(
+                            $customerEmail,
+                            $customerName,
+                            $emailBookingData,
+                            $event['name'],
+                            $tenant['name'],
+                            $tenant['id'],
+                            $result['id'],
+                            $tenant['brand_color'] ?? '#2563EB',
+                        );
+                    } else {
+                        $emailResult = Mailer::sendBookingConfirmation(
+                            $customerEmail,
+                            $customerName,
+                            $emailBookingData,
+                            $event['name'],
+                            null, // no staff
+                            $tenant['name'],
+                            $tenant['id'],
+                            $result['id'],
+                            $tenant['brand_color'] ?? '#2563EB',
+                        );
+                    }
+                    $emailSent = $emailResult['sent'] && Mailer::isProductionSmtp();
+                } catch (\Throwable $e) {
+                    Logger::error('Event confirmation email dispatch failed', [
+                        'booking' => $result['id'],
+                        'error'   => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            return Response::json([
+                'booking' => [
+                    'id'               => $result['id'],
+                    'event_name'       => $event['name'],
+                    'date'             => $date,
+                    'time'             => $origStart->format('H:i'),
+                    'end_time'         => $origEnd->format('H:i'),
+                    'spot_count'       => $spotCount,
+                    'status'           => $isWaitlisted ? 'waitlisted' : 'confirmed',
+                    'waitlisted'       => $isWaitlisted,
+                    'consent_recorded' => $result['consent_recorded'],
+                    'email_sent'       => $emailSent,
+                ],
+            ], 201);
+
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            Logger::error('Event booking creation failed', [
                 'tenant' => $tenant['slug'] ?? '',
                 'error'  => $e->getMessage(),
             ]);
