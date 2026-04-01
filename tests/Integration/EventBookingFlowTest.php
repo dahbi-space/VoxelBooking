@@ -20,8 +20,15 @@ use PHPUnit\Framework\TestCase;
  * - Admin: GET  /admin/tenants/{id}/events (event list page)
  * - Admin: GET  /admin/tenants/{id}/events/create (create form)
  * - Admin: POST /admin/tenants/{id}/events (store event)
+ * - Admin: GET  /admin/tenants/{id}/events/{id}/edit (edit form)
+ * - Admin: POST /admin/tenants/{id}/events/{id} (update event)
+ * - Admin: POST /admin/tenants/{id}/events/{id}/toggle (toggle active)
+ * - Admin: POST /admin/tenants/{id}/events/{id}/delete (delete event)
  * - Admin: POST /admin/tenants/{id}/bookings/create (manual event booking)
  * - Admin: POST /admin/tenants/{id}/bookings/{id}/status (waitlisted→confirmed)
+ * - Recurring event instance expansion (unique date keys)
+ * - Non-event tenant redirect (manager-denied access)
+ * - Dashboard pattern-aware booking display
  *
  * Uses real HTTP against the running app at APP_TEST_URL.
  */
@@ -292,12 +299,249 @@ final class EventBookingFlowTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════
+    // Tests: Admin — event edit/update
+    // ════════════════════════════════════════════════════════════════
+
+    public function testAdminEventEditFormLoads(): void
+    {
+        $res = self::httpGetWithCookie(
+            '/admin/tenants/' . self::$tenantId . '/events/' . self::$eventId . '/edit',
+            self::$operatorCookie
+        );
+        $this->assertSame(200, $res['code'], 'Admin event edit form must return 200');
+        $this->assertStringContainsString('Integration Test Event', $res['body']);
+    }
+
+    public function testAdminEventUpdateSavesChanges(): void
+    {
+        // Get CSRF from edit form
+        $formRes = self::httpGetWithCookie(
+            '/admin/tenants/' . self::$tenantId . '/events/' . self::$eventId . '/edit',
+            self::$operatorCookie
+        );
+        $csrf = self::$operatorCsrf;
+        if (preg_match('/name="_csrf_token"\s+value="([^"]+)"/', $formRes['body'], $m)) {
+            $csrf = $m[1];
+        }
+
+        $event = Database::query('SELECT * FROM `events` WHERE `id` = ?', [self::$eventId])[0];
+        $startDate = date('Y-m-d', strtotime($event['start_datetime']));
+        $endDate = date('Y-m-d', strtotime($event['end_datetime']));
+
+        $res = self::httpPostWithCookie(
+            '/admin/tenants/' . self::$tenantId . '/events/' . self::$eventId,
+            [
+                '_csrf_token'       => $csrf,
+                'name'              => 'Updated Event Name',
+                'description'       => 'Updated via test',
+                'location'          => 'Updated Room',
+                'price'             => '35.00',
+                'max_participants'  => '25',
+                'start_date'        => $startDate,
+                'start_time'        => '10:00',
+                'end_date'          => $endDate,
+                'end_time'          => '14:00',
+            ],
+            self::$operatorCookie
+        );
+
+        $this->assertContains($res['code'], [302, 303], 'Event update must redirect');
+
+        // Verify changes persisted
+        $updated = Database::query('SELECT * FROM `events` WHERE `id` = ?', [self::$eventId])[0];
+        $this->assertSame('Updated Event Name', $updated['name']);
+        $this->assertSame('35.00', $updated['price']);
+
+        // Restore original name for subsequent tests
+        Database::execute(
+            "UPDATE `events` SET `name` = 'Integration Test Event', `price` = '30.00' WHERE `id` = ?",
+            [self::$eventId]
+        );
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Tests: Admin — toggle active / delete
+    // ════════════════════════════════════════════════════════════════
+
+    public function testAdminEventToggleDeactivatesAndReactivates(): void
+    {
+        // Get CSRF from event list
+        $listRes = self::httpGetWithCookie(
+            '/admin/tenants/' . self::$tenantId . '/events',
+            self::$operatorCookie
+        );
+        $csrf = self::$operatorCsrf;
+        if (preg_match('/name="_csrf_token"\s+value="([^"]+)"/', $listRes['body'], $m)) {
+            $csrf = $m[1];
+        }
+
+        // Toggle off
+        $res = self::httpPostWithCookie(
+            '/admin/tenants/' . self::$tenantId . '/events/' . self::$eventId . '/toggle',
+            ['_csrf_token' => $csrf],
+            self::$operatorCookie
+        );
+        $this->assertContains($res['code'], [302, 303], 'Toggle must redirect');
+
+        $event = Database::query('SELECT `is_active` FROM `events` WHERE `id` = ?', [self::$eventId])[0];
+        $this->assertSame(0, (int) $event['is_active'], 'Event should be deactivated');
+
+        // Get fresh CSRF and toggle back on
+        $listRes2 = self::httpGetWithCookie(
+            '/admin/tenants/' . self::$tenantId . '/events',
+            self::$operatorCookie
+        );
+        if (preg_match('/name="_csrf_token"\s+value="([^"]+)"/', $listRes2['body'], $m)) {
+            $csrf = $m[1];
+        }
+
+        $res2 = self::httpPostWithCookie(
+            '/admin/tenants/' . self::$tenantId . '/events/' . self::$eventId . '/toggle',
+            ['_csrf_token' => $csrf],
+            self::$operatorCookie
+        );
+        $this->assertContains($res2['code'], [302, 303]);
+
+        $event2 = Database::query('SELECT `is_active` FROM `events` WHERE `id` = ?', [self::$eventId])[0];
+        $this->assertSame(1, (int) $event2['is_active'], 'Event should be reactivated');
+    }
+
+    public function testAdminEventDeleteRemovesEvent(): void
+    {
+        // Create a throwaway event for deletion
+        $deleteEventId = Ulid::generate();
+        $futureDate = (new \DateTimeImmutable('+60 days'))->format('Y-m-d');
+        Database::execute(
+            "INSERT INTO `events` (`id`, `tenant_id`, `name`, `description`, `max_participants`,
+             `start_datetime`, `end_datetime`, `is_recurring`, `allow_waitlist`, `waitlist_max`, `is_active`)
+             VALUES (?, ?, 'Delete Test Event', 'To be deleted', 5, ?, ?, 0, 0, 0, 1)",
+            [$deleteEventId, self::$tenantId,
+             "{$futureDate} 09:00:00", "{$futureDate} 11:00:00"]
+        );
+
+        // Get CSRF
+        $listRes = self::httpGetWithCookie(
+            '/admin/tenants/' . self::$tenantId . '/events',
+            self::$operatorCookie
+        );
+        $csrf = self::$operatorCsrf;
+        if (preg_match('/name="_csrf_token"\s+value="([^"]+)"/', $listRes['body'], $m)) {
+            $csrf = $m[1];
+        }
+
+        $res = self::httpPostWithCookie(
+            '/admin/tenants/' . self::$tenantId . '/events/' . $deleteEventId . '/delete',
+            ['_csrf_token' => $csrf],
+            self::$operatorCookie
+        );
+        $this->assertContains($res['code'], [302, 303], 'Delete must redirect');
+
+        $remaining = Database::query('SELECT * FROM `events` WHERE `id` = ?', [$deleteEventId]);
+        $this->assertEmpty($remaining, 'Deleted event must not exist');
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Tests: Recurring event — unique instance keys
+    // ════════════════════════════════════════════════════════════════
+
+    public function testRecurringEventProducesUniqueInstanceKeys(): void
+    {
+        // Seed a weekly recurring event with 4 occurrences
+        $recurEventId = Ulid::generate();
+        $futureDate = (new \DateTimeImmutable('+3 days'))->format('Y-m-d');
+        Database::execute(
+            "INSERT INTO `events` (`id`, `tenant_id`, `name`, `description`, `max_participants`,
+             `start_datetime`, `end_datetime`, `is_recurring`, `rrule`,
+             `allow_waitlist`, `waitlist_max`, `is_active`)
+             VALUES (?, ?, 'Recurring Weekly Class', 'Test recurrence', 10,
+             ?, ?, 1, 'FREQ=WEEKLY;COUNT=4', 0, 0, 1)",
+            [$recurEventId, self::$tenantId,
+             "{$futureDate} 18:00:00", "{$futureDate} 20:00:00"]
+        );
+
+        $res = $this->httpGet('/api/' . self::$slug . '/events');
+        $this->assertSame(200, $res['code']);
+        $data = json_decode($res['body'], true);
+
+        // Collect instances of our recurring event
+        $instances = array_filter($data['events'], fn($e) => $e['id'] === $recurEventId);
+        $this->assertGreaterThanOrEqual(2, count($instances), 'Recurring event must expand to multiple instances');
+
+        // Verify each instance has a unique date
+        $dates = array_map(fn($e) => $e['date'], $instances);
+        $this->assertSame(count($dates), count(array_unique($dates)), 'Each instance must have a unique date');
+
+        // Verify the composite key (id + '-' + date) is unique
+        $keys = array_map(fn($e) => $e['id'] . '-' . $e['date'], $instances);
+        $this->assertSame(count($keys), count(array_unique($keys)), 'Composite keys must be unique');
+
+        // Cleanup
+        Database::execute('DELETE FROM `events` WHERE `id` = ?', [$recurEventId]);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Tests: Access control — non-event tenant redirect
+    // ════════════════════════════════════════════════════════════════
+
+    public function testEventRoutesRedirectForNonEventTenant(): void
+    {
+        // TestFixtures creates a 'timeslot' pattern tenant
+        $timeslotTenantId = TestFixtures::businessTenantId();
+
+        $res = self::httpGetWithCookie(
+            '/admin/tenants/' . $timeslotTenantId . '/events',
+            self::$operatorCookie
+        );
+        // Should redirect away from events (not 200) because tenant is timeslot pattern
+        $this->assertContains(
+            $res['code'],
+            [302, 303],
+            'Event routes must redirect for non-event tenant'
+        );
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Tests: Dashboard — pattern-aware booking display
+    // ════════════════════════════════════════════════════════════════
+
+    public function testOperatorDashboardRendersPatternAwareBookings(): void
+    {
+        // Seed an event booking with a future date + a customer
+        $customerId = Ulid::generate();
+        Database::execute(
+            "INSERT INTO `customers` (`id`, `tenant_id`, `name`, `email`)
+             VALUES (?, ?, 'Dashboard Test', 'dash-test@test.test')",
+            [$customerId, self::$tenantId]
+        );
+
+        $bookingId = Ulid::generate();
+        $futureDate = (new \DateTimeImmutable('+1 day'))->format('Y-m-d');
+        Database::execute(
+            "INSERT INTO `bookings` (`id`, `tenant_id`, `customer_id`, `booking_pattern`, `event_id`,
+             `start_datetime`, `end_datetime`, `party_size`, `status`, `source`)
+             VALUES (?, ?, ?, 'event', ?, ?, ?, 1, 'confirmed', 'web')",
+            [$bookingId, self::$tenantId, $customerId, self::$eventId,
+             "{$futureDate} 09:00:00", "{$futureDate} 13:00:00"]
+        );
+
+        $res = self::httpGetWithCookie('/admin', self::$operatorCookie);
+        $this->assertSame(200, $res['code'], 'Dashboard must render');
+
+        // The dashboard should show the event name (not just "—")
+        $this->assertStringContainsString('Integration Test Event', $res['body'],
+            'Dashboard must show event name for event-pattern bookings');
+
+        // Cleanup
+        Database::execute('DELETE FROM `bookings` WHERE `id` = ?', [$bookingId]);
+        Database::execute('DELETE FROM `customers` WHERE `id` = ?', [$customerId]);
+    }
+
+    // ════════════════════════════════════════════════════════════════
     // Tests: Admin — waitlisted→confirmed transition
     // ════════════════════════════════════════════════════════════════
 
     public function testAdminStatusChangeWaitlistedToConfirmed(): void
     {
-        // Create a waitlisted booking directly
         $customerId = Ulid::generate();
         Database::execute(
             "INSERT INTO `customers` (`id`, `tenant_id`, `name`, `email`) VALUES (?, ?, 'Status Test', 'status-test@test.test')",
@@ -316,7 +560,6 @@ final class EventBookingFlowTest extends TestCase
              "{$date} 09:00:00", "{$date} 13:00:00"]
         );
 
-        // Get CSRF from booking detail page
         $showRes = self::httpGetWithCookie(
             '/admin/tenants/' . self::$tenantId . '/bookings/' . $bookingId,
             self::$operatorCookie
@@ -326,7 +569,6 @@ final class EventBookingFlowTest extends TestCase
             $csrf = $m[1];
         }
 
-        // Change status from waitlisted to confirmed
         $res = self::httpPostWithCookie(
             '/admin/tenants/' . self::$tenantId . '/bookings/' . $bookingId . '/status',
             [
@@ -338,11 +580,9 @@ final class EventBookingFlowTest extends TestCase
 
         $this->assertContains($res['code'], [302, 303], 'Status change must redirect');
 
-        // Verify status in DB
         $booking = Database::query('SELECT `status` FROM `bookings` WHERE `id` = ?', [$bookingId]);
         $this->assertSame('confirmed', $booking[0]['status']);
 
-        // Cleanup
         Database::execute('DELETE FROM `bookings` WHERE `id` = ?', [$bookingId]);
         Database::execute('DELETE FROM `customers` WHERE `id` = ?', [$customerId]);
     }
