@@ -452,6 +452,8 @@ $settings = [
     ['app_name', 'VoxelBooking Demo'],
     ['timezone', 'Europe/Amsterdam'],
     ['locale', 'en'],
+    ['cron_token', bin2hex(random_bytes(32))],
+    ['cron_last_run', date('Y-m-d H:i:s', strtotime('-2 hours'))],
 ];
 
 $stmt = $pdo->prepare("INSERT INTO settings (`key`, value) VALUES (?, ?)");

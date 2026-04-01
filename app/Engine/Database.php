@@ -166,6 +166,28 @@ final class Database
     }
 
     /**
+     * Upsert a key/value setting. Cross-DB compatible (MySQL + SQLite).
+     *
+     * Uses INSERT OR REPLACE on SQLite, ON DUPLICATE KEY UPDATE on MySQL.
+     * The settings table must have a UNIQUE constraint on `key`.
+     */
+    public static function upsertSetting(string $key, string $value): void
+    {
+        if (self::isSQLite()) {
+            self::execute(
+                'INSERT OR REPLACE INTO `settings` (`key`, `value`) VALUES (?, ?)',
+                [$key, $value]
+            );
+        } else {
+            self::execute(
+                'INSERT INTO `settings` (`key`, `value`) VALUES (?, ?)
+                 ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)',
+                [$key, $value]
+            );
+        }
+    }
+
+    /**
      * Reset the connection (for testing).
      */
     public static function reset(): void

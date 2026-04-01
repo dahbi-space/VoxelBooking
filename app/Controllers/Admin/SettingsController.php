@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Engine\DemoMode;
+
 use App\Engine\Auth;
 use App\Engine\AuditLog;
 use App\Engine\Database;
@@ -235,9 +237,12 @@ final class SettingsController
     public function cron(Request $request): Response
     {
         $cronToken = $this->getSetting('cron_token');
-        if ($cronToken === '') {
+        if ($cronToken === '' && !DemoMode::isActive()) {
             $cronToken = bin2hex(random_bytes(32));
             $this->saveSetting('cron_token', $cronToken);
+        }
+        if ($cronToken === '') {
+            $cronToken = 'demo-mode-token-not-persisted';
         }
 
         $lastRun = $this->getSetting('cron_last_run');
@@ -338,11 +343,7 @@ final class SettingsController
      */
     private function saveSetting(string $key, string $value): void
     {
-        Database::execute(
-            'INSERT INTO `settings` (`key`, `value`) VALUES (?, ?)
-             ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)',
-            [$key, $value]
-        );
+        Database::upsertSetting($key, $value);
     }
 
     private function setFlash(string $type, string $message): void

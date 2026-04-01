@@ -493,12 +493,7 @@ final class WizardController
 
     private function setSetting(string $key, string $value): void
     {
-        Database::execute(
-            "INSERT INTO `settings` (`key`, `value`, `updated_at`)
-             VALUES (?, ?, NOW())
-             ON DUPLICATE KEY UPDATE `value` = ?, `updated_at` = NOW()",
-            [$key, $value, $value]
-        );
+        Database::upsertSetting($key, $value);
     }
 
     private function generateSlug(string $name): string

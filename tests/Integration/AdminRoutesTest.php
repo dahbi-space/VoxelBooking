@@ -251,8 +251,8 @@ final class AdminRoutesTest extends TestCase
         $oldStart = date('Y-m-d 10:00:00', strtotime('-30 days'));
         $oldEnd = date('Y-m-d 10:30:00', strtotime('-30 days'));
 
-        // Clean prior test bookings
-        Database::execute("DELETE FROM `bookings` WHERE `id` LIKE '01TESTBK%'");
+        // Clean all bookings except the test fixture booking
+        Database::execute("DELETE FROM `bookings` WHERE `id` != ?", [TestFixtures::BOOKING_ID]);
 
         // Insert today's booking (should appear in both Today and This Week)
         Database::execute(

@@ -38,10 +38,7 @@ final class CronController
 
             // Update last run timestamp
             try {
-                Database::execute(
-                    'INSERT INTO `settings` (`key`, `value`) VALUES (\'cron_last_run\', NOW())
-                     ON DUPLICATE KEY UPDATE `value` = NOW()'
-                );
+                Database::upsertSetting('cron_last_run', date('Y-m-d H:i:s'));
             } catch (\Throwable) {
                 // Non-critical
             }

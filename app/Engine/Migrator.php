@@ -131,11 +131,6 @@ final class Migrator
 
     private function updateVersion(int $version): void
     {
-        Database::execute(
-            "INSERT INTO `settings` (`key`, `value`, `updated_at`)
-             VALUES ('db_version', ?, NOW())
-             ON DUPLICATE KEY UPDATE `value` = ?, `updated_at` = NOW()",
-            [(string) $version, (string) $version]
-        );
+        Database::upsertSetting('db_version', (string) $version);
     }
 }

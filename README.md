@@ -169,19 +169,36 @@ rm .demo             # deactivate
 ```
 
 When active:
-- Database reads switch to the pre-seeded SQLite at `storage/demo/demo.db`
+- `Database::connect()` switches to the pre-seeded SQLite at `storage/demo/demo.db`
 - All POST/PUT/DELETE requests are blocked (except login/logout)
 - Admin UI shows a persistent "Demo Mode" banner
 - Form submissions trigger a toast notification instead of writing
 - The login page shows clickable credential cards for all demo accounts
 - The booking page shows a notice that submissions are disabled
 
-Demo accounts (all use password `welcome3210`):
-- **Operator:** `demo@voxelbooking.com`
-- **Demo Studio** (timeslot): `owner@demo-studio.test`
-- **Hotel Marina** (resource): `owner@hotel-marina.test`
-- **Trattoria Roma** (capacity): `owner@trattoria-roma.test`
-- **Workshop Studio** (event): `owner@workshop-studio.test`
+### Demo accounts
+
+All use password `welcome3210`:
+
+| Account | Email | Role | Sees |
+|---------|-------|------|------|
+| **Operator** | `demo@voxelbooking.com` | System admin | All 4 tenants |
+| **Demo Studio** | `owner@demo-studio.test` | Business owner | Timeslot tenant only — Services, Staff, Availability |
+| **Hotel Marina** | `owner@hotel-marina.test` | Business owner | Resource tenant only — Resources |
+| **Trattoria Roma** | `owner@trattoria-roma.test` | Business owner | Capacity tenant only — Capacity Slots |
+| **Workshop Studio** | `owner@workshop-studio.test` | Business owner | Event tenant only — Events |
+
+The operator sees all four tenants on the dashboard. Each business user is auto-redirected to their own tenant and sees only pattern-specific menus. Only the timeslot tenant has Services; the other patterns show their own management pages.
+
+### MySQL showcase seed (local development)
+
+For local development with a live MySQL database, you can import the same showcase dataset directly:
+
+```bash
+php demo-seed-mysql.php    # seed into the MySQL database from .env (DESTRUCTIVE)
+```
+
+This drops and recreates all tables in the configured MySQL database, runs all migrations, then seeds the same 4-tenant dataset. Useful for testing the full write path, not just read-only demo mode.
 
 ## Stack
 
