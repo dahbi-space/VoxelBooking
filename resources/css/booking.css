@@ -53,10 +53,11 @@
   --vb-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --vb-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --vb-ease-overshoot: cubic-bezier(0.22, 1.1, 0.36, 1);
+  --vb-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --vb-duration-fast: 150ms;
-  --vb-step-transition: 200ms;
+  --vb-step-transition: 250ms;
   --vb-reveal: 300ms;
-  --vb-stagger: 40ms;
+  --vb-stagger: 50ms;
   --vb-celebration: 600ms;
 
   /* Brand (overridden per-tenant via inline style) */
@@ -332,17 +333,17 @@ body {
 }
 
 .vb-book-step.is-exiting {
-  animation: vb-step-exit 150ms ease-in forwards;
+  animation: vb-step-exit 180ms ease-in forwards;
 }
 
 @keyframes vb-step-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(12px) scale(0.995); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes vb-step-exit {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-8px); }
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-10px) scale(0.995); }
 }
 
 .vb-book-step-header {
@@ -381,7 +382,8 @@ body {
   cursor: pointer;
   transition: border-color var(--vb-duration-fast) var(--vb-ease-out),
               background var(--vb-duration-fast) var(--vb-ease-out),
-              box-shadow var(--vb-duration-fast) var(--vb-ease-out);
+              box-shadow var(--vb-duration-fast) var(--vb-ease-out),
+              transform var(--vb-duration-fast) var(--vb-ease-out);
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
@@ -389,12 +391,20 @@ body {
 .vb-book-service-card:hover {
   border-color: var(--vb-border-hover);
   box-shadow: var(--vb-shadow-sm);
+  transform: translateY(-1px);
+}
+
+.vb-book-service-card:active {
+  transform: scale(0.985);
+  box-shadow: none;
+  transition-duration: 50ms;
 }
 
 .vb-book-service-card.is-selected {
   border: 2px solid var(--vb-brand);
   background: var(--vb-brand-light);
   padding: 15px 19px; /* Compensate 2px border */
+  transform: none;
 }
 
 .vb-book-service-info {
@@ -453,7 +463,8 @@ body {
   cursor: pointer;
   transition: border-color var(--vb-duration-fast) var(--vb-ease-out),
               background var(--vb-duration-fast) var(--vb-ease-out),
-              box-shadow var(--vb-duration-fast) var(--vb-ease-out);
+              box-shadow var(--vb-duration-fast) var(--vb-ease-out),
+              transform var(--vb-duration-fast) var(--vb-ease-out);
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
@@ -467,6 +478,12 @@ body {
 .vb-book-staff-card:hover {
   border-color: var(--vb-border-hover);
   box-shadow: var(--vb-shadow-sm);
+  transform: translateY(-1px);
+}
+
+.vb-book-staff-card:active {
+  transform: scale(0.985);
+  transition-duration: 50ms;
 }
 
 .vb-book-staff-card.is-selected {
@@ -609,6 +626,14 @@ body {
   color: var(--vb-brand-text);
   font-weight: 500;
   transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(var(--vb-brand-rgb), 0.25);
+  animation: vb-cell-select 300ms var(--vb-ease-overshoot);
+}
+
+@keyframes vb-cell-select {
+  0% { transform: scale(0.9); }
+  60% { transform: scale(1.06); }
+  100% { transform: scale(1.02); }
 }
 
 /* Availability dot beneath date */
@@ -689,6 +714,12 @@ body {
 .vb-book-time-pill:hover:not(.is-selected) {
   background: var(--vb-brand-light);
   border-color: var(--vb-border-hover);
+  transform: translateY(-1px);
+}
+
+.vb-book-time-pill:active:not(.is-selected) {
+  transform: scale(0.96);
+  transition-duration: 50ms;
 }
 
 .vb-book-time-pill.is-selected {
@@ -696,6 +727,13 @@ body {
   color: var(--vb-brand-text);
   border-color: var(--vb-brand);
   font-weight: 500;
+  box-shadow: 0 2px 8px rgba(var(--vb-brand-rgb), 0.2);
+  animation: vb-pill-select 200ms var(--vb-ease-overshoot);
+}
+
+@keyframes vb-pill-select {
+  0% { transform: scale(0.92); }
+  100% { transform: scale(1); }
 }
 
 .vb-book-time-pill.is-dimmed {
@@ -852,17 +890,33 @@ body {
   background: var(--vb-brand);
   color: var(--vb-brand-text);
   width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.vb-book-btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.vb-book-btn-primary:hover::before {
+  transform: translateX(100%);
 }
 
 .vb-book-btn-primary:hover {
   background: var(--vb-brand-hover);
   transform: translateY(-1px);
-  box-shadow: var(--vb-shadow-sm);
+  box-shadow: 0 4px 12px rgba(var(--vb-brand-rgb), 0.25);
 }
 
 .vb-book-btn-primary:active {
-  transform: scale(0.98);
+  transform: scale(0.975) translateY(0);
   box-shadow: none;
+  transition-duration: 80ms;
 }
 
 .vb-book-btn-primary:disabled {
@@ -1052,12 +1106,34 @@ body {
 
 .vb-book-checkmark-wrap {
   margin-bottom: 24px;
+  position: relative;
+}
+
+.vb-book-checkmark-wrap::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(5, 150, 105, 0.1) 0%, transparent 70%);
+  animation: vb-glow-pulse 800ms var(--vb-ease-out) 500ms forwards;
+}
+
+@keyframes vb-glow-pulse {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
 }
 
 .vb-book-checkmark {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 .vb-book-checkmark-circle {
@@ -1090,20 +1166,20 @@ body {
 
 .vb-book-checkmark-wrap {
   display: inline-block;
-  animation: vb-confirm-scale 200ms var(--vb-ease-overshoot) 600ms both;
+  animation: vb-confirm-scale 400ms var(--vb-ease-spring) 500ms both;
 }
 
 @keyframes vb-confirm-scale {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0% { transform: scale(0.8); }
+  60% { transform: scale(1.12); }
   100% { transform: scale(1); }
 }
 
 .vb-book-confirm-heading {
-  font-size: 1.375rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: var(--vb-text);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
   opacity: 0;
   animation: vb-fade-in var(--vb-step-transition) var(--vb-ease-out) var(--vb-celebration) forwards;
 }
@@ -1374,11 +1450,14 @@ body {
   border-color: var(--vb-brand);
   color: var(--vb-brand);
   background: var(--vb-brand-light);
-  transform: scale(1.05);
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(var(--vb-brand-rgb), 0.15);
 }
 
 .vb-book-counter-btn:active:not(:disabled) {
-  transform: scale(0.95);
+  transform: scale(0.92);
+  transition-duration: 60ms;
+  box-shadow: none;
 }
 
 .vb-book-counter-btn:disabled {
@@ -1437,8 +1516,9 @@ body {
 }
 
 .vb-book-slot-card:active {
-  transform: scale(0.99);
+  transform: scale(0.985);
   box-shadow: none;
+  transition-duration: 50ms;
 }
 
 .vb-book-slot-card[aria-checked="true"] {
@@ -1775,7 +1855,9 @@ body {
 }
 
 .vb-book-event-card:active {
-  transform: translateY(0);
+  transform: scale(0.985);
+  box-shadow: none;
+  transition-duration: 50ms;
 }
 
 .vb-book-event-card.is-full {
