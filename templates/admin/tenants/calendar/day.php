@@ -129,9 +129,10 @@ ob_start();
                         <?= htmlspecialchars(\App\Engine\Locale::time($start), ENT_QUOTES, 'UTF-8') ?>
                         – <?= htmlspecialchars(\App\Engine\Locale::time($end), ENT_QUOTES, 'UTF-8') ?>
                     </span>
-                    <?php if ($b['service_name']): ?>
+                    <?php $blockLabel = booking_display_label($b); ?>
+                    <?php if ($blockLabel !== '—'): ?>
                     <span class="vb-booking-block-service">
-                        <?= htmlspecialchars($b['service_name'], ENT_QUOTES, 'UTF-8') ?>
+                        <?= htmlspecialchars($blockLabel, ENT_QUOTES, 'UTF-8') ?>
                     </span>
                     <?php endif; ?>
                 </div>

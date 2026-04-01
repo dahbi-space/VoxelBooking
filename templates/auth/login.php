@@ -162,23 +162,23 @@ $csrfToken = $csrfToken ?? '';
                 </div>
                 <div class="login-demo-accounts">
                     <button type="button" class="login-demo-account" data-email="demo@voxelbooking.com" data-password="welcome3210">
-                        <span class="login-demo-role">Operator</span>
+                        <span class="login-demo-role"><?= __('admin.demo.account_operator') ?></span>
                         <span class="login-demo-email">demo@voxelbooking.com</span>
                     </button>
                     <button type="button" class="login-demo-account" data-email="owner@demo-studio.test" data-password="welcome3210">
-                        <span class="login-demo-role">Demo Studio</span>
+                        <span class="login-demo-role"><?= __('admin.demo.account_demo_studio') ?></span>
                         <span class="login-demo-email">owner@demo-studio.test</span>
                     </button>
                     <button type="button" class="login-demo-account" data-email="owner@hotel-marina.test" data-password="welcome3210">
-                        <span class="login-demo-role">Hotel Marina</span>
+                        <span class="login-demo-role"><?= __('admin.demo.account_hotel_marina') ?></span>
                         <span class="login-demo-email">owner@hotel-marina.test</span>
                     </button>
                     <button type="button" class="login-demo-account" data-email="owner@trattoria-roma.test" data-password="welcome3210">
-                        <span class="login-demo-role">Trattoria Roma</span>
+                        <span class="login-demo-role"><?= __('admin.demo.account_trattoria_roma') ?></span>
                         <span class="login-demo-email">owner@trattoria-roma.test</span>
                     </button>
                     <button type="button" class="login-demo-account" data-email="owner@workshop-studio.test" data-password="welcome3210">
-                        <span class="login-demo-role">Workshop Studio</span>
+                        <span class="login-demo-role"><?= __('admin.demo.account_workshop_studio') ?></span>
                         <span class="login-demo-email">owner@workshop-studio.test</span>
                     </button>
                 </div>

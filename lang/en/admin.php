@@ -321,6 +321,11 @@ return [
         'banner_desc'      => 'You are viewing a read-only demo. Changes will not be saved.',
         'toast_message'    => 'This feature is disabled in demo mode.',
         'booking_notice'   => 'This is a demo — bookings cannot be submitted.',
+        'account_operator' => 'Operator',
+        'account_demo_studio'     => 'Demo Studio',
+        'account_hotel_marina'    => 'Hotel Marina',
+        'account_trattoria_roma'  => 'Trattoria Roma',
+        'account_workshop_studio' => 'Workshop Studio',
     ],
 
     // ── Tenant Management ──

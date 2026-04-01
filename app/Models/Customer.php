@@ -87,10 +87,14 @@ final class Customer
     {
         return Database::query(
             "SELECT b.`id`, b.`start_datetime`, b.`end_datetime`, b.`status`,
-                    b.`created_at`,
-                    s.`name` AS `service_name`, s.`price` AS `service_price`
+                    b.`booking_pattern`, b.`created_at`,
+                    s.`name` AS `service_name`, s.`price` AS `service_price`,
+                    r.`name` AS `resource_name`,
+                    ev.`name` AS `event_name`
              FROM `bookings` b
              LEFT JOIN `services` s ON s.`id` = b.`service_id`
+             LEFT JOIN `resources` r ON r.`id` = b.`resource_id`
+             LEFT JOIN `events` ev ON ev.`id` = b.`event_id`
              WHERE b.`customer_id` = ?
              ORDER BY b.`start_datetime` DESC
              LIMIT ?",

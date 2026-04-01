@@ -161,7 +161,7 @@ ob_start();
                                 <?= htmlspecialchars($booking['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
                             </div>
                             <div class="vb-schedule-pill-time">
-                                <?= $startTime ?> – <?= $endTime ?> · <?= htmlspecialchars($booking['service_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                                <?= $startTime ?> – <?= $endTime ?> · <?= htmlspecialchars(booking_display_label($booking), ENT_QUOTES, 'UTF-8') ?>
                             </div>
                             <?php if (!empty($booking['staff_name'])): ?>
                             <div class="vb-schedule-pill-staff">
@@ -198,7 +198,7 @@ ob_start();
                         <tr>
                             <td>
                                 <div class="vb-cell-primary"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
-                                <div class="vb-cell-secondary"><?= htmlspecialchars($b['service_name'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
+                                <div class="vb-cell-secondary"><?= htmlspecialchars(booking_display_label($b), ENT_QUOTES, 'UTF-8') ?></div>
                             </td>
                             <td>
                                 <span class="vb-status vb-status-<?= htmlspecialchars($b['status'], ENT_QUOTES, 'UTF-8') ?>">

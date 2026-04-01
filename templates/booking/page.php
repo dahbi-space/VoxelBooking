@@ -359,7 +359,7 @@
                     <div class="vb-book-step-title" x-text="t('event.events_title')"></div>
                 </div>
                 <div class="vb-book-event-list">
-                    <template x-for="(event, i) in eventList" :key="event.id + (event.instance_date || '')">
+                    <template x-for="(event, i) in eventList" :key="event.id + '-' + (event.date || '')">
                         <button type="button"
                                 class="vb-book-event-card"
                                 @click="selectEvent(event)"

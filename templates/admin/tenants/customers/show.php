@@ -117,8 +117,9 @@ ob_start();
                             <?= htmlspecialchars(\App\Engine\Locale::time($endDt), ENT_QUOTES, 'UTF-8') ?>
                         </td>
                         <td>
-                            <?php if ($b['service_name']): ?>
-                                <?= htmlspecialchars($b['service_name'], ENT_QUOTES, 'UTF-8') ?>
+                            <?php $histLabel = booking_display_label($b); ?>
+                            <?php if ($histLabel !== '—'): ?>
+                                <?= htmlspecialchars($histLabel, ENT_QUOTES, 'UTF-8') ?>
                             <?php else: ?>
                                 <span class="vb-text-tertiary">—</span>
                             <?php endif; ?>

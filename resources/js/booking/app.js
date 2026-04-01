@@ -736,7 +736,7 @@ Alpine.data('bookingWizard', () => ({
     // ── Step 6: Submit ──
     async submitBooking() {
         if (config.is_demo) {
-            this.showToast(t('demo_notice') || 'This is a demo — bookings cannot be submitted.', 'error');
+            this.showToast(t('demo_notice'), 'error');
             return;
         }
 
@@ -1231,7 +1231,7 @@ Alpine.data('bookingWizard', () => ({
 
     async submitResourceBooking() {
         if (config.is_demo) {
-            this.showToast(t('demo_notice') || 'This is a demo — bookings cannot be submitted.', 'error');
+            this.showToast(t('demo_notice'), 'error');
             return;
         }
 
