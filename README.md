@@ -1,6 +1,6 @@
 # VoxelBooking
 
-Self-hosted multi-tenant booking system. Four booking patterns (time slots, resources, capacity, events) in one codebase.
+Self-hosted multi-tenant booking system. Four booking patterns (time slots, resources, capacity, events) in one codebase. No SaaS lock-in, no outbound telemetry, no CDN dependencies.
 
 ## Requirements
 
@@ -68,7 +68,7 @@ VoxelBooking standardizes on `DATETIME` for persisted date-time columns. Do not 
 ### Testing
 
 ```bash
-# Run full test suite
+# Run full test suite (692 tests)
 vendor/bin/phpunit --testdox
 
 # Run only unit tests
@@ -76,6 +76,12 @@ vendor/bin/phpunit --testsuite Unit
 
 # Run only integration tests
 vendor/bin/phpunit --testsuite Integration
+
+# Run event pattern tests only
+vendor/bin/phpunit --filter EventBookingFlowTest
+
+# Run capacity pattern tests only
+vendor/bin/phpunit --filter CapacityBookingFlowTest
 ```
 
 ### Build
@@ -141,12 +147,48 @@ The canonical product version lives in the root [`VERSION`](VERSION) file. This 
 - Admin UI, diagnostics, and update checks read version via `Version::get()`
 - Bump this file when cutting a release
 
+## Booking Patterns
+
+Each tenant is configured with one booking pattern. All four share the same bookings table, admin UI, and email pipeline.
+
+| Pattern | Use Case | Key Engine |
+|---------|----------|------------|
+| **Timeslot** | Salon, dentist, consultant | `TimeSlotCalculator` — service/staff/slot grid |
+| **Resource** | Hotel, rental, co-working | `ResourceCalculator` — per-unit nightly availability |
+| **Capacity** | Restaurant, group class, gym | `CapacityCalculator` — party-size against slot maximums |
+| **Event** | Workshop, concert, yoga class | `EventCalculator` — RRULE expansion, waitlist, spot counting |
+
+## Demo Mode
+
+Create a `.demo` sentinel file in the project root to activate demo mode:
+
+```bash
+touch .demo          # activate
+php demo-seed.php    # regenerate the demo SQLite database
+rm .demo             # deactivate
+```
+
+When active:
+- Database reads switch to the pre-seeded SQLite at `storage/demo/demo.db`
+- All POST/PUT/DELETE requests are blocked (except login/logout)
+- Admin UI shows a persistent "Demo Mode" banner
+- Form submissions trigger a toast notification instead of writing
+- The login page shows clickable credential cards for all demo accounts
+- The booking page shows a notice that submissions are disabled
+
+Demo accounts (all use password `welcome3210`):
+- **Operator:** `demo@voxelbooking.com`
+- **Demo Studio** (timeslot): `owner@demo-studio.test`
+- **Hotel Marina** (resource): `owner@hotel-marina.test`
+- **Trattoria Roma** (capacity): `owner@trattoria-roma.test`
+- **Workshop Studio** (event): `owner@workshop-studio.test`
+
 ## Stack
 
 - **Backend:** PHP 8.3+ (custom micro-framework, no Laravel/Symfony)
 - **Database:** MySQL 8+ (PDO, prepared statements, no ORM)
-- **Admin frontend:** Alpine.js 3, Tailwind CSS 4, Lucide icons
-- **Booking page frontend:** Vanilla JS, Tailwind CSS 4
+- **Admin frontend:** Alpine.js 3 (CSP build), Tailwind CSS 4, Lucide icons
+- **Booking page frontend:** Vanilla JS SPA, Tailwind CSS 4
 - **Build:** Vite 6 with dual entry points (admin + booking)
 
 ## Composer Dependencies (runtime)
@@ -162,25 +204,28 @@ The canonical product version lives in the root [`VERSION`](VERSION) file. This 
 
 ```
 app/                    PHP application code
-  Controllers/          Route handlers
-  Engine/               Core framework classes
-  Middleware/           Request middleware
-  Migrations/           Sequential SQL migrations
+  Controllers/          Route handlers (Admin, Booking, Auth, API)
+  Engine/               Core framework classes + calculators
+  Middleware/           Request middleware (CSRF, Auth, Demo, Rate limit)
+  Migrations/           Sequential SQL migrations (001–026)
   Models/               Data models (no ORM)
 config/                 Configuration files (locale registry)
 lang/                   Translation files (en shipped; nl, de, fr, es registry-ready)
-  en/                   English translations (booking, auth, admin, etc.)
+  en/                   English translations (booking, auth, admin, email, etc.)
 public/                 Web root (document root)
   assets/               Compiled CSS/JS (built by Vite)
   uploads/              User-uploaded files (logos, covers)
 resources/              Source frontend files
-  css/                  Source CSS (Tailwind + custom tokens)
+  css/                  Source CSS (Tailwind 4 + design tokens)
   js/                   Source JS (admin + booking)
 storage/                Runtime storage
   logs/                 Application logs
   cache/                Cache files
+  demo/                 Demo SQLite database (demo-seed.php output)
 templates/              PHP view templates
 tests/                  PHPUnit test suites
+  Integration/          HTTP-level flow tests (booking, capacity, events)
+  Unit/                 Engine and model unit tests
 ```
 ## Localization
 
