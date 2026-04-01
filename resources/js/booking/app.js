@@ -479,8 +479,9 @@ Alpine.data('bookingWizard', () => ({
     },
 
     get monthLabel() {
-        return new Date(this.currentYear, this.currentMonth, 1)
+        const label = new Date(this.currentYear, this.currentMonth, 1)
             .toLocaleDateString(config.locale || 'en', { month: 'long', year: 'numeric' });
+        return label.charAt(0).toUpperCase() + label.slice(1);
     },
 
     get dayNames() {
@@ -592,7 +593,7 @@ Alpine.data('bookingWizard', () => ({
     },
 
     customFieldId(field) {
-        return 'vb-cf-' + field.key;
+        return 'vb-cf-' + field.name;
     },
 
     async selectDate(dateStr) {
@@ -686,7 +687,7 @@ Alpine.data('bookingWizard', () => ({
         // Custom field values (only filled fields appear in the summary)
         if (config.custom_fields && config.custom_fields.length) {
             for (const field of config.custom_fields) {
-                const value = (this.customFields[field.key] || '').trim();
+                const value = (this.customFields[field.name] || '').trim();
                 if (value) {
                     rows.push({ label: field.label, value });
                 }
@@ -719,7 +720,7 @@ Alpine.data('bookingWizard', () => ({
         // Custom field values
         if (config.custom_fields && config.custom_fields.length) {
             for (const field of config.custom_fields) {
-                const value = (this.customFields[field.key] || '').trim();
+                const value = (this.customFields[field.name] || '').trim();
                 if (value) {
                     rows.push({ label: field.label, value });
                 }
@@ -1006,9 +1007,10 @@ Alpine.data('bookingWizard', () => ({
     formatDateDisplay(dateStr) {
         if (!dateStr) return '';
         const d = new Date(dateStr + 'T00:00:00');
-        return d.toLocaleDateString(config.locale || 'en', {
+        const label = d.toLocaleDateString(config.locale || 'en', {
             weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
         });
+        return label.charAt(0).toUpperCase() + label.slice(1);
     },
 
     // ── Navigation helpers ──
@@ -1125,8 +1127,9 @@ Alpine.data('bookingWizard', () => ({
     // ── Resource calendar navigation ──
 
     get resourceMonthLabel() {
-        return new Date(this.checkInYear, this.checkInMonth, 1)
+        const label = new Date(this.checkInYear, this.checkInMonth, 1)
             .toLocaleDateString(config.locale || 'en', { month: 'long', year: 'numeric' });
+        return label.charAt(0).toUpperCase() + label.slice(1);
     },
 
     get canPrevResourceMonth() {
@@ -1383,7 +1386,8 @@ Alpine.data('bookingWizard', () => ({
     },
 
     get capacityMonthLabel() {
-        return new Date(this.capacityYear, this.capacityMonth).toLocaleDateString(config.locale || 'en', { month: 'long', year: 'numeric' });
+        const label = new Date(this.capacityYear, this.capacityMonth).toLocaleDateString(config.locale || 'en', { month: 'long', year: 'numeric' });
+        return label.charAt(0).toUpperCase() + label.slice(1);
     },
 
     selectCapacityDate(cell) {
@@ -1538,7 +1542,8 @@ Alpine.data('bookingWizard', () => ({
     formatEventDate(dateStr) {
         try {
             const d = new Date(dateStr);
-            return d.toLocaleDateString(config.locale || 'en', { weekday: 'short', month: 'short', day: 'numeric' });
+            const label = d.toLocaleDateString(config.locale || 'en', { weekday: 'short', month: 'short', day: 'numeric' });
+            return label.charAt(0).toUpperCase() + label.slice(1);
         } catch {
             return dateStr;
         }

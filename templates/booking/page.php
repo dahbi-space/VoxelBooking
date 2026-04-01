@@ -498,9 +498,6 @@
                                 <div class="vb-book-service-name" x-text="service.name"></div>
                                 <div class="vb-book-service-meta">
                                     <span x-text="formatDuration(service.duration_minutes)"></span>
-                                    <template x-if="service.description">
-                                        <span>·</span>
-                                    </template>
                                 </div>
                                 <template x-if="service.description">
                                     <div class="vb-book-service-desc" x-text="service.description"></div>
@@ -698,19 +695,19 @@
                     </div>
 
                     <!-- Custom Fields -->
-                    <template x-for="field in config.custom_fields" x-bind:key="field.key">
+                    <template x-for="field in config.custom_fields" x-bind:key="field.name">
                         <div class="vb-book-form-group">
                             <label class="vb-book-label" x-bind:for="customFieldId(field)"
                                    x-text="fieldLabel(field)"></label>
                             <template x-if="isTextarea(field)">
                                 <textarea class="vb-book-textarea" x-bind:id="customFieldId(field)"
-                                          x-bind:data-book-custom="field.key"
+                                          x-bind:data-book-custom="field.name"
                                           x-bind:placeholder="fieldPlaceholder(field)"
                                           x-bind:required="field.required"></textarea>
                             </template>
                             <template x-if="isNotTextarea(field)">
                                 <input class="vb-book-input" x-bind:id="customFieldId(field)" type="text"
-                                       x-bind:data-book-custom="field.key"
+                                       x-bind:data-book-custom="field.name"
                                        x-bind:placeholder="fieldPlaceholder(field)"
                                        x-bind:required="field.required">
                             </template>
