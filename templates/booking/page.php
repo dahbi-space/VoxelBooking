@@ -904,6 +904,10 @@
         window.__VB_TS__ = Date.now();
         window.__VB_I18N__ = <?= json_encode($translations, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
         window.__VB_FMT__ = <?= json_encode($formatting, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+        <?php if (\App\Engine\DemoMode::isActive()): ?>
+        window.VB_DEMO = true;
+        window.__VB_DEMO_NOTICE__ = <?= json_encode(__('admin.demo.booking_notice')) ?>;
+        <?php endif; ?>
     </script>
     <script type="module" src="/assets/js/booking.js"></script>
 </body>

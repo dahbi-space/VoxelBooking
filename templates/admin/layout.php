@@ -316,6 +316,7 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
 
     <?php if (\App\Engine\DemoMode::isActive()): ?>
     <script>window.VB_DEMO = true;</script>
+    <span data-demo-toast style="display:none"><?= __('admin.demo.toast_message') ?></span>
     <?php endif; ?>
     <script src="/assets/js/admin.js" type="module"></script>
 </body>

@@ -522,3 +522,64 @@ createIcons({ icons: ICON_SET });
 window.refreshIcons = () => {
     createIcons({ icons: ICON_SET });
 };
+
+// ── Demo Mode: form submission guard ──
+// When VB_DEMO flag is set by layout.php, intercept all POST form submissions
+// and show a non-intrusive toast instead of allowing the write request.
+if (window.VB_DEMO) {
+    document.addEventListener('submit', (e) => {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        if (form.method.toUpperCase() !== 'POST') return;
+
+        // Allow login and logout
+        const action = form.getAttribute('action') || '';
+        if (action.includes('/admin/login') || action.includes('/auth/logout')) return;
+
+        e.preventDefault();
+        showDemoToast();
+    });
+
+    // Intercept delete buttons, status changes, and other action clicks
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[type="submit"], a[data-method="delete"]');
+        if (!btn) return;
+
+        const form = btn.closest('form');
+        if (!form) return;
+        const action = form.getAttribute('action') || '';
+        if (action.includes('/admin/login') || action.includes('/auth/logout')) return;
+
+        if (form.method && form.method.toUpperCase() === 'POST') {
+            e.preventDefault();
+            e.stopPropagation();
+            showDemoToast();
+        }
+    }, true);
+}
+
+function showDemoToast() {
+    // Remove existing toast
+    const existing = document.querySelector('.vb-demo-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'vb-demo-toast';
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>${document.querySelector('[data-demo-toast]')?.textContent || 'This feature is disabled in demo mode.'}</span>
+    `;
+    document.body.appendChild(toast);
+
+    // Animate in
+    requestAnimationFrame(() => {
+        toast.classList.add('visible');
+    });
+
+    // Auto-dismiss after 3s
+    setTimeout(() => {
+        toast.classList.remove('visible');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}

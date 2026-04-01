@@ -154,6 +154,37 @@ $csrfToken = $csrfToken ?? '';
                 </form>
             </div>
 
+            <?php if (\App\Engine\DemoMode::isActive()): ?>
+            <div class="login-demo-credentials">
+                <div class="login-demo-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    <?= __('admin.demo.banner_title') ?>
+                </div>
+                <div class="login-demo-accounts">
+                    <button type="button" class="login-demo-account" data-email="demo@voxelbooking.com" data-password="welcome3210">
+                        <span class="login-demo-role">Operator</span>
+                        <span class="login-demo-email">demo@voxelbooking.com</span>
+                    </button>
+                    <button type="button" class="login-demo-account" data-email="owner@demo-studio.test" data-password="welcome3210">
+                        <span class="login-demo-role">Demo Studio</span>
+                        <span class="login-demo-email">owner@demo-studio.test</span>
+                    </button>
+                    <button type="button" class="login-demo-account" data-email="owner@hotel-marina.test" data-password="welcome3210">
+                        <span class="login-demo-role">Hotel Marina</span>
+                        <span class="login-demo-email">owner@hotel-marina.test</span>
+                    </button>
+                    <button type="button" class="login-demo-account" data-email="owner@trattoria-roma.test" data-password="welcome3210">
+                        <span class="login-demo-role">Trattoria Roma</span>
+                        <span class="login-demo-email">owner@trattoria-roma.test</span>
+                    </button>
+                    <button type="button" class="login-demo-account" data-email="owner@workshop-studio.test" data-password="welcome3210">
+                        <span class="login-demo-role">Workshop Studio</span>
+                        <span class="login-demo-email">owner@workshop-studio.test</span>
+                    </button>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <div class="login-footer">
                 <?= __('auth.footer', ['app_name' => app_name()]) ?>
             </div>
@@ -198,6 +229,28 @@ $csrfToken = $csrfToken ?? '';
                 if (target) {
                     target.style.display = '';
                 }
+            });
+        });
+        // Demo account auto-fill
+        var demoAccounts = document.querySelectorAll('.login-demo-account');
+        demoAccounts.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var email = btn.getAttribute('data-email');
+                var password = btn.getAttribute('data-password');
+
+                // Switch to password tab
+                var pwTab = document.getElementById('tab-password');
+                if (pwTab) pwTab.click();
+
+                // Fill fields
+                var emailField = document.getElementById('email');
+                var pwField = document.getElementById('password');
+                if (emailField) emailField.value = email;
+                if (pwField) pwField.value = password;
+
+                // Visual feedback
+                demoAccounts.forEach(function(b) { b.classList.remove('selected'); });
+                btn.classList.add('selected');
             });
         });
     })();
