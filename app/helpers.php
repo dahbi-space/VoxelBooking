@@ -180,17 +180,18 @@ function brand_url(): string
  * Resolve the display label for a booking based on its pattern.
  *
  * Returns the most specific name available: event_name for event bookings,
- * resource_name for resource bookings, service_name for timeslot/capacity,
- * or '—' if nothing is set.
+ * resource_name for resource bookings, service_name for timeslot.
+ * Capacity bookings typically have no service/resource/event — falls back
+ * to a translated pattern label so shared surfaces never render '—'.
  */
 function booking_display_label(array $booking): string
 {
     $pattern = $booking['booking_pattern'] ?? 'timeslot';
 
     return match ($pattern) {
-        'event'    => $booking['event_name'] ?? $booking['service_name'] ?? '—',
+        'event'    => $booking['event_name'] ?? $booking['service_name'] ?? __('admin.bookings.capacity_booking'),
         'resource' => $booking['resource_name'] ?? $booking['service_name'] ?? '—',
-        'capacity' => $booking['service_name'] ?? '—',
+        'capacity' => $booking['service_name'] ?? __('admin.bookings.capacity_booking'),
         default    => $booking['service_name'] ?? '—',
     };
 }
