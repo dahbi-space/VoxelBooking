@@ -269,6 +269,23 @@ CREATE TABLE seasonal_pricing (
 )
 ");
 
+// 025: capacity_slots — mirrors 025_create_capacity_slots.php
+$pdo->exec("
+CREATE TABLE capacity_slots (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    day_of_week INTEGER NOT NULL,
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    max_capacity INTEGER NOT NULL DEFAULT 20,
+    max_party_size INTEGER NOT NULL DEFAULT 8,
+    label TEXT DEFAULT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+)
+");
+
 // 010: api_keys
 $pdo->exec("
 CREATE TABLE api_keys (
@@ -720,6 +737,37 @@ $stmt = $pdo->prepare("
 foreach ($trattoriaBookings as [$id, $custId, $dateOffset, $start, $end, $status, $partySize]) {
     $date = (clone $today)->modify($dateOffset)->format('Y-m-d');
     $stmt->execute([$id, $trattoriaId, $custId, "{$date} {$start}:00", "{$date} {$end}:00", $partySize, $status]);
+}
+
+// Trattoria Roma — capacity slots (dinner service windows)
+$pdo->exec("DELETE FROM `capacity_slots` WHERE `tenant_id` = '{$trattoriaId}'");
+$slotStmt = $pdo->prepare(
+    "INSERT INTO `capacity_slots` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `max_party_size`, `label`, `is_active`)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)"
+);
+// Slots for all weekdays (Mon-Sun = 0-6)
+$trattoriaSlots = [
+    ['01JDEMO0003SLOT0000001', 0, '18:00:00', '19:30:00', 20, 8, 'Early Dinner'],
+    ['01JDEMO0003SLOT0000002', 0, '19:30:00', '21:00:00', 20, 8, 'Main Dinner'],
+    ['01JDEMO0003SLOT0000003', 0, '21:00:00', '22:30:00', 15, 6, 'Late Dinner'],
+    ['01JDEMO0003SLOT0000004', 1, '18:00:00', '19:30:00', 20, 8, 'Early Dinner'],
+    ['01JDEMO0003SLOT0000005', 1, '19:30:00', '21:00:00', 20, 8, 'Main Dinner'],
+    ['01JDEMO0003SLOT0000006', 1, '21:00:00', '22:30:00', 15, 6, 'Late Dinner'],
+    ['01JDEMO0003SLOT0000007', 2, '18:00:00', '19:30:00', 20, 8, 'Early Dinner'],
+    ['01JDEMO0003SLOT0000008', 2, '19:30:00', '21:00:00', 20, 8, 'Main Dinner'],
+    ['01JDEMO0003SLOT0000009', 2, '21:00:00', '22:30:00', 15, 6, 'Late Dinner'],
+    ['01JDEMO0003SLOT0000010', 3, '18:00:00', '19:30:00', 20, 8, 'Early Dinner'],
+    ['01JDEMO0003SLOT0000011', 3, '19:30:00', '21:00:00', 20, 8, 'Main Dinner'],
+    ['01JDEMO0003SLOT0000012', 3, '21:00:00', '22:30:00', 15, 6, 'Late Dinner'],
+    ['01JDEMO0003SLOT0000013', 4, '18:00:00', '19:30:00', 25, 10, 'Early Dinner'],
+    ['01JDEMO0003SLOT0000014', 4, '19:30:00', '21:00:00', 25, 10, 'Main Dinner'],
+    ['01JDEMO0003SLOT0000015', 4, '21:00:00', '22:30:00', 20, 8, 'Late Dinner'],
+    ['01JDEMO0003SLOT0000016', 5, '18:00:00', '19:30:00', 25, 10, 'Early Dinner'],
+    ['01JDEMO0003SLOT0000017', 5, '19:30:00', '21:00:00', 25, 10, 'Main Dinner'],
+    ['01JDEMO0003SLOT0000018', 5, '21:00:00', '22:30:00', 20, 8, 'Late Dinner'],
+];
+foreach ($trattoriaSlots as [$slotId, $dow, $start, $end, $cap, $maxParty, $label]) {
+    $slotStmt->execute([$slotId, $trattoriaId, $dow, $start, $end, $cap, $maxParty, $label]);
 }
 
 // Trattoria Roma — owner
