@@ -1032,6 +1032,14 @@ Alpine.data('bookingWizard', () => ({
         else if (target === 'resource') this.loadResources();
         else if (target === 'resource-date') this.goToStep('resource-date');
         else if (target === 'guests') this.goToStep('guests');
+        // Capacity pattern
+        else if (target === 'party-size') this.goToStep('party-size');
+        else if (target === 'capacity-date') { this.loadCapacityDates(); }
+        else if (target === 'capacity-time') this.goToStep('capacity-time');
+        // Event pattern
+        else if (target === 'event-list') this.loadEvents();
+        else if (target === 'event-detail') this.goToStep('event-detail');
+        else if (target === 'event-spots') this.goToStep('event-spots');
     },
 
     // ── Resource booking flow ──
@@ -1117,7 +1125,23 @@ Alpine.data('bookingWizard', () => ({
     },
 
     setGuestCount(val) {
-        this.guestCount = Math.max(1, Math.min(parseInt(val) || 1, this.selectedResource?.capacity || 10));
+        this.guestCount = Math.max(1, Math.min(parseInt(val) || 1, this.guestMax));
+    },
+
+    get guestMax() {
+        return (this.selectedResource && this.selectedResource.capacity) || 10;
+    },
+
+    incrementGuests() {
+        if (this.guestCount < this.guestMax) {
+            this.guestCount++;
+        }
+    },
+
+    decrementGuests() {
+        if (this.guestCount > 1) {
+            this.guestCount--;
+        }
     },
 
     submitGuests() {

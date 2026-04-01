@@ -93,7 +93,7 @@
         <main class="vb-book-flow" id="vb-book-flow">
 
             <!-- Loading shimmer skeleton -->
-            <div x-show="isLoading" class="vb-book-step">
+            <div x-show="isLoading" x-cloak class="vb-book-step">
                 <div class="vb-book-shimmer-block">
                     <div class="vb-book-shimmer-title"></div>
                     <div class="vb-book-shimmer-card"></div>
@@ -103,7 +103,7 @@
             </div>
 
             <!-- Empty state -->
-            <div x-show="isEmpty" class="vb-book-step">
+            <div x-show="isEmpty" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('empty.no_services')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('empty.no_services_desc')"></div>
@@ -111,7 +111,7 @@
             </div>
 
             <!-- Unsupported pattern -->
-            <div x-show="isUnsupported" class="vb-book-step">
+            <div x-show="isUnsupported" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('empty.coming_soon')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('empty.coming_soon_desc')"></div>
@@ -119,7 +119,7 @@
             </div>
 
             <!-- ═══ Resource Step 1: Room Selection ═══ -->
-            <div x-show="isResourceStep" class="vb-book-step" x-transition>
+            <div x-show="isResourceStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.resource_title')"></div>
                 </div>
@@ -154,7 +154,7 @@
             </div>
 
             <!-- ═══ Resource Step 2: Date Range ═══ -->
-            <div x-show="isResourceDateStep" class="vb-book-step" x-transition>
+            <div x-show="isResourceDateStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.dates_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="checkInDate ? t('resource.select_check_out') : t('resource.select_check_in')"></div>
@@ -208,7 +208,7 @@
             </div>
 
             <!-- ═══ Resource Step 3: Guest Count ═══ -->
-            <div x-show="isGuestStep" class="vb-book-step" x-transition>
+            <div x-show="isGuestStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.guests_title')"></div>
                 </div>
@@ -234,17 +234,24 @@
                     </template>
                 </div>
 
-                <div class="vb-book-form-group" style="max-width: 200px;">
-                    <label class="vb-book-label" for="vb-guests" x-text="t('resource.guests_label')"></label>
-                    <input class="vb-book-input" id="vb-guests" type="number" min="1"
-                           x-bind:max="(selectedResource && selectedResource.capacity) || 10"
-                           x-bind:value="guestCount"
-                           @input="setGuestCount($el.value)">
+                <div class="vb-book-party-size">
+                    <div class="vb-book-counter">
+                        <button type="button" class="vb-book-counter-btn" @click="decrementGuests"
+                                x-bind:disabled="guestCount <= 1">
+                            <i data-lucide="minus"></i>
+                        </button>
+                        <span class="vb-book-counter-value" x-text="guestCount"></span>
+                        <button type="button" class="vb-book-counter-btn" @click="incrementGuests"
+                                x-bind:disabled="guestCount >= guestMax">
+                            <i data-lucide="plus"></i>
+                        </button>
+                    </div>
+                    <div class="vb-book-counter-label" x-text="guestCount === 1 ? t('capacity.guest') : t('capacity.guests')"></div>
                 </div>
 
                 <div class="vb-book-form-actions" style="margin-top: 1rem;">
                     <button type="button" class="vb-book-btn vb-book-btn-primary" @click="submitGuests"
-                            x-text="t('buttons.review')"></button>
+                            x-text="t('buttons.continue')"></button>
                     <div class="vb-book-back-link">
                         <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('resource-date')" x-text="t('back.change_date')"></button>
                     </div>
@@ -252,7 +259,7 @@
             </div>
 
             <!-- ═══ Capacity: Step 1 — Party Size ═══ -->
-            <div x-show="isPartySizeStep" class="vb-book-step" x-transition>
+            <div x-show="isPartySizeStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('capacity.party_size_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('capacity.party_size_hint')"></div>
@@ -278,7 +285,7 @@
             </div>
 
             <!-- ═══ Capacity: Step 2 — Date Selection ═══ -->
-            <div x-show="isCapacityDateStep" class="vb-book-step" x-transition>
+            <div x-show="isCapacityDateStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('capacity.date_title')"></div>
                 </div>
@@ -327,7 +334,7 @@
             </div>
 
             <!-- ═══ Capacity: Step 3 — Time Slot Selection ═══ -->
-            <div x-show="isCapacityTimeStep" class="vb-book-step" x-transition>
+            <div x-show="isCapacityTimeStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('capacity.time_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="formatDateDisplay(selectedDate)"></div>
@@ -361,7 +368,7 @@
             </div>
 
             <!-- ═══ Event Step 1: Event List ═══ -->
-            <div x-show="isEventListStep" class="vb-book-step" x-transition>
+            <div x-show="isEventListStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('event.events_title')"></div>
                 </div>
@@ -409,7 +416,7 @@
             </div>
 
             <!-- ═══ Event Step 2: Event Detail ═══ -->
-            <div x-show="isEventDetailStep" class="vb-book-step" x-transition>
+            <div x-show="isEventDetailStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('event.event_detail_title')"></div>
                 </div>
@@ -452,7 +459,7 @@
             </div>
 
             <!-- ═══ Event Step 3: Spot Count ═══ -->
-            <div x-show="isEventSpotsStep" class="vb-book-step" x-transition>
+            <div x-show="isEventSpotsStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('event.spots_title')"></div>
                 </div>
@@ -487,7 +494,7 @@
             </div>
 
             <!-- ═══ Step 1: Service Selection ═══ -->
-            <div x-show="isServiceStep" class="vb-book-step" x-transition>
+            <div x-show="isServiceStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.service_title')"></div>
                 </div>
@@ -519,7 +526,7 @@
             </div>
 
             <!-- ═══ Step 2: Staff Selection ═══ -->
-            <div x-show="isStaffStep" class="vb-book-step" x-transition>
+            <div x-show="isStaffStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.staff_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('steps.staff_subtitle')"></div>
@@ -567,7 +574,7 @@
             </div>
 
             <!-- ═══ Step 3: Date & Time ═══ -->
-            <div x-show="isDateStep" class="vb-book-step" x-transition>
+            <div x-show="isDateStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.date_title')"></div>
                 </div>
@@ -653,7 +660,7 @@
             </div>
 
             <!-- ═══ Step 4: Customer Details ═══ -->
-            <div x-show="isDetailsStep" class="vb-book-step" x-transition>
+            <div x-show="isDetailsStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.details_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('steps.details_subtitle')"></div>
@@ -749,7 +756,7 @@
             </div>
 
             <!-- ═══ Step 5: Review / Summary ═══ -->
-            <div x-show="isReviewStep" class="vb-book-step" x-transition>
+            <div x-show="isReviewStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.confirm_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('steps.confirm_subtitle')"></div>
@@ -813,7 +820,7 @@
             </div>
 
             <!-- ═══ Step 6: Confirmation ═══ -->
-            <div x-show="isConfirmedStep" class="vb-book-step" x-transition>
+            <div x-show="isConfirmedStep" x-cloak class="vb-book-step" x-transition>
                 <div class="vb-book-confirmation">
                     <div class="vb-book-checkmark-wrap">
                         <svg class="vb-book-checkmark" viewBox="0 0 64 64">
