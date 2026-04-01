@@ -13,6 +13,7 @@ use App\Engine\Logger;
 use App\Engine\Request;
 use App\Engine\Response;
 use App\Engine\ResourceCalculator;
+use App\Engine\CapacityCalculator;
 use App\Engine\TimeSlotCalculator;
 use App\Engine\Ulid;
 use App\Engine\Version;
@@ -185,7 +186,8 @@ final class BookingsController
             return Response::redirect('/admin/tenants');
         }
 
-        $isResourcePattern = ($tenant['booking_pattern'] ?? '') === 'resource';
+        $isResourcePattern  = ($tenant['booking_pattern'] ?? '') === 'resource';
+        $isCapacityPattern  = ($tenant['booking_pattern'] ?? '') === 'capacity';
 
         // Resource pattern: load resources instead of services/staff
         if ($isResourcePattern) {
@@ -204,6 +206,28 @@ final class BookingsController
                 'tenant'        => $tenant,
                 'tenantId'      => $tenantId,
                 'resources'     => $resources,
+                'flash'         => $this->flash(),
+                'old'           => $old,
+            ]);
+        }
+
+        // Capacity pattern: load capacity slots
+        if ($isCapacityPattern) {
+            $slots = Database::query(
+                'SELECT `id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `max_party_size`, `label`
+                 FROM `capacity_slots`
+                 WHERE `tenant_id` = ? AND `is_active` = 1
+                 ORDER BY `day_of_week` ASC, `start_time` ASC',
+                [$tenantId]
+            );
+
+            $old = $_SESSION['_old_input'] ?? [];
+
+            return $this->render('admin.tenants.bookings.create-capacity', __('admin.bookings.create_title'), [
+                'documentTitle' => __('admin.bookings.create_title'),
+                'tenant'        => $tenant,
+                'tenantId'      => $tenantId,
+                'slots'         => $slots,
                 'flash'         => $this->flash(),
                 'old'           => $old,
             ]);
@@ -281,8 +305,12 @@ final class BookingsController
         }
 
         // Dispatch to pattern-specific store
-        if (($tenant['booking_pattern'] ?? '') === 'resource') {
+        $pattern = $tenant['booking_pattern'] ?? '';
+        if ($pattern === 'resource') {
             return $this->storeResourceBooking($request, $tenant, $tenantId);
+        }
+        if ($pattern === 'capacity') {
+            return $this->storeCapacityBooking($request, $tenant, $tenantId);
         }
 
         // Collect input
@@ -593,6 +621,138 @@ final class BookingsController
             }
 
             Logger::error('Admin resource booking creation failed', [
+                'tenant' => $tenantId,
+                'error'  => $e->getMessage(),
+            ]);
+
+            $this->setFlash('error', __('admin.bookings.flash_create_failed'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+        }
+    }
+
+    // ── Capacity-pattern manual booking ──
+
+    private function storeCapacityBooking(Request $request, array $tenant, string $tenantId): Response
+    {
+        $slotId        = $request->string('slot_id') ?: null;
+        $dateStr       = trim($request->string('date'));
+        $partySize     = max(1, (int) $request->string('party_size'));
+        $customerName  = trim($request->string('customer_name'));
+        $customerEmail = trim($request->string('customer_email'));
+        $customerPhone = trim($request->string('customer_phone'));
+        $notes         = trim($request->string('notes'));
+
+        $this->storeOldInput($request);
+
+        // Validation
+        if (!$slotId) {
+            $this->setFlash('error', __('admin.bookings.error_slot_required'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+        }
+
+        if ($dateStr === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
+            $this->setFlash('error', __('admin.bookings.error_date_required'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+        }
+
+        if ($customerName === '') {
+            $this->setFlash('error', __('admin.bookings.error_name_required'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+        }
+
+        if ($customerEmail === '' || !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
+            $this->setFlash('error', __('admin.bookings.error_email_invalid'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+        }
+
+        if ((int) ($tenant['require_phone'] ?? 0) === 1 && $customerPhone === '') {
+            $this->setFlash('error', __('admin.bookings.error_phone_required'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+        }
+
+        // Pre-lock availability check
+        $availability = CapacityCalculator::checkSlotAvailability($tenant, $slotId, $dateStr, $partySize);
+        if (!$availability['available']) {
+            $this->setFlash('error', __('admin.bookings.flash_capacity_exceeded'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+        }
+
+        // Load slot for start/end time
+        $slotRows = Database::query(
+            'SELECT `start_time`, `end_time` FROM `capacity_slots` WHERE `id` = ? AND `tenant_id` = ?',
+            [$slotId, $tenantId]
+        );
+        if (empty($slotRows)) {
+            $this->setFlash('error', __('admin.bookings.error_slot_required'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+        }
+        $slot = $slotRows[0];
+
+        // Double-booking prevention: transaction + FOR UPDATE lock
+        $pdo = Database::connect();
+        $pdo->beginTransaction();
+
+        try {
+            $startDt = $dateStr . ' ' . $slot['start_time'];
+            $endDt   = $dateStr . ' ' . $slot['end_time'];
+
+            // Lock existing capacity bookings for this slot time on this date
+            $lockStmt = $pdo->prepare(
+                'SELECT `id` FROM `bookings`
+                 WHERE `tenant_id` = ? AND `booking_pattern` = \'capacity\'
+                 AND `start_datetime` = ? AND `status` IN (\'confirmed\', \'rescheduled\')
+                 FOR UPDATE'
+            );
+            $lockStmt->execute([$tenantId, $startDt]);
+
+            // Re-check availability inside the lock
+            $recheck = CapacityCalculator::checkSlotAvailability($tenant, $slotId, $dateStr, $partySize);
+            if (!$recheck['available']) {
+                $pdo->rollBack();
+                $this->setFlash('error', __('admin.bookings.flash_capacity_exceeded'));
+                return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
+            }
+
+            $customerId = CustomerService::findOrCreate(
+                $tenantId,
+                $customerName,
+                $customerEmail,
+                $customerPhone,
+            );
+
+            $bookingData = [
+                'tenant_id'       => $tenantId,
+                'customer_id'     => $customerId,
+                'booking_pattern' => 'capacity',
+                'start_datetime'  => $startDt,
+                'end_datetime'    => $endDt,
+                'party_size'      => $partySize,
+                'source'          => 'admin',
+            ];
+
+            if ($notes !== '') {
+                $bookingData['notes'] = $notes;
+            }
+
+            $result = BookingService::createBooking($bookingData, $tenant, false);
+
+            $pdo->commit();
+
+            Database::execute(
+                'UPDATE `customers` SET `booking_count` = `booking_count` + 1, `last_booking_at` = NOW() WHERE `id` = ?',
+                [$customerId]
+            );
+
+            unset($_SESSION['_old_input']);
+            $this->setFlash('success', __('admin.bookings.flash_created'));
+            return Response::redirect("/admin/tenants/{$tenantId}/bookings/{$result['id']}");
+
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            Logger::error('Admin capacity booking creation failed', [
                 'tenant' => $tenantId,
                 'error'  => $e->getMessage(),
             ]);

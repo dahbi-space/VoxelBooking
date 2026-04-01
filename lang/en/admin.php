@@ -32,6 +32,7 @@ return [
         'availability'   => 'Availability',
         'blocked_dates'  => 'Blocked Dates',
         'resources'      => 'Resources',
+        'capacity_slots' => 'Capacity Slots',
         'soon'           => 'Soon',
     ],
 
@@ -273,6 +274,7 @@ return [
         'no_results'       => 'No results found.',
         'copy_booking_url' => 'Copy booking link',
         'url_copied'       => 'Copied!',
+        'forbidden'        => 'Owner or operator access required.',
     ],
 
     // ── Flash messages ──
@@ -470,6 +472,13 @@ return [
         'error_check_out_required'   => 'Check-out date is required.',
         'error_guests_required'      => 'Guest count must be at least 1.',
         'flash_resource_unavailable' => 'This room is not available for the selected dates.',
+
+        // Capacity-pattern manual booking
+        'label_slot'                 => 'Time Slot',
+        'label_party_size'           => 'Party Size',
+        'placeholder_select_slot'    => 'Select a time slot',
+        'error_slot_required'        => 'Please select a time slot.',
+        'flash_capacity_exceeded'    => 'Not enough capacity for the selected party size.',
     ],
 
     // ── Business User Management ──
@@ -843,5 +852,45 @@ return [
         'error_name_required'       => 'Business name is required.',
         'error_email_invalid'       => 'Please enter a valid email address.',
         'error_notif_email_invalid' => 'Notification email must be a valid address.',
+    ],
+
+    // ── Capacity Slots ──
+    'capacity_slots' => [
+        'title'                => 'Capacity Slots',
+        'subtitle'             => 'Configure weekly time windows and seat capacity.',
+        'add_slot'             => 'Add Slot',
+        'empty_title'          => 'No capacity slots configured',
+        'empty_description'    => 'Add time slots to define when customers can make reservations.',
+        'label_day'            => 'Day',
+        'label_start_time'     => 'Start Time',
+        'label_end_time'       => 'End Time',
+        'label_capacity'       => 'Max Capacity',
+        'label_party_size'     => 'Max Party Size',
+        'label_label'          => 'Label',
+        'label_status'         => 'Status',
+        'label_actions'        => 'Actions',
+        'placeholder_label'    => 'e.g. Early Dinner',
+        'status_active'        => 'Active',
+        'status_inactive'      => 'Inactive',
+        'btn_activate'         => 'Activate',
+        'btn_deactivate'       => 'Deactivate',
+        'btn_delete'           => 'Delete',
+        'flash_created'        => 'Capacity slot created.',
+        'flash_activated'      => 'Slot activated.',
+        'flash_deactivated'    => 'Slot deactivated.',
+        'flash_deleted'        => 'Slot deleted.',
+        'error_invalid_day'    => 'Please select a valid day.',
+        'error_invalid_time'   => 'Start and end times must be in HH:MM format.',
+        'error_end_before_start' => 'End time must be after start time.',
+        'spots_remaining'      => ':count spots left',
+        'capacity_max_seats'   => 'max :count seats',
+        'confirm_delete'       => 'Are you sure you want to delete this slot?',
+        'day_0'                => 'Monday',
+        'day_1'                => 'Tuesday',
+        'day_2'                => 'Wednesday',
+        'day_3'                => 'Thursday',
+        'day_4'                => 'Friday',
+        'day_5'                => 'Saturday',
+        'day_6'                => 'Sunday',
     ],
 ];
