@@ -910,6 +910,11 @@ final class BookingsController
 
         $oldStatus = $booking['status'];
 
+        // Same-status submission: no-op, just redirect back.
+        if ($newStatus === $oldStatus) {
+            return Response::redirect("{$redirectBase}/{$id}");
+        }
+
         // Enforce allowed status transitions. Must match the UI transition map
         // in show.php to prevent crafted POSTs from bypassing the dropdown.
         $transitions = [
