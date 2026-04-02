@@ -68,7 +68,7 @@ VoxelBooking standardizes on `DATETIME` for persisted date-time columns. Do not 
 ### Testing
 
 ```bash
-# Run full test suite (692 tests)
+# Run full test suite (720 tests)
 vendor/bin/phpunit --testdox
 
 # Run only unit tests
@@ -155,8 +155,8 @@ Each tenant is configured with one booking pattern. All four share the same book
 |---------|----------|------------|
 | **Timeslot** | Salon, dentist, consultant | `TimeSlotCalculator` — service/staff/slot grid |
 | **Resource** | Hotel, rental, co-working | `ResourceCalculator` — per-unit nightly availability |
-| **Capacity** | Restaurant, group class, gym | `CapacityCalculator` — party-size against slot maximums |
-| **Event** | Workshop, concert, yoga class | `EventCalculator` — RRULE expansion, waitlist, spot counting |
+| **Capacity** | Restaurant, group class, gym | `CapacityCalculator` — party-size against slot min/max, remaining capacity |
+| **Event** | Workshop, concert, yoga class | `EventCalculator` — RRULE expansion, waitlist, per-booking spot limits |
 
 ## Demo Mode
 
