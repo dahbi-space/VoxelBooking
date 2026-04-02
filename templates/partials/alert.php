@@ -47,7 +47,7 @@ $_alertIcon = $_alertIconMap[$_alertType] ?? 'info';
 <div class="vb-alert vb-alert-<?= $_alertCss ?>" role="alert">
     <i data-lucide="<?= $_alertIcon ?>" class="vb-alert-icon"></i>
     <span class="vb-alert-text"><?= htmlspecialchars($_alertMessage, ENT_QUOTES, 'UTF-8') ?></span>
-    <button type="button" class="vb-alert-close" onclick="this.parentElement.remove()" aria-label="Dismiss">
+    <button type="button" class="vb-alert-close" onclick="this.parentElement.remove()" aria-label="<?= __('admin.common.dismiss') ?>">
         <i data-lucide="x"></i>
     </button>
 </div>

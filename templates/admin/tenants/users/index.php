@@ -22,7 +22,7 @@ ob_start();
 </div>
 
 <?php if (!empty($flash)): ?>
-    <?php include __DIR__ . '/../../partials/alert.php'; ?>
+    <?php include __DIR__ . '/../../../partials/alert.php'; ?>
 
     <?php if (!empty($flash['credentials'])): ?>
         <div class="vb-card vb-credentials-card">

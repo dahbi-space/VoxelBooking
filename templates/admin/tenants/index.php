@@ -34,7 +34,7 @@ ob_start();
             </div>
         </div>
     <?php else: ?>
-        <?php include __DIR__ . '/../partials/alert.php'; ?>
+        <?php include __DIR__ . '/../../partials/alert.php'; ?>
     <?php endif; ?>
 <?php endif; ?>
 

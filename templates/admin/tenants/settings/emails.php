@@ -54,17 +54,8 @@ $emailTypes = [
             'cta_label'  => 'Book Again',
         ],
     ],
-    'reschedule_confirmation' => [
-        'label'   => 'Reschedule Confirmation',
-        'desc'    => 'Sent when a booking is rescheduled to a new time.',
-        'defaults' => [
-            'subject'    => 'Booking rescheduled — {business_name}',
-            'heading'    => 'Booking Rescheduled',
-            'body_intro' => 'Your booking has been rescheduled.',
-            'body_outro' => '',
-            'cta_label'  => 'View Booking',
-        ],
-    ],
+    // 'reschedule_confirmation' is hidden until a dedicated reschedule flow
+    // that updates booking timestamps exists. The Mailer sender is retained.
     'approval_request' => [
         'label'   => 'Approval Request',
         'desc'    => 'Sent to customers when their booking requires approval.',

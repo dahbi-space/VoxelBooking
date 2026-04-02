@@ -288,6 +288,7 @@ return [
         'copy_booking_url' => 'Copy booking link',
         'url_copied'       => 'Copied!',
         'forbidden'        => 'Owner or operator access required.',
+        'dismiss'          => 'Dismiss',
     ],
 
     // ── Flash messages ──
