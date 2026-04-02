@@ -779,9 +779,20 @@
         display: flex; align-items: center; gap: 0.625rem;
         padding: 0.75rem 1rem; border-radius: var(--vb-radius-md);
         font-size: var(--vb-text-sm); font-weight: 450;
+        margin-bottom: 1rem;
         animation: vb-fade-in-down var(--vb-duration-normal) var(--vb-ease-out) both;
     }
-    .vb-alert svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .vb-alert-icon { width: 16px; height: 16px; flex-shrink: 0; }
+    .vb-alert-text { flex: 1; min-width: 0; }
+    .vb-alert-close {
+        flex-shrink: 0; background: none; border: none; cursor: pointer;
+        color: inherit; opacity: 0.5; padding: 0.125rem;
+        border-radius: var(--vb-radius-sm);
+        transition: opacity var(--vb-duration-fast), background var(--vb-duration-fast);
+    }
+    .vb-alert-close:hover { opacity: 1; background: rgba(0, 0, 0, 0.08); }
+    .vb-alert-close svg, .vb-alert-close i { width: 14px; height: 14px; display: block; }
+    .vb-alert svg:not(.vb-alert-icon):not(.vb-alert-close svg) { width: 16px; height: 16px; flex-shrink: 0; }
     .vb-alert-success { background: var(--vb-success-bg); color: var(--vb-success); }
     .vb-alert-error { background: var(--vb-error-bg); color: var(--vb-error); }
     .vb-alert-warning { background: var(--vb-warning-bg); color: var(--vb-warning); }

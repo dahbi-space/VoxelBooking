@@ -119,10 +119,7 @@ ob_start();
 </div>
 
 <?php if ($flash): ?>
-    <div class="vb-alert vb-alert-<?= $flash['type'] === 'success' ? 'success' : ($flash['type'] === 'info' ? 'info' : 'error') ?>">
-        <i data-lucide="<?= $flash['type'] === 'success' ? 'check' : ($flash['type'] === 'info' ? 'info' : 'alert-circle') ?>"></i>
-        <?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?>
-    </div>
+    <?php include __DIR__ . '/../../../partials/alert.php'; ?>
 <?php endif; ?>
 
 <?php include __DIR__ . '/_tabs.php'; ?>

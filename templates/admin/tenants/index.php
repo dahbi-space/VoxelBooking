@@ -34,14 +34,7 @@ ob_start();
             </div>
         </div>
     <?php else: ?>
-        <div class="vb-alert vb-alert-<?= $flash['type'] === 'success' ? 'success' : 'error' ?>">
-            <?php if ($flash['type'] === 'success'): ?>
-                <i data-lucide="check"></i>
-            <?php else: ?>
-                <i data-lucide="alert-circle"></i>
-            <?php endif; ?>
-            <?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?>
-        </div>
+        <?php include __DIR__ . '/../partials/alert.php'; ?>
     <?php endif; ?>
 <?php endif; ?>
 

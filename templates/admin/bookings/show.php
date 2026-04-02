@@ -40,14 +40,7 @@ ob_start();
 ?>
 
 <?php if ($flash ?? null): ?>
-    <div class="vb-alert vb-alert-<?= $flash['type'] === 'success' ? 'success' : 'error' ?>">
-        <?php if ($flash['type'] === 'success'): ?>
-            <i data-lucide="check"></i>
-        <?php else: ?>
-            <i data-lucide="alert-circle"></i>
-        <?php endif; ?>
-        <?= htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8') ?>
-    </div>
+    <?php include __DIR__ . '/../../partials/alert.php'; ?>
 <?php endif; ?>
 
 <div class="vb-page-header">
@@ -149,7 +142,7 @@ ob_start();
             <div class="vb-form-group">
                 <label for="booking_status" class="vb-label"><?= __('admin.bookings.status') ?></label>
                 <select id="booking_status" name="status" class="vb-select">
-                    <?php foreach (['pending','confirmed','cancelled','completed','no_show','rescheduled','waitlisted'] as $s): ?>
+                    <?php foreach (['pending','confirmed','cancelled','completed','no_show','waitlisted'] as $s): ?>
                         <option value="<?= $s ?>" <?= $booking['status'] === $s ? 'selected' : '' ?>>
                             <?= __('admin.bookings.status_' . $s) ?>
                         </option>

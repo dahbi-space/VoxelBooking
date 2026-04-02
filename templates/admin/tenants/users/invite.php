@@ -20,10 +20,7 @@ ob_start();
 </div>
 
 <?php if (!empty($flash)): ?>
-    <div class="vb-alert vb-alert-<?= htmlspecialchars($flash['type'] ?? 'error', ENT_QUOTES, 'UTF-8') ?>">
-        <i data-lucide="alert-circle" style="width: 16px; height: 16px; flex-shrink: 0;"></i>
-        <span><?= htmlspecialchars($flash['message'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
-    </div>
+    <?php include __DIR__ . '/../../../partials/alert.php'; ?>
 <?php endif; ?>
 
 <div class="vb-card" x-data="inviteUser" data-smtp-configured="<?= \App\Engine\Mailer::isConfigured() ? '1' : '0' ?>">

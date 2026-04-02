@@ -22,11 +22,7 @@ ob_start();
 </div>
 
 <?php if (!empty($flash)): ?>
-    <div class="vb-alert vb-alert-<?= htmlspecialchars($flash['type'] ?? 'success', ENT_QUOTES, 'UTF-8') ?>">
-        <i data-lucide="<?= ($flash['type'] ?? 'success') === 'error' ? 'alert-circle' : (($flash['type'] ?? '') === 'warning' ? 'alert-triangle' : 'check-circle') ?>"
-           style="width: 16px; height: 16px; flex-shrink: 0;"></i>
-        <span><?= htmlspecialchars($flash['message'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
-    </div>
+    <?php include __DIR__ . '/../../partials/alert.php'; ?>
 
     <?php if (!empty($flash['credentials'])): ?>
         <div class="vb-card vb-credentials-card">

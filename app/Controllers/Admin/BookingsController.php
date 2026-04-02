@@ -908,6 +908,13 @@ final class BookingsController
             return Response::redirect($redirectBase);
         }
 
+        // Rescheduled status requires a dedicated reschedule flow that updates
+        // booking timestamps first. Block it from the simple status dropdown.
+        if ($newStatus === 'rescheduled') {
+            $this->setFlash('error', __('admin.bookings.flash_status_failed'));
+            return Response::redirect("{$redirectBase}/{$id}");
+        }
+
         $oldStatus = $booking['status'];
 
         if (Booking::updateStatus($id, $newStatus)) {
@@ -927,10 +934,10 @@ final class BookingsController
                 $this->scheduleReminderForApprovedBooking($booking);
             }
 
-            // Any → rescheduled: send reschedule confirmation email
-            if ($newStatus === 'rescheduled' && $oldStatus !== 'rescheduled') {
-                $this->sendStatusTransitionEmail($booking, 'reschedule');
-            }
+
+            // NOTE: rescheduled status is excluded from the simple status dropdown.
+            // Reschedule confirmation emails should only be sent from a dedicated
+            // reschedule flow that updates booking timestamps first.
 
             $this->setFlash('success', __('admin.bookings.flash_status_updated'));
         } else {
