@@ -900,7 +900,7 @@ final class Mailer
      *
      * @param string $tenantId
      * @param string $type     One of: confirmation, reminder, cancellation, reschedule_confirmation,
-     *                         staff_notification, approval_request, approval_confirmed
+     *                         approval_request, approval_confirmed
      * @param array  $placeholders Key-value pairs for placeholder substitution
      * @return array|null
      */

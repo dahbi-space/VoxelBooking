@@ -10,8 +10,10 @@ use App\Engine\Auth;
 use App\Engine\AuditLog;
 use App\Engine\Database;
 use App\Engine\Logger;
+use App\Engine\ReminderJob;
 use App\Engine\Request;
 use App\Engine\Response;
+use App\Engine\RetentionJob;
 use App\Engine\Version;
 use App\Engine\View;
 use App\Middleware\CsrfMiddleware;
@@ -264,9 +266,9 @@ final class SettingsController
         $results = [];
         $errors  = [];
 
-        // Run retention
+        // 1. Retention processing
         try {
-            $retResult = \App\Engine\RetentionJob::run();
+            $retResult = RetentionJob::run();
             $results['retention'] = $retResult;
             if (!empty($retResult['errors'])) {
                 $errors = array_merge($errors, $retResult['errors']);
@@ -274,6 +276,18 @@ final class SettingsController
         } catch (\Throwable $e) {
             Logger::error('Cron manual run: retention failed', ['error' => $e->getMessage()]);
             $errors[] = 'Retention failed: ' . $e->getMessage();
+        }
+
+        // 2. Reminder processing
+        try {
+            $remResult = ReminderJob::run();
+            $results['reminders'] = $remResult;
+            if (!empty($remResult['errors'])) {
+                $errors = array_merge($errors, $remResult['errors']);
+            }
+        } catch (\Throwable $e) {
+            Logger::error('Cron manual run: reminders failed', ['error' => $e->getMessage()]);
+            $errors[] = 'Reminders failed: ' . $e->getMessage();
         }
 
         // Update timestamp
@@ -284,7 +298,7 @@ final class SettingsController
         }
 
         // Audit log
-        \App\Engine\AuditLog::log('system.cron_manual_run', 'system', null, [
+        AuditLog::log('system.cron_manual_run', 'system', null, [
             'tasks'  => array_keys($results),
             'errors' => count($errors),
         ]);
@@ -302,6 +316,14 @@ final class SettingsController
                     'audit' => $audit,
                     'email' => $email,
                     'rate'  => $rate,
+                ]);
+            }
+            if (isset($results['reminders'])) {
+                $sent    = $results['reminders']['sent'] ?? 0;
+                $skipped = $results['reminders']['skipped'] ?? 0;
+                $taskSummary[] = __('admin.cron.run_result_reminders', [
+                    'sent'    => $sent,
+                    'skipped' => $skipped,
                 ]);
             }
             $this->setFlash('success', __('admin.cron.run_success') . ' ' . implode(' ', $taskSummary));

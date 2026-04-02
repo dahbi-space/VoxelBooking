@@ -175,11 +175,12 @@ return [
         'status_label'       => 'Status',
         'active'             => 'Active',
         'not_configured'     => 'Not configured',
-        'run_now'            => 'Run now',
+        'run_now'            => 'Run scheduled tasks',
         'run_now_hint'       => 'Execute all cron tasks immediately. Safe to run at any time.',
         'run_success'        => 'Cron tasks completed.',
         'run_partial'        => 'Cron completed with :errors error(s). Check the application log.',
         'run_result_retention' => 'Retention: :anon tenant(s) processed, :audit audit entries cleaned, :email email log entries cleaned, :rate rate limits cleared.',
+        'run_result_reminders' => 'Reminders: :sent sent, :skipped skipped.',
     ],
 
     // ── Settings: Logs ──

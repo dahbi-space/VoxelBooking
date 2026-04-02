@@ -921,6 +921,17 @@ final class BookingsController
                 $this->sendPromotionEmail($booking);
             }
 
+            // Pending → confirmed: send approval confirmed email + schedule reminder
+            if ($oldStatus === 'pending' && $newStatus === 'confirmed') {
+                $this->sendStatusTransitionEmail($booking, 'approval_confirmed');
+                $this->scheduleReminderForApprovedBooking($booking);
+            }
+
+            // Any → rescheduled: send reschedule confirmation email
+            if ($newStatus === 'rescheduled' && $oldStatus !== 'rescheduled') {
+                $this->sendStatusTransitionEmail($booking, 'reschedule');
+            }
+
             $this->setFlash('success', __('admin.bookings.flash_status_updated'));
         } else {
             $this->setFlash('error', __('admin.bookings.flash_status_failed'));
@@ -986,6 +997,123 @@ final class BookingsController
             );
         } catch (\Throwable $e) {
             Logger::error('Promotion confirmation email failed', [
+                'booking' => $booking['id'],
+                'error'   => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Send a status transition email (approval confirmed or reschedule confirmation).
+     */
+    private function sendStatusTransitionEmail(array $booking, string $type): void
+    {
+        if (!\App\Engine\Mailer::isConfigured()) {
+            return;
+        }
+
+        try {
+            $tenant = $this->loadTenant($booking['tenant_id']);
+            if ($tenant === null) {
+                return;
+            }
+
+            $customer = Database::query(
+                'SELECT `name`, `email` FROM `customers` WHERE `id` = ? LIMIT 1',
+                [$booking['customer_id']]
+            );
+            if (empty($customer) || empty($customer[0]['email'])) {
+                return;
+            }
+
+            $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+            $startDt = new \DateTimeImmutable($booking['start_datetime'], $tz);
+            $endDt = new \DateTimeImmutable($booking['end_datetime'], $tz);
+
+            $serviceName = '';
+            if ($booking['booking_pattern'] === 'event' && !empty($booking['event_name'])) {
+                $serviceName = $booking['event_name'];
+            } elseif (!empty($booking['service_name'])) {
+                $serviceName = $booking['service_name'];
+            } elseif (!empty($booking['resource_name'])) {
+                $serviceName = $booking['resource_name'];
+            }
+
+            $emailData = [
+                'date'           => $startDt->format('Y-m-d'),
+                'formatted_date' => \App\Engine\Locale::dateLong($startDt),
+                'time'           => $startDt->format('H:i'),
+                'end_time'       => $endDt->format('H:i'),
+                'duration'       => (string) ($booking['party_size'] ?? 1),
+            ];
+
+            if ($type === 'approval_confirmed') {
+                \App\Engine\Mailer::sendApprovalConfirmed(
+                    $customer[0]['email'],
+                    $customer[0]['name'],
+                    $emailData,
+                    $serviceName ?: null,
+                    null,
+                    $tenant['name'],
+                    $tenant['id'],
+                    $booking['id'],
+                    $tenant['brand_color'] ?? '#2563EB',
+                );
+            } elseif ($type === 'reschedule') {
+                \App\Engine\Mailer::sendRescheduleConfirmation(
+                    $customer[0]['email'],
+                    $customer[0]['name'],
+                    $emailData,
+                    $serviceName ?: null,
+                    null,
+                    $tenant['name'],
+                    $tenant['id'],
+                    $booking['id'],
+                    $tenant['brand_color'] ?? '#2563EB',
+                );
+            }
+        } catch (\Throwable $e) {
+            Logger::error("Status transition email ({$type}) failed", [
+                'booking' => $booking['id'],
+                'error'   => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Schedule a reminder for a booking that was just approved (pending → confirmed).
+     *
+     * PRD: reminders are deferred until approval since pending bookings skip
+     * reminder scheduling during creation.
+     */
+    private function scheduleReminderForApprovedBooking(array $booking): void
+    {
+        try {
+            $tenant = $this->loadTenant($booking['tenant_id']);
+            if ($tenant === null) {
+                return;
+            }
+
+            if ((int) ($tenant['send_reminders'] ?? 0) !== 1) {
+                return;
+            }
+
+            $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+            $startDt = new \DateTimeImmutable($booking['start_datetime'], $tz);
+            $reminderHours = max(1, (int) ($tenant['reminder_hours_before'] ?? 24));
+            $reminderAt = $startDt->modify("-{$reminderHours} hours");
+
+            if ($reminderAt <= new \DateTimeImmutable('now', $tz)) {
+                return; // Too late to schedule
+            }
+
+            $reminderId = \App\Engine\Ulid::generate();
+            Database::execute(
+                "INSERT INTO `reminders` (`id`, `booking_id`, `tenant_id`, `scheduled_at`) VALUES (?, ?, ?, ?)",
+                [(string) $reminderId, $booking['id'], $booking['tenant_id'], $reminderAt->format('Y-m-d H:i:s')]
+            );
+        } catch (\Throwable $e) {
+            Logger::error('Failed to schedule reminder for approved booking', [
                 'booking' => $booking['id'],
                 'error'   => $e->getMessage(),
             ]);

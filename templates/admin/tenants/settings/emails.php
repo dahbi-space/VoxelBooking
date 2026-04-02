@@ -65,17 +65,6 @@ $emailTypes = [
             'cta_label'  => 'View Booking',
         ],
     ],
-    'staff_notification' => [
-        'label'   => 'Staff Notification',
-        'desc'    => 'Sent to the notification email when a new booking is made.',
-        'defaults' => [
-            'subject'    => 'New booking: {service_name} — {customer_name}',
-            'heading'    => 'New Booking',
-            'body_intro' => 'A new booking has been made.',
-            'body_outro' => '',
-            'cta_label'  => 'View in Dashboard',
-        ],
-    ],
     'approval_request' => [
         'label'   => 'Approval Request',
         'desc'    => 'Sent to customers when their booking requires approval.',

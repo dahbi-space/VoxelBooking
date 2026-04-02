@@ -201,7 +201,7 @@ final class RetentionJob
         }
 
         return Database::execute(
-            'DELETE FROM `rate_limits` WHERE `window_start` < DATE_SUB(NOW(), INTERVAL 1 HOUR)'
+            'DELETE FROM `rate_limits` WHERE `created_at` < DATE_SUB(NOW(), INTERVAL 1 HOUR)'
         );
     }
 }

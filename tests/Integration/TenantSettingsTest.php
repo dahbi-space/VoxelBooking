@@ -749,7 +749,7 @@ final class TenantSettingsTest extends TestCase
         $this->assertStringContainsString('tpl-confirmation-subject', $res['body']);
         $this->assertStringContainsString('tpl-reminder-subject', $res['body']);
         $this->assertStringContainsString('tpl-cancellation-subject', $res['body']);
-        $this->assertStringContainsString('tpl-staff_notification-subject', $res['body']);
+        $this->assertStringContainsString('tpl-approval_request-subject', $res['body']);
     }
 
     public function testSaveEmailTemplatesRoundTrip(): void
@@ -777,12 +777,24 @@ final class TenantSettingsTest extends TestCase
             'cancellation_body_outro'        => '',
             'cancellation_cta_label'         => '',
             'cancellation_is_enabled'        => '0',
-            'staff_notification_subject'     => '',
-            'staff_notification_heading'     => '',
-            'staff_notification_body_intro'  => '',
-            'staff_notification_body_outro'  => '',
-            'staff_notification_cta_label'   => '',
-            'staff_notification_is_enabled'  => '1',
+            'reschedule_confirmation_subject'  => '',
+            'reschedule_confirmation_heading'  => '',
+            'reschedule_confirmation_body_intro' => '',
+            'reschedule_confirmation_body_outro' => '',
+            'reschedule_confirmation_cta_label' => '',
+            'reschedule_confirmation_is_enabled' => '1',
+            'approval_request_subject'         => '',
+            'approval_request_heading'         => '',
+            'approval_request_body_intro'      => '',
+            'approval_request_body_outro'      => '',
+            'approval_request_cta_label'       => '',
+            'approval_request_is_enabled'      => '1',
+            'approval_confirmed_subject'       => '',
+            'approval_confirmed_heading'       => '',
+            'approval_confirmed_body_intro'    => '',
+            'approval_confirmed_body_outro'    => '',
+            'approval_confirmed_cta_label'     => '',
+            'approval_confirmed_is_enabled'    => '1',
         ], 'operator');
 
         $this->assertSame(302, $res['code']);
