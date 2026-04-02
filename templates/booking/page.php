@@ -914,8 +914,8 @@
         <button type="button"
                 class="vb-book-theme-toggle"
                 @click="toggleTheme"
-                x-bind:aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-                x-bind:title="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
+                x-bind:aria-label="isDark ? t('theme.switch_to_light') : t('theme.switch_to_dark')"
+                x-bind:title="isDark ? t('theme.switch_to_light') : t('theme.switch_to_dark')">
             <svg x-show="isDark" x-cloak class="vb-book-theme-icon" x-bind:class="isDark ? 'is-visible' : 'is-hidden'"
                  data-lucide="sun"></svg>
             <svg x-show="!isDark" class="vb-book-theme-icon" x-bind:class="!isDark ? 'is-visible' : 'is-hidden'"

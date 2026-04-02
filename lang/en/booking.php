@@ -312,6 +312,13 @@ return [
         'powered_by' => 'Powered by',
     ],
 
+    // ── Theme Toggle ──
+    'theme' => [
+        'switch_to_light' => 'Switch to light mode',
+        'switch_to_dark'  => 'Switch to dark mode',
+        'toggle'          => 'Toggle theme',
+    ],
+
     // ── Privacy Pages ──
     'privacy' => [
         'page_title'              => 'Your Data',

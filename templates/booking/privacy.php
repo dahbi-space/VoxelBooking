@@ -237,6 +237,39 @@ $customerId = $customer['id'] ?? '';
             .privacy-field { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
             .privacy-field-value { text-align: left; max-width: 100%; }
         }
+
+        /* Theme toggle (self-contained; this page uses admin CSS, not booking CSS) */
+        .vb-book-theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            border-radius: 9999px;
+            border: 1px solid var(--vb-admin-border-subtle);
+            background: var(--vb-admin-bg-surface);
+            color: var(--vb-admin-text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 150ms ease-out, background 150ms ease-out,
+                        color 150ms ease-out, box-shadow 150ms ease-out,
+                        transform 150ms ease-out;
+            z-index: 40;
+            box-shadow: var(--vb-admin-shadow-sm);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .vb-book-theme-toggle:hover {
+            border-color: var(--vb-admin-border);
+            color: var(--vb-admin-text-primary);
+            transform: scale(1.08);
+        }
+        .vb-book-theme-toggle:active {
+            transform: scale(0.92);
+            transition-duration: 60ms;
+        }
+        .vb-book-theme-icon { position: absolute; }
     </style>
     <script>
         (function() {
@@ -383,5 +416,32 @@ $customerId = $customer['id'] ?? '';
             <?= __('booking.footer.powered_by') ?> <?= app_name() ?> · <?= str_replace(':business', View::e($tenant['name'] ?? 'this business'), __('booking.privacy.footer_server')) ?>
         </div>
     </div>
+
+    <!-- Theme Toggle (vanilla JS — no Alpine on this page) -->
+    <button type="button" class="vb-book-theme-toggle" id="vb-theme-toggle"
+            aria-label="<?= __('booking.theme.toggle') ?>" title="<?= __('booking.theme.toggle') ?>">
+        <svg id="vb-theme-sun" class="vb-book-theme-icon" style="display:none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg id="vb-theme-moon" class="vb-book-theme-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+
+    <script>
+        (function() {
+            var btn = document.getElementById('vb-theme-toggle');
+            var sun = document.getElementById('vb-theme-sun');
+            var moon = document.getElementById('vb-theme-moon');
+            function sync() {
+                var d = document.documentElement.getAttribute('data-theme') === 'dark';
+                sun.style.display = d ? '' : 'none';
+                moon.style.display = d ? 'none' : '';
+            }
+            sync();
+            btn.addEventListener('click', function() {
+                var d = document.documentElement.getAttribute('data-theme') !== 'dark';
+                document.documentElement.setAttribute('data-theme', d ? 'dark' : 'light');
+                localStorage.setItem('vb-theme', d ? 'dark' : 'light');
+                sync();
+            });
+        })();
+    </script>
 </body>
 </html>
