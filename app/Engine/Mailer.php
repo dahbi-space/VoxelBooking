@@ -934,7 +934,7 @@ final class Mailer
         if ($staffName) {
             $details[__('email.common.staff')] = $staffName;
         }
-        $details['Customer'] = $customerName;
+        $details[__('email.common.customer')] = $customerName;
 
         $footer = '';
 
@@ -949,7 +949,7 @@ final class Mailer
             $details, $footer, $tenantName, $poweredBy,
         );
 
-        return self::send($operatorEmail, $subject, $html, 'staff_booking_notification', $tenantId, $bookingId, $plainBody);
+        return self::send($operatorEmail, $subject, $html, 'staff_notification', $tenantId, $bookingId, $plainBody);
     }
 
     /**
@@ -997,7 +997,7 @@ final class Mailer
         if ($staffName) {
             $details[__('email.common.staff')] = $staffName;
         }
-        $details['Customer'] = $customerName;
+        $details[__('email.common.customer')] = $customerName;
 
         $footer = '';
 
@@ -1012,7 +1012,7 @@ final class Mailer
             $details, $footer, $tenantName, $poweredBy,
         );
 
-        return self::send($operatorEmail, $subject, $html, 'staff_cancellation_notification', $tenantId, $bookingId, $plainBody);
+        return self::send($operatorEmail, $subject, $html, 'staff_notification', $tenantId, $bookingId, $plainBody);
     }
 
     /**

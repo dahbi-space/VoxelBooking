@@ -131,6 +131,7 @@ return [
         'service'    => 'Service',
         'staff'      => 'Staff',
         'regards'    => 'Best regards,',
+        'customer'   => 'Customer',
         'powered_by' => 'Powered by :app_name',
     ],
 ];
