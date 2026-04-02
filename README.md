@@ -68,7 +68,7 @@ VoxelBooking standardizes on `DATETIME` for persisted date-time columns. Do not 
 ### Testing
 
 ```bash
-# Run full test suite (725 tests)
+# Run full test suite (740 tests)
 vendor/bin/phpunit --testdox
 
 # Run only unit tests
@@ -293,7 +293,7 @@ VoxelBooking is built with a privacy-by-design architecture. The following descr
 
 **Data export.** The `DataExporter` engine generates machine-readable JSON exports of all customer data (personal details, booking history, consent records, email log) for GDPR Art. 20 portability requests.
 
-**Retention cron.** The `RetentionJob` engine orchestrates automated cleanup: per-tenant customer anonymization based on `data_retention_months`, audit log cleanup, email log cleanup, and rate limit cleanup. Accessible via `GET /cron/retention?token={cron_token}`.
+**Retention cron.** The `RetentionJob` engine orchestrates automated cleanup: per-tenant customer anonymization based on `data_retention_months`, audit log cleanup, email log cleanup, and rate limit cleanup. Accessible via `GET /cron/run?token={cron_token}` (legacy alias `/cron/retention` still works).
 
 **Privacy endpoint.** `GET /book/{slug}/privacy/{customer-ulid}` displays the customer's personal data, booking history, and consent records (GDPR Art. 15). `POST` with `action=export` returns a JSON download (Art. 20). `POST` with `action=delete` logs a deletion request and notifies the customer that the business will process it (Art. 17). The customer ULID acts as a bearer token (128-bit entropy).
 

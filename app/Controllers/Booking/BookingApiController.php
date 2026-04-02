@@ -487,7 +487,33 @@ final class BookingApiController
                 $bookingData['customer_timezone'] = $customerTimezone;
             }
 
+            // If tenant requires approval, set booking to pending
+            if ((int) ($tenant['booking_requires_approval'] ?? 0) === 1) {
+                $bookingData['status'] = 'pending';
+            }
+
             $result = BookingService::createBooking($bookingData, $tenant, $consentGiven);
+
+            // Schedule reminder if tenant has reminders enabled
+            if ((int) ($tenant['send_reminders'] ?? 0) === 1) {
+                $reminderHours = max(1, (int) ($tenant['reminder_hours_before'] ?? 24));
+                $reminderAt = (clone $startDt)->modify("-{$reminderHours} hours");
+                // Only schedule if reminder time is in the future
+                if ($reminderAt > new \DateTimeImmutable('now', $startDt->getTimezone())) {
+                    try {
+                        $reminderId = Ulid::generate();
+                        Database::execute(
+                            "INSERT INTO `reminders` (`id`, `booking_id`, `tenant_id`, `scheduled_at`) VALUES (?, ?, ?, ?)",
+                            [(string) $reminderId, $result['id'], $tenant['id'], $reminderAt->format('Y-m-d H:i:s')]
+                        );
+                    } catch (\Throwable $e) {
+                        Logger::error('Failed to schedule reminder', [
+                            'booking' => $result['id'],
+                            'error'   => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
 
             $pdo->commit();
 
@@ -511,8 +537,10 @@ final class BookingApiController
             }
 
             // After commit: dispatch confirmation email (never inside transaction — PRD §III)
+            // Skip if booking requires approval — customer gets notified when approved
+            $bookingStatus = $bookingData['status'] ?? 'confirmed';
             $emailSent = false;
-            if (Mailer::isConfigured()) {
+            if ($bookingStatus !== 'pending' && Mailer::isConfigured()) {
                 try {
                     $emailResult = Mailer::sendBookingConfirmation(
                         $customerEmail,
@@ -544,6 +572,7 @@ final class BookingApiController
             return Response::json([
                 'booking' => [
                     'id'               => $result['id'],
+                    'status'           => $bookingStatus,
                     'service'          => $serviceName,
                     'staff'            => $staffName,
                     'date'             => $startDt->format('Y-m-d'),
@@ -682,7 +711,31 @@ final class BookingApiController
                 $bookingData['customer_timezone'] = $customerTimezone;
             }
 
+            // If tenant requires approval, set booking to pending
+            if ((int) ($tenant['booking_requires_approval'] ?? 0) === 1) {
+                $bookingData['status'] = 'pending';
+            }
+
             $result = BookingService::createBooking($bookingData, $tenant, $consentGiven);
+
+            // Schedule reminder if tenant has reminders enabled
+            if ((int) ($tenant['send_reminders'] ?? 0) === 1) {
+                $reminderHours = max(1, (int) ($tenant['reminder_hours_before'] ?? 24));
+                $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+                $checkInDt2 = new \DateTimeImmutable($checkIn, $tz);
+                $reminderAt = $checkInDt2->modify("-{$reminderHours} hours");
+                if ($reminderAt > new \DateTimeImmutable('now', $tz)) {
+                    try {
+                        $reminderId = Ulid::generate();
+                        Database::execute(
+                            "INSERT INTO `reminders` (`id`, `booking_id`, `tenant_id`, `scheduled_at`) VALUES (?, ?, ?, ?)",
+                            [(string) $reminderId, $result['id'], $tenant['id'], $reminderAt->format('Y-m-d H:i:s')]
+                        );
+                    } catch (\Throwable $e) {
+                        Logger::error('Failed to schedule resource reminder', ['booking' => $result['id'], 'error' => $e->getMessage()]);
+                    }
+                }
+            }
 
             $pdo->commit();
 
@@ -693,8 +746,9 @@ final class BookingApiController
             );
 
             // After commit: dispatch confirmation email
+            $bookingStatus = $bookingData['status'] ?? 'confirmed';
             $emailSent = false;
-            if (Mailer::isConfigured()) {
+            if ($bookingStatus !== 'pending' && Mailer::isConfigured()) {
                 try {
                     $resourceName = $availability['resource']['name'] ?? null;
                     $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
@@ -730,6 +784,7 @@ final class BookingApiController
             return Response::json([
                 'booking' => [
                     'id'               => $result['id'],
+                    'status'           => $bookingStatus,
                     'resource'         => $availability['resource']['name'] ?? null,
                     'check_in'         => $checkIn,
                     'check_out'        => $checkOut,
@@ -922,7 +977,31 @@ final class BookingApiController
                 $bookingData['customer_timezone'] = $customerTimezone;
             }
 
+            // If tenant requires approval, set booking to pending
+            if ((int) ($tenant['booking_requires_approval'] ?? 0) === 1) {
+                $bookingData['status'] = 'pending';
+            }
+
             $result = BookingService::createBooking($bookingData, $tenant, $consentGiven);
+
+            // Schedule reminder if tenant has reminders enabled
+            if ((int) ($tenant['send_reminders'] ?? 0) === 1) {
+                $reminderHours = max(1, (int) ($tenant['reminder_hours_before'] ?? 24));
+                $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+                $slotStartDt = new \DateTimeImmutable($startDt, $tz);
+                $reminderAt = $slotStartDt->modify("-{$reminderHours} hours");
+                if ($reminderAt > new \DateTimeImmutable('now', $tz)) {
+                    try {
+                        $reminderId = Ulid::generate();
+                        Database::execute(
+                            "INSERT INTO `reminders` (`id`, `booking_id`, `tenant_id`, `scheduled_at`) VALUES (?, ?, ?, ?)",
+                            [(string) $reminderId, $result['id'], $tenant['id'], $reminderAt->format('Y-m-d H:i:s')]
+                        );
+                    } catch (\Throwable $e) {
+                        Logger::error('Failed to schedule capacity reminder', ['booking' => $result['id'], 'error' => $e->getMessage()]);
+                    }
+                }
+            }
 
             $pdo->commit();
 
@@ -933,8 +1012,9 @@ final class BookingApiController
             );
 
             // After commit: dispatch confirmation email
+            $bookingStatus = $bookingData['status'] ?? 'confirmed';
             $emailSent = false;
-            if (Mailer::isConfigured()) {
+            if ($bookingStatus !== 'pending' && Mailer::isConfigured()) {
                 try {
                     $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
                     $slotDt = new \DateTimeImmutable($startDt, $tz);
@@ -969,6 +1049,7 @@ final class BookingApiController
             return Response::json([
                 'booking' => [
                     'id'               => $result['id'],
+                    'status'           => $bookingStatus,
                     'date'             => $date,
                     'time'             => substr($slot['start_time'], 0, 5),
                     'end_time'         => substr($slot['end_time'], 0, 5),
@@ -1180,7 +1261,30 @@ final class BookingApiController
                 $bookingData['customer_timezone'] = $customerTimezone;
             }
 
+            // If tenant requires approval (and not waitlisted — waitlist has its own status)
+            if (!$isWaitlisted && (int) ($tenant['booking_requires_approval'] ?? 0) === 1) {
+                $bookingData['status'] = 'pending';
+            }
+
             $result = BookingService::createBooking($bookingData, $tenant, $consentGiven);
+
+            // Schedule reminder if tenant has reminders enabled (not for waitlisted)
+            if (!$isWaitlisted && (int) ($tenant['send_reminders'] ?? 0) === 1) {
+                $reminderHours = max(1, (int) ($tenant['reminder_hours_before'] ?? 24));
+                $eventStartDt = new \DateTimeImmutable($startDt, $tz);
+                $reminderAt = $eventStartDt->modify("-{$reminderHours} hours");
+                if ($reminderAt > new \DateTimeImmutable('now', $tz)) {
+                    try {
+                        $reminderId = Ulid::generate();
+                        Database::execute(
+                            "INSERT INTO `reminders` (`id`, `booking_id`, `tenant_id`, `scheduled_at`) VALUES (?, ?, ?, ?)",
+                            [(string) $reminderId, $result['id'], $tenant['id'], $reminderAt->format('Y-m-d H:i:s')]
+                        );
+                    } catch (\Throwable $e) {
+                        Logger::error('Failed to schedule event reminder', ['booking' => $result['id'], 'error' => $e->getMessage()]);
+                    }
+                }
+            }
 
             $pdo->commit();
 
@@ -1190,9 +1294,10 @@ final class BookingApiController
                 [$customerId]
             );
 
-            // After commit: dispatch confirmation email (different for waitlisted)
+            // After commit: dispatch confirmation email (different for waitlisted/pending)
+            $bookingStatus = $bookingData['status'] ?? ($isWaitlisted ? 'waitlisted' : 'confirmed');
             $emailSent = false;
-            if (Mailer::isConfigured()) {
+            if ($bookingStatus !== 'pending' && Mailer::isConfigured()) {
                 try {
                     $slotDt = new \DateTimeImmutable($startDt, $tz);
                     $slotEndDt = new \DateTimeImmutable($endDt, $tz);
@@ -1246,7 +1351,7 @@ final class BookingApiController
                     'time'             => $origStart->format('H:i'),
                     'end_time'         => $origEnd->format('H:i'),
                     'spot_count'       => $spotCount,
-                    'status'           => $isWaitlisted ? 'waitlisted' : 'confirmed',
+                    'status'           => $bookingStatus,
                     'waitlisted'       => $isWaitlisted,
                     'consent_recorded' => $result['consent_recorded'],
                     'email_sent'       => $emailSent,
@@ -1270,4 +1375,162 @@ final class BookingApiController
         }
     }
 
+    // ── Self-service booking management ──
+
+    /**
+     * GET /api/{slug}/bookings/{id} — booking detail for the manage page.
+     *
+     * Authentication: booking ULID is the bearer token (128-bit entropy).
+     * Same pattern as the GDPR privacy page.
+     */
+    public function bookingDetail(Request $request): Response
+    {
+        $slug = $request->getAttribute('slug');
+        $tenant = $this->resolveTenant($slug);
+        if (!$tenant) {
+            return Response::json(['error' => 'tenant_not_found'], 404);
+        }
+
+        $this->resolveLocale($tenant, $request);
+
+        $bookingId = $request->getAttribute('id');
+        $booking = BookingService::findByIdWithDetails($bookingId, $tenant['id']);
+
+        if (!$booking) {
+            return Response::json(['error' => 'booking_not_found', 'message' => __('booking.manage.not_found')], 404);
+        }
+
+        // Compute permission flags
+        $canCancel = BookingService::canCancel($booking, $tenant);
+        $canReschedule = BookingService::canReschedule($booking, $tenant);
+
+        // Format dates for JS
+        $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+        $startDt = new \DateTimeImmutable($booking['start_datetime'], $tz);
+        $endDt = new \DateTimeImmutable($booking['end_datetime'], $tz);
+
+        return Response::json([
+            'booking' => [
+                'id'              => $booking['id'],
+                'status'          => $booking['status'],
+                'booking_pattern' => $booking['booking_pattern'],
+                'date'            => $startDt->format('Y-m-d'),
+                'time'            => $startDt->format('H:i'),
+                'end_time'        => $endDt->format('H:i'),
+                'start_datetime'  => $booking['start_datetime'],
+                'end_datetime'    => $booking['end_datetime'],
+                'party_size'      => (int) $booking['party_size'],
+                'service_name'    => $booking['service_name'] ?? null,
+                'staff_name'      => $booking['staff_name'] ?? null,
+                'resource_name'   => $booking['resource_name'] ?? null,
+                'event_name'      => $booking['event_name'] ?? null,
+                'event_location'  => $booking['event_location'] ?? null,
+                'customer_name'   => $booking['customer_name'] ?? null,
+                'customer_email'  => $booking['customer_email'] ?? null,
+                'cancelled_at'    => $booking['cancelled_at'] ?? null,
+                'cancellation_reason' => $booking['cancellation_reason'] ?? null,
+            ],
+            'can_cancel'     => $canCancel['allowed'],
+            'cancel_reason'  => $canCancel['reason'],
+            'can_reschedule' => $canReschedule['allowed'],
+            'reschedule_reason' => $canReschedule['reason'],
+        ]);
+    }
+
+    /**
+     * POST /api/{slug}/bookings/{id}/cancel — cancel a booking.
+     *
+     * Validates CSRF, enforces time gate, updates status to cancelled,
+     * dispatches cancellation email, and returns the result.
+     */
+    public function cancelBookingAction(Request $request): Response
+    {
+        $slug = $request->getAttribute('slug');
+        $tenant = $this->resolveTenant($slug);
+        if (!$tenant) {
+            return Response::json(['error' => 'tenant_not_found'], 404);
+        }
+
+        $this->resolveLocale($tenant, $request);
+
+        // CSRF validation
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $sessionToken = $_SESSION['_csrf_token'] ?? '';
+        $submittedToken = $request->header('X-CSRF-Token') ?? '';
+        if ($sessionToken === '' || $submittedToken === '' || !hash_equals($sessionToken, $submittedToken)) {
+            return Response::json(['error' => 'csrf_mismatch', 'message' => __('booking.api.csrf_mismatch')], 403);
+        }
+
+        $bookingId = $request->getAttribute('id');
+        $input = $request->json();
+        $reason = trim($input['reason'] ?? '');
+
+        try {
+            $booking = BookingService::cancelBooking($bookingId, $tenant, $reason);
+        } catch (\RuntimeException $e) {
+            $msg = $e->getMessage();
+            if (str_contains($msg, 'not found')) {
+                return Response::json(['error' => 'booking_not_found', 'message' => __('booking.manage.not_found')], 404);
+            }
+            if (str_contains($msg, 'not_confirmed')) {
+                return Response::json(['error' => 'already_cancelled', 'message' => __('booking.manage.already_cancelled')], 409);
+            }
+            if (str_contains($msg, 'too_late')) {
+                return Response::json(['error' => 'time_gate', 'message' => __('booking.manage.time_gate_cancel')], 409);
+            }
+            if (str_contains($msg, 'cancellation_disabled')) {
+                return Response::json(['error' => 'cancellation_disabled', 'message' => __('booking.manage.cancellation_disabled')], 403);
+            }
+            return Response::json(['error' => 'cancel_failed', 'message' => __('booking.api.booking_failed')], 500);
+        }
+
+        // Dispatch cancellation notification email
+        $emailSent = false;
+        if (Mailer::isConfigured()) {
+            try {
+                // Load booking details for email
+                $details = BookingService::findByIdWithDetails($bookingId, $tenant['id']);
+
+                if ($details) {
+                    $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+                    $startDt = new \DateTimeImmutable($details['start_datetime'], $tz);
+                    $endDt = new \DateTimeImmutable($details['end_datetime'], $tz);
+
+                    $emailResult = Mailer::sendCancellationConfirmation(
+                        $details['customer_email'],
+                        $details['customer_name'],
+                        [
+                            'date'           => $startDt->format('Y-m-d'),
+                            'formatted_date' => Locale::dateLong($startDt),
+                            'time'           => $startDt->format('H:i'),
+                            'end_time'       => $endDt->format('H:i'),
+                        ],
+                        $details['service_name'] ?? $details['resource_name'] ?? $details['event_name'] ?? null,
+                        $details['staff_name'] ?? null,
+                        $tenant['name'],
+                        $tenant['id'],
+                        $bookingId,
+                        $tenant['brand_color'] ?? '#2563EB',
+                        $tenant['slug'],
+                    );
+                    $emailSent = $emailResult['sent'] && Mailer::isProductionSmtp();
+                }
+            } catch (\Throwable $e) {
+                Logger::error('Cancellation email dispatch failed', [
+                    'booking' => $bookingId,
+                    'error'   => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return Response::json([
+            'cancelled'  => true,
+            'booking_id' => $bookingId,
+            'email_sent' => $emailSent,
+        ]);
+    }
+
 }
+

@@ -496,6 +496,130 @@ final class Mailer
         return self::send($to, $subject, $html, 'magic_link');
     }
 
+    // ── Cancellation email ──
+
+    /**
+     * Send a cancellation confirmation email to the customer.
+     *
+     * Uses the branded layout with a red status indicator and strikethrough
+     * booking details. Includes a "Book Again" CTA linking to the booking page.
+     */
+    public static function sendCancellationConfirmation(
+        string $to,
+        string $customerName,
+        array $booking,
+        ?string $serviceName,
+        ?string $staffName,
+        string $tenantName,
+        string $tenantId,
+        string $bookingId,
+        string $brandColor = '#2563EB',
+        string $tenantSlug = '',
+    ): array {
+        $brandTokens = BrandColorHelper::derive($brandColor);
+        $safeBrandColor = $brandTokens['brand'];
+
+        $subject = __('email.cancellation.subject', [
+            'business' => $tenantName,
+        ]);
+
+        $heading  = __('email.cancellation.heading');
+        $greeting = __('email.cancellation.greeting', ['name' => $customerName]);
+        $bodyText = __('email.cancellation.body');
+        $detailsHeading = __('email.booking_confirmation.details');
+        $footer   = __('email.cancellation.footer');
+
+        $displayDate = $booking['formatted_date'] ?? $booking['date'];
+        $details = [];
+        $details[__('email.common.date')] = $displayDate;
+        if ($booking['time'] ?? '') {
+            $details[__('email.common.time')] = $booking['time'] . "\xE2\x80\x93" . $booking['end_time'];
+        }
+        if ($serviceName) {
+            $details[__('email.common.service')] = $serviceName;
+        }
+        if ($staffName) {
+            $details[__('email.common.staff')] = $staffName;
+        }
+
+        // Render using the cancellation-specific template
+        $html = self::renderCancellationEmail(
+            $safeBrandColor, $heading, $greeting, $bodyText,
+            $detailsHeading, $details, $footer, $tenantName, app_name(),
+            $tenantSlug,
+        );
+
+        $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
+        $plainBody = self::renderConfirmationPlainText(
+            $heading, $greeting, $bodyText, $detailsHeading,
+            $details, $footer, $tenantName, $poweredBy,
+        );
+
+        $replyTo = self::resolveTenantReplyTo($tenantId);
+
+        return self::send($to, $subject, $html, 'cancellation', $tenantId, $bookingId, $plainBody, $replyTo['email'], $replyTo['name'], $tenantName);
+    }
+
+    /**
+     * Send a booking reminder email to the customer.
+     *
+     * Uses the same branded layout as booking confirmation, with
+     * reminder-specific subject, heading, and body text.
+     */
+    public static function sendReminder(
+        string $to,
+        string $customerName,
+        array $booking,
+        ?string $serviceName,
+        ?string $staffName,
+        string $tenantName,
+        string $tenantId,
+        string $bookingId,
+        string $brandColor = '#2563EB',
+    ): array {
+        $brandTokens = BrandColorHelper::derive($brandColor);
+        $safeBrandColor = $brandTokens['brand'];
+
+        $subject = __('email.booking_reminder.subject', [
+            'service' => $serviceName ?? $tenantName,
+            'time'    => $booking['time'] ?? '',
+        ]);
+
+        $heading  = __('email.booking_reminder.body');
+        $greeting = __('email.booking_reminder.greeting', ['name' => $customerName]);
+        $bodyText = __('email.booking_reminder.body');
+        $detailsHeading = __('email.booking_confirmation.details');
+        $footer   = __('email.booking_confirmation.footer');
+
+        $displayDate = $booking['formatted_date'] ?? $booking['date'];
+        $details = [];
+        $details[__('email.common.date')] = $displayDate;
+        if ($booking['time'] ?? '') {
+            $details[__('email.common.time')] = $booking['time'] . "\xE2\x80\x93" . ($booking['end_time'] ?? '');
+        }
+        if ($serviceName) {
+            $details[__('email.common.service')] = $serviceName;
+        }
+        if ($staffName) {
+            $details[__('email.common.staff')] = $staffName;
+        }
+
+        $html = self::renderConfirmationEmail(
+            $safeBrandColor, $heading, $greeting, $bodyText,
+            $detailsHeading, $details, $footer, $tenantName, app_name(),
+        );
+
+        $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
+        $plainBody = self::renderConfirmationPlainText(
+            $heading, $greeting, $bodyText, $detailsHeading,
+            $details, $footer, $tenantName, $poweredBy,
+        );
+
+        $replyTo = self::resolveTenantReplyTo($tenantId);
+
+        return self::send($to, $subject, $html, 'reminder', $tenantId, $bookingId, $plainBody, $replyTo['email'], $replyTo['name'], $tenantName);
+    }
+
     // ── Internal helpers ──
 
     /**
@@ -849,4 +973,109 @@ final class Mailer
         </html>
         HTML;
     }
+
+    /**
+     * Render a branded cancellation email.
+     *
+     * Same structure as the confirmation email but with:
+     * - Red ✕ status indicator instead of green ✓
+     * - Strikethrough on detail values
+     * - "Book Again" CTA button
+     */
+    private static function renderCancellationEmail(
+        string $brandColor,
+        string $heading,
+        string $greeting,
+        string $bodyText,
+        string $detailsHeading,
+        array $details,
+        string $footerText,
+        string $tenantName,
+        string $appName,
+        string $tenantSlug = '',
+    ): string {
+        $h = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+        $font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+        // Build detail rows with strikethrough
+        $detailRows = '';
+        $i = 0;
+        foreach ($details as $label => $value) {
+            $topPad = $i > 0 ? '16px' : '0';
+            $detailRows .= '<tr><td style="padding-top: ' . $topPad . '; font-size: 13px; color: #6B7280; font-weight: 500; font-family: ' . $font . '; vertical-align: top; width: 100px;">' . $h($label) . '</td>'
+                . '<td style="padding-top: ' . $topPad . '; font-size: 15px; color: #9CA3AF; font-weight: 500; font-family: ' . $font . '; vertical-align: top; text-decoration: line-through;">' . $h($value) . '</td></tr>';
+            $i++;
+        }
+
+        $poweredBy = __('email.common.powered_by', ['app_name' => $appName]);
+        $bookAgainLabel = __('email.cancellation.book_again');
+        $bookAgainUrl = '';
+        if ($tenantSlug !== '') {
+            $baseUrl = rtrim($_SERVER['REQUEST_SCHEME'] ?? 'https', '/') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+            $bookAgainUrl = $baseUrl . '/book/' . $h($tenantSlug);
+        }
+
+        $ctaHtml = '';
+        if ($bookAgainUrl !== '') {
+            $ctaHtml = '<tr><td style="padding: 0 32px 24px; text-align: center;">'
+                . '<a href="' . $bookAgainUrl . '" style="display: inline-block; padding: 12px 32px; background: ' . $brandColor . '; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; font-family: ' . $font . ';">' . $h($bookAgainLabel) . '</a>'
+                . '</td></tr>';
+        }
+
+        return <<<HTML
+        <html>
+        <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+        <body style="margin: 0; padding: 0; font-family: {$font}; background: #F3F4F6;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="padding: 32px 16px;">
+                <tr><td align="center">
+                    <table width="560" cellpadding="0" cellspacing="0" style="background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                        <!-- Branded header bar -->
+                        <tr><td style="height: 40px; background: {$brandColor};"></td></tr>
+
+                        <!-- Status + Heading -->
+                        <tr><td style="padding: 32px 32px 0; text-align: center;">
+                            <div style="display: inline-block; width: 40px; height: 40px; line-height: 40px; border-radius: 50%; background: #FEF2F2; color: #DC2626; font-size: 20px; font-weight: 700; text-align: center;">✕</div>
+                            <h1 style="margin: 16px 0 0; font-size: 22px; font-weight: 700; color: #111827; line-height: 1.3; font-family: {$font};">{$h($heading)}</h1>
+                        </td></tr>
+
+                        <!-- Greeting + Body -->
+                        <tr><td style="padding: 24px 32px 0; text-align: center;">
+                            <p style="margin: 0; font-size: 15px; color: #374151; line-height: 1.5; font-family: {$font};">{$h($greeting)}<br>{$h($bodyText)}</p>
+                        </td></tr>
+
+                        <!-- Summary card (strikethrough) -->
+                        <tr><td style="padding: 24px 32px 0;">
+                            <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; font-family: {$font};">{$h($detailsHeading)}</p>
+                        </td></tr>
+                        <tr><td style="padding: 0 32px 24px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px;">
+                                <tr><td style="padding: 20px 24px;">
+                                    <table width="100%" cellpadding="0" cellspacing="0">
+                                        {$detailRows}
+                                    </table>
+                                </td></tr>
+                            </table>
+                        </td></tr>
+
+                        <!-- Book Again CTA -->
+                        {$ctaHtml}
+
+                        <!-- Footer text -->
+                        <tr><td style="padding: 0 32px 24px; text-align: center;">
+                            <p style="margin: 0; font-size: 14px; color: #6B7280; line-height: 1.5; font-family: {$font};">{$h($footerText)}</p>
+                        </td></tr>
+
+                        <!-- Business footer -->
+                        <tr><td style="padding: 16px 32px; border-top: 1px solid #E5E7EB; text-align: center;">
+                            <p style="margin: 0 0 4px; font-size: 13px; color: #6B7280; font-family: {$font};">{$h($tenantName)}</p>
+                            <p style="margin: 0; font-size: 11px; color: #9CA3AF; font-family: {$font};">{$h($poweredBy)}</p>
+                        </td></tr>
+                    </table>
+                </td></tr>
+            </table>
+        </body>
+        </html>
+        HTML;
+    }
 }
+

@@ -1037,6 +1037,8 @@ body {
 .vb-book-summary-label {
   font-size: 0.8125rem;
   color: var(--vb-text-secondary);
+  flex-shrink: 0;
+  min-width: 4.5rem;
 }
 
 .vb-book-summary-value {
@@ -2086,4 +2088,320 @@ body {
 
 [data-theme="dark"] .vb-book-consent-checkbox {
   accent-color: var(--vb-brand);
+}
+
+/* ── Self-Service Manage Page ── */
+
+.vb-book-manage-container {
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.vb-book-manage-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 0;
+  color: var(--vb-text-muted);
+}
+
+.vb-book-manage-cancelled {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 0;
+  animation: vb-manage-fade-in 300ms ease-out;
+}
+
+@keyframes vb-manage-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.vb-book-manage-active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.vb-book-manage-status {
+  margin-bottom: 1.5rem;
+}
+
+.vb-book-manage-status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.vb-book-manage-status-badge.is-confirmed {
+  background: #ECFDF5;
+  color: #059669;
+}
+
+.vb-book-manage-status-badge.is-cancelled {
+  background: #FEF2F2;
+  color: #DC2626;
+}
+
+.vb-book-manage-status-badge.is-rescheduled {
+  background: #FFF7ED;
+  color: #EA580C;
+}
+
+.vb-book-manage-status-badge.is-completed {
+  background: #EFF6FF;
+  color: #2563EB;
+}
+
+.vb-book-manage-customer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+  color: var(--vb-text);
+}
+
+.vb-book-manage-customer-email {
+  color: var(--vb-text-muted);
+}
+
+.vb-book-manage-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  width: 100%;
+}
+
+.vb-book-manage-gate-msg {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--vb-text-muted);
+  font-style: italic;
+}
+
+.vb-book-manage-message {
+  font-size: 0.9375rem;
+  color: var(--vb-text-muted);
+  margin-top: 0.5rem;
+}
+
+/* ── Button: Danger (cancel) ── */
+
+.vb-book-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, transform 100ms ease;
+  background: #DC2626;
+  color: #FFFFFF;
+  min-width: 160px;
+}
+
+.vb-book-btn-danger:hover {
+  background: #B91C1C;
+}
+
+.vb-book-btn-danger:active {
+  transform: scale(0.98);
+}
+
+.vb-book-btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Button: Brand ── */
+
+.vb-book-btn-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 150ms ease, transform 100ms ease;
+  background: var(--vb-brand);
+  color: var(--vb-brand-text);
+}
+
+.vb-book-btn-brand:hover {
+  background: var(--vb-brand-hover);
+}
+
+.vb-book-btn-brand:active {
+  transform: scale(0.98);
+}
+
+/* ── Cancel Checkmark Animation ── */
+
+.vb-book-confirm-check-cancel {
+  margin-bottom: 0.5rem;
+  width: 56px;
+  height: 56px;
+}
+
+.vb-book-checkmark-circle.is-cancel {
+  stroke: #DC2626;
+  stroke-width: 2;
+  stroke-dasharray: 160;
+  stroke-dashoffset: 160;
+  animation: vb-cancel-circle 600ms ease-out forwards;
+}
+
+.vb-book-checkmark-check.is-cancel {
+  stroke: #DC2626;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 56;
+  stroke-dashoffset: 56;
+  animation: vb-cancel-cross 400ms 400ms ease-out forwards;
+}
+
+@keyframes vb-cancel-circle {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes vb-cancel-cross {
+  to { stroke-dashoffset: 0; }
+}
+
+.vb-book-checkmark-svg.is-cancel .vb-book-checkmark-circle {
+  stroke: #DC2626;
+}
+
+.vb-book-checkmark-svg.is-cancel .vb-book-checkmark-check {
+  stroke: #DC2626;
+}
+
+/* ── Modal ── */
+
+.vb-book-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.vb-book-modal {
+  background: var(--vb-bg);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  text-align: left;
+}
+
+.vb-book-modal-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--vb-text);
+}
+
+.vb-book-modal-body {
+  margin: 0 0 1.25rem;
+  font-size: 0.9375rem;
+  color: var(--vb-text-muted);
+  line-height: 1.5;
+}
+
+.vb-book-modal-field {
+  margin-bottom: 1.25rem;
+}
+
+.vb-book-modal-field .vb-book-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--vb-text-muted);
+}
+
+.vb-book-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* ── Inline Spinner (for button loading state) ── */
+
+.vb-book-spinner-inline {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: vb-spin 0.6s linear infinite;
+}
+
+@keyframes vb-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Dark Mode: Manage + Modal ── */
+
+[data-theme="dark"] .vb-book-manage-status-badge.is-confirmed {
+  background: rgba(5, 150, 105, 0.15);
+  color: #34D399;
+}
+
+[data-theme="dark"] .vb-book-manage-status-badge.is-cancelled {
+  background: rgba(220, 38, 38, 0.15);
+  color: #F87171;
+}
+
+[data-theme="dark"] .vb-book-manage-status-badge.is-rescheduled {
+  background: rgba(234, 88, 12, 0.15);
+  color: #FB923C;
+}
+
+[data-theme="dark"] .vb-book-manage-status-badge.is-completed {
+  background: rgba(37, 99, 235, 0.15);
+  color: #60A5FA;
+}
+
+[data-theme="dark"] .vb-book-modal {
+  background: var(--vb-bg-secondary);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .vb-book-modal-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .vb-book-btn-danger {
+  background: #B91C1C;
+}
+
+[data-theme="dark"] .vb-book-btn-danger:hover {
+  background: #991B1B;
 }

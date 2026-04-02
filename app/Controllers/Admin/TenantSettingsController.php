@@ -9,6 +9,7 @@ use App\Engine\AuditLog;
 use App\Engine\Database;
 use App\Engine\Request;
 use App\Engine\Response;
+use App\Engine\Ulid;
 use App\Engine\Version;
 use App\Engine\View;
 use App\Middleware\CsrfMiddleware;
@@ -141,6 +142,50 @@ final class TenantSettingsController
         return Response::redirect("/admin/tenants/{$tenantId}/settings/branding");
     }
 
+    // ── Booking Page (all patterns) ──
+
+    public function bookingPage(Request $request): Response
+    {
+        $tenantId = $request->getAttribute('tenant_id');
+        if (!$this->canAccess($tenantId)) {
+            return $this->forbidden($request);
+        }
+
+        $tenant = $this->loadTenant($tenantId);
+        if ($tenant === null) {
+            return Response::redirect('/admin/tenants');
+        }
+
+        return $this->render('admin.tenants.settings.bookingpage', $tenantId, $tenant, 'bookingpage');
+    }
+
+    public function saveBookingPage(Request $request): Response
+    {
+        $tenantId = $request->getAttribute('tenant_id');
+        if (!$this->canAccess($tenantId)) {
+            return $this->forbidden($request);
+        }
+
+        $tenant = $this->loadTenant($tenantId);
+        if ($tenant === null) {
+            return Response::redirect('/admin/tenants');
+        }
+
+        $data = [
+            'confirmation_message'       => trim($request->string('confirmation_message')) ?: null,
+            'cancellation_policy'        => trim($request->string('cancellation_policy')) ?: null,
+            'require_phone'              => $request->string('require_phone') === '1' ? 1 : 0,
+            'booking_requires_approval'  => $request->string('booking_requires_approval') === '1' ? 1 : 0,
+            'allow_cancellation'         => $request->string('allow_cancellation') === '1' ? 1 : 0,
+            'cancellation_hours_before'  => max(0, (int) $request->string('cancellation_hours_before')),
+            'allow_rescheduling'         => $request->string('allow_rescheduling') === '1' ? 1 : 0,
+            'rescheduling_hours_before'  => max(0, (int) $request->string('rescheduling_hours_before')),
+        ];
+
+        $this->saveTenant($tenantId, $data, $tenant, 'bookingpage');
+        return Response::redirect("/admin/tenants/{$tenantId}/settings/bookingpage");
+    }
+
     // ── Booking Rules (timeslot pattern only) ──
 
     public function booking(Request $request): Response
@@ -179,10 +224,11 @@ final class TenantSettingsController
         }
 
         $data = [
-            'slot_duration_minutes' => max(5, (int) $request->string('slot_duration_minutes')),
-            'buffer_minutes'        => max(0, (int) $request->string('buffer_minutes')),
-            'min_advance_hours'     => max(0, (int) $request->string('min_advance_hours')),
-            'max_advance_days'      => max(1, (int) $request->string('max_advance_days')),
+            'slot_duration_minutes'             => max(5, (int) $request->string('slot_duration_minutes')),
+            'buffer_minutes'                    => max(0, (int) $request->string('buffer_minutes')),
+            'min_advance_hours'                 => max(0, (int) $request->string('min_advance_hours')),
+            'max_advance_days'                  => max(1, (int) $request->string('max_advance_days')),
+            'max_bookings_per_customer_per_day'  => max(0, (int) $request->string('max_bookings_per_customer_per_day')),
         ];
 
         $this->saveTenant($tenantId, $data, $tenant, 'booking');
@@ -405,4 +451,115 @@ final class TenantSettingsController
         unset($_SESSION['settings_old_input']);
         return $old;
     }
+
+    // ── Email Templates ──
+
+    public function emails(Request $request): Response
+    {
+        $tenantId = $request->getAttribute('tenant_id');
+        if (!$this->canAccess($tenantId)) {
+            return $this->forbidden($request);
+        }
+
+        $tenant = $this->loadTenant($tenantId);
+        if ($tenant === null) {
+            return Response::redirect('/admin/tenants');
+        }
+
+        $templates = Database::query(
+            'SELECT * FROM `tenant_email_templates` WHERE `tenant_id` = ? ORDER BY `type`',
+            [$tenantId]
+        );
+
+        return View::response('admin.tenants.settings.emails', [
+            'user'          => Auth::user(),
+            'version'       => Version::get(),
+            'pageTitle'     => __('admin.tenant_settings.title'),
+            'documentTitle' => __('admin.tenant_settings.title') . ' — ' . $tenant['name'],
+            'activePage'    => 'settings',
+            'activeTab'     => 'emails',
+            'csrfToken'     => CsrfMiddleware::generateToken(),
+            'tenantId'      => $tenantId,
+            'tenant'        => $tenant,
+            'templates'     => $templates,
+            'old'           => $this->getOldInput(),
+            'flash'         => $this->flash(),
+        ]);
+    }
+
+    public function saveEmails(Request $request): Response
+    {
+        $tenantId = $request->getAttribute('tenant_id');
+        if (!$this->canAccess($tenantId)) {
+            return $this->forbidden($request);
+        }
+
+        $types = ['confirmation', 'reminder', 'cancellation', 'staff_notification'];
+        $fields = ['subject', 'heading', 'body_intro', 'body_outro', 'cta_label'];
+
+        foreach ($types as $type) {
+            $isEnabled = (int) $request->string("{$type}_is_enabled");
+
+            // Check if any field has a value
+            $hasData = false;
+            $fieldValues = [];
+            foreach ($fields as $field) {
+                $val = trim($request->string("{$type}_{$field}"));
+                $fieldValues[$field] = $val;
+                if ($val !== '') {
+                    $hasData = true;
+                }
+            }
+
+            // Load existing row
+            $existing = Database::query(
+                'SELECT `id` FROM `tenant_email_templates` WHERE `tenant_id` = ? AND `type` = ? LIMIT 1',
+                [$tenantId, $type]
+            );
+
+            if ($existing) {
+                // Update existing
+                Database::execute(
+                    'UPDATE `tenant_email_templates`
+                     SET `subject` = ?, `heading` = ?, `body_intro` = ?, `body_outro` = ?,
+                         `cta_label` = ?, `is_enabled` = ?
+                     WHERE `id` = ?',
+                    [
+                        $fieldValues['subject'] ?: null,
+                        $fieldValues['heading'] ?: null,
+                        $fieldValues['body_intro'] ?: null,
+                        $fieldValues['body_outro'] ?: null,
+                        $fieldValues['cta_label'] ?: null,
+                        $isEnabled,
+                        $existing[0]['id'],
+                    ]
+                );
+            } elseif ($hasData || $isEnabled === 0) {
+                // Insert new row only if there's data or the type is disabled
+                $id = Ulid::generate();
+                Database::execute(
+                    'INSERT INTO `tenant_email_templates`
+                     (`id`, `tenant_id`, `type`, `subject`, `heading`, `body_intro`, `body_outro`, `cta_label`, `is_enabled`)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [
+                        (string) $id,
+                        $tenantId,
+                        $type,
+                        $fieldValues['subject'] ?: null,
+                        $fieldValues['heading'] ?: null,
+                        $fieldValues['body_intro'] ?: null,
+                        $fieldValues['body_outro'] ?: null,
+                        $fieldValues['cta_label'] ?: null,
+                        $isEnabled,
+                    ]
+                );
+            }
+        }
+
+        AuditLog::log('tenant.emails_updated', 'tenant', $tenantId, ['types' => $types], $tenantId);
+
+        $this->setFlash('success', __('admin.tenant_settings.emails_saved'));
+        return Response::redirect("/admin/tenants/{$tenantId}/settings/emails");
+    }
 }
+

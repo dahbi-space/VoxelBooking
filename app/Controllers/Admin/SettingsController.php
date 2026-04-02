@@ -254,6 +254,64 @@ final class SettingsController
         ]);
     }
 
+    /**
+     * Operator "Run now" action — executes cron tasks immediately.
+     *
+     * POST /admin/settings/cron/run
+     */
+    public function cronRunNow(Request $request): Response
+    {
+        $results = [];
+        $errors  = [];
+
+        // Run retention
+        try {
+            $retResult = \App\Engine\RetentionJob::run();
+            $results['retention'] = $retResult;
+            if (!empty($retResult['errors'])) {
+                $errors = array_merge($errors, $retResult['errors']);
+            }
+        } catch (\Throwable $e) {
+            Logger::error('Cron manual run: retention failed', ['error' => $e->getMessage()]);
+            $errors[] = 'Retention failed: ' . $e->getMessage();
+        }
+
+        // Update timestamp
+        try {
+            Database::upsertSetting('cron_last_run', date('Y-m-d H:i:s'));
+        } catch (\Throwable) {
+            // Non-critical
+        }
+
+        // Audit log
+        \App\Engine\AuditLog::log('system.cron_manual_run', 'system', null, [
+            'tasks'  => array_keys($results),
+            'errors' => count($errors),
+        ]);
+
+        // Flash result
+        if (empty($errors)) {
+            $taskSummary = [];
+            if (isset($results['retention'])) {
+                $anon = count($results['retention']['anonymization'] ?? []);
+                $audit = $results['retention']['audit_cleanup'] ?? 0;
+                $email = $results['retention']['email_cleanup'] ?? 0;
+                $rate  = $results['retention']['rate_limit_cleanup'] ?? 0;
+                $taskSummary[] = __('admin.cron.run_result_retention', [
+                    'anon'  => $anon,
+                    'audit' => $audit,
+                    'email' => $email,
+                    'rate'  => $rate,
+                ]);
+            }
+            $this->setFlash('success', __('admin.cron.run_success') . ' ' . implode(' ', $taskSummary));
+        } else {
+            $this->setFlash('error', __('admin.cron.run_partial', ['errors' => count($errors)]));
+        }
+
+        return Response::redirect('/admin/settings/cron');
+    }
+
     // ── Logs ──
 
     public function logs(Request $request): Response

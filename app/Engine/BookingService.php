@@ -218,4 +218,171 @@ final class BookingService
 
         return isset($rows[0]['consent_given_at']);
     }
+
+    // ── Self-service booking management ──
+
+    /**
+     * Find a booking by ID.
+     */
+    public static function findById(string $bookingId): ?array
+    {
+        $rows = Database::query(
+            'SELECT * FROM `bookings` WHERE `id` = ? LIMIT 1',
+            [$bookingId]
+        );
+
+        return $rows[0] ?? null;
+    }
+
+    /**
+     * Find a booking by ID with related entity names for the manage page.
+     *
+     * Returns the booking row plus service_name, staff_name,
+     * resource_name, event_name, and customer email/name.
+     */
+    public static function findByIdWithDetails(string $bookingId, string $tenantId): ?array
+    {
+        $rows = Database::query(
+            'SELECT b.*,
+                    s.`name` AS `service_name`,
+                    st.`name` AS `staff_name`,
+                    r.`name` AS `resource_name`,
+                    e.`name` AS `event_name`,
+                    e.`location` AS `event_location`,
+                    c.`name` AS `customer_name`,
+                    c.`email` AS `customer_email`
+             FROM `bookings` b
+             LEFT JOIN `services` s ON s.`id` = b.`service_id`
+             LEFT JOIN `staff` st ON st.`id` = b.`staff_id`
+             LEFT JOIN `resources` r ON r.`id` = b.`resource_id`
+             LEFT JOIN `events` e ON e.`id` = b.`event_id`
+             LEFT JOIN `customers` c ON c.`id` = b.`customer_id`
+             WHERE b.`id` = ? AND b.`tenant_id` = ?
+             LIMIT 1',
+            [$bookingId, $tenantId]
+        );
+
+        return $rows[0] ?? null;
+    }
+
+    /**
+     * Check whether a booking can be cancelled (time-gate check).
+     *
+     * @return array{allowed: bool, reason: string|null}
+     */
+    public static function canCancel(array $booking, array $tenant): array
+    {
+        if ($booking['status'] !== 'confirmed') {
+            return ['allowed' => false, 'reason' => 'not_confirmed'];
+        }
+
+        if (!(bool) ($tenant['allow_cancellation'] ?? true)) {
+            return ['allowed' => false, 'reason' => 'cancellation_disabled'];
+        }
+
+        $hoursBeforeLimit = (int) ($tenant['cancellation_hours_before'] ?? 24);
+
+        $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+        $startDt = new \DateTimeImmutable($booking['start_datetime'], $tz);
+        $now = new \DateTimeImmutable('now', $tz);
+
+        $diffSeconds = $startDt->getTimestamp() - $now->getTimestamp();
+        $diffHours = $diffSeconds / 3600;
+
+        if ($diffHours < $hoursBeforeLimit) {
+            return ['allowed' => false, 'reason' => 'too_late'];
+        }
+
+        return ['allowed' => true, 'reason' => null];
+    }
+
+    /**
+     * Cancel a booking.
+     *
+     * Sets status to 'cancelled', records the timestamp and optional reason,
+     * decrements the customer's booking count, and logs an audit event.
+     *
+     * @throws \RuntimeException If cancellation is not allowed
+     */
+    public static function cancelBooking(string $bookingId, array $tenant, string $reason = ''): array
+    {
+        $booking = self::findById($bookingId);
+        if (!$booking || $booking['tenant_id'] !== $tenant['id']) {
+            throw new \RuntimeException('Booking not found');
+        }
+
+        $check = self::canCancel($booking, $tenant);
+        if (!$check['allowed']) {
+            throw new \RuntimeException('Cannot cancel: ' . $check['reason']);
+        }
+
+        // Update booking status
+        Database::execute(
+            'UPDATE `bookings` SET
+                `status` = ?,
+                `cancelled_at` = NOW(),
+                `cancellation_reason` = ?,
+                `updated_at` = NOW()
+             WHERE `id` = ?',
+            ['cancelled', $reason ?: null, $bookingId]
+        );
+
+        // Decrement customer booking count
+        Database::execute(
+            'UPDATE `customers` SET
+                `booking_count` = GREATEST(0, `booking_count` - 1)
+             WHERE `id` = ?',
+            [$booking['customer_id']]
+        );
+
+        // Audit log
+        AuditLog::log(
+            'booking.cancelled',
+            'booking',
+            $bookingId,
+            [
+                'cancelled_by'  => 'customer',
+                'reason'        => $reason ?: null,
+            ],
+            $tenant['id'],
+        );
+
+        // Return the updated booking
+        $booking['status'] = 'cancelled';
+        $booking['cancelled_at'] = date('Y-m-d H:i:s');
+        $booking['cancellation_reason'] = $reason ?: null;
+
+        return $booking;
+    }
+
+    /**
+     * Check whether a booking can be rescheduled (time-gate check).
+     *
+     * @return array{allowed: bool, reason: string|null}
+     */
+    public static function canReschedule(array $booking, array $tenant): array
+    {
+        if ($booking['status'] !== 'confirmed') {
+            return ['allowed' => false, 'reason' => 'not_confirmed'];
+        }
+
+        if (!(bool) ($tenant['allow_rescheduling'] ?? true)) {
+            return ['allowed' => false, 'reason' => 'rescheduling_disabled'];
+        }
+
+        $hoursBeforeLimit = (int) ($tenant['rescheduling_hours_before'] ?? 24);
+
+        $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+        $startDt = new \DateTimeImmutable($booking['start_datetime'], $tz);
+        $now = new \DateTimeImmutable('now', $tz);
+
+        $diffSeconds = $startDt->getTimestamp() - $now->getTimestamp();
+        $diffHours = $diffSeconds / 3600;
+
+        if ($diffHours < $hoursBeforeLimit) {
+            return ['allowed' => false, 'reason' => 'too_late'];
+        }
+
+        return ['allowed' => true, 'reason' => null];
+    }
 }

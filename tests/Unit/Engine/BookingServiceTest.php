@@ -218,4 +218,208 @@ final class BookingServiceTest extends TestCase
 
         $this->assertLessThanOrEqual(500, mb_strlen($text));
     }
+
+    // ── canCancel tests ──
+
+    /**
+     * Confirmed booking outside time gate can be cancelled.
+     */
+    public function testCanCancelAllowsConfirmedBookingOutsideGate(): void
+    {
+        $booking = [
+            'status' => 'confirmed',
+            'start_datetime' => (new \DateTimeImmutable('+48 hours'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_cancellation' => 1,
+            'cancellation_hours_before' => 24,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canCancel($booking, $tenant);
+        $this->assertTrue($result['allowed']);
+        $this->assertNull($result['reason']);
+    }
+
+    /**
+     * Confirmed booking inside time gate cannot be cancelled.
+     */
+    public function testCanCancelRejectsWithinTimeGate(): void
+    {
+        $booking = [
+            'status' => 'confirmed',
+            'start_datetime' => (new \DateTimeImmutable('+12 hours'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_cancellation' => 1,
+            'cancellation_hours_before' => 24,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canCancel($booking, $tenant);
+        $this->assertFalse($result['allowed']);
+        $this->assertSame('too_late', $result['reason']);
+    }
+
+    /**
+     * Already cancelled booking cannot be cancelled again.
+     */
+    public function testCanCancelRejectsAlreadyCancelled(): void
+    {
+        $booking = [
+            'status' => 'cancelled',
+            'start_datetime' => (new \DateTimeImmutable('+48 hours'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_cancellation' => 1,
+            'cancellation_hours_before' => 24,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canCancel($booking, $tenant);
+        $this->assertFalse($result['allowed']);
+        $this->assertSame('not_confirmed', $result['reason']);
+    }
+
+    /**
+     * Cancellation disabled at tenant level is rejected.
+     */
+    public function testCanCancelRejectsWhenDisabled(): void
+    {
+        $booking = [
+            'status' => 'confirmed',
+            'start_datetime' => (new \DateTimeImmutable('+48 hours'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_cancellation' => 0,
+            'cancellation_hours_before' => 24,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canCancel($booking, $tenant);
+        $this->assertFalse($result['allowed']);
+        $this->assertSame('cancellation_disabled', $result['reason']);
+    }
+
+    /**
+     * Zero hours_before means cancellation is always allowed until start.
+     */
+    public function testCanCancelWithZeroHoursGate(): void
+    {
+        $booking = [
+            'status' => 'confirmed',
+            'start_datetime' => (new \DateTimeImmutable('+1 minute'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_cancellation' => 1,
+            'cancellation_hours_before' => 0,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canCancel($booking, $tenant);
+        $this->assertTrue($result['allowed']);
+    }
+
+    // ── canReschedule tests ──
+
+    /**
+     * Confirmed booking outside time gate can be rescheduled.
+     */
+    public function testCanRescheduleAllowsOutsideGate(): void
+    {
+        $booking = [
+            'status' => 'confirmed',
+            'start_datetime' => (new \DateTimeImmutable('+48 hours'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_rescheduling' => 1,
+            'rescheduling_hours_before' => 24,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canReschedule($booking, $tenant);
+        $this->assertTrue($result['allowed']);
+        $this->assertNull($result['reason']);
+    }
+
+    /**
+     * Booking inside reschedule time gate is rejected.
+     */
+    public function testCanRescheduleRejectsWithinTimeGate(): void
+    {
+        $booking = [
+            'status' => 'confirmed',
+            'start_datetime' => (new \DateTimeImmutable('+6 hours'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_rescheduling' => 1,
+            'rescheduling_hours_before' => 24,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canReschedule($booking, $tenant);
+        $this->assertFalse($result['allowed']);
+        $this->assertSame('too_late', $result['reason']);
+    }
+
+    /**
+     * Rescheduling disabled at tenant level is rejected.
+     */
+    public function testCanRescheduleRejectsWhenDisabled(): void
+    {
+        $booking = [
+            'status' => 'confirmed',
+            'start_datetime' => (new \DateTimeImmutable('+48 hours'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_rescheduling' => 0,
+            'rescheduling_hours_before' => 24,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canReschedule($booking, $tenant);
+        $this->assertFalse($result['allowed']);
+        $this->assertSame('rescheduling_disabled', $result['reason']);
+    }
+
+    /**
+     * Cancelled booking cannot be rescheduled.
+     */
+    public function testCanRescheduleRejectsCancelledBooking(): void
+    {
+        $booking = [
+            'status' => 'cancelled',
+            'start_datetime' => (new \DateTimeImmutable('+48 hours'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_rescheduling' => 1,
+            'rescheduling_hours_before' => 24,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canReschedule($booking, $tenant);
+        $this->assertFalse($result['allowed']);
+        $this->assertSame('not_confirmed', $result['reason']);
+    }
+
+    /**
+     * Rescheduled booking cannot be rescheduled again.
+     */
+    public function testCanRescheduleRejectsAlreadyRescheduled(): void
+    {
+        $booking = [
+            'status' => 'rescheduled',
+            'start_datetime' => (new \DateTimeImmutable('+48 hours'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_rescheduling' => 1,
+            'rescheduling_hours_before' => 24,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canReschedule($booking, $tenant);
+        $this->assertFalse($result['allowed']);
+        $this->assertSame('not_confirmed', $result['reason']);
+    }
 }
+

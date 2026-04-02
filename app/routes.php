@@ -73,6 +73,7 @@ return function (Router $router): void {
             $router->get('/admin/settings/email', \App\Controllers\Admin\SettingsController::class, 'email');
             $router->post('/admin/settings/email', \App\Controllers\Admin\SettingsController::class, 'saveEmail');
             $router->get('/admin/settings/cron', \App\Controllers\Admin\SettingsController::class, 'cron');
+            $router->post('/admin/settings/cron/run', \App\Controllers\Admin\SettingsController::class, 'cronRunNow');
             $router->get('/admin/settings/logs', \App\Controllers\Admin\SettingsController::class, 'logs');
             // Audit log
             $router->get('/admin/settings/audit', \App\Controllers\Admin\SettingsController::class, 'audit');
@@ -119,12 +120,16 @@ return function (Router $router): void {
             $router->post('/admin/tenants/{tenant_id}/settings', \App\Controllers\Admin\TenantSettingsController::class, 'saveGeneral');
             $router->get('/admin/tenants/{tenant_id}/settings/branding', \App\Controllers\Admin\TenantSettingsController::class, 'branding');
             $router->post('/admin/tenants/{tenant_id}/settings/branding', \App\Controllers\Admin\TenantSettingsController::class, 'saveBranding');
+            $router->get('/admin/tenants/{tenant_id}/settings/bookingpage', \App\Controllers\Admin\TenantSettingsController::class, 'bookingPage');
+            $router->post('/admin/tenants/{tenant_id}/settings/bookingpage', \App\Controllers\Admin\TenantSettingsController::class, 'saveBookingPage');
             $router->get('/admin/tenants/{tenant_id}/settings/booking', \App\Controllers\Admin\TenantSettingsController::class, 'booking');
             $router->post('/admin/tenants/{tenant_id}/settings/booking', \App\Controllers\Admin\TenantSettingsController::class, 'saveBooking');
             $router->get('/admin/tenants/{tenant_id}/settings/privacy', \App\Controllers\Admin\TenantSettingsController::class, 'privacy');
             $router->post('/admin/tenants/{tenant_id}/settings/privacy', \App\Controllers\Admin\TenantSettingsController::class, 'savePrivacy');
             $router->get('/admin/tenants/{tenant_id}/settings/notifications', \App\Controllers\Admin\TenantSettingsController::class, 'notifications');
             $router->post('/admin/tenants/{tenant_id}/settings/notifications', \App\Controllers\Admin\TenantSettingsController::class, 'saveNotifications');
+            $router->get('/admin/tenants/{tenant_id}/settings/emails', \App\Controllers\Admin\TenantSettingsController::class, 'emails');
+            $router->post('/admin/tenants/{tenant_id}/settings/emails', \App\Controllers\Admin\TenantSettingsController::class, 'saveEmails');
 
             // Customer management — tenant-context (all business user roles + operator)
             $router->get('/admin/tenants/{tenant_id}/customers', \App\Controllers\Admin\CustomersController::class, 'index');
@@ -220,12 +225,15 @@ return function (Router $router): void {
         $router->get('/book/{slug}/privacy/{customer_id}', \App\Controllers\Booking\PrivacyController::class, 'show');
         $router->post('/book/{slug}/privacy/{customer_id}', \App\Controllers\Booking\PrivacyController::class, 'action');
 
-        // ── Public API ──
-        // TODO: Phase 6 — /api/{tenant-slug} routes
+        // ── Self-service booking management ──
+        // No auth — booking ULID is the bearer token (128-bit entropy, same as privacy page)
+        $router->get('/book/{slug}/manage/{booking_id}', \App\Controllers\Booking\BookingPageController::class, 'manage');
+        $router->get('/api/{slug}/bookings/{id}', \App\Controllers\Booking\BookingApiController::class, 'bookingDetail');
+        $router->post('/api/{slug}/bookings/{id}/cancel', \App\Controllers\Booking\BookingApiController::class, 'cancelBookingAction');
 
         // ── Cron ──
-        $router->get('/cron/retention', \App\Controllers\CronController::class, 'retention');
-        // TODO: Phase 6 — /cron/reminders
+        $router->get('/cron/run', \App\Controllers\CronController::class, 'run');
+        $router->get('/cron/retention', \App\Controllers\CronController::class, 'run'); // backward compat
 
         // ── Agent API v1 ──
         // Schema endpoint: public (no auth — supports LLM tool-calling discovery)

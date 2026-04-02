@@ -679,7 +679,132 @@ final class TenantSettingsTest extends TestCase
     {
         $res = self::httpGet("/admin/tenants/" . self::$resourceTenantId . "/settings", 'operator');
         $this->assertSame(200, $res['code']);
-        $this->assertStringNotContainsString('tab-booking', $res['body'], 'Booking tab must not appear for resource tenant');
+        // tab-booking (exact id) must not appear, but tab-bookingpage (all patterns) should
+        $this->assertStringNotContainsString('id="tab-booking"', $res['body'], 'Booking Rules tab must not appear for resource tenant');
+        $this->assertStringContainsString('tab-bookingpage', $res['body'], 'Booking Page tab must appear for all patterns');
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Booking Page tab (all patterns)
+    // ════════════════════════════════════════════════════════════════
+
+    public function testBookingPageTabLoadsForOperator(): void
+    {
+        $res = self::httpGet("/admin/tenants/" . self::$tenantId . "/settings/bookingpage", 'operator');
+        $this->assertSame(200, $res['code']);
+        $this->assertStringContainsString('ts-confirmation-msg', $res['body']);
+        $this->assertStringContainsString('ts-cancel-policy', $res['body']);
+    }
+
+    public function testBookingPageTabLoadsForResourceTenant(): void
+    {
+        $res = self::httpGet("/admin/tenants/" . self::$resourceTenantId . "/settings/bookingpage", 'operator');
+        $this->assertSame(200, $res['code']);
+        $this->assertStringContainsString('ts-confirmation-msg', $res['body']);
+    }
+
+    public function testSaveBookingPageUpdatesAllFields(): void
+    {
+        $page = self::httpGet("/admin/tenants/" . self::$tenantId . "/settings/bookingpage", 'operator');
+        self::extractCsrf($page['body'], 'operator');
+
+        $res = self::httpPost("/admin/tenants/" . self::$tenantId . "/settings/bookingpage", [
+            '_csrf_token'               => self::$operatorCsrf,
+            'confirmation_message'      => 'Thank you for booking!',
+            'cancellation_policy'       => 'Cancel 24h in advance.',
+            'require_phone'             => '1',
+            'booking_requires_approval' => '1',
+            'allow_cancellation'        => '1',
+            'cancellation_hours_before' => '48',
+            'allow_rescheduling'        => '0',
+            'rescheduling_hours_before' => '12',
+        ], 'operator');
+
+        $this->assertSame(302, $res['code']);
+
+        $row = Database::query(
+            'SELECT `confirmation_message`, `cancellation_policy`, `require_phone`, `booking_requires_approval`,
+                    `allow_cancellation`, `cancellation_hours_before`, `allow_rescheduling`, `rescheduling_hours_before`
+             FROM `tenants` WHERE `id` = ?',
+            [self::$tenantId]
+        );
+        $this->assertSame('Thank you for booking!', $row[0]['confirmation_message']);
+        $this->assertSame('Cancel 24h in advance.', $row[0]['cancellation_policy']);
+        $this->assertSame(1, (int) $row[0]['require_phone']);
+        $this->assertSame(1, (int) $row[0]['booking_requires_approval']);
+        $this->assertSame(1, (int) $row[0]['allow_cancellation']);
+        $this->assertSame(48, (int) $row[0]['cancellation_hours_before']);
+        $this->assertSame(0, (int) $row[0]['allow_rescheduling']);
+        $this->assertSame(12, (int) $row[0]['rescheduling_hours_before']);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Email Templates tab (all patterns)
+    // ════════════════════════════════════════════════════════════════
+
+    public function testEmailsTabLoadsForOperator(): void
+    {
+        $res = self::httpGet("/admin/tenants/" . self::$tenantId . "/settings/emails", 'operator');
+        $this->assertSame(200, $res['code']);
+        $this->assertStringContainsString('tpl-confirmation-subject', $res['body']);
+        $this->assertStringContainsString('tpl-reminder-subject', $res['body']);
+        $this->assertStringContainsString('tpl-cancellation-subject', $res['body']);
+        $this->assertStringContainsString('tpl-staff_notification-subject', $res['body']);
+    }
+
+    public function testSaveEmailTemplatesRoundTrip(): void
+    {
+        $page = self::httpGet("/admin/tenants/" . self::$tenantId . "/settings/emails", 'operator');
+        self::extractCsrf($page['body'], 'operator');
+
+        $res = self::httpPost("/admin/tenants/" . self::$tenantId . "/settings/emails", [
+            '_csrf_token'                    => self::$operatorCsrf,
+            'confirmation_subject'           => 'Your booking at {business_name}',
+            'confirmation_heading'           => 'Welcome!',
+            'confirmation_body_intro'        => 'Thanks for booking with us.',
+            'confirmation_body_outro'        => 'See you soon!',
+            'confirmation_cta_label'         => 'View Details',
+            'confirmation_is_enabled'        => '1',
+            'reminder_subject'               => '',
+            'reminder_heading'               => '',
+            'reminder_body_intro'            => '',
+            'reminder_body_outro'            => '',
+            'reminder_cta_label'             => '',
+            'reminder_is_enabled'            => '1',
+            'cancellation_subject'           => '',
+            'cancellation_heading'           => '',
+            'cancellation_body_intro'        => '',
+            'cancellation_body_outro'        => '',
+            'cancellation_cta_label'         => '',
+            'cancellation_is_enabled'        => '0',
+            'staff_notification_subject'     => '',
+            'staff_notification_heading'     => '',
+            'staff_notification_body_intro'  => '',
+            'staff_notification_body_outro'  => '',
+            'staff_notification_cta_label'   => '',
+            'staff_notification_is_enabled'  => '1',
+        ], 'operator');
+
+        $this->assertSame(302, $res['code']);
+
+        // Verify confirmation template was saved
+        $rows = Database::query(
+            "SELECT `subject`, `heading`, `body_intro`, `body_outro`, `cta_label`, `is_enabled`
+             FROM `tenant_email_templates` WHERE `tenant_id` = ? AND `type` = 'confirmation'",
+            [self::$tenantId]
+        );
+        $this->assertNotEmpty($rows);
+        $this->assertSame('Your booking at {business_name}', $rows[0]['subject']);
+        $this->assertSame('Welcome!', $rows[0]['heading']);
+        $this->assertSame(1, (int) $rows[0]['is_enabled']);
+
+        // Verify cancellation was disabled
+        $cancel = Database::query(
+            "SELECT `is_enabled` FROM `tenant_email_templates` WHERE `tenant_id` = ? AND `type` = 'cancellation'",
+            [self::$tenantId]
+        );
+        $this->assertNotEmpty($cancel);
+        $this->assertSame(0, (int) $cancel[0]['is_enabled']);
     }
 
     // ════════════════════════════════════════════════════════════════

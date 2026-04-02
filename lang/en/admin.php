@@ -162,6 +162,12 @@ return [
         'command_hint'       => 'Click to select, then copy.',
         'token_label'        => 'Cron token',
         'token_hint'         => 'Auto-generated. Keep this token secret.',
+        'tasks_title'        => 'Tasks performed',
+        'task_retention'     => 'Customer data anonymization (per-tenant retention policy)',
+        'task_audit'         => 'Audit log cleanup (entries older than retention period)',
+        'task_email_log'     => 'Email log cleanup (entries older than retention + 90 days)',
+        'task_reminders'     => 'Booking reminder emails (per-tenant, when enabled)',
+        'task_rate_limits'   => 'Rate limit cleanup (expired entries older than 1 hour)',
         'status_title'       => 'Status',
         'status_desc'        => 'Cron job execution history.',
         'last_run'           => 'Last run',
@@ -169,6 +175,11 @@ return [
         'status_label'       => 'Status',
         'active'             => 'Active',
         'not_configured'     => 'Not configured',
+        'run_now'            => 'Run now',
+        'run_now_hint'       => 'Execute all cron tasks immediately. Safe to run at any time.',
+        'run_success'        => 'Cron tasks completed.',
+        'run_partial'        => 'Cron completed with :errors error(s). Check the application log.',
+        'run_result_retention' => 'Retention: :anon tenant(s) processed, :audit audit entries cleaned, :email email log entries cleaned, :rate rate limits cleared.',
     ],
 
     // ── Settings: Logs ──
@@ -804,9 +815,11 @@ return [
         // Tabs
         'tab_general'          => 'General',
         'tab_branding'         => 'Branding',
+        'tab_bookingpage'      => 'Booking Page',
         'tab_booking'          => 'Booking Rules',
         'tab_privacy'          => 'Privacy',
         'tab_notifications'    => 'Notifications',
+        'tab_emails'           => 'Emails',
 
         // Booking Rules (timeslot pattern)
         'field_slot_duration'      => 'Default slot duration (minutes)',
@@ -817,6 +830,34 @@ return [
         'field_min_advance_hint'   => 'Customers must book at least this far ahead.',
         'field_max_advance'        => 'Maximum advance booking (days)',
         'field_max_advance_hint'   => 'How far into the future customers can book.',
+        'field_max_bookings_per_day'      => 'Max bookings per customer per day',
+        'field_max_bookings_per_day_hint' => 'Limits how many bookings a single customer can make per day. 0 = unlimited.',
+
+        // Booking Page  (confirmation message, policies)
+        'bookingpage_section_content'     => 'Booking Page Content',
+        'bookingpage_section_content_desc'=> 'Custom messages shown to customers on the booking page.',
+        'field_confirmation_message'      => 'Confirmation message',
+        'field_confirmation_message_hint' => 'Shown after a booking is confirmed. Supports plain text.',
+        'field_confirmation_message_placeholder' => 'e.g. Thank you for booking! We look forward to seeing you.',
+        'field_cancellation_policy'       => 'Cancellation policy',
+        'field_cancellation_policy_hint'  => 'Shown on the booking management page when customers view or cancel.',
+        'field_cancellation_policy_placeholder'  => 'e.g. Cancellations must be made at least 24 hours in advance.',
+
+        // Booking Page (toggles and rules)
+        'bookingpage_section_rules'     => 'Booking Rules',
+        'bookingpage_section_rules_desc'=> 'Controls how customers interact with the booking process.',
+        'field_require_phone'           => 'Require phone number',
+        'field_require_phone_hint'      => 'When enabled, customers must enter a phone number to complete a booking.',
+        'field_booking_requires_approval'     => 'Require booking approval',
+        'field_booking_requires_approval_hint'=> 'When enabled, new bookings are set to "pending" until manually approved.',
+        'field_allow_cancellation'       => 'Allow customer cancellation',
+        'field_allow_cancellation_hint'  => 'When enabled, customers can cancel their own bookings.',
+        'field_cancellation_hours_before'     => 'Cancellation cutoff (hours before)',
+        'field_cancellation_hours_before_hint'=> 'Minimum hours before the appointment that cancellation is allowed.',
+        'field_allow_rescheduling'       => 'Allow customer rescheduling',
+        'field_allow_rescheduling_hint'  => 'When enabled, customers can reschedule their own bookings.',
+        'field_rescheduling_hours_before'     => 'Rescheduling cutoff (hours before)',
+        'field_rescheduling_hours_before_hint'=> 'Minimum hours before the appointment that rescheduling is allowed.',
 
         // General
         'field_name'           => 'Business name',
@@ -853,6 +894,16 @@ return [
         'field_notify_cancel'       => 'Notify on cancellation',
         'field_send_reminders'      => 'Send customer reminders',
         'field_reminder_hours'      => 'Reminder (hours before)',
+
+        // Email Templates
+        'emails_section_desc'       => 'Customize the transactional emails sent to your customers. Leave fields empty to use the system defaults.',
+        'emails_placeholders_hint'  => 'Available placeholders: {customer_name}, {service_name}, {booking_date}, {booking_time}, {business_name}',
+        'email_field_subject'       => 'Subject line',
+        'email_field_heading'       => 'Email heading',
+        'email_field_intro'         => 'Body intro',
+        'email_field_outro'         => 'Body outro',
+        'email_field_cta'           => 'Button label',
+        'emails_saved'              => 'Email templates saved.',
 
         // Messages
         'saved'                     => 'Settings saved.',

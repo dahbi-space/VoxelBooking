@@ -164,6 +164,18 @@ Alpine.data('bookingWizard', () => ({
     eventSpotCount: 1,
     eventIsWaitlisted: false,
 
+    // Manage mode state
+    manageMode: config.manage_mode || false,
+    manageBookingId: config.manage_booking_id || null,
+    managedBooking: null,
+    manageCanCancel: false,
+    manageCanReschedule: false,
+    manageCancelReason: '',
+    manageCancelModalOpen: false,
+    manageCancelling: false,
+    manageCancelled: false,
+    manageLoading: false,
+
     // CSP-safe setters for x-model (nested property assignment is prohibited)
     setCustomerName(val) { this.customerName = val; },
     setCustomerEmail(val) { this.customerEmail = val; },
@@ -208,6 +220,7 @@ Alpine.data('bookingWizard', () => ({
     get isEventListStep() { return this.step === 'event-list'; },
     get isEventDetailStep() { return this.step === 'event-detail'; },
     get isEventSpotsStep() { return this.step === 'event-spots'; },
+    get isManageStep() { return this.step === 'manage'; },
     get hasToast() { return !!this.toast; },
     get hasSelectedDate() { return !!this.selectedDate; },
     get hasNoSlots() { return this.availableSlots.length === 0 && !!this.selectedDate; },
@@ -232,6 +245,12 @@ Alpine.data('bookingWizard', () => ({
                 this.isDark = e.matches;
             }
         });
+
+        // Check if in manage mode (URL: /book/{slug}/manage/{booking_id})
+        if (this.manageMode && this.manageBookingId) {
+            this.loadManagedBooking();
+            return;
+        }
 
         if (config.booking_pattern === 'timeslot') {
             this.loadServices();
@@ -984,10 +1003,13 @@ Alpine.data('bookingWizard', () => ({
     get showReschedule() { return config.allow_rescheduling; },
     get showCancel() { return config.allow_cancellation; },
     get bookingPageUrl() { return `/book/${config.slug}`; },
+    manageUrl(bookingId) {
+        return `/book/${config.slug}/manage/${bookingId}`;
+    },
 
     // Book another: reload page
     bookAnother() {
-        window.location.reload();
+        window.location.href = `/book/${config.slug}`;
     },
 
     // Cancellation policy
@@ -1013,6 +1035,118 @@ Alpine.data('bookingWizard', () => ({
 
     isZoneSelected(zone) {
         return zone === this.customerTz;
+    },
+
+    // ── Self-service booking management ──
+
+    /**
+     * Load booking details for the manage page.
+     * Called on init when manage_mode is true.
+     */
+    async loadManagedBooking() {
+        this.manageLoading = true;
+        this.step = 'manage';
+        try {
+            const resp = await fetch(`/api/${config.slug}/bookings/${this.manageBookingId}`);
+            const data = await resp.json();
+            if (!resp.ok || data.error) {
+                this.showToast(data.message || t('manage.not_found'));
+                return;
+            }
+            this.managedBooking = data.booking;
+            this.manageCanCancel = data.can_cancel;
+            this.manageCanReschedule = data.can_reschedule;
+
+            // If already cancelled, show the cancelled state
+            if (data.booking.status === 'cancelled') {
+                this.manageCancelled = true;
+            }
+        } catch {
+            this.showToast(t('errors.connection'));
+        } finally {
+            this.manageLoading = false;
+        }
+    },
+
+    /**
+     * Cancel the managed booking via API.
+     */
+    async cancelManagedBooking() {
+        if (!this.manageBookingId) return;
+        this.manageCancelling = true;
+        try {
+            const resp = await fetch(`/api/${config.slug}/bookings/${this.manageBookingId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken,
+                },
+                body: JSON.stringify({ reason: this.manageCancelReason }),
+            });
+            const data = await resp.json();
+            if (!resp.ok || data.error) {
+                this.showToast(data.message || t('errors.generic'));
+                this.manageCancelModalOpen = false;
+                return;
+            }
+            // Success — show cancelled state
+            this.manageCancelled = true;
+            this.manageCancelModalOpen = false;
+            this.manageCanCancel = false;
+            this.manageCanReschedule = false;
+            if (this.managedBooking) {
+                this.managedBooking.status = 'cancelled';
+            }
+        } catch {
+            this.showToast(t('errors.connection'));
+        } finally {
+            this.manageCancelling = false;
+        }
+    },
+
+    // CSP-safe setter for cancel reason textarea
+    setManageCancelReason(val) { this.manageCancelReason = val; },
+
+    /**
+     * Manage page summary rows for the booking detail card.
+     */
+    get manageSummaryRows() {
+        if (!this.managedBooking) return [];
+        const b = this.managedBooking;
+        const rows = [];
+
+        // Service / Resource / Event name
+        if (b.service_name) rows.push({ label: t('summary.service_label'), value: b.service_name });
+        if (b.resource_name) rows.push({ label: t('summary.resource_label'), value: b.resource_name });
+        if (b.event_name) rows.push({ label: t('event.events_title').replace(/s$/, ''), value: b.event_name });
+
+        // Staff
+        if (b.staff_name) rows.push({ label: t('summary.with_label'), value: b.staff_name });
+
+        // Date
+        if (b.date) rows.push({ label: t('summary.date_label'), value: this.formatDateDisplay(b.date) });
+
+        // Time (skip for resource pattern — check-in/out dates only)
+        if (b.time && b.booking_pattern !== 'resource') {
+            rows.push({ label: t('summary.time_label'), value: `${b.time} – ${b.end_time}` });
+        }
+
+        // Party size (capacity/event)
+        if (b.party_size > 1) {
+            rows.push({ label: t('capacity.party_size_label'), value: `${b.party_size}` });
+        }
+
+        return rows;
+    },
+
+    /**
+     * Manage page status label.
+     */
+    get manageStatusLabel() {
+        if (!this.managedBooking) return '';
+        const s = this.managedBooking.status;
+        const key = `manage.status_${s}`;
+        return t(key) || s;
     },
 
     // ── Format helpers ──

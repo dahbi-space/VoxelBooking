@@ -79,6 +79,13 @@ return [
         'reference_label'   => 'Reference',
     ],
 
+    // ── Pending Approval ──
+    'pending' => [
+        'heading'           => 'Booking received',
+        'message'           => 'Your booking is awaiting approval. We will notify you once it is confirmed.',
+        'reference_label'   => 'Reference',
+    ],
+
     // ── Review ──
     'review' => [
         'cancellation_policy_label' => 'Cancellation policy',
@@ -360,6 +367,32 @@ return [
         'deletion_req_message'    => 'Your data deletion request has been logged. The business operating this service has been notified and will process your request.',
         'deletion_req_next_title' => 'What happens next:',
         'deletion_req_next_body'  => 'The business will review your request and remove your personal data. Under GDPR, they must respond within 30 days. Booking records may be retained in anonymized form for operational history, but all personal identifiers will be removed.',
+    ],
+
+    // ── Self-Service Manage Page ──
+    'manage' => [
+        'page_title'             => 'Manage Booking',
+        'heading'                => 'Your Booking',
+        'cancel_heading'         => 'Cancel Booking',
+        'cancel_confirm'         => 'Are you sure you want to cancel this booking?',
+        'cancel_reason_label'    => 'Reason (optional)',
+        'cancel_reason_placeholder' => 'Let us know why you are cancelling…',
+        'cancel_button'          => 'Yes, cancel booking',
+        'cancel_nevermind'       => 'Keep my booking',
+        'cancelled_heading'      => 'Booking Cancelled',
+        'cancelled_message'      => 'Your booking has been cancelled.',
+        'book_again'             => 'Book again',
+        'time_gate_cancel'       => 'This booking can no longer be cancelled.',
+        'time_gate_reschedule'   => 'This booking can no longer be rescheduled.',
+        'not_found'              => 'Booking not found.',
+        'already_cancelled'      => 'This booking has already been cancelled.',
+        'cancellation_disabled'  => 'Cancellation is not allowed for this booking.',
+        'status_confirmed'       => 'Confirmed',
+        'status_pending'         => 'Awaiting Approval',
+        'status_cancelled'       => 'Cancelled',
+        'status_rescheduled'     => 'Rescheduled',
+        'status_completed'       => 'Completed',
+        'loading'                => 'Loading booking details…',
     ],
 
     // ── Demo Mode ──

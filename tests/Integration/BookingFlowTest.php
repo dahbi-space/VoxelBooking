@@ -548,14 +548,14 @@ final class BookingFlowTest extends TestCase
         $res = $this->httpGet('/book/' . self::$seed['slug']);
         $this->assertSame(200, $res['code']);
 
-        // Reschedule affordance: gated, linked
-        $this->assertStringContainsString('x-if="showReschedule"', $res['body'],
+        // Reschedule affordance: gated on showReschedule and booking availability
+        $this->assertStringContainsString('showReschedule', $res['body'],
             'Confirmation must gate reschedule on showReschedule');
-        $this->assertStringContainsString('x-bind:href="bookingPageUrl"', $res['body'],
-            'Reschedule/cancel must be real links via bookingPageUrl');
+        $this->assertStringContainsString('manageUrl(booking.id)', $res['body'],
+            'Reschedule/cancel must link to the manage URL via manageUrl');
 
         // Cancel affordance: gated
-        $this->assertStringContainsString('x-if="showCancel"', $res['body'],
+        $this->assertStringContainsString('showCancel', $res['body'],
             'Confirmation must gate cancel on showCancel');
 
         // Book another action

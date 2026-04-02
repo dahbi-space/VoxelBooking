@@ -63,6 +63,14 @@ ob_start();
                            min="1" step="1" style="max-width: 100px;">
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_max_advance_hint') ?></span>
                 </div>
+
+                <div class="vb-settings-field">
+                    <label class="vb-label" for="ts-max-bookings-day"><?= __('admin.tenant_settings.field_max_bookings_per_day') ?></label>
+                    <input type="number" class="vb-input" id="ts-max-bookings-day" name="max_bookings_per_customer_per_day"
+                           value="<?= e((string) ($tenant['max_bookings_per_customer_per_day'] ?? '3')) ?>"
+                           min="0" step="1" style="max-width: 100px;">
+                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_max_bookings_per_day_hint') ?></span>
+                </div>
             </div>
         </div>
     </div>

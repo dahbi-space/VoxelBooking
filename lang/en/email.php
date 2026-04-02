@@ -81,6 +81,15 @@ return [
         'footer'   => 'If you have any questions, please contact us.',
     ],
 
+    'cancellation' => [
+        'subject'    => 'Booking cancelled — :business',
+        'heading'    => 'Booking Cancelled',
+        'greeting'   => 'Hi :name,',
+        'body'       => 'Your booking has been cancelled as requested.',
+        'footer'     => 'If this was a mistake, you can make a new booking at any time.',
+        'book_again' => 'Book Again',
+    ],
+
     'test' => [
         'subject' => ':app_name — SMTP Test',
         'title'   => 'SMTP Configuration Verified',

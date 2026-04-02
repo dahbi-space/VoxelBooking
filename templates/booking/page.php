@@ -888,14 +888,131 @@
                     <div class="vb-book-confirm-actions-secondary">
                         <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="bookAnother"
                                 x-text="t('buttons.book_another')"></button>
-                        <template x-if="showReschedule">
-                            <a x-bind:href="bookingPageUrl" class="vb-book-btn vb-book-btn-ghost"
+                        <template x-if="showReschedule && booking">
+                            <a x-bind:href="manageUrl(booking.id)" class="vb-book-btn vb-book-btn-ghost"
                                x-text="t('buttons.reschedule')"></a>
                         </template>
-                        <template x-if="showCancel">
-                            <a x-bind:href="bookingPageUrl" class="vb-book-btn vb-book-btn-ghost"
+                        <template x-if="showCancel && booking">
+                            <a x-bind:href="manageUrl(booking.id)" class="vb-book-btn vb-book-btn-ghost"
                                x-text="t('buttons.cancel_booking')"></a>
                         </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Step: Manage Booking ── -->
+            <div class="vb-book-step" x-show="isManageStep" x-transition>
+                <div class="vb-book-manage-container">
+                    <!-- Loading state -->
+                    <template x-if="manageLoading">
+                        <div class="vb-book-manage-loading">
+                            <div class="vb-book-spinner"></div>
+                            <p x-text="t('manage.loading')"></p>
+                        </div>
+                    </template>
+
+                    <!-- Cancelled state -->
+                    <template x-if="!manageLoading && manageCancelled">
+                        <div class="vb-book-manage-cancelled">
+                            <div class="vb-book-confirm-check vb-book-confirm-check-cancel">
+                                <svg viewBox="0 0 52 52" class="vb-book-checkmark-svg is-cancel">
+                                    <circle cx="26" cy="26" r="25" fill="none" class="vb-book-checkmark-circle is-cancel"/>
+                                    <path fill="none" d="M16 16 L36 36 M36 16 L16 36" class="vb-book-checkmark-check is-cancel"/>
+                                </svg>
+                            </div>
+                            <h2 class="vb-book-step-title" x-text="t('manage.cancelled_heading')"></h2>
+                            <p class="vb-book-manage-message" x-text="t('manage.cancelled_message')"></p>
+                            <div class="vb-book-confirm-actions-secondary" style="margin-top: 1.5rem;">
+                                <a x-bind:href="bookingPageUrl" class="vb-book-btn vb-book-btn-brand"
+                                   x-text="t('manage.book_again')"></a>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Active booking management -->
+                    <template x-if="!manageLoading && managedBooking && !manageCancelled">
+                        <div class="vb-book-manage-active">
+                            <h2 class="vb-book-step-title" x-text="t('manage.heading')"></h2>
+
+                            <!-- Status badge -->
+                            <div class="vb-book-manage-status">
+                                <span class="vb-book-manage-status-badge"
+                                      x-bind:class="'is-' + managedBooking.status"
+                                      x-text="manageStatusLabel"></span>
+                            </div>
+
+                            <!-- Booking details card -->
+                            <div class="vb-book-confirm-summary">
+                                <div class="vb-book-summary">
+                                    <template x-for="row in manageSummaryRows" x-bind:key="row.label">
+                                        <div class="vb-book-summary-row">
+                                            <span class="vb-book-summary-label" x-text="row.label"></span>
+                                            <span class="vb-book-summary-value" x-text="row.value"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Customer info -->
+                            <template x-if="managedBooking.customer_name">
+                                <div class="vb-book-manage-customer">
+                                    <span x-text="managedBooking.customer_name"></span>
+                                    <span class="vb-book-manage-customer-email" x-text="managedBooking.customer_email"></span>
+                                </div>
+                            </template>
+
+                            <!-- Action buttons -->
+                            <div class="vb-book-manage-actions">
+                                <!-- Cancel button -->
+                                <template x-if="manageCanCancel">
+                                    <button type="button"
+                                            class="vb-book-btn vb-book-btn-danger"
+                                            @click="manageCancelModalOpen = true"
+                                            x-text="t('buttons.cancel_booking')">
+                                    </button>
+                                </template>
+
+                                <!-- Time gate message for cancel -->
+                                <template x-if="!manageCanCancel && managedBooking.status === 'confirmed' && config.allow_cancellation">
+                                    <p class="vb-book-manage-gate-msg" x-text="t('manage.time_gate_cancel')"></p>
+                                </template>
+
+                                <!-- Book another -->
+                                <a x-bind:href="bookingPageUrl" class="vb-book-btn vb-book-btn-ghost"
+                                   x-text="t('buttons.book_another')"></a>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Cancel confirmation modal -->
+                    <div class="vb-book-modal-overlay" x-show="manageCancelModalOpen" x-transition.opacity>
+                        <div class="vb-book-modal" @click.outside="manageCancelModalOpen = false">
+                            <h3 class="vb-book-modal-title" x-text="t('manage.cancel_heading')"></h3>
+                            <p class="vb-book-modal-body" x-text="t('manage.cancel_confirm')"></p>
+
+                            <div class="vb-book-modal-field">
+                                <label class="vb-book-label" x-text="t('manage.cancel_reason_label')"></label>
+                                <textarea class="vb-book-input vb-book-textarea"
+                                          rows="3"
+                                          x-bind:placeholder="t('manage.cancel_reason_placeholder')"
+                                          @input="setManageCancelReason($event.target.value)"></textarea>
+                            </div>
+
+                            <div class="vb-book-modal-actions">
+                                <button type="button"
+                                        class="vb-book-btn vb-book-btn-ghost"
+                                        @click="manageCancelModalOpen = false"
+                                        x-text="t('manage.cancel_nevermind')">
+                                </button>
+                                <button type="button"
+                                        class="vb-book-btn vb-book-btn-danger"
+                                        @click="cancelManagedBooking"
+                                        x-bind:disabled="manageCancelling">
+                                    <span x-show="!manageCancelling" x-text="t('manage.cancel_button')"></span>
+                                    <span x-show="manageCancelling" class="vb-book-spinner-inline"></span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
