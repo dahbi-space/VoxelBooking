@@ -1373,6 +1373,18 @@ Alpine.data('bookingWizard', () => ({
         this.partySize = size;
     },
 
+    incrementPartySize() {
+        if (this.partySize < this.maxPartySize) {
+            this.partySize++;
+        }
+    },
+
+    decrementPartySize() {
+        if (this.partySize > 1) {
+            this.partySize--;
+        }
+    },
+
     confirmPartySize() {
         this.loadCapacityDates();
     },

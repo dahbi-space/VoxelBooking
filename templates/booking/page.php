@@ -275,12 +275,12 @@
                 </div>
                 <div class="vb-book-party-size">
                     <div class="vb-book-counter">
-                        <button type="button" class="vb-book-counter-btn" @click="partySize = Math.max(1, partySize - 1)"
+                        <button type="button" class="vb-book-counter-btn" @click="decrementPartySize"
                                 x-bind:disabled="partySize <= 1">
                             <i data-lucide="minus"></i>
                         </button>
                         <span class="vb-book-counter-value" x-text="partySize"></span>
-                        <button type="button" class="vb-book-counter-btn" @click="partySize = Math.min(maxPartySize, partySize + 1)"
+                        <button type="button" class="vb-book-counter-btn" @click="incrementPartySize"
                                 x-bind:disabled="partySize >= maxPartySize">
                             <i data-lucide="plus"></i>
                         </button>
@@ -473,24 +473,18 @@
                     <div class="vb-book-step-title" x-text="t('event.spots_title')"></div>
                 </div>
                 <div class="vb-book-party-size">
-                    <div class="vb-book-party-control">
-                        <button type="button" class="vb-book-party-btn"
-                                @click="decrementEventSpots"
-                                :disabled="eventSpotCount <= 1"
-                                aria-label="<?= __('booking.capacity.party_size_hint') ?>">
+                    <div class="vb-book-counter">
+                        <button type="button" class="vb-book-counter-btn" @click="decrementEventSpots"
+                                x-bind:disabled="eventSpotCount <= 1">
                             <i data-lucide="minus"></i>
                         </button>
-                        <div class="vb-book-party-count">
-                            <span class="vb-book-party-number" x-text="eventSpotCount"></span>
-                            <span class="vb-book-party-label" x-text="eventSpotCount === 1 ? t('event.spot') : t('event.spots')"></span>
-                        </div>
-                        <button type="button" class="vb-book-party-btn"
-                                @click="incrementEventSpots"
-                                :disabled="selectedEvent && eventSpotCount >= selectedEvent.remaining"
-                                aria-label="<?= __('booking.capacity.party_size_hint') ?>">
+                        <span class="vb-book-counter-value" x-text="eventSpotCount"></span>
+                        <button type="button" class="vb-book-counter-btn" @click="incrementEventSpots"
+                                x-bind:disabled="selectedEvent && eventSpotCount >= selectedEvent.remaining">
                             <i data-lucide="plus"></i>
                         </button>
                     </div>
+                    <div class="vb-book-counter-label" x-text="eventSpotCount === 1 ? t('event.spot') : t('event.spots')"></div>
                 </div>
                 <div class="vb-book-form-actions" style="margin-top: 1.5rem;">
                     <button type="button" class="vb-book-btn vb-book-btn-primary" @click="confirmEventSpots"
