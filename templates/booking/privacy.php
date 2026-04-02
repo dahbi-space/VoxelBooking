@@ -238,6 +238,13 @@ $customerId = $customer['id'] ?? '';
             .privacy-field-value { text-align: left; max-width: 100%; }
         }
     </style>
+    <script>
+        (function() {
+            var s = localStorage.getItem('vb-theme');
+            var t = s || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
 </head>
 <body>
     <div class="privacy-container">

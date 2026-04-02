@@ -19,13 +19,23 @@ import {
     ChevronLeft, ChevronRight, ChevronDown, Clock, Globe, Check, X,
     AlertCircle, Info, AlertTriangle, Calendar as CalendarIcon,
     User, Users, ExternalLink, Download, Plus, Minus, MapPin, Ticket,
+    Sun, Moon,
 } from 'lucide';
 
 const ICON_SET = {
     ChevronLeft, ChevronRight, ChevronDown, Clock, Globe, Check, X,
     AlertCircle, Info, AlertTriangle, Calendar: CalendarIcon,
     User, Users, ExternalLink, Download, Plus, Minus, MapPin, Ticket,
+    Sun, Moon,
 };
+
+// ── Theme bootstrap (runs before Alpine to prevent FOUC) ──
+(function() {
+    const stored = localStorage.getItem('vb-theme');
+    const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const theme = stored || system;
+    document.documentElement.setAttribute('data-theme', theme);
+})();
 
 // ── Globals injected by PHP ──
 const config = window.__VB_CONFIG__;
@@ -171,6 +181,9 @@ Alpine.data('bookingWizard', () => ({
     toast: null,
     toastTimer: null,
 
+    // Theme
+    isDark: document.documentElement.getAttribute('data-theme') === 'dark',
+
     // Config passthrough
     config,
 
@@ -210,6 +223,15 @@ Alpine.data('bookingWizard', () => ({
             this.customerTz = this.tenantTz;
         }
 
+        // Listen for system theme changes (auto-sync when no explicit override)
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('vb-theme')) {
+                const theme = e.matches ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                this.isDark = e.matches;
+            }
+        });
+
         if (config.booking_pattern === 'timeslot') {
             this.loadServices();
         } else if (config.booking_pattern === 'resource') {
@@ -221,6 +243,15 @@ Alpine.data('bookingWizard', () => ({
         } else {
             this.step = 'unsupported';
         }
+    },
+
+    // ── Theme ──
+    toggleTheme() {
+        this.isDark = !this.isDark;
+        const theme = this.isDark ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('vb-theme', theme);
+        this.$nextTick(() => createIcons({ icons: ICON_SET }));
     },
 
     // ── Step transitions (spec: §6.4 Flow Orchestrator) ──

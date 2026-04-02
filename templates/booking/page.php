@@ -17,6 +17,15 @@
     <style>
         [x-cloak] { display: none !important; }
     </style>
+
+    <!-- Theme bootstrap: runs before paint to prevent flash of wrong theme -->
+    <script>
+        (function() {
+            var s = localStorage.getItem('vb-theme');
+            var t = s || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
 </head>
 <body>
     <div class="vb-book-app" x-data="bookingWizard" x-cloak
@@ -900,6 +909,18 @@
                 </div>
             </template>
         </div>
+
+        <!-- ── Theme Toggle ── -->
+        <button type="button"
+                class="vb-book-theme-toggle"
+                @click="toggleTheme"
+                x-bind:aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+                x-bind:title="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
+            <svg x-show="isDark" x-cloak class="vb-book-theme-icon" x-bind:class="isDark ? 'is-visible' : 'is-hidden'"
+                 data-lucide="sun"></svg>
+            <svg x-show="!isDark" class="vb-book-theme-icon" x-bind:class="!isDark ? 'is-visible' : 'is-hidden'"
+                 data-lucide="moon"></svg>
+        </button>
 
         <!-- ── Footer ── -->
         <footer class="vb-book-footer" x-show="!isLoading">

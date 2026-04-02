@@ -68,6 +68,30 @@
   --vb-brand-rgb: 37, 99, 235;
 }
 
+/* ── Dark Theme ── */
+[data-theme="dark"] {
+  --vb-bg: #0F1117;
+  --vb-bg-secondary: #1A1D27;
+  --vb-bg-tertiary: #252830;
+  --vb-text: #F0F1F3;
+  --vb-text-secondary: #9CA3AF;
+  --vb-text-tertiary: #6B7280;
+  --vb-border: #2D3039;
+  --vb-border-hover: #3F4350;
+  --vb-success: #34D399;
+  --vb-success-light: rgba(52, 211, 153, 0.1);
+  --vb-error: #F87171;
+  --vb-error-light: rgba(248, 113, 113, 0.1);
+
+  --vb-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --vb-shadow-md: 0 4px 8px -1px rgba(0, 0, 0, 0.4);
+
+  /* Brand-light: translucent overlay instead of near-white tint */
+  --vb-brand-light: rgba(var(--vb-brand-rgb), 0.12);
+
+  color-scheme: dark;
+}
+
 /* ── Reset ── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -1409,6 +1433,64 @@ body {
   color: var(--vb-text-secondary);
 }
 
+/* ── Theme Toggle ── */
+.vb-book-theme-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--vb-radius-full);
+  border: 1px solid var(--vb-border);
+  background: var(--vb-bg);
+  color: var(--vb-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--vb-duration-fast) var(--vb-ease-out),
+              background var(--vb-duration-fast) var(--vb-ease-out),
+              color var(--vb-duration-fast) var(--vb-ease-out),
+              box-shadow var(--vb-duration-fast) var(--vb-ease-out),
+              transform var(--vb-duration-fast) var(--vb-ease-out);
+  z-index: 40;
+  box-shadow: var(--vb-shadow-sm);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.vb-book-theme-toggle:hover {
+  border-color: var(--vb-border-hover);
+  color: var(--vb-text);
+  transform: scale(1.08);
+  box-shadow: var(--vb-shadow-md);
+}
+
+.vb-book-theme-toggle:active {
+  transform: scale(0.92);
+  transition-duration: 60ms;
+}
+
+.vb-book-theme-toggle svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 300ms var(--vb-ease-overshoot),
+              opacity 200ms var(--vb-ease-out);
+}
+
+.vb-book-theme-icon {
+  position: absolute;
+}
+
+.vb-book-theme-icon.is-hidden {
+  opacity: 0;
+  transform: scale(0.5) rotate(-90deg);
+}
+
+.vb-book-theme-icon.is-visible {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
 /* ── No availability ── */
 .vb-book-empty {
   text-align: center;
@@ -1967,4 +2049,41 @@ body {
 .vb-book-event-detail-label {
   color: var(--vb-text-secondary);
   font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK THEME — Hardcoded color overrides
+   (Variables handle most colors; these cover raw hex values)
+   ═══════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .vb-book-toast-warn {
+  border-color: #F59E0B;
+  background: rgba(245, 158, 11, 0.1);
+  color: #FCD34D;
+}
+
+[data-theme="dark"] .vb-book-toast-warn .vb-book-toast-icon {
+  color: #F59E0B;
+}
+
+[data-theme="dark"] .vb-book-toast {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .vb-book-slot-recovery {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="dark"] .vb-book-slot-recovery-msg {
+  color: #FCD34D;
+}
+
+[data-theme="dark"] .vb-book-input,
+[data-theme="dark"] .vb-book-textarea {
+  background: var(--vb-bg-secondary);
+}
+
+[data-theme="dark"] .vb-book-consent-checkbox {
+  accent-color: var(--vb-brand);
 }
