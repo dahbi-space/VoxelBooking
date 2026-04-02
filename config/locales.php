@@ -9,6 +9,11 @@ declare(strict_types=1);
  * Adding a new locale = adding an entry here + a lang/{locale}/ directory.
  * No code changes required.
  *
+ * The booking-page locale negotiator will only resolve to a locale that
+ * has translation files (lang/{locale}/ directory). A registered locale
+ * without translations is still usable for admin formatting but will not
+ * be negotiated for the customer-facing booking page.
+ *
  * v1 ships with English only. Other locales will be added later.
  */
 return [

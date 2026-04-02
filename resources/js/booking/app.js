@@ -512,7 +512,7 @@ Alpine.data('bookingWizard', () => ({
 
     get monthLabel() {
         const label = new Date(this.currentYear, this.currentMonth, 1)
-            .toLocaleDateString(config.locale || 'en', { month: 'long', year: 'numeric' });
+            .toLocaleDateString(fmt.intl_locale || config.locale || 'en', { month: 'long', year: 'numeric' });
         return label.charAt(0).toUpperCase() + label.slice(1);
     },
 
@@ -1039,7 +1039,7 @@ Alpine.data('bookingWizard', () => ({
     formatDateDisplay(dateStr) {
         if (!dateStr) return '';
         const d = new Date(dateStr + 'T00:00:00');
-        const label = d.toLocaleDateString(config.locale || 'en', {
+        const label = d.toLocaleDateString(fmt.intl_locale || config.locale || 'en', {
             weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
         });
         return label.charAt(0).toUpperCase() + label.slice(1);
@@ -1184,7 +1184,7 @@ Alpine.data('bookingWizard', () => ({
 
     get resourceMonthLabel() {
         const label = new Date(this.checkInYear, this.checkInMonth, 1)
-            .toLocaleDateString(config.locale || 'en', { month: 'long', year: 'numeric' });
+            .toLocaleDateString(fmt.intl_locale || config.locale || 'en', { month: 'long', year: 'numeric' });
         return label.charAt(0).toUpperCase() + label.slice(1);
     },
 
@@ -1455,7 +1455,7 @@ Alpine.data('bookingWizard', () => ({
     },
 
     get capacityMonthLabel() {
-        const label = new Date(this.capacityYear, this.capacityMonth).toLocaleDateString(config.locale || 'en', { month: 'long', year: 'numeric' });
+        const label = new Date(this.capacityYear, this.capacityMonth).toLocaleDateString(fmt.intl_locale || config.locale || 'en', { month: 'long', year: 'numeric' });
         return label.charAt(0).toUpperCase() + label.slice(1);
     },
 
@@ -1628,7 +1628,7 @@ Alpine.data('bookingWizard', () => ({
     formatEventDate(dateStr) {
         try {
             const d = new Date(dateStr);
-            const label = d.toLocaleDateString(config.locale || 'en', { weekday: 'short', month: 'short', day: 'numeric' });
+            const label = d.toLocaleDateString(fmt.intl_locale || config.locale || 'en', { weekday: 'short', month: 'short', day: 'numeric' });
             return label.charAt(0).toUpperCase() + label.slice(1);
         } catch {
             return dateStr;

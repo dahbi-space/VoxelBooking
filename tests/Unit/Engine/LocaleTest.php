@@ -134,16 +134,18 @@ final class LocaleTest extends TestCase
     // Locale Negotiation
     // ════════════════════════════════════════════════════════════════
 
-    public function testNegotiateFromHeaderReturnsExactMatch(): void
+    public function testNegotiateFromHeaderFallsBackWhenNoTranslations(): void
     {
+        // nl is registered but has no lang/nl/ directory
         $locale = Locale::negotiateFromHeader('nl,en;q=0.9');
-        $this->assertSame('nl', $locale);
+        $this->assertSame('en', $locale);
     }
 
-    public function testNegotiateFromHeaderReturnsPrefixMatch(): void
+    public function testNegotiateFromHeaderPrefixFallsBackWhenNoTranslations(): void
     {
+        // nl-NL prefix matches nl which is registered but has no translations
         $locale = Locale::negotiateFromHeader('nl-NL,en;q=0.9');
-        $this->assertSame('nl', $locale);
+        $this->assertSame('en', $locale);
     }
 
     public function testNegotiateFromHeaderReturnsFallbackForUnknown(): void
@@ -164,11 +166,39 @@ final class LocaleTest extends TestCase
         $this->assertSame('en', $locale);
     }
 
-    public function testNegotiateFromHeaderRespectsQualityValues(): void
+    public function testNegotiateFromHeaderAllWithoutTranslationsFallsBack(): void
     {
-        // de has lower quality than nl
+        // Both de and nl have no translations, should fall back to en
         $locale = Locale::negotiateFromHeader('de;q=0.5,nl;q=0.9');
-        $this->assertSame('nl', $locale);
+        $this->assertSame('en', $locale);
+    }
+
+    public function testNegotiateFromHeaderReturnsEnglishWhenBrowserRequestsIt(): void
+    {
+        // en has translations, should be returned
+        $locale = Locale::negotiateFromHeader('en-US,en;q=0.9');
+        $this->assertSame('en', $locale);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // hasTranslations Guard
+    // ════════════════════════════════════════════════════════════════
+
+    public function testHasTranslationsReturnsTrueForEnglish(): void
+    {
+        $this->assertTrue(Locale::hasTranslations('en'));
+    }
+
+    public function testHasTranslationsReturnsFalseForRegisteredWithoutFiles(): void
+    {
+        // nl is registered in config/locales.php but has no lang/nl/ directory
+        $this->assertTrue(Locale::isSupported('nl'));
+        $this->assertFalse(Locale::hasTranslations('nl'));
+    }
+
+    public function testHasTranslationsReturnsFalseForUnknown(): void
+    {
+        $this->assertFalse(Locale::hasTranslations('xx'));
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -360,6 +390,7 @@ final class LocaleTest extends TestCase
 
     public function testResolveForBookingUsesExplicitOverrideFirst(): void
     {
+        // Operator lock is always honored even without translations
         $tenant = ['locale' => 'en', 'locale_override' => 'de'];
         $result = Locale::resolveForBooking($tenant, 'nl,en;q=0.9');
         $this->assertSame('de', $result);
@@ -368,26 +399,26 @@ final class LocaleTest extends TestCase
 
     public function testResolveForBookingIgnoresUnsupportedOverride(): void
     {
-        $tenant = ['locale' => 'fr', 'locale_override' => 'xx'];
-        $result = Locale::resolveForBooking($tenant, 'nl');
-        // Should skip invalid override and use browser 'nl'
-        $this->assertSame('nl', $result);
+        $tenant = ['locale' => 'en', 'locale_override' => 'xx'];
+        $result = Locale::resolveForBooking($tenant, 'en-US');
+        $this->assertSame('en', $result);
     }
 
-    public function testResolveForBookingUsesBrowserLanguage(): void
+    public function testResolveForBookingSkipsBrowserLocaleWithoutTranslations(): void
     {
+        // Browser prefers nl, but no lang/nl/ exists, should fall back to en
         $tenant = ['locale' => 'en'];
         $result = Locale::resolveForBooking($tenant, 'nl-NL,en;q=0.9');
-        $this->assertSame('nl', $result);
-        $this->assertSame('nl', Locale::getLocale());
+        $this->assertSame('en', $result);
+        $this->assertSame('en', Locale::getLocale());
     }
 
-    public function testResolveForBookingFallsToTenantDefault(): void
+    public function testResolveForBookingSkipsTenantDefaultWithoutTranslations(): void
     {
+        // Tenant default is de, but no lang/de/ exists
         $tenant = ['locale' => 'de'];
-        // Browser sends unsupported language only
         $result = Locale::resolveForBooking($tenant, 'xx-YY');
-        $this->assertSame('de', $result);
+        $this->assertSame('en', $result);
     }
 
     public function testResolveForBookingFallsToEnglishWhenNothingMatches(): void
@@ -397,33 +428,45 @@ final class LocaleTest extends TestCase
         $this->assertSame('en', $result);
     }
 
-    public function testResolveForBookingWithNoAcceptLanguageFallsToTenant(): void
+    public function testResolveForBookingWithNoAcceptLanguageFallsToEnglish(): void
     {
+        // Tenant default is fr but no translations exist for fr
         $tenant = ['locale' => 'fr'];
         $result = Locale::resolveForBooking($tenant, null);
-        $this->assertSame('fr', $result);
+        $this->assertSame('en', $result);
     }
 
-    public function testResolveForBookingWithEmptyAcceptLanguageFallsToTenant(): void
+    public function testResolveForBookingWithEmptyAcceptLanguageFallsToEnglish(): void
     {
+        // Tenant default is es but no translations exist for es
         $tenant = ['locale' => 'es'];
         $result = Locale::resolveForBooking($tenant, '');
-        $this->assertSame('es', $result);
+        $this->assertSame('en', $result);
     }
 
     public function testResolveForBookingEmptyOverrideStringIsIgnored(): void
     {
         $tenant = ['locale' => 'en', 'locale_override' => ''];
         $result = Locale::resolveForBooking($tenant, 'de');
-        // Empty override should be skipped, browser 'de' used
-        $this->assertSame('de', $result);
+        // Empty override skipped, browser de has no translations, falls to tenant en
+        $this->assertSame('en', $result);
     }
 
     public function testResolveForBookingBrowserEnglishIsRecognized(): void
     {
         $tenant = ['locale' => 'nl'];
         $result = Locale::resolveForBooking($tenant, 'en-US,en;q=0.9');
-        // Browser explicitly requests English
+        // Browser explicitly requests English which has translations
+        $this->assertSame('en', $result);
+    }
+
+    public function testResolveForBookingPreventsMixedLanguageOutput(): void
+    {
+        // This is the core regression test: a Dutch browser visiting an English
+        // tenant should get English dates, not "Donderdag 2 april 2026" mixed
+        // with English UI labels.
+        $tenant = ['locale' => 'en'];
+        $result = Locale::resolveForBooking($tenant, 'nl-NL,nl;q=0.9,en;q=0.8');
         $this->assertSame('en', $result);
     }
 }

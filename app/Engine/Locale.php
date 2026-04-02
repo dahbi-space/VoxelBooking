@@ -88,11 +88,27 @@ final class Locale
     }
 
     /**
-     * Check if a locale is supported.
+     * Check if a locale is supported (registered in config/locales.php).
      */
     public static function isSupported(string $locale): bool
     {
         return isset(self::$registry[$locale]);
+    }
+
+    /**
+     * Check if a locale has translation files (lang/{locale}/ directory exists).
+     *
+     * A locale can be registered (formatting rules) but not yet translated.
+     * The negotiator uses this to avoid resolving to a locale that would
+     * produce mixed-language output (English labels + localized dates).
+     */
+    public static function hasTranslations(string $locale): bool
+    {
+        if (self::$basePath === '') {
+            return $locale === self::$fallback;
+        }
+
+        return is_dir(self::$basePath . '/lang/' . $locale);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -357,13 +373,13 @@ final class Locale
         arsort($candidates);
 
         foreach ($candidates as $tag => $q) {
-            // Exact match: nl-NL -> nl
-            if (self::isSupported($tag)) {
+            // Exact match: nl -> nl (only if translations exist)
+            if (self::isSupported($tag) && self::hasTranslations($tag)) {
                 return $tag;
             }
-            // Language prefix: nl-NL -> nl
+            // Language prefix: nl-NL -> nl (only if translations exist)
             $prefix = explode('-', $tag)[0];
-            if (self::isSupported($prefix)) {
+            if (self::isSupported($prefix) && self::hasTranslations($prefix)) {
                 return $prefix;
             }
         }
@@ -386,14 +402,14 @@ final class Locale
      */
     public static function resolveForBooking(array $tenant, ?string $acceptLang): string
     {
-        // 1. Explicit operator lock
+        // 1. Explicit operator lock (always honored, even without translations)
         $override = $tenant['locale_override'] ?? '';
         if ($override !== '' && self::isSupported($override)) {
             self::setLocale($override);
             return self::$locale;
         }
 
-        // 2. Browser preference
+        // 2. Browser preference (only if translations exist)
         if ($acceptLang !== null && $acceptLang !== '') {
             $negotiated = self::negotiateFromHeader($acceptLang);
             if ($negotiated !== self::$fallback || str_starts_with(strtolower($acceptLang), 'en')) {
@@ -402,9 +418,9 @@ final class Locale
             }
         }
 
-        // 3. Tenant default
+        // 3. Tenant default (only if translations exist)
         $tenantLocale = $tenant['locale'] ?? '';
-        if ($tenantLocale !== '' && self::isSupported($tenantLocale)) {
+        if ($tenantLocale !== '' && self::isSupported($tenantLocale) && self::hasTranslations($tenantLocale)) {
             self::setLocale($tenantLocale);
             return self::$locale;
         }
