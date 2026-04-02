@@ -536,33 +536,38 @@ final class BookingApiController
                 $staffName = $stf[0]['name'] ?? null;
             }
 
-            // After commit: dispatch confirmation email (never inside transaction — PRD §III)
-            // Skip if booking requires approval — customer gets notified when approved
+            // After commit: dispatch email (never inside transaction — PRD §III)
             $bookingStatus = $bookingData['status'] ?? 'confirmed';
             $emailSent = false;
-            if ($bookingStatus !== 'pending' && Mailer::isConfigured()) {
+            if (Mailer::isConfigured()) {
                 try {
-                    $emailResult = Mailer::sendBookingConfirmation(
-                        $customerEmail,
-                        $customerName,
-                        [
-                            'date'           => $startDt->format('Y-m-d'),
-                            'formatted_date' => Locale::dateLong($startDt),
-                            'time'           => $startDt->format('H:i'),
-                            'end_time'       => $endDt->format('H:i'),
-                            'duration'       => $serviceDuration,
-                        ],
-                        $serviceName,
-                        $staffName,
-                        $tenant['name'],
-                        $tenant['id'],
-                        $result['id'],
-                        $tenant['brand_color'] ?? '#2563EB',
-                    );
-                    // Customer-facing flag: true only when email reached a real inbox
-                    $emailSent = $emailResult['sent'] && Mailer::isProductionSmtp();
+                    $emailData = [
+                        'date'           => $startDt->format('Y-m-d'),
+                        'formatted_date' => Locale::dateLong($startDt),
+                        'time'           => $startDt->format('H:i'),
+                        'end_time'       => $endDt->format('H:i'),
+                        'duration'       => $serviceDuration,
+                    ];
+
+                    if ($bookingStatus === 'pending') {
+                        // Send approval request email for pending bookings
+                        Mailer::sendApprovalRequest(
+                            $customerEmail, $customerName, $emailData,
+                            $serviceName, $staffName,
+                            $tenant['name'], $tenant['id'], $result['id'],
+                            $tenant['brand_color'] ?? '#2563EB',
+                        );
+                    } else {
+                        $emailResult = Mailer::sendBookingConfirmation(
+                            $customerEmail, $customerName, $emailData,
+                            $serviceName, $staffName,
+                            $tenant['name'], $tenant['id'], $result['id'],
+                            $tenant['brand_color'] ?? '#2563EB',
+                        );
+                        $emailSent = ($emailResult['sent'] ?? false) && Mailer::isProductionSmtp();
+                    }
                 } catch (\Throwable $e) {
-                    Logger::error('Confirmation email dispatch failed', [
+                    Logger::error('Booking email dispatch failed', [
                         'booking' => $result['id'],
                         'error'   => $e->getMessage(),
                     ]);
@@ -745,36 +750,42 @@ final class BookingApiController
                 [$customerId]
             );
 
-            // After commit: dispatch confirmation email
+            // After commit: dispatch email
             $bookingStatus = $bookingData['status'] ?? 'confirmed';
             $emailSent = false;
-            if ($bookingStatus !== 'pending' && Mailer::isConfigured()) {
+            if (Mailer::isConfigured()) {
                 try {
                     $resourceName = $availability['resource']['name'] ?? null;
                     $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
                     $checkInDt = new \DateTimeImmutable($checkIn, $tz);
                     $checkOutDt = new \DateTimeImmutable($checkOut, $tz);
 
-                    $emailResult = Mailer::sendBookingConfirmation(
-                        $customerEmail,
-                        $customerName,
-                        [
-                            'date'           => $checkIn,
-                            'formatted_date' => Locale::dateLong($checkInDt) . ' – ' . Locale::dateLong($checkOutDt),
-                            'time'           => '',
-                            'end_time'       => '',
-                            'duration'       => $availability['nights'] . ' ' . ($availability['nights'] === 1 ? 'night' : 'nights'),
-                        ],
-                        $resourceName,
-                        null, // no staff
-                        $tenant['name'],
-                        $tenant['id'],
-                        $result['id'],
-                        $tenant['brand_color'] ?? '#2563EB',
-                    );
-                    $emailSent = $emailResult['sent'] && Mailer::isProductionSmtp();
+                    $emailData = [
+                        'date'           => $checkIn,
+                        'formatted_date' => Locale::dateLong($checkInDt) . ' – ' . Locale::dateLong($checkOutDt),
+                        'time'           => '',
+                        'end_time'       => '',
+                        'duration'       => $availability['nights'] . ' ' . ($availability['nights'] === 1 ? 'night' : 'nights'),
+                    ];
+
+                    if ($bookingStatus === 'pending') {
+                        Mailer::sendApprovalRequest(
+                            $customerEmail, $customerName, $emailData,
+                            $resourceName, null,
+                            $tenant['name'], $tenant['id'], $result['id'],
+                            $tenant['brand_color'] ?? '#2563EB',
+                        );
+                    } else {
+                        $emailResult = Mailer::sendBookingConfirmation(
+                            $customerEmail, $customerName, $emailData,
+                            $resourceName, null,
+                            $tenant['name'], $tenant['id'], $result['id'],
+                            $tenant['brand_color'] ?? '#2563EB',
+                        );
+                        $emailSent = ($emailResult['sent'] ?? false) && Mailer::isProductionSmtp();
+                    }
                 } catch (\Throwable $e) {
-                    Logger::error('Resource confirmation email dispatch failed', [
+                    Logger::error('Resource booking email dispatch failed', [
                         'booking' => $result['id'],
                         'error'   => $e->getMessage(),
                     ]);
@@ -1011,35 +1022,42 @@ final class BookingApiController
                 [$customerId]
             );
 
-            // After commit: dispatch confirmation email
+            // After commit: dispatch email
             $bookingStatus = $bookingData['status'] ?? 'confirmed';
             $emailSent = false;
-            if ($bookingStatus !== 'pending' && Mailer::isConfigured()) {
+            if (Mailer::isConfigured()) {
                 try {
                     $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
                     $slotDt = new \DateTimeImmutable($startDt, $tz);
                     $slotEndDt = new \DateTimeImmutable($endDt, $tz);
 
-                    $emailResult = Mailer::sendBookingConfirmation(
-                        $customerEmail,
-                        $customerName,
-                        [
-                            'date'           => $date,
-                            'formatted_date' => Locale::dateLong($slotDt),
-                            'time'           => substr($slot['start_time'], 0, 5),
-                            'end_time'       => substr($slot['end_time'], 0, 5),
-                            'duration'       => $partySize . ' ' . ($partySize === 1 ? __('booking.capacity.guest') : __('booking.capacity.guests')),
-                        ],
-                        $slot['label'] ?? null, // serviceName → slot label
-                        null, // no staff
-                        $tenant['name'],
-                        $tenant['id'],
-                        $result['id'],
-                        $tenant['brand_color'] ?? '#2563EB',
-                    );
-                    $emailSent = $emailResult['sent'] && Mailer::isProductionSmtp();
+                    $emailData = [
+                        'date'           => $date,
+                        'formatted_date' => Locale::dateLong($slotDt),
+                        'time'           => substr($slot['start_time'], 0, 5),
+                        'end_time'       => substr($slot['end_time'], 0, 5),
+                        'duration'       => $partySize . ' ' . ($partySize === 1 ? __('booking.capacity.guest') : __('booking.capacity.guests')),
+                    ];
+                    $slotLabel = $slot['label'] ?? null;
+
+                    if ($bookingStatus === 'pending') {
+                        Mailer::sendApprovalRequest(
+                            $customerEmail, $customerName, $emailData,
+                            $slotLabel, null,
+                            $tenant['name'], $tenant['id'], $result['id'],
+                            $tenant['brand_color'] ?? '#2563EB',
+                        );
+                    } else {
+                        $emailResult = Mailer::sendBookingConfirmation(
+                            $customerEmail, $customerName, $emailData,
+                            $slotLabel, null,
+                            $tenant['name'], $tenant['id'], $result['id'],
+                            $tenant['brand_color'] ?? '#2563EB',
+                        );
+                        $emailSent = ($emailResult['sent'] ?? false) && Mailer::isProductionSmtp();
+                    }
                 } catch (\Throwable $e) {
-                    Logger::error('Capacity confirmation email dispatch failed', [
+                    Logger::error('Capacity booking email dispatch failed', [
                         'booking' => $result['id'],
                         'error'   => $e->getMessage(),
                     ]);
@@ -1294,10 +1312,10 @@ final class BookingApiController
                 [$customerId]
             );
 
-            // After commit: dispatch confirmation email (different for waitlisted/pending)
+            // After commit: dispatch email (different for waitlisted/pending/confirmed)
             $bookingStatus = $bookingData['status'] ?? ($isWaitlisted ? 'waitlisted' : 'confirmed');
             $emailSent = false;
-            if ($bookingStatus !== 'pending' && Mailer::isConfigured()) {
+            if (Mailer::isConfigured()) {
                 try {
                     $slotDt = new \DateTimeImmutable($startDt, $tz);
                     $slotEndDt = new \DateTimeImmutable($endDt, $tz);
@@ -1310,7 +1328,14 @@ final class BookingApiController
                         'duration'       => $spotCount . ' ' . ($spotCount === 1 ? __('booking.event.spot') : __('booking.event.spots')),
                     ];
 
-                    if ($isWaitlisted) {
+                    if ($bookingStatus === 'pending') {
+                        Mailer::sendApprovalRequest(
+                            $customerEmail, $customerName, $emailBookingData,
+                            $event['name'], null,
+                            $tenant['name'], $tenant['id'], $result['id'],
+                            $tenant['brand_color'] ?? '#2563EB',
+                        );
+                    } elseif ($isWaitlisted) {
                         $emailResult = Mailer::sendWaitlistConfirmation(
                             $customerEmail,
                             $customerName,
@@ -1321,6 +1346,7 @@ final class BookingApiController
                             $result['id'],
                             $tenant['brand_color'] ?? '#2563EB',
                         );
+                        $emailSent = ($emailResult['sent'] ?? false) && Mailer::isProductionSmtp();
                     } else {
                         $emailResult = Mailer::sendBookingConfirmation(
                             $customerEmail,
@@ -1333,10 +1359,10 @@ final class BookingApiController
                             $result['id'],
                             $tenant['brand_color'] ?? '#2563EB',
                         );
+                        $emailSent = ($emailResult['sent'] ?? false) && Mailer::isProductionSmtp();
                     }
-                    $emailSent = $emailResult['sent'] && Mailer::isProductionSmtp();
                 } catch (\Throwable $e) {
-                    Logger::error('Event confirmation email dispatch failed', [
+                    Logger::error('Event booking email dispatch failed', [
                         'booking' => $result['id'],
                         'error'   => $e->getMessage(),
                     ]);

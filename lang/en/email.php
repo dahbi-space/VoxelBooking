@@ -90,6 +90,30 @@ return [
         'book_again' => 'Book Again',
     ],
 
+    'approval_request' => [
+        'subject'  => 'Your booking request has been received — :business',
+        'heading'  => 'Request Received',
+        'greeting' => 'Hi :name,',
+        'body'     => 'Your booking is pending approval. We will notify you once it has been confirmed.',
+        'footer'   => 'If you have any questions, please contact us.',
+    ],
+
+    'approval_confirmed' => [
+        'subject'  => 'Your booking has been approved — :business',
+        'heading'  => 'Booking Approved',
+        'greeting' => 'Hi :name,',
+        'body'     => 'Your booking has been approved and is now confirmed.',
+        'footer'   => 'If you need to make changes, please contact us.',
+    ],
+
+    'reschedule_confirmation' => [
+        'subject'  => 'Booking rescheduled — :business',
+        'heading'  => 'Booking Rescheduled',
+        'greeting' => 'Hi :name,',
+        'body'     => 'Your booking has been rescheduled to a new time.',
+        'footer'   => 'If you need to make further changes, please contact us.',
+    ],
+
     'test' => [
         'subject' => ':app_name — SMTP Test',
         'title'   => 'SMTP Configuration Verified',

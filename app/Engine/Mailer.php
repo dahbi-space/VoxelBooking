@@ -199,7 +199,7 @@ final class Mailer
 
         // If tenant explicitly disabled this email type, skip sending
         if ($tpl && ($tpl['_disabled'] ?? false)) {
-            return ['success' => true, 'skipped' => true, 'reason' => 'disabled_by_tenant'];
+            return ['sent' => false, 'skipped' => true, 'error' => null, 'reason' => 'disabled_by_tenant'];
         }
 
         // Sanitize brand color — rejects non-hex input, falls back to default blue
@@ -547,7 +547,7 @@ final class Mailer
         $tpl = self::loadTenantTemplate($tenantId, 'cancellation', $placeholders);
 
         if ($tpl && ($tpl['_disabled'] ?? false)) {
-            return ['success' => true, 'skipped' => true, 'reason' => 'disabled_by_tenant'];
+            return ['sent' => false, 'skipped' => true, 'error' => null, 'reason' => 'disabled_by_tenant'];
         }
 
         $brandTokens = BrandColorHelper::derive($brandColor);
@@ -623,7 +623,7 @@ final class Mailer
         $tpl = self::loadTenantTemplate($tenantId, 'reminder', $placeholders);
 
         if ($tpl && ($tpl['_disabled'] ?? false)) {
-            return ['success' => true, 'skipped' => true, 'reason' => 'disabled_by_tenant'];
+            return ['sent' => false, 'skipped' => true, 'error' => null, 'reason' => 'disabled_by_tenant'];
         }
 
         $brandTokens = BrandColorHelper::derive($brandColor);
@@ -667,6 +667,226 @@ final class Mailer
         $replyTo = self::resolveTenantReplyTo($tenantId);
 
         return self::send($to, $subject, $html, 'reminder', $tenantId, $bookingId, $plainBody, $replyTo['email'], $replyTo['name'], $tenantName);
+    }
+
+    /**
+     * Send an approval request email to the customer (booking pending review).
+     *
+     * Per PRD §VII — no calendar CTA, explains the booking is pending.
+     */
+    public static function sendApprovalRequest(
+        string $to,
+        string $customerName,
+        array $booking,
+        ?string $serviceName,
+        ?string $staffName,
+        string $tenantName,
+        string $tenantId,
+        string $bookingId,
+        string $brandColor = '#2563EB',
+    ): array {
+        $placeholders = [
+            'customer_name' => $customerName,
+            'service_name'  => $serviceName ?? $tenantName,
+            'booking_date'  => $booking['formatted_date'] ?? $booking['date'],
+            'booking_time'  => $booking['time'] ?? '',
+            'staff_name'    => $staffName ?? '',
+            'business_name' => $tenantName,
+        ];
+
+        $tpl = self::loadTenantTemplate($tenantId, 'approval_request', $placeholders);
+
+        if ($tpl && ($tpl['_disabled'] ?? false)) {
+            return ['sent' => false, 'skipped' => true, 'error' => null, 'reason' => 'disabled_by_tenant'];
+        }
+
+        $brandTokens = BrandColorHelper::derive($brandColor);
+        $safeBrandColor = $brandTokens['brand'];
+
+        $subject = $tpl['subject'] ?? __('email.approval_request.subject', [
+            'business' => $tenantName,
+        ]);
+
+        $heading        = $tpl['heading'] ?? __('email.approval_request.heading');
+        $greeting       = $tpl['body_intro'] ?? __('email.approval_request.greeting', ['name' => $customerName]);
+        $bodyText       = $tpl['body_intro'] ?? __('email.approval_request.body');
+        $detailsHeading = __('email.booking_confirmation.details');
+        $footer         = $tpl['body_outro'] ?? __('email.approval_request.footer');
+
+        $displayDate = $booking['formatted_date'] ?? $booking['date'];
+        $details = [];
+        $details[__('email.common.date')] = $displayDate;
+        if ($booking['time'] ?? '') {
+            $details[__('email.common.time')] = $booking['time'] . "\xE2\x80\x93" . ($booking['end_time'] ?? '');
+        }
+        if ($serviceName) {
+            $details[__('email.common.service')] = $serviceName;
+        }
+        if ($staffName) {
+            $details[__('email.common.staff')] = $staffName;
+        }
+
+        // Uses confirmation layout but without calendar CTA
+        $html = self::renderConfirmationEmail(
+            $safeBrandColor, $heading, $greeting, $bodyText,
+            $detailsHeading, $details, $footer, $tenantName, app_name(),
+        );
+
+        $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
+        $plainBody = self::renderConfirmationPlainText(
+            $heading, $greeting, $bodyText, $detailsHeading,
+            $details, $footer, $tenantName, $poweredBy,
+        );
+
+        $replyTo = self::resolveTenantReplyTo($tenantId);
+
+        return self::send($to, $subject, $html, 'approval_request', $tenantId, $bookingId, $plainBody, $replyTo['email'], $replyTo['name'], $tenantName);
+    }
+
+    /**
+     * Send an approval confirmed email to the customer.
+     *
+     * Per PRD §VII — includes calendar CTA now that booking is confirmed.
+     */
+    public static function sendApprovalConfirmed(
+        string $to,
+        string $customerName,
+        array $booking,
+        ?string $serviceName,
+        ?string $staffName,
+        string $tenantName,
+        string $tenantId,
+        string $bookingId,
+        string $brandColor = '#2563EB',
+    ): array {
+        $placeholders = [
+            'customer_name' => $customerName,
+            'service_name'  => $serviceName ?? $tenantName,
+            'booking_date'  => $booking['formatted_date'] ?? $booking['date'],
+            'booking_time'  => $booking['time'] ?? '',
+            'staff_name'    => $staffName ?? '',
+            'business_name' => $tenantName,
+        ];
+
+        $tpl = self::loadTenantTemplate($tenantId, 'approval_confirmed', $placeholders);
+
+        if ($tpl && ($tpl['_disabled'] ?? false)) {
+            return ['sent' => false, 'skipped' => true, 'error' => null, 'reason' => 'disabled_by_tenant'];
+        }
+
+        $brandTokens = BrandColorHelper::derive($brandColor);
+        $safeBrandColor = $brandTokens['brand'];
+
+        $subject = $tpl['subject'] ?? __('email.approval_confirmed.subject', [
+            'business' => $tenantName,
+        ]);
+
+        $heading        = $tpl['heading'] ?? __('email.approval_confirmed.heading');
+        $greeting       = $tpl['body_intro'] ?? __('email.approval_confirmed.greeting', ['name' => $customerName]);
+        $bodyText       = $tpl['body_intro'] ?? __('email.approval_confirmed.body');
+        $detailsHeading = __('email.booking_confirmation.details');
+        $footer         = $tpl['body_outro'] ?? __('email.approval_confirmed.footer');
+
+        $displayDate = $booking['formatted_date'] ?? $booking['date'];
+        $details = [];
+        $details[__('email.common.date')] = $displayDate;
+        if ($booking['time'] ?? '') {
+            $details[__('email.common.time')] = $booking['time'] . "\xE2\x80\x93" . ($booking['end_time'] ?? '');
+        }
+        if ($serviceName) {
+            $details[__('email.common.service')] = $serviceName;
+        }
+        if ($staffName) {
+            $details[__('email.common.staff')] = $staffName;
+        }
+
+        $html = self::renderConfirmationEmail(
+            $safeBrandColor, $heading, $greeting, $bodyText,
+            $detailsHeading, $details, $footer, $tenantName, app_name(),
+        );
+
+        $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
+        $plainBody = self::renderConfirmationPlainText(
+            $heading, $greeting, $bodyText, $detailsHeading,
+            $details, $footer, $tenantName, $poweredBy,
+        );
+
+        $replyTo = self::resolveTenantReplyTo($tenantId);
+
+        return self::send($to, $subject, $html, 'approval_confirmed', $tenantId, $bookingId, $plainBody, $replyTo['email'], $replyTo['name'], $tenantName);
+    }
+
+    /**
+     * Send a reschedule confirmation email to the customer.
+     *
+     * Per PRD §VII — confirms the booking has been moved to a new time.
+     */
+    public static function sendRescheduleConfirmation(
+        string $to,
+        string $customerName,
+        array $booking,
+        ?string $serviceName,
+        ?string $staffName,
+        string $tenantName,
+        string $tenantId,
+        string $bookingId,
+        string $brandColor = '#2563EB',
+    ): array {
+        $placeholders = [
+            'customer_name' => $customerName,
+            'service_name'  => $serviceName ?? $tenantName,
+            'booking_date'  => $booking['formatted_date'] ?? $booking['date'],
+            'booking_time'  => $booking['time'] ?? '',
+            'staff_name'    => $staffName ?? '',
+            'business_name' => $tenantName,
+        ];
+
+        $tpl = self::loadTenantTemplate($tenantId, 'reschedule_confirmation', $placeholders);
+
+        if ($tpl && ($tpl['_disabled'] ?? false)) {
+            return ['sent' => false, 'skipped' => true, 'error' => null, 'reason' => 'disabled_by_tenant'];
+        }
+
+        $brandTokens = BrandColorHelper::derive($brandColor);
+        $safeBrandColor = $brandTokens['brand'];
+
+        $subject = $tpl['subject'] ?? __('email.reschedule_confirmation.subject', [
+            'business' => $tenantName,
+        ]);
+
+        $heading        = $tpl['heading'] ?? __('email.reschedule_confirmation.heading');
+        $greeting       = $tpl['body_intro'] ?? __('email.reschedule_confirmation.greeting', ['name' => $customerName]);
+        $bodyText       = $tpl['body_intro'] ?? __('email.reschedule_confirmation.body');
+        $detailsHeading = __('email.booking_confirmation.details');
+        $footer         = $tpl['body_outro'] ?? __('email.reschedule_confirmation.footer');
+
+        $displayDate = $booking['formatted_date'] ?? $booking['date'];
+        $details = [];
+        $details[__('email.common.date')] = $displayDate;
+        if ($booking['time'] ?? '') {
+            $details[__('email.common.time')] = $booking['time'] . "\xE2\x80\x93" . ($booking['end_time'] ?? '');
+        }
+        if ($serviceName) {
+            $details[__('email.common.service')] = $serviceName;
+        }
+        if ($staffName) {
+            $details[__('email.common.staff')] = $staffName;
+        }
+
+        $html = self::renderConfirmationEmail(
+            $safeBrandColor, $heading, $greeting, $bodyText,
+            $detailsHeading, $details, $footer, $tenantName, app_name(),
+        );
+
+        $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
+        $plainBody = self::renderConfirmationPlainText(
+            $heading, $greeting, $bodyText, $detailsHeading,
+            $details, $footer, $tenantName, $poweredBy,
+        );
+
+        $replyTo = self::resolveTenantReplyTo($tenantId);
+
+        return self::send($to, $subject, $html, 'reschedule_confirmation', $tenantId, $bookingId, $plainBody, $replyTo['email'], $replyTo['name'], $tenantName);
     }
 
     // ── Tenant email template resolution ──

@@ -98,8 +98,8 @@ final class ReminderJob
 
         $booking = $rows[0];
 
-        // Skip if booking is cancelled, completed, or no_show
-        if (in_array($booking['status'], ['cancelled', 'completed', 'no_show'], true)) {
+        // Skip if booking is cancelled, completed, no_show, or still pending approval
+        if (in_array($booking['status'], ['cancelled', 'completed', 'no_show', 'pending'], true)) {
             self::markSent($reminder['id']);
             $result['skipped']++;
             return;
@@ -154,7 +154,14 @@ final class ReminderJob
             $booking['brand_color'] ?? '#2563EB',
         );
 
-        if ($emailResult['sent']) {
+        // Handle disabled-by-tenant (skipped emails return ['skipped' => true])
+        if ($emailResult['skipped'] ?? false) {
+            self::markSent($reminder['id']);
+            $result['skipped']++;
+            return;
+        }
+
+        if ($emailResult['sent'] ?? false) {
             self::markSent($reminder['id']);
             $result['sent']++;
         } else {
