@@ -184,20 +184,38 @@ final class Mailer
         string $bookingId,
         string $brandColor = '#2563EB',
     ): array {
+        // Build placeholder map for tenant template resolution
+        $placeholders = [
+            'customer_name' => $customerName,
+            'service_name'  => $serviceName ?? $tenantName,
+            'booking_date'  => $booking['formatted_date'] ?? $booking['date'],
+            'booking_time'  => $booking['time'] ?? '',
+            'staff_name'    => $staffName ?? '',
+            'business_name' => $tenantName,
+        ];
+
+        // Load tenant template overrides (if any)
+        $tpl = self::loadTenantTemplate($tenantId, 'confirmation', $placeholders);
+
+        // If tenant explicitly disabled this email type, skip sending
+        if ($tpl && ($tpl['_disabled'] ?? false)) {
+            return ['success' => true, 'skipped' => true, 'reason' => 'disabled_by_tenant'];
+        }
+
         // Sanitize brand color — rejects non-hex input, falls back to default blue
         $brandTokens = BrandColorHelper::derive($brandColor);
         $safeBrandColor = $brandTokens['brand'];
 
-        $subject = __('email.booking_confirmation.subject', [
+        $subject = $tpl['subject'] ?? __('email.booking_confirmation.subject', [
             'service' => $serviceName ?? $tenantName,
             'date'    => $booking['date'],
         ]);
 
-        $heading        = __('email.booking_confirmation.body');
-        $greeting       = __('email.booking_confirmation.greeting', ['name' => $customerName]);
-        $bodyText       = __('email.booking_confirmation.body');
+        $heading        = $tpl['heading'] ?? __('email.booking_confirmation.body');
+        $greeting       = $tpl['body_intro'] ?? __('email.booking_confirmation.greeting', ['name' => $customerName]);
+        $bodyText       = $tpl['body_intro'] ?? __('email.booking_confirmation.body');
         $detailsHeading = __('email.booking_confirmation.details');
-        $footer         = __('email.booking_confirmation.footer');
+        $footer         = $tpl['body_outro'] ?? __('email.booking_confirmation.footer');
 
         // Build ordered detail rows for the summary card
         $displayDate = $booking['formatted_date'] ?? $booking['date'];
@@ -227,6 +245,7 @@ final class Mailer
 
         return self::send($to, $subject, $html, 'confirmation', $tenantId, $bookingId, $plainBody, $replyTo['email'], $replyTo['name'], $tenantName);
     }
+
 
     /**
      * Send a waitlist notification email to the customer.
@@ -516,18 +535,33 @@ final class Mailer
         string $brandColor = '#2563EB',
         string $tenantSlug = '',
     ): array {
+        $placeholders = [
+            'customer_name' => $customerName,
+            'service_name'  => $serviceName ?? $tenantName,
+            'booking_date'  => $booking['formatted_date'] ?? $booking['date'],
+            'booking_time'  => $booking['time'] ?? '',
+            'staff_name'    => $staffName ?? '',
+            'business_name' => $tenantName,
+        ];
+
+        $tpl = self::loadTenantTemplate($tenantId, 'cancellation', $placeholders);
+
+        if ($tpl && ($tpl['_disabled'] ?? false)) {
+            return ['success' => true, 'skipped' => true, 'reason' => 'disabled_by_tenant'];
+        }
+
         $brandTokens = BrandColorHelper::derive($brandColor);
         $safeBrandColor = $brandTokens['brand'];
 
-        $subject = __('email.cancellation.subject', [
+        $subject = $tpl['subject'] ?? __('email.cancellation.subject', [
             'business' => $tenantName,
         ]);
 
-        $heading  = __('email.cancellation.heading');
-        $greeting = __('email.cancellation.greeting', ['name' => $customerName]);
-        $bodyText = __('email.cancellation.body');
+        $heading  = $tpl['heading'] ?? __('email.cancellation.heading');
+        $greeting = $tpl['body_intro'] ?? __('email.cancellation.greeting', ['name' => $customerName]);
+        $bodyText = $tpl['body_intro'] ?? __('email.cancellation.body');
         $detailsHeading = __('email.booking_confirmation.details');
-        $footer   = __('email.cancellation.footer');
+        $footer   = $tpl['body_outro'] ?? __('email.cancellation.footer');
 
         $displayDate = $booking['formatted_date'] ?? $booking['date'];
         $details = [];
@@ -577,19 +611,34 @@ final class Mailer
         string $bookingId,
         string $brandColor = '#2563EB',
     ): array {
+        $placeholders = [
+            'customer_name' => $customerName,
+            'service_name'  => $serviceName ?? $tenantName,
+            'booking_date'  => $booking['formatted_date'] ?? $booking['date'],
+            'booking_time'  => $booking['time'] ?? '',
+            'staff_name'    => $staffName ?? '',
+            'business_name' => $tenantName,
+        ];
+
+        $tpl = self::loadTenantTemplate($tenantId, 'reminder', $placeholders);
+
+        if ($tpl && ($tpl['_disabled'] ?? false)) {
+            return ['success' => true, 'skipped' => true, 'reason' => 'disabled_by_tenant'];
+        }
+
         $brandTokens = BrandColorHelper::derive($brandColor);
         $safeBrandColor = $brandTokens['brand'];
 
-        $subject = __('email.booking_reminder.subject', [
+        $subject = $tpl['subject'] ?? __('email.booking_reminder.subject', [
             'service' => $serviceName ?? $tenantName,
             'time'    => $booking['time'] ?? '',
         ]);
 
-        $heading  = __('email.booking_reminder.body');
-        $greeting = __('email.booking_reminder.greeting', ['name' => $customerName]);
-        $bodyText = __('email.booking_reminder.body');
+        $heading  = $tpl['heading'] ?? __('email.booking_reminder.body');
+        $greeting = $tpl['body_intro'] ?? __('email.booking_reminder.greeting', ['name' => $customerName]);
+        $bodyText = $tpl['body_intro'] ?? __('email.booking_reminder.body');
         $detailsHeading = __('email.booking_confirmation.details');
-        $footer   = __('email.booking_confirmation.footer');
+        $footer   = $tpl['body_outro'] ?? __('email.booking_confirmation.footer');
 
         $displayDate = $booking['formatted_date'] ?? $booking['date'];
         $details = [];
@@ -618,6 +667,69 @@ final class Mailer
         $replyTo = self::resolveTenantReplyTo($tenantId);
 
         return self::send($to, $subject, $html, 'reminder', $tenantId, $bookingId, $plainBody, $replyTo['email'], $replyTo['name'], $tenantName);
+    }
+
+    // ── Tenant email template resolution ──
+
+    /**
+     * Load tenant-customized copy for a given email type.
+     *
+     * Returns an associative array of copy fields (subject, heading, body_intro,
+     * body_outro, cta_label) with placeholders resolved, or null if the tenant
+     * has no override or the type is disabled.
+     *
+     * @param string $tenantId
+     * @param string $type     One of: confirmation, reminder, cancellation, reschedule_confirmation,
+     *                         staff_notification, approval_request, approval_confirmed
+     * @param array  $placeholders Key-value pairs for placeholder substitution
+     * @return array|null
+     */
+    private static function loadTenantTemplate(string $tenantId, string $type, array $placeholders = []): ?array
+    {
+        try {
+            $rows = Database::query(
+                'SELECT `subject`, `heading`, `body_intro`, `body_outro`, `cta_label`, `is_enabled`
+                 FROM `tenant_email_templates`
+                 WHERE `tenant_id` = ? AND `type` = ?
+                 LIMIT 1',
+                [$tenantId, $type]
+            );
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (empty($rows)) {
+            return null;
+        }
+
+        $row = $rows[0];
+
+        // If the tenant explicitly disabled this email type, return disabled marker
+        if ((int) ($row['is_enabled'] ?? 1) === 0) {
+            return ['_disabled' => true];
+        }
+
+        // Only return fields that have actual values (non-null, non-empty)
+        $result = [];
+        foreach (['subject', 'heading', 'body_intro', 'body_outro', 'cta_label'] as $field) {
+            $val = $row[$field] ?? null;
+            if ($val !== null && trim($val) !== '') {
+                $result[$field] = self::resolvePlaceholders($val, $placeholders);
+            }
+        }
+
+        return empty($result) ? null : $result;
+    }
+
+    /**
+     * Replace {placeholder} tokens in a string.
+     */
+    private static function resolvePlaceholders(string $text, array $placeholders): string
+    {
+        foreach ($placeholders as $key => $value) {
+            $text = str_replace('{' . $key . '}', (string) $value, $text);
+        }
+        return $text;
     }
 
     // ── Internal helpers ──

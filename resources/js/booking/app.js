@@ -163,6 +163,7 @@ Alpine.data('bookingWizard', () => ({
     selectedEvent: null,
     eventSpotCount: 1,
     eventIsWaitlisted: false,
+    bookingIsPending: false,
 
     // Manage mode state
     manageMode: config.manage_mode || false,
@@ -839,6 +840,7 @@ Alpine.data('bookingWizard', () => ({
             }
 
             this.booking = data.booking;
+            this.bookingIsPending = (data.booking.status === 'pending');
             this.goToStep('confirmed');
             this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
         } catch {
@@ -877,6 +879,8 @@ Alpine.data('bookingWizard', () => ({
 
     get hasCalendarActions() {
         if (!this.booking) return false;
+        // No calendar links for pending/waitlisted bookings (PRD: links appear after approval)
+        if (this.bookingIsPending || this.eventIsWaitlisted) return false;
         const b = this.booking;
         // Timeslot: needs date + time; Resource: needs check_in + check_out; Capacity: needs date + time
         if (config.booking_pattern === 'resource') return !!(b.check_in && b.check_out);
@@ -1461,6 +1465,7 @@ Alpine.data('bookingWizard', () => ({
             }
 
             this.booking = data.booking;
+            this.bookingIsPending = (data.booking.status === 'pending');
             this.goToStep('confirmed');
             this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
         } catch {
@@ -1689,6 +1694,7 @@ Alpine.data('bookingWizard', () => ({
             }
 
             this.booking = data.booking;
+            this.bookingIsPending = (data.booking.status === 'pending');
             this.goToStep('confirmed');
             this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
         } catch {
@@ -1868,6 +1874,7 @@ Alpine.data('bookingWizard', () => ({
 
             this.booking = data.booking;
             this.eventIsWaitlisted = data.booking.waitlisted || false;
+            this.bookingIsPending = (!data.booking.waitlisted && data.booking.status === 'pending');
             this.goToStep('confirmed');
             this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
         } catch {

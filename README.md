@@ -15,10 +15,23 @@ Self-hosted multi-tenant booking system. Four booking patterns (time slots, reso
 
 ## Installation
 
+### Preferred setup (VPS, dedicated, or managed hosting)
+
 1. Upload the ZIP to your server and extract it
 2. Point your web server's document root to the `public/` directory
 3. Navigate to your domain — the installation wizard starts automatically
 4. Follow the 5-step wizard: system check → database → email → operator account → first tenant
+
+### Shared hosting fallback (Apache)
+
+If your hosting provider does not let you change the document root, the root-level `.htaccess` handles it:
+
+1. Upload the ZIP and extract it into your web root (e.g., `public_html/`)
+2. Confirm `mod_rewrite` is enabled (most shared hosts enable it by default)
+3. Navigate to your domain — the root `.htaccess` rewrites all traffic into `public/`
+4. All sensitive paths (`app/`, `config/`, `storage/`, `vendor/`, `.env`, etc.) are blocked by deny rules
+
+> **Nginx/Caddy/other servers:** The root `.htaccess` is Apache-only. You must configure your server to serve from `public/` and deny access to application directories. See the PRD (Part IX, Section "Web Server") for details.
 
 ## Local Development
 
@@ -45,7 +58,7 @@ npm run dev
 
 ### Local Environment
 
-The app serves via Laravel Herd (or any PHP server) at the domain matching the directory name. The document root must be the `public/` directory.
+The app serves via Laravel Herd (or any PHP server) at the domain matching the directory name. The document root must be the `public/` directory (Herd and Valet handle this automatically).
 
 **Database:** MySQL on `127.0.0.1:3309` (default Herd port). Create a database called `voxelbooking`.
 

@@ -494,8 +494,8 @@ final class BookingApiController
 
             $result = BookingService::createBooking($bookingData, $tenant, $consentGiven);
 
-            // Schedule reminder if tenant has reminders enabled
-            if ((int) ($tenant['send_reminders'] ?? 0) === 1) {
+            // Schedule reminder if tenant has reminders enabled (skip pending bookings)
+            if ((int) ($tenant['send_reminders'] ?? 0) === 1 && ($bookingData['status'] ?? 'confirmed') !== 'pending') {
                 $reminderHours = max(1, (int) ($tenant['reminder_hours_before'] ?? 24));
                 $reminderAt = (clone $startDt)->modify("-{$reminderHours} hours");
                 // Only schedule if reminder time is in the future
@@ -718,8 +718,8 @@ final class BookingApiController
 
             $result = BookingService::createBooking($bookingData, $tenant, $consentGiven);
 
-            // Schedule reminder if tenant has reminders enabled
-            if ((int) ($tenant['send_reminders'] ?? 0) === 1) {
+            // Schedule reminder if tenant has reminders enabled (skip pending bookings)
+            if ((int) ($tenant['send_reminders'] ?? 0) === 1 && ($bookingData['status'] ?? 'confirmed') !== 'pending') {
                 $reminderHours = max(1, (int) ($tenant['reminder_hours_before'] ?? 24));
                 $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
                 $checkInDt2 = new \DateTimeImmutable($checkIn, $tz);
@@ -984,8 +984,8 @@ final class BookingApiController
 
             $result = BookingService::createBooking($bookingData, $tenant, $consentGiven);
 
-            // Schedule reminder if tenant has reminders enabled
-            if ((int) ($tenant['send_reminders'] ?? 0) === 1) {
+            // Schedule reminder if tenant has reminders enabled (skip pending bookings)
+            if ((int) ($tenant['send_reminders'] ?? 0) === 1 && ($bookingData['status'] ?? 'confirmed') !== 'pending') {
                 $reminderHours = max(1, (int) ($tenant['reminder_hours_before'] ?? 24));
                 $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
                 $slotStartDt = new \DateTimeImmutable($startDt, $tz);
@@ -1268,8 +1268,8 @@ final class BookingApiController
 
             $result = BookingService::createBooking($bookingData, $tenant, $consentGiven);
 
-            // Schedule reminder if tenant has reminders enabled (not for waitlisted)
-            if (!$isWaitlisted && (int) ($tenant['send_reminders'] ?? 0) === 1) {
+            // Schedule reminder if tenant has reminders enabled (not for waitlisted or pending)
+            if (!$isWaitlisted && ($bookingData['status'] ?? 'confirmed') !== 'pending' && (int) ($tenant['send_reminders'] ?? 0) === 1) {
                 $reminderHours = max(1, (int) ($tenant['reminder_hours_before'] ?? 24));
                 $eventStartDt = new \DateTimeImmutable($startDt, $tz);
                 $reminderAt = $eventStartDt->modify("-{$reminderHours} hours");

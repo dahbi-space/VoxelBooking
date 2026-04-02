@@ -494,7 +494,7 @@ final class TenantSettingsController
             return $this->forbidden($request);
         }
 
-        $types = ['confirmation', 'reminder', 'cancellation', 'staff_notification'];
+        $types = ['confirmation', 'reminder', 'cancellation', 'reschedule_confirmation', 'staff_notification', 'approval_request', 'approval_confirmed'];
         $fields = ['subject', 'heading', 'body_intro', 'body_outro', 'cta_label'];
 
         foreach ($types as $type) {

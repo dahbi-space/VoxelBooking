@@ -842,12 +842,14 @@
                         </svg>
                     </div>
                     <div class="vb-book-confirm-heading"
-                         x-text="eventIsWaitlisted ? t('event.waitlisted_title') : t('confirmed.heading')"></div>
+                         x-text="eventIsWaitlisted ? t('event.waitlisted_title') : (bookingIsPending ? t('pending.heading') : t('confirmed.heading'))"></div>
 
                     <!-- Email-sent message (only when API confirms dispatch) -->
                     <div class="vb-book-confirm-message" x-show="eventIsWaitlisted"
                          x-text="t('event.waitlisted_message')"></div>
-                    <div class="vb-book-confirm-message" x-show="!eventIsWaitlisted && confirmEmailSent"
+                    <div class="vb-book-confirm-message" x-show="bookingIsPending && !eventIsWaitlisted"
+                         x-text="t('pending.message')"></div>
+                    <div class="vb-book-confirm-message" x-show="!eventIsWaitlisted && !bookingIsPending && confirmEmailSent"
                          x-text="confirmEmailSent"></div>
 
                     <!-- Custom confirmation message (tenant-configurable) -->

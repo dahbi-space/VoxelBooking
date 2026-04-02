@@ -1,0 +1,70 @@
+# ╔═══════════════════════════════════════════════════════════╗
+# ║  VoxelBooking — Root .htaccess (Apache shared hosting)   ║
+# ║                                                          ║
+# ║  This file exists ONLY for shared hosting environments   ║
+# ║  where the document root cannot be changed to public/.   ║
+# ║  The preferred setup is to point the web server directly ║
+# ║  at the public/ directory.                               ║
+# ╚═══════════════════════════════════════════════════════════╝
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # ── Block access to sensitive files and directories ──
+    # These must never be served to web clients under any circumstance.
+
+    # Environment and config files
+    RewriteRule ^\.env$ - [F,L]
+    RewriteRule ^\.env\..+$ - [F,L]
+    RewriteRule ^composer\.(json|lock)$ - [F,L]
+    RewriteRule ^package(-lock)?\.json$ - [F,L]
+    RewriteRule ^phpunit\.xml$ - [F,L]
+    RewriteRule ^vite\.config\.(js|ts)$ - [F,L]
+    RewriteRule ^tsconfig\.json$ - [F,L]
+
+    # Application internals
+    RewriteRule ^app/ - [F,L]
+    RewriteRule ^config/ - [F,L]
+    RewriteRule ^storage/ - [F,L]
+    RewriteRule ^templates/ - [F,L]
+    RewriteRule ^tests/ - [F,L]
+    RewriteRule ^vendor/ - [F,L]
+    RewriteRule ^lang/ - [F,L]
+    RewriteRule ^resources/ - [F,L]
+    RewriteRule ^node_modules/ - [F,L]
+
+    # AI docs and agent configs
+    RewriteRule ^\.ai/ - [F,L]
+    RewriteRule ^\.agents?/ - [F,L]
+
+    # Database files (SQLite demo)
+    RewriteRule ^.*\.sqlite$ - [F,L]
+
+    # All dotfiles except this .htaccess
+    RewriteRule ^\.(?!htaccess) - [F,L]
+
+    # Seed scripts, migration files, and shell scripts
+    RewriteRule ^demo-seed.*\.php$ - [F,L]
+    RewriteRule ^scripts/ - [F,L]
+
+    # ── Rewrite everything else into public/ ──
+    # Static files in public/ are served directly.
+    # All other requests go through public/index.php.
+
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
+
+# Deny access to sensitive file extensions as a defense-in-depth layer
+<FilesMatch "\.(env|sqlite|sql|log|bak|sh|yml|yaml)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>

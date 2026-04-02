@@ -19,13 +19,13 @@ foreach ($templates as $tpl) {
     $byType[$tpl['type']] = $tpl;
 }
 
-// Define supported email types with their system defaults
+// Define supported email types with their system defaults (PRD §VII — 7 types)
 $emailTypes = [
     'confirmation' => [
         'label'   => 'Booking Confirmation',
         'desc'    => 'Sent to customers after a booking is confirmed.',
         'defaults' => [
-            'subject'    => 'Your :service booking on :date',
+            'subject'    => 'Your {service_name} booking on {booking_date}',
             'heading'    => 'Booking confirmed',
             'body_intro' => 'Thank you for your booking.',
             'body_outro' => 'If you need to make changes, please contact us.',
@@ -36,7 +36,7 @@ $emailTypes = [
         'label'   => 'Booking Reminder',
         'desc'    => 'Sent before the appointment (when reminders are enabled).',
         'defaults' => [
-            'subject'    => 'Reminder: :service tomorrow at :time',
+            'subject'    => 'Reminder: {service_name} tomorrow at {booking_time}',
             'heading'    => 'Appointment Reminder',
             'body_intro' => 'This is a reminder for your upcoming appointment.',
             'body_outro' => '',
@@ -47,22 +47,55 @@ $emailTypes = [
         'label'   => 'Cancellation Confirmation',
         'desc'    => 'Sent when a booking is cancelled.',
         'defaults' => [
-            'subject'    => 'Booking cancelled — :business',
+            'subject'    => 'Booking cancelled — {business_name}',
             'heading'    => 'Booking Cancelled',
             'body_intro' => 'Your booking has been cancelled.',
             'body_outro' => 'If this was a mistake, please contact us to rebook.',
             'cta_label'  => 'Book Again',
         ],
     ],
+    'reschedule_confirmation' => [
+        'label'   => 'Reschedule Confirmation',
+        'desc'    => 'Sent when a booking is rescheduled to a new time.',
+        'defaults' => [
+            'subject'    => 'Booking rescheduled — {business_name}',
+            'heading'    => 'Booking Rescheduled',
+            'body_intro' => 'Your booking has been rescheduled.',
+            'body_outro' => '',
+            'cta_label'  => 'View Booking',
+        ],
+    ],
     'staff_notification' => [
         'label'   => 'Staff Notification',
         'desc'    => 'Sent to the notification email when a new booking is made.',
         'defaults' => [
-            'subject'    => 'New booking: :service – :customer',
+            'subject'    => 'New booking: {service_name} — {customer_name}',
             'heading'    => 'New Booking',
             'body_intro' => 'A new booking has been made.',
             'body_outro' => '',
             'cta_label'  => 'View in Dashboard',
+        ],
+    ],
+    'approval_request' => [
+        'label'   => 'Approval Request',
+        'desc'    => 'Sent to customers when their booking requires approval.',
+        'defaults' => [
+            'subject'    => 'Your booking request has been received — {business_name}',
+            'heading'    => 'Request Received',
+            'body_intro' => 'Your booking is pending approval. We will notify you once it is confirmed.',
+            'body_outro' => '',
+            'cta_label'  => '',
+        ],
+    ],
+    'approval_confirmed' => [
+        'label'   => 'Approval Confirmed',
+        'desc'    => 'Sent to customers when a pending booking is approved.',
+        'defaults' => [
+            'subject'    => 'Your booking has been approved — {business_name}',
+            'heading'    => 'Booking Approved',
+            'body_intro' => 'Your booking has been approved and is now confirmed.',
+            'body_outro' => '',
+            'cta_label'  => 'Add to Calendar',
         ],
     ],
 ];
