@@ -889,6 +889,155 @@ final class Mailer
         return self::send($to, $subject, $html, 'reschedule_confirmation', $tenantId, $bookingId, $plainBody, $replyTo['email'], $replyTo['name'], $tenantName);
     }
 
+    /**
+     * Send a staff/operator notification when a new booking is created.
+     *
+     * Sends to tenant.notification_email (or tenant.email if not set).
+     * Caller must check tenant.notify_on_booking before calling.
+     */
+    public static function sendStaffBookingNotification(
+        array $booking,
+        ?string $serviceName,
+        ?string $staffName,
+        string $customerName,
+        string $tenantName,
+        string $tenantId,
+        string $bookingId,
+        string $brandColor = '#2563EB',
+    ): array {
+        $operatorEmail = self::resolveOperatorEmail($tenantId);
+        if ($operatorEmail === null) {
+            return ['sent' => false, 'error' => 'no_operator_email'];
+        }
+
+        $brandTokens = BrandColorHelper::derive($brandColor);
+        $safeBrandColor = $brandTokens['brand'];
+
+        $itemLabel = $serviceName ?? $tenantName;
+        $subject = __('email.operator_notification.subject', [
+            'service'  => $itemLabel,
+            'customer' => $customerName,
+        ]);
+
+        $heading = $subject;
+        $greeting = __('email.operator_notification.body');
+        $bodyText = $greeting;
+        $detailsHeading = __('email.booking_confirmation.details');
+
+        $displayDate = $booking['formatted_date'] ?? $booking['date'];
+        $details = [];
+        $details[__('email.common.date')] = $displayDate;
+        $details[__('email.common.time')] = $booking['time'] . "\xE2\x80\x93" . $booking['end_time'];
+        if ($serviceName) {
+            $details[__('email.common.service')] = $serviceName;
+        }
+        if ($staffName) {
+            $details[__('email.common.staff')] = $staffName;
+        }
+        $details['Customer'] = $customerName;
+
+        $footer = '';
+
+        $html = self::renderConfirmationEmail(
+            $safeBrandColor, $heading, '', $bodyText,
+            $detailsHeading, $details, $footer, $tenantName, app_name(),
+        );
+
+        $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
+        $plainBody = self::renderConfirmationPlainText(
+            $heading, '', $bodyText, $detailsHeading,
+            $details, $footer, $tenantName, $poweredBy,
+        );
+
+        return self::send($operatorEmail, $subject, $html, 'staff_booking_notification', $tenantId, $bookingId, $plainBody);
+    }
+
+    /**
+     * Send a staff/operator notification when a booking is cancelled.
+     *
+     * Sends to tenant.notification_email (or tenant.email if not set).
+     * Caller must check tenant.notify_on_cancellation before calling.
+     */
+    public static function sendStaffCancellationNotification(
+        array $booking,
+        ?string $serviceName,
+        ?string $staffName,
+        string $customerName,
+        string $tenantName,
+        string $tenantId,
+        string $bookingId,
+        string $brandColor = '#2563EB',
+    ): array {
+        $operatorEmail = self::resolveOperatorEmail($tenantId);
+        if ($operatorEmail === null) {
+            return ['sent' => false, 'error' => 'no_operator_email'];
+        }
+
+        $brandTokens = BrandColorHelper::derive($brandColor);
+        $safeBrandColor = $brandTokens['brand'];
+
+        $itemLabel = $serviceName ?? $tenantName;
+        $subject = __('email.operator_cancellation.subject', [
+            'service'  => $itemLabel,
+            'customer' => $customerName,
+        ]);
+
+        $heading = $subject;
+        $greeting = __('email.operator_cancellation.body');
+        $bodyText = $greeting;
+        $detailsHeading = __('email.booking_confirmation.details');
+
+        $displayDate = $booking['formatted_date'] ?? $booking['date'];
+        $details = [];
+        $details[__('email.common.date')] = $displayDate;
+        $details[__('email.common.time')] = $booking['time'] . "\xE2\x80\x93" . $booking['end_time'];
+        if ($serviceName) {
+            $details[__('email.common.service')] = $serviceName;
+        }
+        if ($staffName) {
+            $details[__('email.common.staff')] = $staffName;
+        }
+        $details['Customer'] = $customerName;
+
+        $footer = '';
+
+        $html = self::renderConfirmationEmail(
+            $safeBrandColor, $heading, '', $bodyText,
+            $detailsHeading, $details, $footer, $tenantName, app_name(),
+        );
+
+        $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
+        $plainBody = self::renderConfirmationPlainText(
+            $heading, '', $bodyText, $detailsHeading,
+            $details, $footer, $tenantName, $poweredBy,
+        );
+
+        return self::send($operatorEmail, $subject, $html, 'staff_cancellation_notification', $tenantId, $bookingId, $plainBody);
+    }
+
+    /**
+     * Resolve the operator email for a tenant.
+     *
+     * Returns notification_email if set, otherwise the tenant's primary email.
+     * Returns null if tenant not found.
+     */
+    private static function resolveOperatorEmail(string $tenantId): ?string
+    {
+        try {
+            $rows = Database::query(
+                'SELECT `email`, `notification_email` FROM `tenants` WHERE `id` = ? LIMIT 1',
+                [$tenantId]
+            );
+            if (empty($rows)) {
+                return null;
+            }
+            $tenant = $rows[0];
+            return !empty($tenant['notification_email']) ? $tenant['notification_email'] : $tenant['email'];
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     // ── Tenant email template resolution ──
 
     /**

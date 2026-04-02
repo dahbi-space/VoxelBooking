@@ -950,9 +950,10 @@ final class BookingFlowTest extends TestCase
                 'SELECT `type`, `status` FROM `email_log` WHERE `booking_id` = ?',
                 [$bookingId]
             );
-            $this->assertCount(1, $logs, 'Confirmation email must be logged in email_log');
-            $this->assertSame('confirmation', $logs[0]['type']);
-            $this->assertSame('sent', $logs[0]['status']);
+            $this->assertCount(2, $logs, 'Confirmation + staff notification must be logged in email_log');
+            $types = array_column($logs, 'type');
+            $this->assertContains('confirmation', $types, 'Customer confirmation must be logged');
+            $this->assertContains('staff_booking_notification', $types, 'Staff notification must be logged');
 
             // Clean up email_log rows created by this test
             Database::execute('DELETE FROM `email_log` WHERE `booking_id` = ?', [$bookingId]);

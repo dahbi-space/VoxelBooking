@@ -574,6 +574,22 @@ final class BookingApiController
                 }
             }
 
+            // Staff notification (fire-and-forget)
+            if (Mailer::isConfigured() && (int) ($tenant['notify_on_booking'] ?? 0) === 1) {
+                try {
+                    Mailer::sendStaffBookingNotification(
+                        $emailData, $serviceName, $staffName, $customerName,
+                        $tenant['name'], $tenant['id'], $result['id'],
+                        $tenant['brand_color'] ?? '#2563EB',
+                    );
+                } catch (\Throwable $e) {
+                    Logger::error('Staff booking notification failed', [
+                        'booking' => $result['id'],
+                        'error'   => $e->getMessage(),
+                    ]);
+                }
+            }
+
             return Response::json([
                 'booking' => [
                     'id'               => $result['id'],
@@ -786,6 +802,22 @@ final class BookingApiController
                     }
                 } catch (\Throwable $e) {
                     Logger::error('Resource booking email dispatch failed', [
+                        'booking' => $result['id'],
+                        'error'   => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // Staff notification (fire-and-forget)
+            if (Mailer::isConfigured() && (int) ($tenant['notify_on_booking'] ?? 0) === 1) {
+                try {
+                    Mailer::sendStaffBookingNotification(
+                        $emailData, $resourceName, null, $customerName,
+                        $tenant['name'], $tenant['id'], $result['id'],
+                        $tenant['brand_color'] ?? '#2563EB',
+                    );
+                } catch (\Throwable $e) {
+                    Logger::error('Staff booking notification failed', [
                         'booking' => $result['id'],
                         'error'   => $e->getMessage(),
                     ]);
@@ -1058,6 +1090,22 @@ final class BookingApiController
                     }
                 } catch (\Throwable $e) {
                     Logger::error('Capacity booking email dispatch failed', [
+                        'booking' => $result['id'],
+                        'error'   => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // Staff notification (fire-and-forget)
+            if (Mailer::isConfigured() && (int) ($tenant['notify_on_booking'] ?? 0) === 1) {
+                try {
+                    Mailer::sendStaffBookingNotification(
+                        $emailData, $slotLabel, null, $customerName,
+                        $tenant['name'], $tenant['id'], $result['id'],
+                        $tenant['brand_color'] ?? '#2563EB',
+                    );
+                } catch (\Throwable $e) {
+                    Logger::error('Staff booking notification failed', [
                         'booking' => $result['id'],
                         'error'   => $e->getMessage(),
                     ]);
@@ -1369,6 +1417,22 @@ final class BookingApiController
                 }
             }
 
+            // Staff notification (fire-and-forget)
+            if (Mailer::isConfigured() && (int) ($tenant['notify_on_booking'] ?? 0) === 1) {
+                try {
+                    Mailer::sendStaffBookingNotification(
+                        $emailBookingData, $event['name'], null, $customerName,
+                        $tenant['name'], $tenant['id'], $result['id'],
+                        $tenant['brand_color'] ?? '#2563EB',
+                    );
+                } catch (\Throwable $e) {
+                    Logger::error('Staff booking notification failed', [
+                        'booking' => $result['id'],
+                        'error'   => $e->getMessage(),
+                    ]);
+                }
+            }
+
             return Response::json([
                 'booking' => [
                     'id'               => $result['id'],
@@ -1512,39 +1576,68 @@ final class BookingApiController
             return Response::json(['error' => 'cancel_failed', 'message' => __('booking.api.booking_failed')], 500);
         }
 
-        // Dispatch cancellation notification email
+        // Load booking details once for both customer and staff emails
+        $details = BookingService::findByIdWithDetails($bookingId, $tenant['id']);
+
+        // Dispatch cancellation notification email to customer
         $emailSent = false;
-        if (Mailer::isConfigured()) {
+        if (Mailer::isConfigured() && $details) {
             try {
-                // Load booking details for email
-                $details = BookingService::findByIdWithDetails($bookingId, $tenant['id']);
+                $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+                $startDt = new \DateTimeImmutable($details['start_datetime'], $tz);
+                $endDt = new \DateTimeImmutable($details['end_datetime'], $tz);
 
-                if ($details) {
-                    $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
-                    $startDt = new \DateTimeImmutable($details['start_datetime'], $tz);
-                    $endDt = new \DateTimeImmutable($details['end_datetime'], $tz);
-
-                    $emailResult = Mailer::sendCancellationConfirmation(
-                        $details['customer_email'],
-                        $details['customer_name'],
-                        [
-                            'date'           => $startDt->format('Y-m-d'),
-                            'formatted_date' => Locale::dateLong($startDt),
-                            'time'           => $startDt->format('H:i'),
-                            'end_time'       => $endDt->format('H:i'),
-                        ],
-                        $details['service_name'] ?? $details['resource_name'] ?? $details['event_name'] ?? null,
-                        $details['staff_name'] ?? null,
-                        $tenant['name'],
-                        $tenant['id'],
-                        $bookingId,
-                        $tenant['brand_color'] ?? '#2563EB',
-                        $tenant['slug'],
-                    );
-                    $emailSent = $emailResult['sent'] && Mailer::isProductionSmtp();
-                }
+                $emailResult = Mailer::sendCancellationConfirmation(
+                    $details['customer_email'],
+                    $details['customer_name'],
+                    [
+                        'date'           => $startDt->format('Y-m-d'),
+                        'formatted_date' => Locale::dateLong($startDt),
+                        'time'           => $startDt->format('H:i'),
+                        'end_time'       => $endDt->format('H:i'),
+                    ],
+                    $details['service_name'] ?? $details['resource_name'] ?? $details['event_name'] ?? null,
+                    $details['staff_name'] ?? null,
+                    $tenant['name'],
+                    $tenant['id'],
+                    $bookingId,
+                    $tenant['brand_color'] ?? '#2563EB',
+                    $tenant['slug'],
+                );
+                $emailSent = $emailResult['sent'] && Mailer::isProductionSmtp();
             } catch (\Throwable $e) {
                 Logger::error('Cancellation email dispatch failed', [
+                    'booking' => $bookingId,
+                    'error'   => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Staff cancellation notification (fire-and-forget)
+        if (Mailer::isConfigured() && (int) ($tenant['notify_on_cancellation'] ?? 0) === 1 && $details) {
+            try {
+                $tz = $tz ?? new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+                $startDt = $startDt ?? new \DateTimeImmutable($details['start_datetime'], $tz);
+                $endDt = $endDt ?? new \DateTimeImmutable($details['end_datetime'], $tz);
+
+                $cancelServiceName = $details['service_name'] ?? $details['resource_name'] ?? $details['event_name'] ?? null;
+                Mailer::sendStaffCancellationNotification(
+                    [
+                        'date'           => $startDt->format('Y-m-d'),
+                        'formatted_date' => Locale::dateLong($startDt),
+                        'time'           => $startDt->format('H:i'),
+                        'end_time'       => $endDt->format('H:i'),
+                    ],
+                    $cancelServiceName,
+                    $details['staff_name'] ?? null,
+                    $details['customer_name'],
+                    $tenant['name'],
+                    $tenant['id'],
+                    $bookingId,
+                    $tenant['brand_color'] ?? '#2563EB',
+                );
+            } catch (\Throwable $e) {
+                Logger::error('Staff cancellation notification failed', [
                     'booking' => $bookingId,
                     'error'   => $e->getMessage(),
                 ]);

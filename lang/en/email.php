@@ -25,6 +25,11 @@ return [
         'body'    => 'A new booking has been made.',
     ],
 
+    'operator_cancellation' => [
+        'subject' => 'Booking cancelled: :service – :customer',
+        'body'    => 'A booking has been cancelled.',
+    ],
+
     'privacy_acknowledgment' => [
         'subject'  => 'Your privacy request has been received',
         'greeting' => 'Hi :name,',
