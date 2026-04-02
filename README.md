@@ -68,7 +68,7 @@ VoxelBooking standardizes on `DATETIME` for persisted date-time columns. Do not 
 ### Testing
 
 ```bash
-# Run full test suite (720 tests)
+# Run full test suite (725 tests)
 vendor/bin/phpunit --testdox
 
 # Run only unit tests
