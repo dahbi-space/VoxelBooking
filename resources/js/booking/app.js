@@ -150,6 +150,7 @@ Alpine.data('bookingWizard', () => ({
 
     // Capacity pattern state
     partySize: 2,
+    minPartySize: 1,
     maxPartySize: 8,
     capacitySlots: [],
     selectedCapacitySlot: null,
