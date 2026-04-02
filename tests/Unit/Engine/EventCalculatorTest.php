@@ -24,6 +24,7 @@ class EventCalculatorTest extends TestCase
     private static string $eventOneOff;        // One-off woodworking workshop
     private static string $eventRecurring;     // Weekly yoga class
     private static string $eventFull;          // Full event with waitlist
+    private static string $eventSpotLimited;   // Event with min_spot_count=2, max_spot_count=3
     private static string $customerId;
     private static bool $seeded = false;
 
@@ -166,6 +167,21 @@ class EventCalculatorTest extends TestCase
             [Ulid::generate(), $tid, self::$customerId, self::$eventFull,
              $fullDate->format('Y-m-d') . ' 19:00:00',
              $fullDate->format('Y-m-d') . ' 21:00:00']
+        );
+
+        // ── Event 4: Spot-limited event — min 2, max 3 per booking, 10 capacity ──
+        self::$eventSpotLimited = Ulid::generate();
+        $spotLimitDate = $today->modify('+20 days');
+        Database::execute(
+            "INSERT INTO `events` (`id`, `tenant_id`, `name`, `description`, `price`,
+             `max_participants`, `min_spot_count`, `max_spot_count`,
+             `start_datetime`, `end_datetime`, `is_recurring`,
+             `allow_waitlist`, `waitlist_max`, `is_active`)
+             VALUES (?, ?, 'Pottery Workshop', 'Hands-on pottery class.', 65.00,
+             10, 2, 3, ?, ?, 0, 0, 0, 1)",
+            [self::$eventSpotLimited, $tid,
+             $spotLimitDate->format('Y-m-d') . ' 14:00:00',
+             $spotLimitDate->format('Y-m-d') . ' 18:00:00']
         );
 
         self::$seeded = true;
@@ -401,5 +417,108 @@ class EventCalculatorTest extends TestCase
 
         $this->assertFalse($result['available']);
         $this->assertSame('instance_cancelled', $result['error']);
+    }
+
+    // ── Per-booking spot limit tests ──
+
+    #[Test]
+    public function check_availability_spot_count_too_few(): void
+    {
+        $tz = new \DateTimeZone('Europe/Berlin');
+        $date = (new \DateTimeImmutable('today', $tz))->modify('+20 days')->format('Y-m-d');
+
+        // Pottery Workshop has min_spot_count=2, request 1
+        $result = EventCalculator::checkAvailability(
+            self::$tenant, self::$eventSpotLimited, $date, 1
+        );
+
+        $this->assertFalse($result['available']);
+        $this->assertSame('spot_count_too_few', $result['error']);
+    }
+
+    #[Test]
+    public function check_availability_spot_count_too_many(): void
+    {
+        $tz = new \DateTimeZone('Europe/Berlin');
+        $date = (new \DateTimeImmutable('today', $tz))->modify('+20 days')->format('Y-m-d');
+
+        // Pottery Workshop has max_spot_count=3, request 4
+        $result = EventCalculator::checkAvailability(
+            self::$tenant, self::$eventSpotLimited, $date, 4
+        );
+
+        $this->assertFalse($result['available']);
+        $this->assertSame('spot_count_too_many', $result['error']);
+    }
+
+    #[Test]
+    public function check_availability_spot_count_at_min_boundary_accepted(): void
+    {
+        $tz = new \DateTimeZone('Europe/Berlin');
+        $date = (new \DateTimeImmutable('today', $tz))->modify('+20 days')->format('Y-m-d');
+
+        // Pottery Workshop has min_spot_count=2, request exactly 2
+        $result = EventCalculator::checkAvailability(
+            self::$tenant, self::$eventSpotLimited, $date, 2
+        );
+
+        $this->assertTrue($result['available']);
+        $this->assertNull($result['error']);
+    }
+
+    #[Test]
+    public function check_availability_spot_count_at_max_boundary_accepted(): void
+    {
+        $tz = new \DateTimeZone('Europe/Berlin');
+        $date = (new \DateTimeImmutable('today', $tz))->modify('+20 days')->format('Y-m-d');
+
+        // Pottery Workshop has max_spot_count=3, request exactly 3
+        $result = EventCalculator::checkAvailability(
+            self::$tenant, self::$eventSpotLimited, $date, 3
+        );
+
+        $this->assertTrue($result['available']);
+        $this->assertNull($result['error']);
+    }
+
+    #[Test]
+    public function event_detail_exposes_spot_limit_fields(): void
+    {
+        $result = EventCalculator::getEventDetail(self::$tenant, self::$eventSpotLimited);
+
+        $this->assertNotNull($result['event']);
+        $this->assertSame('Pottery Workshop', $result['event']['name']);
+        $this->assertArrayHasKey('min_spot_count', $result['event']);
+        $this->assertArrayHasKey('max_spot_count', $result['event']);
+        $this->assertSame(2, $result['event']['min_spot_count']);
+        $this->assertSame(3, $result['event']['max_spot_count']);
+    }
+
+    #[Test]
+    public function upcoming_events_exposes_spot_limit_fields(): void
+    {
+        $result = EventCalculator::getUpcomingEvents(self::$tenant);
+
+        $pottery = array_values(array_filter(
+            $result['events'], fn($e) => $e['name'] === 'Pottery Workshop'
+        ));
+        $this->assertNotEmpty($pottery);
+        $this->assertSame(2, $pottery[0]['min_spot_count']);
+        $this->assertSame(3, $pottery[0]['max_spot_count']);
+    }
+
+    #[Test]
+    public function check_availability_null_max_spot_count_allows_up_to_remaining(): void
+    {
+        $tz = new \DateTimeZone('Europe/Berlin');
+        $workshopDate = (new \DateTimeImmutable('today', $tz))->modify('+10 days')->format('Y-m-d');
+
+        // Woodworking 101 has no max_spot_count (NULL), 8 remaining. Request 8.
+        $result = EventCalculator::checkAvailability(
+            self::$tenant, self::$eventOneOff, $workshopDate, 8
+        );
+
+        $this->assertTrue($result['available']);
+        $this->assertNull($result['error']);
     }
 }

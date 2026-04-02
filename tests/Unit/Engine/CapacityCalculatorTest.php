@@ -21,9 +21,10 @@ class CapacityCalculatorTest extends TestCase
 {
     private static array $tenant;
     private static string $tenantId;
-    private static string $slotMondayEarly;     // Monday 18:00-19:30, cap 20
-    private static string $slotMondayMain;      // Monday 19:30-21:00, cap 20
-    private static string $slotTuesdayEarly;    // Tuesday 18:00-19:30, cap 10
+    private static string $slotMondayEarly;     // Monday 18:00-19:30, cap 20, min_party 1
+    private static string $slotMondayMain;      // Monday 19:30-21:00, cap 20, min_party 1
+    private static string $slotTuesdayEarly;    // Tuesday 18:00-19:30, cap 10, min_party 1
+    private static string $slotMondayLate;      // Monday 21:00-22:30, cap 15, min_party 3
     private static bool $seeded = false;
 
     public static function setUpBeforeClass(): void
@@ -85,18 +86,20 @@ class CapacityCalculatorTest extends TestCase
         self::$slotMondayEarly  = Ulid::generate();
         self::$slotMondayMain   = Ulid::generate();
         self::$slotTuesdayEarly = Ulid::generate();
+        self::$slotMondayLate   = Ulid::generate();
 
         $slotStmt = Database::connect()->prepare(
-            "INSERT INTO `capacity_slots` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `max_party_size`, `label`, `is_active`)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO `capacity_slots` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `min_party_size`, `max_party_size`, `label`, `is_active`)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         );
 
         // Monday (dow=0) slots
-        $slotStmt->execute([self::$slotMondayEarly, $tid, 0, '18:00:00', '19:30:00', 20, 8, 'Early Dinner', 1]);
-        $slotStmt->execute([self::$slotMondayMain, $tid, 0, '19:30:00', '21:00:00', 20, 8, 'Main Dinner', 1]);
+        $slotStmt->execute([self::$slotMondayEarly, $tid, 0, '18:00:00', '19:30:00', 20, 1, 8, 'Early Dinner', 1]);
+        $slotStmt->execute([self::$slotMondayMain, $tid, 0, '19:30:00', '21:00:00', 20, 1, 8, 'Main Dinner', 1]);
+        $slotStmt->execute([self::$slotMondayLate, $tid, 0, '21:00:00', '22:30:00', 15, 3, 6, 'Late Dinner', 1]);
 
         // Tuesday (dow=1) slot with smaller capacity
-        $slotStmt->execute([self::$slotTuesdayEarly, $tid, 1, '18:00:00', '19:30:00', 10, 4, 'Early Dinner', 1]);
+        $slotStmt->execute([self::$slotTuesdayEarly, $tid, 1, '18:00:00', '19:30:00', 10, 1, 4, 'Early Dinner', 1]);
 
         // Customer for test bookings
         $customerId = Ulid::generate();
@@ -373,5 +376,74 @@ class CapacityCalculatorTest extends TestCase
 
         $this->assertFalse($result['available']);
         $this->assertEquals('slot_not_found', $result['error']);
+    }
+
+    // ── min_party_size enforcement tests ──
+
+    #[Test]
+    public function check_slot_party_too_small(): void
+    {
+        $nextMonday = (new \DateTimeImmutable('today', new \DateTimeZone('Europe/Rome')))->modify('next Monday');
+
+        // Late Dinner has min_party_size=3, request party of 2
+        $result = CapacityCalculator::checkSlotAvailability(
+            self::$tenant, self::$slotMondayLate, $nextMonday->format('Y-m-d'), 2
+        );
+
+        $this->assertFalse($result['available']);
+        $this->assertEquals('party_too_small', $result['error']);
+    }
+
+    #[Test]
+    public function check_slot_party_at_minimum_is_accepted(): void
+    {
+        $nextMonday = (new \DateTimeImmutable('today', new \DateTimeZone('Europe/Rome')))->modify('next Monday');
+
+        // Late Dinner has min_party_size=3, request exactly 3
+        $result = CapacityCalculator::checkSlotAvailability(
+            self::$tenant, self::$slotMondayLate, $nextMonday->format('Y-m-d'), 3
+        );
+
+        $this->assertTrue($result['available']);
+        $this->assertNull($result['error']);
+    }
+
+    #[Test]
+    public function available_slots_filters_below_min_party_size(): void
+    {
+        $nextMonday = (new \DateTimeImmutable('today', new \DateTimeZone('Europe/Rome')))->modify('next Monday');
+
+        // Request party of 2: Late Dinner (min=3) should be excluded, Early/Main (min=1) included
+        $result = CapacityCalculator::getAvailableSlots(self::$tenant, $nextMonday->format('Y-m-d'), 2);
+
+        $lateSlots = array_filter($result['slots'], fn($s) => $s['label'] === 'Late Dinner');
+        $this->assertEmpty($lateSlots, 'Late Dinner (min_party_size=3) should be filtered for party of 2');
+
+        $earlySlots = array_filter($result['slots'], fn($s) => $s['label'] === 'Early Dinner');
+        $this->assertNotEmpty($earlySlots, 'Early Dinner (min_party_size=1) should remain for party of 2');
+    }
+
+    #[Test]
+    public function available_slots_includes_slot_at_min_party_boundary(): void
+    {
+        $nextMonday = (new \DateTimeImmutable('today', new \DateTimeZone('Europe/Rome')))->modify('next Monday');
+
+        // Request party of 3: Late Dinner (min=3) should be included
+        $result = CapacityCalculator::getAvailableSlots(self::$tenant, $nextMonday->format('Y-m-d'), 3);
+
+        $lateSlots = array_filter($result['slots'], fn($s) => $s['label'] === 'Late Dinner');
+        $this->assertNotEmpty($lateSlots, 'Late Dinner (min_party_size=3) should be included for party of 3');
+    }
+
+    #[Test]
+    public function available_slots_returns_min_party_size_field(): void
+    {
+        $nextMonday = (new \DateTimeImmutable('today', new \DateTimeZone('Europe/Rome')))->modify('next Monday');
+        $result = CapacityCalculator::getAvailableSlots(self::$tenant, $nextMonday->format('Y-m-d'), 3);
+
+        $lateSlots = array_values(array_filter($result['slots'], fn($s) => $s['label'] === 'Late Dinner'));
+        $this->assertNotEmpty($lateSlots);
+        $this->assertArrayHasKey('min_party_size', $lateSlots[0]);
+        $this->assertSame(3, $lateSlots[0]['min_party_size']);
     }
 }

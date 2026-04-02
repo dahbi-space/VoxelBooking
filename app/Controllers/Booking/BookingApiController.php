@@ -841,9 +841,14 @@ final class BookingApiController
         // Pre-lock check for fast feedback
         $availability = CapacityCalculator::checkSlotAvailability($tenant, $slotId, $date, $partySize);
         if (!$availability['available']) {
+            $errorKey = $availability['error'] ?? 'capacity_exceeded';
+            $messageKey = match ($errorKey) {
+                'party_too_small' => 'booking.api.party_too_small',
+                default => 'booking.api.capacity_exceeded',
+            };
             return Response::json([
-                'error'   => $availability['error'],
-                'message' => __('booking.api.capacity_exceeded'),
+                'error'   => $errorKey,
+                'message' => __($messageKey),
             ], 409);
         }
 
@@ -1077,9 +1082,11 @@ final class BookingApiController
         if (!$availability['available']) {
             $errorKey = $availability['error'] ?? 'event_full';
             $messageKey = match ($errorKey) {
-                'waitlist_full' => 'booking.api.waitlist_full',
-                'instance_cancelled' => 'booking.api.event_cancelled',
-                default => 'booking.api.event_full',
+                'spot_count_too_few'  => 'booking.api.spot_count_too_few',
+                'spot_count_too_many' => 'booking.api.spot_count_too_many',
+                'waitlist_full'       => 'booking.api.waitlist_full',
+                'instance_cancelled'  => 'booking.api.event_cancelled',
+                default               => 'booking.api.event_full',
             };
             return Response::json([
                 'error'   => $errorKey,

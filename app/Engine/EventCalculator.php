@@ -277,6 +277,17 @@ final class EventCalculator
         $maxParticipants = (int) $event['max_participants'];
         $remaining = max(0, $maxParticipants - $totalBooked);
 
+        // Direct booking: check per-booking limits
+        $minSpots = (int) ($event['min_spot_count'] ?? 1);
+        $maxSpotsPerBooking = ($event['max_spot_count'] ?? null) !== null ? (int) $event['max_spot_count'] : null;
+
+        if ($spotCount < $minSpots) {
+            return ['available' => false, 'waitlisted' => false, 'remaining' => $remaining, 'error' => 'spot_count_too_few'];
+        }
+        if ($maxSpotsPerBooking !== null && $spotCount > $maxSpotsPerBooking) {
+            return ['available' => false, 'waitlisted' => false, 'remaining' => $remaining, 'error' => 'spot_count_too_many'];
+        }
+
         // Direct booking: spots available
         if ($remaining >= $spotCount) {
             return ['available' => true, 'waitlisted' => false, 'remaining' => $remaining - $spotCount, 'error' => null];
@@ -394,6 +405,8 @@ final class EventCalculator
             'start_time'       => $startDt->format('H:i'),
             'end_time'         => $endDt->format('H:i'),
             'max_participants' => (int) $event['max_participants'],
+            'min_spot_count'   => (int) ($event['min_spot_count'] ?? 1),
+            'max_spot_count'   => ($event['max_spot_count'] ?? null) !== null ? (int) $event['max_spot_count'] : null,
             'allow_waitlist'   => (bool) (int) $event['allow_waitlist'],
             'waitlist_max'     => (int) $event['waitlist_max'],
             // Availability fields filled by caller

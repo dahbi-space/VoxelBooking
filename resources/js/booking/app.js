@@ -1363,9 +1363,10 @@ Alpine.data('bookingWizard', () => ({
     // ── Capacity pattern methods ──
 
     initCapacity() {
-        // Set max party size from config if available
+        // Set party size bounds from config
+        this.minPartySize = config.min_party_size || 1;
         this.maxPartySize = config.max_party_size || 8;
-        this.partySize = 2;
+        this.partySize = Math.max(this.minPartySize, 2);
         this.goToStep('party-size');
     },
 
@@ -1380,7 +1381,7 @@ Alpine.data('bookingWizard', () => ({
     },
 
     decrementPartySize() {
-        if (this.partySize > 1) {
+        if (this.partySize > this.minPartySize) {
             this.partySize--;
         }
     },
@@ -1581,7 +1582,8 @@ Alpine.data('bookingWizard', () => ({
 
     selectEvent(event) {
         this.selectedEvent = event;
-        this.eventSpotCount = 1;
+        // Initialize spot count to event's minimum per booking
+        this.eventSpotCount = event.min_spot_count || 1;
         this.goToStep('event-detail');
     },
 
@@ -1589,15 +1591,31 @@ Alpine.data('bookingWizard', () => ({
         this.goToStep('event-spots');
     },
 
+    // Effective max spots for the counter (per-booking cap vs remaining capacity)
+    get eventMaxSpots() {
+        if (!this.selectedEvent) return 1;
+        const remaining = this.selectedEvent.remaining || 0;
+        const perBookingMax = this.selectedEvent.max_spot_count;
+        if (perBookingMax !== null && perBookingMax !== undefined) {
+            return Math.min(perBookingMax, remaining);
+        }
+        return remaining;
+    },
+
+    // Effective min spots for the counter
+    get eventMinSpots() {
+        if (!this.selectedEvent) return 1;
+        return this.selectedEvent.min_spot_count || 1;
+    },
+
     incrementEventSpots() {
-        const max = this.selectedEvent ? this.selectedEvent.remaining : 10;
-        if (this.eventSpotCount < max) {
+        if (this.eventSpotCount < this.eventMaxSpots) {
             this.eventSpotCount++;
         }
     },
 
     decrementEventSpots() {
-        if (this.eventSpotCount > 1) {
+        if (this.eventSpotCount > this.eventMinSpots) {
             this.eventSpotCount--;
         }
     },

@@ -116,6 +116,8 @@ final class EventsController
             'location'         => $request->string('location'),
             'price'            => $request->string('price'),
             'max_participants' => $request->string('max_participants'),
+            'min_spot_count'   => $request->string('min_spot_count'),
+            'max_spot_count'   => $request->string('max_spot_count'),
             'start_date'       => $request->string('start_date'),
             'start_time'       => $request->string('start_time'),
             'end_date'         => $request->string('end_date'),
@@ -154,6 +156,12 @@ final class EventsController
         }
 
         $maxParticipants = max(1, (int) $request->string('max_participants'));
+        $minSpotCount = max(1, (int) ($request->string('min_spot_count') ?: '1'));
+        $maxSpotCountRaw = trim($request->string('max_spot_count'));
+        $maxSpotCount = $maxSpotCountRaw !== '' ? max(1, (int) $maxSpotCountRaw) : null;
+        if ($maxSpotCount !== null && $minSpotCount > $maxSpotCount) {
+            $minSpotCount = $maxSpotCount;
+        }
         $price = $request->string('price') !== '' ? number_format((float) $request->string('price'), 2, '.', '') : null;
 
         // Recurrence
@@ -186,14 +194,14 @@ final class EventsController
 
         Database::execute(
             'INSERT INTO `events` (`id`, `tenant_id`, `name`, `description`, `location`, `price`,
-             `max_participants`, `start_datetime`, `end_datetime`, `is_recurring`, `rrule`,
+             `max_participants`, `min_spot_count`, `max_spot_count`, `start_datetime`, `end_datetime`, `is_recurring`, `rrule`,
              `exception_dates`, `allow_waitlist`, `waitlist_max`, `is_active`)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
             [
                 $eventId, $tenantId, $name,
                 trim($request->string('description')) ?: null,
                 trim($request->string('location')) ?: null,
-                $price, $maxParticipants, $startDt, $endDt,
+                $price, $maxParticipants, $minSpotCount, $maxSpotCount, $startDt, $endDt,
                 $isRecurring ? 1 : 0, $rrule, $exceptionDates,
                 $allowWaitlist, $waitlistMax,
             ]
@@ -282,6 +290,12 @@ final class EventsController
         }
 
         $maxParticipants = max(1, (int) $request->string('max_participants'));
+        $minSpotCount = max(1, (int) ($request->string('min_spot_count') ?: '1'));
+        $maxSpotCountRaw = trim($request->string('max_spot_count'));
+        $maxSpotCount = $maxSpotCountRaw !== '' ? max(1, (int) $maxSpotCountRaw) : null;
+        if ($maxSpotCount !== null && $minSpotCount > $maxSpotCount) {
+            $minSpotCount = $maxSpotCount;
+        }
         $price = $request->string('price') !== '' ? number_format((float) $request->string('price'), 2, '.', '') : null;
 
         $isRecurring = $request->string('is_recurring') === '1';
@@ -309,7 +323,8 @@ final class EventsController
 
         Database::execute(
             'UPDATE `events` SET `name` = ?, `description` = ?, `location` = ?, `price` = ?,
-             `max_participants` = ?, `start_datetime` = ?, `end_datetime` = ?,
+             `max_participants` = ?, `min_spot_count` = ?, `max_spot_count` = ?,
+             `start_datetime` = ?, `end_datetime` = ?,
              `is_recurring` = ?, `rrule` = ?, `exception_dates` = ?,
              `allow_waitlist` = ?, `waitlist_max` = ?
              WHERE `id` = ? AND `tenant_id` = ?',
@@ -317,7 +332,7 @@ final class EventsController
                 $name,
                 trim($request->string('description')) ?: null,
                 trim($request->string('location')) ?: null,
-                $price, $maxParticipants, $startDt, $endDt,
+                $price, $maxParticipants, $minSpotCount, $maxSpotCount, $startDt, $endDt,
                 $isRecurring ? 1 : 0, $rrule, $exceptionDates,
                 $allowWaitlist, $waitlistMax,
                 $eventId, $tenantId,

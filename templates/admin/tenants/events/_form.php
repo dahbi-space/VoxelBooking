@@ -91,6 +91,23 @@ if ($isEdit && !$exceptionDates && $event['exception_dates']) {
     </div>
 </div>
 
+<div class="vb-form-row">
+    <!-- Min Spots Per Booking -->
+    <div class="vb-form-group">
+        <label for="event_min_spots" class="vb-label"><?= __('admin.events.min_spot_count_label') ?></label>
+        <input type="number" id="event_min_spots" name="min_spot_count" class="vb-input" min="1"
+               value="<?= $v('min_spot_count', $isEdit ? ($event['min_spot_count'] ?? '1') : '1') ?>">
+    </div>
+
+    <!-- Max Spots Per Booking -->
+    <div class="vb-form-group">
+        <label for="event_max_spots" class="vb-label"><?= __('admin.events.max_spot_count_label') ?></label>
+        <input type="number" id="event_max_spots" name="max_spot_count" class="vb-input" min="1"
+               value="<?= $v('max_spot_count', $isEdit ? ($event['max_spot_count'] ?? '') : '') ?>"
+               placeholder="<?= __('admin.events.max_spot_count_hint') ?>">
+    </div>
+</div>
+
 <!-- Start Date/Time -->
 <div class="vb-form-row">
     <div class="vb-form-group">

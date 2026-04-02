@@ -74,13 +74,14 @@ final class BookingPageController
             'allow_rescheduling'    => (bool) ($tenant['allow_rescheduling'] ?? true),
         ];
 
-        // Capacity pattern: inject max_party_size from slot configuration
+        // Capacity pattern: inject party size bounds from slot configuration
         if ($tenant['booking_pattern'] === 'capacity') {
-            $maxPartyRow = Database::query(
-                'SELECT MAX(`max_party_size`) AS `max_ps` FROM `capacity_slots` WHERE `tenant_id` = ? AND `is_active` = 1',
+            $partyBounds = Database::query(
+                'SELECT MIN(`min_party_size`) AS `min_ps`, MAX(`max_party_size`) AS `max_ps` FROM `capacity_slots` WHERE `tenant_id` = ? AND `is_active` = 1',
                 [$tenant['id']]
             );
-            $tenantConfig['max_party_size'] = (int) ($maxPartyRow[0]['max_ps'] ?? 8);
+            $tenantConfig['min_party_size'] = (int) ($partyBounds[0]['min_ps'] ?? 1);
+            $tenantConfig['max_party_size'] = (int) ($partyBounds[0]['max_ps'] ?? 8);
         }
 
         // Inject translations and formatting config for JS

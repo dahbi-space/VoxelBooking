@@ -73,8 +73,14 @@ final class CapacitySlotsController
         $startTime    = trim($request->string('start_time'));
         $endTime      = trim($request->string('end_time'));
         $maxCapacity  = max(1, (int) $request->string('max_capacity'));
+        $minPartySize = max(1, (int) ($request->string('min_party_size') ?: '1'));
         $maxPartySize = max(1, (int) $request->string('max_party_size'));
         $label        = trim($request->string('label')) ?: null;
+
+        // Clamp min <= max
+        if ($minPartySize > $maxPartySize) {
+            $minPartySize = $maxPartySize;
+        }
 
         if ($dayOfWeek < 0 || $dayOfWeek > 6) {
             $this->setFlash('error', __('admin.capacity_slots.error_invalid_day'));
@@ -93,9 +99,9 @@ final class CapacitySlotsController
 
         $id = Ulid::generate();
         Database::execute(
-            'INSERT INTO `capacity_slots` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `max_party_size`, `label`)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [$id, $tenantId, $dayOfWeek, $startTime . ':00', $endTime . ':00', $maxCapacity, $maxPartySize, $label]
+            'INSERT INTO `capacity_slots` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `min_party_size`, `max_party_size`, `label`)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$id, $tenantId, $dayOfWeek, $startTime . ':00', $endTime . ':00', $maxCapacity, $minPartySize, $maxPartySize, $label]
         );
 
         AuditLog::log('capacity_slot.created', 'capacity_slot', $id, [

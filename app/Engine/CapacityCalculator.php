@@ -50,7 +50,7 @@ final class CapacityCalculator
 
         // Load active capacity slots for this day of week
         $slots = Database::query(
-            'SELECT `id`, `start_time`, `end_time`, `max_capacity`, `max_party_size`, `label`
+            'SELECT `id`, `start_time`, `end_time`, `max_capacity`, `min_party_size`, `max_party_size`, `label`
              FROM `capacity_slots`
              WHERE `tenant_id` = ? AND `day_of_week` = ? AND `is_active` = 1
              ORDER BY `start_time` ASC',
@@ -85,6 +85,7 @@ final class CapacityCalculator
             $startTime = substr($slot['start_time'], 0, 5); // HH:MM
             $endTime   = substr($slot['end_time'], 0, 5);
             $maxCapacity  = (int) $slot['max_capacity'];
+            $minPartySize = (int) ($slot['min_party_size'] ?? 1);
             $maxPartySize = (int) $slot['max_party_size'];
 
             // Match booking times to slot (normalize to HH:MM:SS for lookup)
@@ -101,6 +102,11 @@ final class CapacityCalculator
                 continue;
             }
 
+            // Skip if party size is below minimum per booking
+            if ($partySize < $minPartySize) {
+                continue;
+            }
+
             $result[] = [
                 'id'             => $slot['id'],
                 'time'           => $startTime,
@@ -108,6 +114,7 @@ final class CapacityCalculator
                 'label'          => $slot['label'],
                 'remaining'      => $remaining,
                 'max'            => $maxCapacity,
+                'min_party_size' => $minPartySize,
                 'max_party_size' => $maxPartySize,
             ];
         }
@@ -145,7 +152,7 @@ final class CapacityCalculator
 
         // Load all active capacity slots for this tenant (grouped by day_of_week)
         $allSlots = Database::query(
-            'SELECT `day_of_week`, `max_capacity`, `max_party_size`, `start_time`
+            'SELECT `day_of_week`, `max_capacity`, `min_party_size`, `max_party_size`, `start_time`
              FROM `capacity_slots`
              WHERE `tenant_id` = ? AND `is_active` = 1
              ORDER BY `day_of_week`, `start_time`',
@@ -208,8 +215,9 @@ final class CapacityCalculator
                     $booked = $bookedMap[$dateStr][$slot['start_time']] ?? 0;
                     $remaining = (int) $slot['max_capacity'] - $booked;
                     $maxParty = (int) $slot['max_party_size'];
+                    $minParty = (int) ($slot['min_party_size'] ?? 1);
 
-                    if ($remaining >= $partySize && $partySize <= $maxParty) {
+                    if ($remaining >= $partySize && $partySize >= $minParty && $partySize <= $maxParty) {
                         $dates[] = $dateStr;
                         break; // One available slot is enough
                     }
@@ -239,7 +247,7 @@ final class CapacityCalculator
 
         // Load the slot
         $slots = Database::query(
-            'SELECT `start_time`, `end_time`, `max_capacity`, `max_party_size`, `day_of_week`, `is_active`
+            'SELECT `start_time`, `end_time`, `max_capacity`, `min_party_size`, `max_party_size`, `day_of_week`, `is_active`
              FROM `capacity_slots`
              WHERE `id` = ? AND `tenant_id` = ?',
             [$slotId, $tenantId]
@@ -270,7 +278,10 @@ final class CapacityCalculator
             return ['available' => false, 'remaining' => 0, 'error' => 'date_blocked'];
         }
 
-        // Check party size limit
+        // Check party size limits
+        if ($partySize < (int) ($slot['min_party_size'] ?? 1)) {
+            return ['available' => false, 'remaining' => 0, 'error' => 'party_too_small'];
+        }
         if ($partySize > (int) $slot['max_party_size']) {
             return ['available' => false, 'remaining' => 0, 'error' => 'party_too_large'];
         }

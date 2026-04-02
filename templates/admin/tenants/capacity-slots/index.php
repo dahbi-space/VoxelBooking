@@ -65,6 +65,10 @@ ob_start();
                     <input type="number" name="max_capacity" id="slot-capacity" class="vb-input" required min="1" value="20">
                 </div>
                 <div class="vb-form-group">
+                    <label class="vb-label" for="slot-min-party"><?= __('admin.capacity_slots.label_min_party_size') ?></label>
+                    <input type="number" name="min_party_size" id="slot-min-party" class="vb-input" required min="1" value="1">
+                </div>
+                <div class="vb-form-group">
                     <label class="vb-label" for="slot-party"><?= __('admin.capacity_slots.label_party_size') ?></label>
                     <input type="number" name="max_party_size" id="slot-party" class="vb-input" required min="1" value="8">
                 </div>
@@ -100,6 +104,7 @@ ob_start();
                         <th><?= __('admin.capacity_slots.label_start_time') ?></th>
                         <th><?= __('admin.capacity_slots.label_end_time') ?></th>
                         <th class="vb-text-center"><?= __('admin.capacity_slots.label_capacity') ?></th>
+                        <th class="vb-text-center"><?= __('admin.capacity_slots.label_min_party_size') ?></th>
                         <th class="vb-text-center"><?= __('admin.capacity_slots.label_party_size') ?></th>
                         <th><?= __('admin.capacity_slots.label_label') ?></th>
                         <th><?= __('admin.capacity_slots.label_status') ?></th>
@@ -114,6 +119,9 @@ ob_start();
                         <td class="vb-text-secondary"><?= substr($slot['end_time'], 0, 5) ?></td>
                         <td class="vb-text-center">
                             <span class="vb-badge vb-badge-neutral"><?= (int) $slot['max_capacity'] ?></span>
+                        </td>
+                        <td class="vb-text-center">
+                            <span class="vb-badge vb-badge-neutral"><?= (int) ($slot['min_party_size'] ?? 1) ?></span>
                         </td>
                         <td class="vb-text-center">
                             <span class="vb-badge vb-badge-neutral"><?= (int) $slot['max_party_size'] ?></span>

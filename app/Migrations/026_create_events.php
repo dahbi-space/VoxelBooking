@@ -13,6 +13,10 @@ declare(strict_types=1);
  *
  * Waitlist support: allow_waitlist + waitlist_max control whether
  * full events accept additional registrations with status 'waitlisted'.
+ *
+ * Per-booking limits: min_spot_count and max_spot_count control how many
+ * spots a single reservation can claim. max_spot_count NULL means limited
+ * only by remaining event capacity.
  */
 return [
     "CREATE TABLE IF NOT EXISTS `events` (
@@ -23,6 +27,8 @@ return [
         `location` VARCHAR(255) NULL DEFAULT NULL,
         `price` DECIMAL(10, 2) NULL DEFAULT NULL,
         `max_participants` INT NOT NULL DEFAULT 20,
+        `min_spot_count` INT UNSIGNED NOT NULL DEFAULT 1,
+        `max_spot_count` INT UNSIGNED NULL DEFAULT NULL,
         `start_datetime` DATETIME NOT NULL,
         `end_datetime` DATETIME NOT NULL,
         `is_recurring` TINYINT(1) NOT NULL DEFAULT 0,

@@ -162,6 +162,7 @@ return [
         'time_title'          => 'Select Time',
         'spots_remaining'     => ':count spots left',
         'slot_full'           => 'Full',
+        'min_guests_hint'     => 'Minimum :count guests',
     ],
 
     // ── Event-Pattern Booking Page ──
@@ -173,6 +174,8 @@ return [
         'spots'               => 'spots',
         'spots_remaining'     => ':count spots left',
         'event_full'          => 'This event is full.',
+        'max_spots_reached'   => 'Maximum :count spots per booking',
+        'max_reached'         => 'Maximum spots reached',
         'join_waitlist'       => 'Join Waitlist',
         'waitlist_notice'     => 'You will be added to the waitlist.',
         'waitlisted_title'    => 'You\'re on the Waitlist',
@@ -247,10 +250,13 @@ return [
         'slot_required'         => 'Please select a time slot.',
         'date_required'         => 'Please select a date.',
         'party_size_invalid'    => 'Party size must be at least 1.',
+        'party_too_small'       => 'Party size is below the minimum for this slot.',
         'capacity_exceeded'     => 'Not enough spots remaining for your party size.',
         // Event-pattern
         'event_required'        => 'Please select an event.',
         'spot_count_invalid'    => 'Spot count must be at least 1.',
+        'spot_count_too_few'    => 'Minimum spots per booking is :min.',
+        'spot_count_too_many'   => 'Maximum spots per booking is :max.',
         'event_full'            => 'This event is full.',
         'event_cancelled'       => 'This event has been cancelled.',
         'waitlist_full'         => 'The waitlist for this event is full.',

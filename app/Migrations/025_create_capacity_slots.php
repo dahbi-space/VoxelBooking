@@ -7,8 +7,8 @@ declare(strict_types=1);
  *
  * capacity_slots define recurring weekly time windows for capacity-pattern tenants
  * (restaurants, escape rooms, group classes). Each slot specifies a day of week,
- * start/end time, maximum total capacity, maximum party size per booking, and an
- * optional label (e.g. "Early Dinner", "Late Seating").
+ * start/end time, maximum total capacity, minimum and maximum party size per
+ * booking, and an optional label (e.g. "Early Dinner", "Late Seating").
  *
  * Bookings for capacity tenants use party_size to track seats consumed per booking.
  * CapacityCalculator sums confirmed/rescheduled party_size values against max_capacity
@@ -22,6 +22,7 @@ return [
         `start_time` TIME NOT NULL,
         `end_time` TIME NOT NULL,
         `max_capacity` INT UNSIGNED NOT NULL DEFAULT 20,
+        `min_party_size` INT UNSIGNED NOT NULL DEFAULT 1,
         `max_party_size` INT UNSIGNED NOT NULL DEFAULT 8,
         `label` VARCHAR(100) NULL,
         `is_active` TINYINT(1) NOT NULL DEFAULT 1,

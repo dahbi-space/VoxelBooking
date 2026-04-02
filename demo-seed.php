@@ -278,6 +278,7 @@ CREATE TABLE capacity_slots (
     start_time TEXT NOT NULL,
     end_time TEXT NOT NULL,
     max_capacity INTEGER NOT NULL DEFAULT 20,
+    min_party_size INTEGER NOT NULL DEFAULT 1,
     max_party_size INTEGER NOT NULL DEFAULT 8,
     label TEXT DEFAULT NULL,
     is_active INTEGER NOT NULL DEFAULT 1,
@@ -296,6 +297,8 @@ CREATE TABLE events (
     location TEXT DEFAULT NULL,
     price TEXT DEFAULT NULL,
     max_participants INTEGER NOT NULL DEFAULT 20,
+    min_spot_count INTEGER NOT NULL DEFAULT 1,
+    max_spot_count INTEGER DEFAULT NULL,
     start_datetime TEXT NOT NULL,
     end_datetime TEXT NOT NULL,
     is_recurring INTEGER NOT NULL DEFAULT 0,
@@ -767,32 +770,32 @@ foreach ($trattoriaBookings as [$id, $custId, $dateOffset, $start, $end, $status
 // Trattoria Roma — capacity slots (dinner service windows)
 $pdo->exec("DELETE FROM `capacity_slots` WHERE `tenant_id` = '{$trattoriaId}'");
 $slotStmt = $pdo->prepare(
-    "INSERT INTO `capacity_slots` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `max_party_size`, `label`, `is_active`)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)"
+    "INSERT INTO `capacity_slots` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `min_party_size`, `max_party_size`, `label`, `is_active`)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)"
 );
-// Slots for all weekdays (Mon-Sun = 0-6)
+// [id, day_of_week, start_time, end_time, max_capacity, min_party_size, max_party_size, label]
 $trattoriaSlots = [
-    ['01JDEMO0003SLOT0000001', 0, '18:00:00', '19:30:00', 20, 8, 'Early Dinner'],
-    ['01JDEMO0003SLOT0000002', 0, '19:30:00', '21:00:00', 20, 8, 'Main Dinner'],
-    ['01JDEMO0003SLOT0000003', 0, '21:00:00', '22:30:00', 15, 6, 'Late Dinner'],
-    ['01JDEMO0003SLOT0000004', 1, '18:00:00', '19:30:00', 20, 8, 'Early Dinner'],
-    ['01JDEMO0003SLOT0000005', 1, '19:30:00', '21:00:00', 20, 8, 'Main Dinner'],
-    ['01JDEMO0003SLOT0000006', 1, '21:00:00', '22:30:00', 15, 6, 'Late Dinner'],
-    ['01JDEMO0003SLOT0000007', 2, '18:00:00', '19:30:00', 20, 8, 'Early Dinner'],
-    ['01JDEMO0003SLOT0000008', 2, '19:30:00', '21:00:00', 20, 8, 'Main Dinner'],
-    ['01JDEMO0003SLOT0000009', 2, '21:00:00', '22:30:00', 15, 6, 'Late Dinner'],
-    ['01JDEMO0003SLOT0000010', 3, '18:00:00', '19:30:00', 20, 8, 'Early Dinner'],
-    ['01JDEMO0003SLOT0000011', 3, '19:30:00', '21:00:00', 20, 8, 'Main Dinner'],
-    ['01JDEMO0003SLOT0000012', 3, '21:00:00', '22:30:00', 15, 6, 'Late Dinner'],
-    ['01JDEMO0003SLOT0000013', 4, '18:00:00', '19:30:00', 25, 10, 'Early Dinner'],
-    ['01JDEMO0003SLOT0000014', 4, '19:30:00', '21:00:00', 25, 10, 'Main Dinner'],
-    ['01JDEMO0003SLOT0000015', 4, '21:00:00', '22:30:00', 20, 8, 'Late Dinner'],
-    ['01JDEMO0003SLOT0000016', 5, '18:00:00', '19:30:00', 25, 10, 'Early Dinner'],
-    ['01JDEMO0003SLOT0000017', 5, '19:30:00', '21:00:00', 25, 10, 'Main Dinner'],
-    ['01JDEMO0003SLOT0000018', 5, '21:00:00', '22:30:00', 20, 8, 'Late Dinner'],
+    ['01JDEMO0003SLOT0000001', 0, '18:00:00', '19:30:00', 20, 1, 8, 'Early Dinner'],
+    ['01JDEMO0003SLOT0000002', 0, '19:30:00', '21:00:00', 20, 1, 8, 'Main Dinner'],
+    ['01JDEMO0003SLOT0000003', 0, '21:00:00', '22:30:00', 15, 2, 6, 'Late Dinner'],
+    ['01JDEMO0003SLOT0000004', 1, '18:00:00', '19:30:00', 20, 1, 8, 'Early Dinner'],
+    ['01JDEMO0003SLOT0000005', 1, '19:30:00', '21:00:00', 20, 1, 8, 'Main Dinner'],
+    ['01JDEMO0003SLOT0000006', 1, '21:00:00', '22:30:00', 15, 2, 6, 'Late Dinner'],
+    ['01JDEMO0003SLOT0000007', 2, '18:00:00', '19:30:00', 20, 1, 8, 'Early Dinner'],
+    ['01JDEMO0003SLOT0000008', 2, '19:30:00', '21:00:00', 20, 1, 8, 'Main Dinner'],
+    ['01JDEMO0003SLOT0000009', 2, '21:00:00', '22:30:00', 15, 2, 6, 'Late Dinner'],
+    ['01JDEMO0003SLOT0000010', 3, '18:00:00', '19:30:00', 20, 1, 8, 'Early Dinner'],
+    ['01JDEMO0003SLOT0000011', 3, '19:30:00', '21:00:00', 20, 1, 8, 'Main Dinner'],
+    ['01JDEMO0003SLOT0000012', 3, '21:00:00', '22:30:00', 15, 2, 6, 'Late Dinner'],
+    ['01JDEMO0003SLOT0000013', 4, '18:00:00', '19:30:00', 25, 1, 10, 'Early Dinner'],
+    ['01JDEMO0003SLOT0000014', 4, '19:30:00', '21:00:00', 25, 1, 10, 'Main Dinner'],
+    ['01JDEMO0003SLOT0000015', 4, '21:00:00', '22:30:00', 20, 2, 8, 'Late Dinner'],
+    ['01JDEMO0003SLOT0000016', 5, '18:00:00', '19:30:00', 25, 1, 10, 'Early Dinner'],
+    ['01JDEMO0003SLOT0000017', 5, '19:30:00', '21:00:00', 25, 1, 10, 'Main Dinner'],
+    ['01JDEMO0003SLOT0000018', 5, '21:00:00', '22:30:00', 20, 2, 8, 'Late Dinner'],
 ];
-foreach ($trattoriaSlots as [$slotId, $dow, $start, $end, $cap, $maxParty, $label]) {
-    $slotStmt->execute([$slotId, $trattoriaId, $dow, $start, $end, $cap, $maxParty, $label]);
+foreach ($trattoriaSlots as [$slotId, $dow, $start, $end, $cap, $minParty, $maxParty, $label]) {
+    $slotStmt->execute([$slotId, $trattoriaId, $dow, $start, $end, $cap, $minParty, $maxParty, $label]);
 }
 
 // Trattoria Roma — owner
@@ -828,29 +831,25 @@ $stmt->execute([$workshopCustomers[0][0], $workshopId, $workshopCustomers[0][1],
 $stmt->execute([$workshopCustomers[1][0], $workshopId, $workshopCustomers[1][1], $workshopCustomers[1][2], $workshopCustomers[1][3], 2]);
 $stmt->execute([$workshopCustomers[2][0], $workshopId, $workshopCustomers[2][1], $workshopCustomers[2][2], $workshopCustomers[2][3], 1]);
 
-// Workshop Studio — events
+// Workshop Studio — events (with per-booking spot limits)
+// [id, name, desc, location, price, max_participants, min_spot_count, max_spot_count, date_offset, start, end, is_recurring, rrule, exceptions, allow_waitlist, waitlist_max]
 $workshopEvents = [
-    // One-off half-day: Woodworking 101
-    ['01JDEMO0004EVT00000001', 'Woodworking 101', 'Build your very first cutting board from European beech. All tools and materials provided.', 'Workshop Room A', 55.00, 12, '+5 days', '09:00', '13:00', 0, null, null, 0, 0],
-    // One-off full-day: Watercolor Landscapes
-    ['01JDEMO0004EVT00000002', 'Watercolor Landscapes', 'Capture the essence of light and shadow in a full-day plein-air painting session.', 'Art Studio', 85.00, 8, '+12 days', '10:00', '17:00', 0, null, null, 1, 3],
-    // Recurring weekly: Morning Yoga Flow
-    ['01JDEMO0004EVT00000003', 'Morning Yoga Flow', 'Energizing vinyasa class suitable for all levels. Bring your own mat or borrow one from us.', 'Studio B', 15.00, 20, '+3 days', '08:00', '09:00', 1, 'FREQ=WEEKLY;COUNT=12', null, 1, 5],
-    // One-off evening: Wine & Cheese Tasting
-    ['01JDEMO0004EVT00000004', 'Wine & Cheese Tasting', 'Explore five premier cru wines paired with artisan cheeses from the region.', 'Tasting Room', 45.00, 16, '+8 days', '19:00', '21:30', 0, null, null, 1, 4],
-    // One-off: Pottery Wheel Basics (nearly full — great for waitlist demo)
-    ['01JDEMO0004EVT00000005', 'Pottery Wheel Basics', 'Get your hands dirty! Learn centering, pulling, and trimming on the wheel.', 'Ceramics Lab', 65.00, 4, '+15 days', '14:00', '18:00', 0, null, null, 1, 2],
+    ['01JDEMO0004EVT00000001', 'Woodworking 101', 'Build your very first cutting board from European beech. All tools and materials provided.', 'Workshop Room A', 55.00, 12, 1, null, '+5 days', '09:00', '13:00', 0, null, null, 0, 0],
+    ['01JDEMO0004EVT00000002', 'Watercolor Landscapes', 'Capture the essence of light and shadow in a full-day plein-air painting session.', 'Art Studio', 85.00, 8, 1, null, '+12 days', '10:00', '17:00', 0, null, null, 1, 3],
+    ['01JDEMO0004EVT00000003', 'Morning Yoga Flow', 'Energizing vinyasa class suitable for all levels. Bring your own mat or borrow one from us.', 'Studio B', 15.00, 20, 1, 4, '+3 days', '08:00', '09:00', 1, 'FREQ=WEEKLY;COUNT=12', null, 1, 5],
+    ['01JDEMO0004EVT00000004', 'Wine & Cheese Tasting', 'Explore five premier cru wines paired with artisan cheeses from the region.', 'Tasting Room', 45.00, 16, 1, 4, '+8 days', '19:00', '21:30', 0, null, null, 1, 4],
+    ['01JDEMO0004EVT00000005', 'Pottery Wheel Basics', 'Get your hands dirty! Learn centering, pulling, and trimming on the wheel.', 'Ceramics Lab', 65.00, 4, 1, 2, '+15 days', '14:00', '18:00', 0, null, null, 1, 2],
 ];
 $eventStmt = $pdo->prepare("
     INSERT INTO events (id, tenant_id, name, description, location, price,
-                        max_participants, start_datetime, end_datetime,
+                        max_participants, min_spot_count, max_spot_count, start_datetime, end_datetime,
                         is_recurring, rrule, exception_dates,
                         allow_waitlist, waitlist_max, is_active)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
 ");
-foreach ($workshopEvents as [$eid, $name, $desc, $loc, $price, $maxP, $dateOff, $start, $end, $isRec, $rrule, $exc, $wl, $wlMax]) {
+foreach ($workshopEvents as [$eid, $name, $desc, $loc, $price, $maxP, $minSpots, $maxSpots, $dateOff, $start, $end, $isRec, $rrule, $exc, $wl, $wlMax]) {
     $date = (clone $today)->modify($dateOff)->format('Y-m-d');
-    $eventStmt->execute([$eid, $workshopId, $name, $desc, $loc, $price, $maxP,
+    $eventStmt->execute([$eid, $workshopId, $name, $desc, $loc, $price, $maxP, $minSpots, $maxSpots,
                          "{$date} {$start}:00", "{$date} {$end}:00",
                          $isRec, $rrule, $exc, $wl, $wlMax]);
 }

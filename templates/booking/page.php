@@ -276,7 +276,7 @@
                 <div class="vb-book-party-size">
                     <div class="vb-book-counter">
                         <button type="button" class="vb-book-counter-btn" @click="decrementPartySize"
-                                x-bind:disabled="partySize <= 1">
+                                x-bind:disabled="partySize <= minPartySize">
                             <i data-lucide="minus"></i>
                         </button>
                         <span class="vb-book-counter-value" x-text="partySize"></span>
@@ -286,6 +286,9 @@
                         </button>
                     </div>
                     <div class="vb-book-counter-label" x-text="partySize === 1 ? t('capacity.guest') : t('capacity.guests')"></div>
+                    <template x-if="minPartySize > 1">
+                        <div class="vb-book-counter-hint" x-text="t('capacity.min_guests_hint').replace(':count', minPartySize)" style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.6;"></div>
+                    </template>
                 </div>
                 <div class="vb-book-form-actions" style="margin-top: 1.5rem;">
                     <button type="button" class="vb-book-btn vb-book-btn-primary" @click="confirmPartySize"
@@ -475,16 +478,23 @@
                 <div class="vb-book-party-size">
                     <div class="vb-book-counter">
                         <button type="button" class="vb-book-counter-btn" @click="decrementEventSpots"
-                                x-bind:disabled="eventSpotCount <= 1">
+                                x-bind:disabled="eventSpotCount <= eventMinSpots">
                             <i data-lucide="minus"></i>
                         </button>
                         <span class="vb-book-counter-value" x-text="eventSpotCount"></span>
                         <button type="button" class="vb-book-counter-btn" @click="incrementEventSpots"
-                                x-bind:disabled="selectedEvent && eventSpotCount >= selectedEvent.remaining">
+                                x-bind:disabled="eventSpotCount >= eventMaxSpots">
                             <i data-lucide="plus"></i>
                         </button>
                     </div>
                     <div class="vb-book-counter-label" x-text="eventSpotCount === 1 ? t('event.spot') : t('event.spots')"></div>
+                    <template x-if="eventSpotCount >= eventMaxSpots && selectedEvent && selectedEvent.remaining > 0">
+                        <div class="vb-book-counter-hint" style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.6;"
+                             x-text="selectedEvent.max_spot_count && eventSpotCount >= selectedEvent.max_spot_count
+                                 ? t('event.max_spots_reached').replace(':count', selectedEvent.max_spot_count)
+                                 : t('event.max_reached')">
+                        </div>
+                    </template>
                 </div>
                 <div class="vb-book-form-actions" style="margin-top: 1.5rem;">
                     <button type="button" class="vb-book-btn vb-book-btn-primary" @click="confirmEventSpots"
