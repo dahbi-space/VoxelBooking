@@ -494,7 +494,8 @@ final class TenantSettingsController
             return $this->forbidden($request);
         }
 
-        $types = ['confirmation', 'reminder', 'cancellation', 'reschedule_confirmation', 'approval_request', 'approval_confirmed'];
+        // reschedule_confirmation is excluded until a dedicated reschedule flow exists.
+        $types = ['confirmation', 'reminder', 'cancellation', 'approval_request', 'approval_confirmed'];
         $fields = ['subject', 'heading', 'body_intro', 'body_outro', 'cta_label'];
 
         foreach ($types as $type) {

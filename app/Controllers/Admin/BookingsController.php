@@ -908,14 +908,24 @@ final class BookingsController
             return Response::redirect($redirectBase);
         }
 
-        // Rescheduled status requires a dedicated reschedule flow that updates
-        // booking timestamps first. Block it from the simple status dropdown.
-        if ($newStatus === 'rescheduled') {
+        $oldStatus = $booking['status'];
+
+        // Enforce allowed status transitions. Must match the UI transition map
+        // in show.php to prevent crafted POSTs from bypassing the dropdown.
+        $transitions = [
+            'pending'    => ['confirmed', 'cancelled'],
+            'confirmed'  => ['cancelled', 'completed', 'no_show'],
+            'waitlisted' => ['confirmed', 'cancelled'],
+            'cancelled'  => ['confirmed'],
+            'completed'  => [],
+            'no_show'    => ['confirmed'],
+        ];
+        $allowed = $transitions[$oldStatus] ?? [];
+
+        if (!in_array($newStatus, $allowed, true)) {
             $this->setFlash('error', __('admin.bookings.flash_status_failed'));
             return Response::redirect("{$redirectBase}/{$id}");
         }
-
-        $oldStatus = $booking['status'];
 
         if (Booking::updateStatus($id, $newStatus)) {
             AuditLog::log('booking.status_changed', 'booking', $id, [
