@@ -1114,6 +1114,15 @@ final class BookingsController
                 return; // Too late to schedule
             }
 
+            // Dedupe: skip if an unsent reminder already exists for this booking
+            $existing = Database::query(
+                "SELECT COUNT(*) as cnt FROM `reminders` WHERE `booking_id` = ? AND `sent_at` IS NULL",
+                [$booking['id']]
+            );
+            if ((int) ($existing[0]['cnt'] ?? 0) > 0) {
+                return;
+            }
+
             $reminderId = \App\Engine\Ulid::generate();
             Database::execute(
                 "INSERT INTO `reminders` (`id`, `booking_id`, `tenant_id`, `scheduled_at`) VALUES (?, ?, ?, ?)",

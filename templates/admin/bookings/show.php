@@ -142,7 +142,20 @@ ob_start();
             <div class="vb-form-group">
                 <label for="booking_status" class="vb-label"><?= __('admin.bookings.status') ?></label>
                 <select id="booking_status" name="status" class="vb-select">
-                    <?php foreach (['pending','confirmed','cancelled','completed','no_show','waitlisted'] as $s): ?>
+                    <?php
+                    // Allowed transitions per current status. The current status is
+                    // always included so the dropdown has a valid default selection.
+                    $transitions = [
+                        'pending'    => ['pending', 'confirmed', 'cancelled'],
+                        'confirmed'  => ['confirmed', 'cancelled', 'completed', 'no_show'],
+                        'waitlisted' => ['waitlisted', 'confirmed', 'cancelled'],
+                        'cancelled'  => ['cancelled', 'confirmed'],
+                        'completed'  => ['completed'],
+                        'no_show'    => ['no_show', 'confirmed'],
+                    ];
+                    $allowed = $transitions[$booking['status']] ?? [$booking['status']];
+                    ?>
+                    <?php foreach ($allowed as $s): ?>
                         <option value="<?= $s ?>" <?= $booking['status'] === $s ? 'selected' : '' ?>>
                             <?= __('admin.bookings.status_' . $s) ?>
                         </option>
