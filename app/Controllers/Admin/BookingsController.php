@@ -320,10 +320,16 @@ final class BookingsController
             ];
 
             // Carry forward optional fields from the original booking
-            foreach (['service_id', 'staff_id', 'resource_id', 'event_id', 'party_size', 'notes', 'customer_timezone'] as $field) {
+            foreach (['service_id', 'staff_id', 'resource_id', 'event_id', 'party_size', 'notes', 'internal_notes', 'customer_timezone'] as $field) {
                 if (!empty($booking[$field])) {
                     $newBookingData[$field] = $booking[$field];
                 }
+            }
+
+            // Preserve custom field data (customer answers) — pass as-is,
+            // BookingService handles JSON encoding when needed
+            if (!empty($booking['custom_field_data'])) {
+                $newBookingData['custom_field_data'] = $booking['custom_field_data'];
             }
 
             $result = BookingService::createBooking($newBookingData, $tenant, false);
