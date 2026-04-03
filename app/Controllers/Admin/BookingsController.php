@@ -178,6 +178,10 @@ final class BookingsController
 
     public function reschedule(Request $request): Response
     {
+        if (!Auth::isOperator()) {
+            return $this->forbidden($request);
+        }
+
         return $this->doReschedule($request, '/admin/bookings');
     }
 
@@ -203,7 +207,12 @@ final class BookingsController
      * sends the reschedule confirmation email to the customer, and fires
      * the staff notification.
      *
-     * Only statuses 'confirmed' and 'pending' can be rescheduled.
+     * Only confirmed bookings can be rescheduled. Pending bookings must
+     * go through the approval flow first — rescheduling a pending booking
+     * would silently bypass approval and schedule reminders prematurely.
+     *
+     * Only the timeslot pattern is supported in this slice. Other patterns
+     * are rejected until their availability validators are implemented.
      */
     private function doReschedule(Request $request, string $redirectBase): Response
     {
@@ -215,8 +224,15 @@ final class BookingsController
             return Response::redirect($redirectBase);
         }
 
-        // Only confirmed and pending bookings can be rescheduled
-        if (!in_array($booking['status'], ['confirmed', 'pending'], true)) {
+        // Only confirmed bookings can be rescheduled
+        if ($booking['status'] !== 'confirmed') {
+            $this->setFlash('error', __('admin.bookings.error_reschedule_not_allowed'));
+            return Response::redirect("{$redirectBase}/{$id}");
+        }
+
+        // Only timeslot pattern is supported for reschedule in this slice
+        $pattern = $booking['booking_pattern'] ?? 'timeslot';
+        if ($pattern !== 'timeslot') {
             $this->setFlash('error', __('admin.bookings.error_reschedule_not_allowed'));
             return Response::redirect("{$redirectBase}/{$id}");
         }
@@ -256,45 +272,41 @@ final class BookingsController
             return Response::redirect("{$redirectBase}/{$id}");
         }
 
-        // Pattern-aware availability check + booking creation
-        $pattern = $booking['booking_pattern'] ?? 'timeslot';
+        // Timeslot availability check + booking creation
         $pdo = Database::connect();
         $pdo->beginTransaction();
 
         try {
-            if ($pattern === 'timeslot') {
-                // Lock + recheck
-                $lockSql = "SELECT `id` FROM `bookings`
-                            WHERE `tenant_id` = ? AND `status` IN ('confirmed', 'rescheduled')
-                            AND DATE(`start_datetime`) = ?";
-                $lockParams = [$tenantId, $newDate];
-                if ($booking['staff_id']) {
-                    $lockSql .= ' AND `staff_id` = ?';
-                    $lockParams[] = $booking['staff_id'];
-                }
-                $lockSql .= ' FOR UPDATE';
-                $lockStmt = $pdo->prepare($lockSql);
-                $lockStmt->execute($lockParams);
+            // Lock + recheck availability
+            $lockSql = "SELECT `id` FROM `bookings`
+                        WHERE `tenant_id` = ? AND `status` IN ('confirmed', 'rescheduled')
+                        AND DATE(`start_datetime`) = ?";
+            $lockParams = [$tenantId, $newDate];
+            if ($booking['staff_id']) {
+                $lockSql .= ' AND `staff_id` = ?';
+                $lockParams[] = $booking['staff_id'];
+            }
+            $lockSql .= ' FOR UPDATE';
+            $lockStmt = $pdo->prepare($lockSql);
+            $lockStmt->execute($lockParams);
 
-                $availResult = TimeSlotCalculator::getAvailableSlots(
-                    $tenant, $newDate, $booking['service_id'], $booking['staff_id']
-                );
+            $availResult = TimeSlotCalculator::getAvailableSlots(
+                $tenant, $newDate, $booking['service_id'], $booking['staff_id']
+            );
 
-                $stillAvailable = false;
-                foreach ($availResult['slots'] as $slot) {
-                    if ($slot['time'] === $newTime) {
-                        $stillAvailable = true;
-                        break;
-                    }
-                }
-
-                if (!$stillAvailable) {
-                    $pdo->rollBack();
-                    $this->setFlash('error', __('admin.bookings.flash_slot_taken'));
-                    return Response::redirect("{$redirectBase}/{$id}");
+            $stillAvailable = false;
+            foreach ($availResult['slots'] as $slot) {
+                if ($slot['time'] === $newTime) {
+                    $stillAvailable = true;
+                    break;
                 }
             }
-            // Resource/capacity/event patterns can be added later
+
+            if (!$stillAvailable) {
+                $pdo->rollBack();
+                $this->setFlash('error', __('admin.bookings.flash_slot_taken'));
+                return Response::redirect("{$redirectBase}/{$id}");
+            }
 
             // Create the replacement booking
             $newBookingData = [

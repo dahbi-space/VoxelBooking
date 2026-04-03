@@ -184,8 +184,11 @@ ob_start();
         <?php endif; ?>
 
         <?php
-        // Reschedule button: only for confirmed or pending bookings
-        $canReschedule = in_array($booking['status'], ['confirmed', 'pending'], true);
+        // Reschedule button: only for confirmed timeslot bookings.
+        // Pending bookings must go through approval first.
+        // Non-timeslot patterns are not yet supported for reschedule.
+        $canReschedule = $booking['status'] === 'confirmed'
+            && ($booking['booking_pattern'] ?? 'timeslot') === 'timeslot';
         ?>
         <?php if ($canReschedule): ?>
         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--vb-border, #e5e7eb);">
