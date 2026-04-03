@@ -38,6 +38,9 @@ return [
         'change_service'     => '← Change service',
         'change_staff'       => '← Change team member',
         'change_date'        => '← Change date or time',
+        'generic'            => '← Back',
+        'change_guests'      => '← Change guests',
+        'change_spots'       => '← Change spots',
         'edit_details'       => '← Edit details',
         'change_party_size'  => '← Change party size',
         'change_date_cap'    => '← Change date',
@@ -123,6 +126,7 @@ return [
         'amenities_label'   => 'Amenities',
         'capacity_label'    => 'Up to :count guests',
         'stay_range'        => ':min–:max nights',
+        'max_guests_reached'         => 'Maximum :count guests for this room',
         'error_resource_not_found'    => 'Room not found.',
         'error_invalid_date_range'    => 'Check-out must be after check-in.',
         'error_min_stay_violation'    => 'Minimum stay not met.',
@@ -170,6 +174,7 @@ return [
         'spots_remaining'     => ':count spots left',
         'slot_full'           => 'Full',
         'min_guests_hint'     => 'Minimum :count guests',
+        'max_party_size_reached' => 'Maximum :count guests per booking',
     ],
 
     // ── Event-Pattern Booking Page ──

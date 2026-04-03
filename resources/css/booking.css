@@ -686,7 +686,7 @@ body {
 
 .vb-book-calendar-cell.is-range::after {
   background: var(--vb-brand);
-  opacity: 0.3;
+  opacity: 0.45;
 }
 
 .vb-book-calendar-grid {

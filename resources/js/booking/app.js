@@ -21,6 +21,7 @@ import {
     User, Users, ExternalLink, Download, Plus, Minus, MapPin, Ticket,
     Sun, Moon,
 } from 'lucide';
+import { resolveInitialPartySize } from './party-size.js';
 
 const ICON_SET = {
     ChevronLeft, ChevronRight, ChevronDown, Clock, Globe, Check, X,
@@ -149,7 +150,7 @@ Alpine.data('bookingWizard', () => ({
     checkInYear: new Date().getFullYear(),
 
     // Capacity pattern state
-    partySize: 2,
+    partySize: resolveInitialPartySize(config.min_party_size || 1, config.max_party_size || 8),
     minPartySize: 1,
     maxPartySize: 8,
     capacitySlots: [],
@@ -1426,6 +1427,13 @@ Alpine.data('bookingWizard', () => ({
         return 'date';
     },
 
+    get activeDetailsBackLabel() {
+        if (config.booking_pattern === 'resource') return t('back.change_guests');
+        if (config.booking_pattern === 'capacity') return t('back.change_date');
+        if (config.booking_pattern === 'event') return t('back.change_spots');
+        return t('back.change_date');
+    },
+
     async submitResourceBooking() {
         if (config.is_demo) {
             this.showToast(t('demo_notice'), 'error');
@@ -1506,7 +1514,7 @@ Alpine.data('bookingWizard', () => ({
         // Set party size bounds from config
         this.minPartySize = config.min_party_size || 1;
         this.maxPartySize = config.max_party_size || 8;
-        this.partySize = Math.max(this.minPartySize, 2);
+        this.partySize = resolveInitialPartySize(this.minPartySize, this.maxPartySize);
         this.goToStep('party-size');
     },
 

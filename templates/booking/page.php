@@ -211,7 +211,7 @@
                 <!-- Back link -->
                 <template x-if="resourceDateBackTarget">
                     <div class="vb-book-back-link">
-                        <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack(resourceDateBackTarget)" x-text="t('back.change_service')"></button>
+                        <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack(resourceDateBackTarget)" x-text="t('back.generic')"></button>
                     </div>
                 </template>
             </div>
@@ -256,6 +256,10 @@
                         </button>
                     </div>
                     <div class="vb-book-counter-label" x-text="guestCount === 1 ? t('capacity.guest') : t('capacity.guests')"></div>
+                    <template x-if="guestCount >= guestMax && guestMax > 0">
+                        <div class="vb-book-counter-hint" style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.6;"
+                             x-text="t('resource.max_guests_reached').replace(':count', guestMax)"></div>
+                    </template>
                 </div>
 
                 <div class="vb-book-form-actions" style="margin-top: 1rem;">
@@ -288,6 +292,9 @@
                     <div class="vb-book-counter-label" x-text="partySize === 1 ? t('capacity.guest') : t('capacity.guests')"></div>
                     <template x-if="minPartySize > 1">
                         <div class="vb-book-counter-hint" x-text="t('capacity.min_guests_hint').replace(':count', minPartySize)" style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.6;"></div>
+                    </template>
+                    <template x-if="partySize >= maxPartySize && maxPartySize > 0">
+                        <div class="vb-book-counter-hint" x-text="t('capacity.max_party_size_reached').replace(':count', maxPartySize)" style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.6;"></div>
                     </template>
                 </div>
                 <div class="vb-book-form-actions" style="margin-top: 1.5rem;">
@@ -762,7 +769,7 @@
                             <span class="vb-book-btn-text" x-text="t('buttons.review')"></span>
                         </button>
                         <div class="vb-book-back-link">
-                            <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack(activeDetailsBackTarget)" x-text="t('back.change_date')"></button>
+                            <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack(activeDetailsBackTarget)" x-text="activeDetailsBackLabel"></button>
                         </div>
                     </div>
                 </form>
