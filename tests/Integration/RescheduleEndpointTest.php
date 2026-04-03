@@ -27,6 +27,8 @@ final class RescheduleEndpointTest extends TestCase
 
     private const RESCHEDULE_BOOKING_ID = '01TESTRESCHEDULEBOOKING0';
     private const RESCHEDULE_CUSTOMER_ID = '01TESTRESCHEDCUST000000';
+    private const RESCHEDULE_SERVICE_ID = '01TESTRESCHEDSVC00000000';
+    private const HAPPY_BOOKING_ID = '01TESTRESCHEDHAPPY000000';
 
     public static function setUpBeforeClass(): void
     {
@@ -175,20 +177,18 @@ final class RescheduleEndpointTest extends TestCase
 
     public function test_reschedule_to_same_slot_is_rejected(): void
     {
-        // Reset fixture booking to confirmed
-        Database::execute(
-            "UPDATE `bookings` SET `status` = 'confirmed' WHERE `id` = ?",
-            [self::RESCHEDULE_BOOKING_ID]
-        );
+        $sameSlotId = '01TESTRESCHEDSAMESLOT000';
+        $startDate = date('Y-m-d', strtotime('+2 days'));
+        $this->insertBooking($sameSlotId, 'confirmed', 'timeslot');
 
         $this->doLoginOperator();
-        $r = $this->postWithCsrf('/admin/bookings/' . self::RESCHEDULE_BOOKING_ID . '/reschedule', [
-            'new_date' => date('Y-m-d', strtotime('+2 days')),
+        $r = $this->postWithCsrf('/admin/bookings/' . $sameSlotId . '/reschedule', [
+            'new_date' => $startDate,
             'new_time' => '10:00',
         ]);
 
         $this->assertSame(302, $r['code']);
-        $this->assertStringContainsString(self::RESCHEDULE_BOOKING_ID, $r['location']);
+        $this->assertStringContainsString($sameSlotId, $r['location']);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -220,13 +220,11 @@ final class RescheduleEndpointTest extends TestCase
 
     public function test_reschedule_with_invalid_date_is_rejected(): void
     {
-        Database::execute(
-            "UPDATE `bookings` SET `status` = 'confirmed' WHERE `id` = ?",
-            [self::RESCHEDULE_BOOKING_ID]
-        );
+        $badDateId = '01TESTRESCHEDBADDATE0000';
+        $this->insertBooking($badDateId, 'confirmed', 'timeslot');
 
         $this->doLoginOperator();
-        $r = $this->postWithCsrf('/admin/bookings/' . self::RESCHEDULE_BOOKING_ID . '/reschedule', [
+        $r = $this->postWithCsrf('/admin/bookings/' . $badDateId . '/reschedule', [
             'new_date' => 'not-a-date',
             'new_time' => '10:00',
         ]);
@@ -236,18 +234,107 @@ final class RescheduleEndpointTest extends TestCase
 
     public function test_reschedule_with_invalid_time_is_rejected(): void
     {
-        Database::execute(
-            "UPDATE `bookings` SET `status` = 'confirmed' WHERE `id` = ?",
-            [self::RESCHEDULE_BOOKING_ID]
-        );
+        $badTimeId = '01TESTRESCHEDBADTIME0000';
+        $this->insertBooking($badTimeId, 'confirmed', 'timeslot');
 
         $this->doLoginOperator();
-        $r = $this->postWithCsrf('/admin/bookings/' . self::RESCHEDULE_BOOKING_ID . '/reschedule', [
+        $r = $this->postWithCsrf('/admin/bookings/' . $badTimeId . '/reschedule', [
             'new_date' => date('Y-m-d', strtotime('+3 days')),
             'new_time' => 'invalid',
         ]);
 
         $this->assertSame(302, $r['code']);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Happy path: successful reschedule
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_successful_reschedule_creates_chain_and_preserves_data(): void
+    {
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+
+        // Determine a valid target date (weekday, +3 days, clamped to avoid weekends)
+        $targetTs = strtotime('+3 days');
+        // Walk to next weekday if Saturday/Sunday
+        while (date('N', $targetTs) >= 6) {
+            $targetTs = strtotime('+1 day', $targetTs);
+        }
+        $targetDate = date('Y-m-d', $targetTs);
+
+        // Reset the happy-path booking to confirmed with custom data
+        Database::execute("DELETE FROM `bookings` WHERE `id` = ?", [self::HAPPY_BOOKING_ID]);
+        $origDate = date('Y-m-d', strtotime('+2 days'));
+        Database::execute(
+            "INSERT INTO `bookings`
+             (`id`, `tenant_id`, `booking_pattern`, `customer_id`, `service_id`,
+              `start_datetime`, `end_datetime`, `status`, `source`,
+              `custom_field_data`, `internal_notes`)
+             VALUES (?, ?, 'timeslot', ?, ?,
+              '{$origDate} 10:00:00', '{$origDate} 10:30:00',
+              'confirmed', 'web',
+              '{\"allergies\":\"peanuts\"}', 'VIP customer — needs extra time')",
+            [self::HAPPY_BOOKING_ID, $tenantId, self::RESCHEDULE_CUSTOMER_ID, self::RESCHEDULE_SERVICE_ID]
+        );
+
+        // Clear any prior reschedule-produced bookings for clean assertion
+        Database::execute(
+            "DELETE FROM `bookings` WHERE `tenant_id` = ? AND `source` = 'admin' AND `id` != ?",
+            [$tenantId, self::HAPPY_BOOKING_ID]
+        );
+
+        $this->doLoginOperator();
+        $r = $this->postWithCsrf('/admin/bookings/' . self::HAPPY_BOOKING_ID . '/reschedule', [
+            'new_date' => $targetDate,
+            'new_time' => '11:00',
+        ]);
+
+        // Should redirect to the NEW booking's detail page (302)
+        $this->assertSame(302, $r['code'], 'Successful reschedule should redirect');
+        // Redirect should NOT point back to the original booking
+        $this->assertStringNotContainsString(self::HAPPY_BOOKING_ID, $r['location'],
+            'Redirect should point to the new booking, not the original');
+
+        // Verify original booking is now rescheduled with rescheduled_to_id
+        $original = Database::query(
+            "SELECT `status`, `rescheduled_to_id` FROM `bookings` WHERE `id` = ?",
+            [self::HAPPY_BOOKING_ID]
+        );
+        $this->assertSame('rescheduled', $original[0]['status'] ?? null,
+            'Original booking should be marked rescheduled');
+        $this->assertNotNull($original[0]['rescheduled_to_id'] ?? null,
+            'Original booking should have rescheduled_to_id set');
+
+        $newBookingId = $original[0]['rescheduled_to_id'];
+
+        // Verify the new booking exists with correct data
+        $newBooking = Database::query(
+            "SELECT `status`, `booking_pattern`, `customer_id`, `service_id`,
+                    `start_datetime`, `custom_field_data`, `internal_notes`, `source`
+             FROM `bookings` WHERE `id` = ?",
+            [$newBookingId]
+        );
+        $this->assertNotEmpty($newBooking, 'New booking should exist');
+        $this->assertSame('confirmed', $newBooking[0]['status']);
+        $this->assertSame('timeslot', $newBooking[0]['booking_pattern']);
+        $this->assertSame(self::RESCHEDULE_CUSTOMER_ID, $newBooking[0]['customer_id']);
+        $this->assertSame(self::RESCHEDULE_SERVICE_ID, $newBooking[0]['service_id']);
+        $this->assertSame('admin', $newBooking[0]['source']);
+        $this->assertStringContainsString($targetDate . ' 11:00', $newBooking[0]['start_datetime']);
+
+        // Verify custom_field_data and internal_notes were preserved
+        $this->assertStringContainsString('peanuts', $newBooking[0]['custom_field_data'] ?? '',
+            'custom_field_data should be preserved on the new booking');
+        $this->assertSame('VIP customer — needs extra time', $newBooking[0]['internal_notes'] ?? null,
+            'internal_notes should be preserved on the new booking');
+
+        // Verify audit log entry
+        $audit = Database::query(
+            "SELECT `action`, `details` FROM `audit_log` WHERE `entity_type` = 'booking' AND `entity_id` = ? ORDER BY `created_at` DESC LIMIT 1",
+            [self::HAPPY_BOOKING_ID]
+        );
+        $this->assertNotEmpty($audit, 'Audit log entry should exist for reschedule');
+        $this->assertSame('booking.rescheduled', $audit[0]['action']);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -261,6 +348,7 @@ final class RescheduleEndpointTest extends TestCase
         // Clean prior reschedule test bookings
         Database::execute("DELETE FROM `bookings` WHERE `id` LIKE '01TESTRESCHED%'");
         Database::execute("DELETE FROM `customers` WHERE `id` = ?", [self::RESCHEDULE_CUSTOMER_ID]);
+        Database::execute("DELETE FROM `services` WHERE `id` = ?", [self::RESCHEDULE_SERVICE_ID]);
 
         // Customer
         Database::execute(
@@ -268,6 +356,27 @@ final class RescheduleEndpointTest extends TestCase
              VALUES (?, ?, 'Reschedule Test Customer', 'resched@example.com')",
             [self::RESCHEDULE_CUSTOMER_ID, $tenantId]
         );
+
+        // Service (30-minute duration for slot calculation)
+        Database::execute(
+            "INSERT INTO `services` (`id`, `tenant_id`, `name`, `duration_minutes`, `is_active`, `sort_order`)
+             VALUES (?, ?, 'Reschedule Test Service', 30, 1, 99)",
+            [self::RESCHEDULE_SERVICE_ID, $tenantId]
+        );
+
+        // Seed weekday availability (Mon-Fri = day_of_week 0-4)
+        // Clean first since TestFixtures::provision() re-creates the tenant
+        Database::execute(
+            "DELETE FROM `availability` WHERE `tenant_id` = ? AND `staff_id` IS NULL",
+            [$tenantId]
+        );
+        for ($dow = 0; $dow <= 4; $dow++) {
+            Database::execute(
+                "INSERT INTO `availability` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `is_available`)
+                 VALUES (?, ?, ?, '08:00', '18:00', 1)",
+                ["01TESTRESCHEDAVAIL00000{$dow}", $tenantId, $dow]
+            );
+        }
 
         // Confirmed timeslot booking (the main fixture)
         $startDate = date('Y-m-d', strtotime('+2 days'));

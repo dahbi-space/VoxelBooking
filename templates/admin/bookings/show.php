@@ -187,8 +187,10 @@ ob_start();
         // Reschedule button: only for confirmed timeslot bookings.
         // Pending bookings must go through approval first.
         // Non-timeslot patterns are not yet supported for reschedule.
+        // Hidden in demo mode (write-blocked — demo checklist §4).
         $canReschedule = $booking['status'] === 'confirmed'
-            && ($booking['booking_pattern'] ?? 'timeslot') === 'timeslot';
+            && ($booking['booking_pattern'] ?? 'timeslot') === 'timeslot'
+            && !\App\Engine\DemoMode::isActive();
         ?>
         <?php if ($canReschedule): ?>
         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--vb-border, #e5e7eb);">
