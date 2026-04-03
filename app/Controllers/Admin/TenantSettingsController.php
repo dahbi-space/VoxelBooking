@@ -494,7 +494,9 @@ final class TenantSettingsController
             return $this->forbidden($request);
         }
 
-        // reschedule_confirmation is excluded until a dedicated reschedule flow exists.
+        // Only customer-facing types are tenant-customizable.
+        // staff_notification is operational with fixed copy (not editable).
+        // reschedule_confirmation is deferred until a dedicated reschedule flow exists.
         $types = ['confirmation', 'reminder', 'cancellation', 'approval_request', 'approval_confirmed'];
         $fields = ['subject', 'heading', 'body_intro', 'body_outro', 'cta_label'];
 

@@ -19,7 +19,9 @@ foreach ($templates as $tpl) {
     $byType[$tpl['type']] = $tpl;
 }
 
-// Define supported email types with their system defaults (PRD §VII — 7 types)
+// Define the 5 customer-facing email types exposed in the editor (PRD §VII).
+// staff_notification is operational (not tenant-customizable).
+// reschedule_confirmation is deferred until a dedicated reschedule flow exists.
 $emailTypes = [
     'confirmation' => [
         'label'   => 'Booking Confirmation',
