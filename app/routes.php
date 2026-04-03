@@ -97,6 +97,7 @@ return function (Router $router): void {
             $router->get('/admin/bookings', \App\Controllers\Admin\BookingsController::class, 'index');
             $router->get('/admin/bookings/{id}', \App\Controllers\Admin\BookingsController::class, 'show');
             $router->post('/admin/bookings/{id}/status', \App\Controllers\Admin\BookingsController::class, 'updateStatus');
+            $router->post('/admin/bookings/{id}/reschedule', \App\Controllers\Admin\BookingsController::class, 'reschedule');
 
             // Tenant context dashboard (business users land here via AuthMiddleware redirect from /admin)
             $router->get('/admin/tenants/{tenant_id}', \App\Controllers\Admin\DashboardController::class, 'tenantDashboard');
@@ -107,6 +108,7 @@ return function (Router $router): void {
             $router->post('/admin/tenants/{tenant_id}/bookings/create', \App\Controllers\Admin\BookingsController::class, 'tenantStore');
             $router->get('/admin/tenants/{tenant_id}/bookings/{id}', \App\Controllers\Admin\BookingsController::class, 'tenantShow');
             $router->post('/admin/tenants/{tenant_id}/bookings/{id}/status', \App\Controllers\Admin\BookingsController::class, 'tenantUpdateStatus');
+            $router->post('/admin/tenants/{tenant_id}/bookings/{id}/reschedule', \App\Controllers\Admin\BookingsController::class, 'tenantReschedule');
 
             // Business user management — tenant-context (operator + owner only, enforced in controller)
             $router->get('/admin/tenants/{tenant_id}/users', \App\Controllers\Admin\BusinessUsersController::class, 'index');

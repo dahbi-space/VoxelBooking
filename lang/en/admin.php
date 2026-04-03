@@ -500,6 +500,19 @@ return [
         'placeholder_select_slot'    => 'Select a time slot',
         'error_slot_required'        => 'Please select a time slot.',
         'flash_capacity_exceeded'    => 'Not enough capacity for the selected party size.',
+
+        // Reschedule
+        'reschedule'                 => 'Reschedule',
+        'reschedule_title'           => 'Reschedule Booking',
+        'reschedule_desc'            => 'Select a new date and time for this booking. The original booking will be preserved as a historical record.',
+        'reschedule_new_date'        => 'New date',
+        'reschedule_new_time'        => 'New time',
+        'btn_reschedule'             => 'Reschedule Booking',
+        'flash_rescheduled'          => 'Booking rescheduled successfully.',
+        'flash_reschedule_failed'    => 'Failed to reschedule booking.',
+        'error_reschedule_not_allowed' => 'This booking cannot be rescheduled.',
+        'error_same_slot'            => 'The new time is the same as the current booking.',
+        'view_new_booking'           => 'View new booking',
     ],
 
     // ── Business User Management ──
