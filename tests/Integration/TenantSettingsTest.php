@@ -749,6 +749,7 @@ final class TenantSettingsTest extends TestCase
         $this->assertStringContainsString('tpl-confirmation-subject', $res['body']);
         $this->assertStringContainsString('tpl-reminder-subject', $res['body']);
         $this->assertStringContainsString('tpl-cancellation-subject', $res['body']);
+        $this->assertStringContainsString('tpl-reschedule_confirmation-subject', $res['body'], 'Reschedule confirmation type must render on the emails tab');
         $this->assertStringContainsString('tpl-approval_request-subject', $res['body']);
     }
 
@@ -777,8 +778,8 @@ final class TenantSettingsTest extends TestCase
             'cancellation_body_outro'        => '',
             'cancellation_cta_label'         => '',
             'cancellation_is_enabled'        => '0',
-            'reschedule_confirmation_subject'  => '',
-            'reschedule_confirmation_heading'  => '',
+            'reschedule_confirmation_subject'  => 'Your appointment was moved',
+            'reschedule_confirmation_heading'  => 'Rescheduled',
             'reschedule_confirmation_body_intro' => '',
             'reschedule_confirmation_body_outro' => '',
             'reschedule_confirmation_cta_label' => '',
@@ -817,6 +818,279 @@ final class TenantSettingsTest extends TestCase
         );
         $this->assertNotEmpty($cancel);
         $this->assertSame(0, (int) $cancel[0]['is_enabled']);
+
+        // Verify reschedule_confirmation was saved and enabled
+        $resched = Database::query(
+            "SELECT `subject`, `heading`, `is_enabled` FROM `tenant_email_templates` WHERE `tenant_id` = ? AND `type` = 'reschedule_confirmation'",
+            [self::$tenantId]
+        );
+        $this->assertNotEmpty($resched, 'reschedule_confirmation row must be persisted');
+        $this->assertSame('Your appointment was moved', $resched[0]['subject']);
+        $this->assertSame('Rescheduled', $resched[0]['heading']);
+        $this->assertSame(1, (int) $resched[0]['is_enabled'], 'reschedule_confirmation must be enabled');
+    }
+
+    public function testRescheduleConfirmationDisableRoundTrip(): void
+    {
+        $page = self::httpGet("/admin/tenants/" . self::$tenantId . "/settings/emails", 'operator');
+        self::extractCsrf($page['body'], 'operator');
+
+        // Submit with all types enabled except reschedule_confirmation
+        $payload = [
+            '_csrf_token' => self::$operatorCsrf,
+        ];
+        foreach (['confirmation', 'reminder', 'cancellation', 'approval_request', 'approval_confirmed'] as $t) {
+            foreach (['subject', 'heading', 'body_intro', 'body_outro', 'cta_label'] as $f) {
+                $payload["{$t}_{$f}"] = '';
+            }
+            $payload["{$t}_is_enabled"] = '1';
+        }
+        // Disable reschedule_confirmation
+        foreach (['subject', 'heading', 'body_intro', 'body_outro', 'cta_label'] as $f) {
+            $payload["reschedule_confirmation_{$f}"] = '';
+        }
+        $payload['reschedule_confirmation_is_enabled'] = '0';
+
+        $res = self::httpPost("/admin/tenants/" . self::$tenantId . "/settings/emails", $payload, 'operator');
+        $this->assertSame(302, $res['code']);
+
+        $row = Database::query(
+            "SELECT `is_enabled` FROM `tenant_email_templates` WHERE `tenant_id` = ? AND `type` = 'reschedule_confirmation'",
+            [self::$tenantId]
+        );
+        $this->assertNotEmpty($row);
+        $this->assertSame(0, (int) $row[0]['is_enabled'], 'reschedule_confirmation must be disabled after save');
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Embed settings tab
+    // ════════════════════════════════════════════════════════════════
+
+    public function testEmbedTabLoadsForOperator(): void
+    {
+        $res = self::httpGet("/admin/tenants/" . self::$tenantId . "/settings/embed", 'operator');
+        $this->assertSame(200, $res['code']);
+        $this->assertStringContainsString('ts-embed-label', $res['body'], 'Embed settings form must render');
+        $this->assertStringContainsString('ts-embed-position', $res['body']);
+        $this->assertStringContainsString('ts-embed-domains', $res['body']);
+        $this->assertStringContainsString('embed-code-snippet', $res['body'], 'Embed code preview must render');
+    }
+
+    public function testEmbedTabForbiddenForManager(): void
+    {
+        $res = self::httpGet("/admin/tenants/" . self::$tenantId . "/settings/embed", 'manager');
+        $this->assertSame(403, $res['code']);
+    }
+
+    public function testSaveEmbedSettingsRoundTrip(): void
+    {
+        $page = self::httpGet("/admin/tenants/" . self::$tenantId . "/settings/embed", 'operator');
+        self::extractCsrf($page['body'], 'operator');
+
+        $res = self::httpPost("/admin/tenants/" . self::$tenantId . "/settings/embed", [
+            '_csrf_token'            => self::$operatorCsrf,
+            'embed_button_label'     => 'Reserve Now',
+            'embed_button_position'  => 'bottom-left',
+            'allowed_embed_domains'  => "https://example.com\nshop.test.com/\n  my-site.org  ",
+        ], 'operator');
+        $this->assertSame(302, $res['code']);
+
+        // Verify persistence
+        $row = Database::query(
+            "SELECT `embed_button_label`, `embed_button_position`, `allowed_embed_domains` FROM `tenants` WHERE `id` = ?",
+            [self::$tenantId]
+        );
+        $this->assertNotEmpty($row);
+        $this->assertSame('Reserve Now', $row[0]['embed_button_label']);
+        $this->assertSame('bottom-left', $row[0]['embed_button_position']);
+        // Domains should be stored comma-separated, protocols stripped, trimmed
+        $this->assertSame('example.com,shop.test.com,my-site.org', $row[0]['allowed_embed_domains']);
+    }
+
+    public function testSaveEmbedInvalidPositionDefaultsToRight(): void
+    {
+        $page = self::httpGet("/admin/tenants/" . self::$tenantId . "/settings/embed", 'operator');
+        self::extractCsrf($page['body'], 'operator');
+
+        $res = self::httpPost("/admin/tenants/" . self::$tenantId . "/settings/embed", [
+            '_csrf_token'            => self::$operatorCsrf,
+            'embed_button_label'     => 'Book Now',
+            'embed_button_position'  => 'top-center',
+            'allowed_embed_domains'  => '',
+        ], 'operator');
+        $this->assertSame(302, $res['code']);
+
+        $row = Database::query(
+            "SELECT `embed_button_position`, `allowed_embed_domains` FROM `tenants` WHERE `id` = ?",
+            [self::$tenantId]
+        );
+        $this->assertSame('bottom-right', $row[0]['embed_button_position'], 'Invalid position must default to bottom-right');
+        $this->assertNull($row[0]['allowed_embed_domains'], 'Empty domains must persist as NULL');
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Embed config public API
+    // ════════════════════════════════════════════════════════════════
+
+    public function testEmbedConfigReturnsJson(): void
+    {
+        // First set some known embed values
+        $slug = Database::query("SELECT `slug` FROM `tenants` WHERE `id` = ?", [self::$tenantId])[0]['slug'];
+
+        Database::execute(
+            "UPDATE `tenants` SET `embed_button_label` = 'Book Now', `embed_button_position` = 'bottom-right' WHERE `id` = ?",
+            [self::$tenantId]
+        );
+
+        $res = self::httpGet("/api/{$slug}/embed-config");
+        $this->assertSame(200, $res['code']);
+
+        $data = json_decode($res['body'], true);
+        $this->assertNotNull($data);
+        $this->assertSame($slug, $data['slug']);
+        $this->assertSame('Book Now', $data['button_label']);
+        $this->assertSame('bottom-right', $data['button_position']);
+        $this->assertArrayHasKey('brand_color', $data);
+        $this->assertArrayHasKey('name', $data);
+
+        // PRD contract: must include consent settings, custom fields, and allowed domains
+        $this->assertArrayHasKey('requires_consent', $data, 'embed-config must include requires_consent');
+        $this->assertArrayHasKey('consent_text', $data, 'embed-config must include consent_text');
+        $this->assertArrayHasKey('privacy_policy_url', $data, 'embed-config must include privacy_policy_url');
+        $this->assertArrayHasKey('custom_fields', $data, 'embed-config must include custom_fields');
+        $this->assertArrayHasKey('allowed_domains', $data, 'embed-config must include allowed_domains');
+
+        // Demo-aware behavior: is_demo must always be present as a boolean
+        $this->assertArrayHasKey('is_demo', $data, 'embed-config must include is_demo for demo-aware widget behavior');
+        $this->assertIsBool($data['is_demo'], 'is_demo must be a boolean value');
+    }
+
+    public function testEmbedConfigDemoFlagIsBool(): void
+    {
+        $slug = Database::query("SELECT `slug` FROM `tenants` WHERE `id` = ?", [self::$tenantId])[0]['slug'];
+        $res = self::httpGet("/api/{$slug}/embed-config");
+        $data = json_decode($res['body'], true);
+
+        $this->assertArrayHasKey('is_demo', $data);
+        $this->assertIsBool($data['is_demo']);
+    }
+
+    public function testEmbedScriptContainsDemoBadgeLogic(): void
+    {
+        $slug = Database::query("SELECT `slug` FROM `tenants` WHERE `id` = ?", [self::$tenantId])[0]['slug'];
+        $res = self::httpGet("/embed/{$slug}.js");
+        $this->assertSame(200, $res['code']);
+
+        // The widget script must contain demo badge rendering logic
+        $this->assertStringContainsString('is_demo', $res['body'],
+            'Embed script must reference is_demo for demo-aware badge rendering');
+        $this->assertStringContainsString('vb-embed-demo', $res['body'],
+            'Embed script must contain demo badge element ID');
+    }
+
+    public function testEmbedConfigCacheHeaders(): void
+    {
+        $slug = Database::query("SELECT `slug` FROM `tenants` WHERE `id` = ?", [self::$tenantId])[0]['slug'];
+        $res = self::httpGet("/api/{$slug}/embed-config");
+        $this->assertSame(200, $res['code']);
+
+        // Embed-config must have public cache-control, not no-store
+        $this->assertStringContainsString('max-age=60', $res['headers'], 'embed-config must be publicly cached for 60s');
+        $this->assertStringNotContainsString('no-store', $res['headers'], 'embed-config must not have no-store');
+    }
+
+    public function testEmbedConfigReturns404ForMissing(): void
+    {
+        $res = self::httpGet("/api/nonexistent-slug-999/embed-config");
+        $this->assertSame(404, $res['code']);
+    }
+
+    public function testEmbedScriptReturnsJavascript(): void
+    {
+        $slug = Database::query("SELECT `slug` FROM `tenants` WHERE `id` = ?", [self::$tenantId])[0]['slug'];
+        $res = self::httpGet("/embed/{$slug}.js");
+        $this->assertSame(200, $res['code']);
+        $this->assertStringContainsString('__vbEmbed', $res['body'], 'Embed script must contain widget code');
+        $this->assertStringContainsString($slug, $res['body'], 'Embed script must reference tenant slug');
+    }
+
+    public function testEmbedScriptCacheHeaders(): void
+    {
+        $slug = Database::query("SELECT `slug` FROM `tenants` WHERE `id` = ?", [self::$tenantId])[0]['slug'];
+        $res = self::httpGet("/embed/{$slug}.js");
+        $this->assertSame(200, $res['code']);
+
+        // Embed script must have public 1-hour cache, not no-store
+        $this->assertStringContainsString('max-age=3600', $res['headers'], 'embed script must be cached for 1 hour');
+        $this->assertStringNotContainsString('no-store', $res['headers'], 'embed script must not have no-store');
+    }
+
+    public function testEmbedScriptReturns404ForMissing(): void
+    {
+        $res = self::httpGet("/embed/nonexistent-slug-999.js");
+        $this->assertSame(404, $res['code']);
+    }
+
+    // ── Embed booking page header tests ──
+
+    public function testEmbedBookingPageHasCorrectFrameAncestors(): void
+    {
+        $slug = Database::query("SELECT `slug` FROM `tenants` WHERE `id` = ?", [self::$tenantId])[0]['slug'];
+        $res = self::httpGet("/book/{$slug}?embed=1");
+        $this->assertSame(200, $res['code']);
+
+        // Must NOT have frame-ancestors 'none' (that blocks embedding)
+        $this->assertStringNotContainsString("frame-ancestors 'none'", $res['headers'],
+            'Embed booking page must not block iframe embedding');
+
+        // Must have frame-ancestors with at least 'self'
+        $this->assertStringContainsString("frame-ancestors 'self'", $res['headers'],
+            'Embed booking page must include frame-ancestors self');
+
+        // Must NOT have X-Frame-Options (skipped for embed)
+        // HTTP/2 lowercases header names
+        $this->assertDoesNotMatchRegularExpression('/x-frame-options/i', $res['headers'],
+            'Embed booking page must not have X-Frame-Options');
+    }
+
+    public function testEmbedBookingPageIsStateless(): void
+    {
+        $slug = Database::query("SELECT `slug` FROM `tenants` WHERE `id` = ?", [self::$tenantId])[0]['slug'];
+
+        // Use raw curl without sending any existing cookies
+        $ch = curl_init(self::$baseUrl . "/book/{$slug}?embed=1");
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_HEADER         => true,
+        ]);
+        $response = (string) curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        curl_close($ch);
+
+        $headers = substr($response, 0, $headerSize);
+        $this->assertSame(200, $code);
+
+        // Must NOT set any cookies (stateless embed per PRD)
+        $this->assertStringNotContainsString('Set-Cookie', $headers,
+            'Embed booking page must not set cookies (stateless requirement)');
+    }
+
+    public function testNonEmbedBookingPageBlocksFraming(): void
+    {
+        $slug = Database::query("SELECT `slug` FROM `tenants` WHERE `id` = ?", [self::$tenantId])[0]['slug'];
+        $res = self::httpGet("/book/{$slug}");
+        $this->assertSame(200, $res['code']);
+
+        // Non-embed booking page MUST block framing
+        $this->assertStringContainsString("frame-ancestors 'none'", $res['headers'],
+            'Non-embed booking page must block iframe embedding');
+        // HTTP/2 lowercases header names, so check case-insensitively
+        $this->assertMatchesRegularExpression('/x-frame-options:\s*SAMEORIGIN/i', $res['headers'],
+            'Non-embed booking page must have X-Frame-Options');
     }
 
     // ════════════════════════════════════════════════════════════════

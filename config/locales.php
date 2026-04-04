@@ -26,7 +26,7 @@ return [
         'time_format'      => 'g:i A',
         'datetime_format'      => 'm/d/Y g:i A',
         'datetime_full_format' => 'm/d/Y g:i:s A',
-        'week_start'       => 0,
+        'week_start'       => 1,
         'decimal_sep'      => '.',
         'thousands_sep'    => ',',
         'currency_position'=> 'before',

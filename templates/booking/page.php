@@ -9,8 +9,26 @@
     <!-- Brand tokens (per-tenant) -->
     <style><?= $brandStyle ?></style>
 
-    <!-- Inter Variable (self-hosted) -->
-    <link rel="preconnect" href="/assets/fonts/">
+    <!-- Self-hosted Inter (split WOFF2, same as admin shell) -->
+    <style>
+        @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 100 900;
+            font-display: swap;
+            src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+            unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 100 900;
+            font-display: swap;
+            src: url('/fonts/inter-latin.woff2') format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+    </style>
+
     <link rel="stylesheet" href="/assets/css/booking-css.css">
 
     <!-- Anti-FOUC: hide until Alpine is ready -->
@@ -27,12 +45,13 @@
         })();
     </script>
 </head>
-<body>
+<body<?= ($isEmbed ?? false) ? ' class="vb-embed-mode"' : '' ?>>
     <div class="vb-book-app" x-data="bookingWizard" x-cloak
          x-init="$el.removeAttribute('x-cloak')"
          id="vb-book-app">
 
-        <!-- ── Header ── -->
+        <!-- ── Header (hidden in embed mode) ── -->
+        <?php if (!($isEmbed ?? false)): ?>
         <header class="vb-book-header">
             <div class="vb-book-header-inner">
                 <?php if (!empty($tenant['logo_path'])): ?>
@@ -61,6 +80,7 @@
                 </div>
             </div>
         </header>
+        <?php endif; ?>
 
         <!-- ── Timezone Selector ── -->
         <div class="vb-book-tz-bar" x-show="showProgress">
@@ -972,6 +992,20 @@
 
                             <!-- Action buttons -->
                             <div class="vb-book-manage-actions">
+                                <!-- Reschedule button -->
+                                <template x-if="manageCanReschedule">
+                                    <button type="button"
+                                            class="vb-book-btn vb-book-btn-brand"
+                                            @click="startReschedule"
+                                            x-text="t('buttons.reschedule')">
+                                    </button>
+                                </template>
+
+                                <!-- Reschedule disabled explanation -->
+                                <template x-if="!manageCanReschedule && managedBooking.status === 'confirmed' && manageRescheduleReason">
+                                    <p class="vb-book-manage-gate-msg" x-text="rescheduleGateMessage"></p>
+                                </template>
+
                                 <!-- Cancel button -->
                                 <template x-if="manageCanCancel">
                                     <button type="button"
@@ -1026,6 +1060,152 @@
                 </div>
             </div>
 
+            <!-- ═══ Reschedule Step 1: Date & Time Selection ═══ -->
+            <div class="vb-book-step" x-show="isRescheduleDateStep" x-cloak x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('manage.reschedule_heading')"></div>
+                    <div class="vb-book-step-subtitle" x-text="t('manage.reschedule_pick_date')"></div>
+                </div>
+
+                <!-- Calendar -->
+                <div class="vb-book-calendar" role="grid">
+                    <div class="vb-book-calendar-nav">
+                        <button class="vb-book-calendar-btn" @click="reschedulePrevMonth"
+                                aria-label="<?= __('booking.calendar.prev_month') ?>">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
+                        <span class="vb-book-calendar-month" x-text="rescheduleMonthLabel"></span>
+                        <button class="vb-book-calendar-btn" @click="rescheduleNextMonth"
+                                aria-label="<?= __('booking.calendar.next_month') ?>">
+                            <i data-lucide="chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="vb-book-calendar-grid"
+                         x-bind:class="{ 'is-fading': rescheduleCalendarFading }">
+                        <!-- Day name headers -->
+                        <template x-for="d in dayNames" x-bind:key="'r-' + d">
+                            <div class="vb-book-calendar-dayname" x-text="d"></div>
+                        </template>
+                        <!-- Calendar cells -->
+                        <template x-for="(cell, ci) in rescheduleCalendarCells" x-bind:key="'rc-' + ci">
+                            <div class="vb-book-calendar-cell"
+                                 x-bind:class="{
+                                     'is-disabled': cell.disabled,
+                                     'is-today': cell.today,
+                                     'has-slots': cell.hasSlots,
+                                     'is-selected': cell.selected
+                                 }"
+                                 x-bind:tabindex="cell.day && !cell.disabled ? 0 : -1"
+                                 @click="selectRescheduleDate(cell)"
+                                 @keydown.enter="selectRescheduleDate(cell)"
+                                 @keydown.space.prevent="selectRescheduleDate(cell)"
+                                 x-text="cell.day"></div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Time Slots -->
+                <div x-show="rescheduleDate" id="vb-reschedule-time-container">
+                    <template x-if="rescheduleSlots.length === 0 && rescheduleDate">
+                        <div class="vb-book-empty" x-text="t('empty.no_times')"></div>
+                    </template>
+                    <template x-if="rescheduleSlots.length > 0">
+                        <div class="vb-book-time-grid" role="radiogroup">
+                            <template x-for="(slot, i) in rescheduleSlots" x-bind:key="'rs-' + slot.time">
+                                <div class="vb-book-time-pill"
+                                     x-bind:class="{ 'is-selected': rescheduleSlot && rescheduleSlot.time === slot.time }"
+                                     @click="selectRescheduleSlot(slot)"
+                                     @keydown.enter="selectRescheduleSlot(slot)"
+                                     @keydown.space.prevent="selectRescheduleSlot(slot)"
+                                     role="radio" tabindex="0"
+                                     x-bind:aria-checked="rescheduleSlot && rescheduleSlot.time === slot.time"
+                                     x-bind:style="slotAnimDelay(i)"
+                                     x-text="displaySlotTime(slot)">
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Back link -->
+                <div class="vb-book-back-link" style="margin-top: 1rem;">
+                    <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="cancelReschedule"
+                            x-text="t('manage.reschedule_cancel')"></button>
+                </div>
+            </div>
+
+            <!-- ═══ Reschedule Step 2: Review ═══ -->
+            <div class="vb-book-step" x-show="isRescheduleReviewStep" x-cloak x-transition>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('manage.reschedule_review_heading')"></div>
+                    <div class="vb-book-step-subtitle" x-text="t('manage.reschedule_review_subtitle')"></div>
+                </div>
+
+                <!-- Before/After comparison -->
+                <div class="vb-book-reschedule-compare">
+                    <div class="vb-book-reschedule-from">
+                        <span class="vb-book-reschedule-label" x-text="t('manage.reschedule_original_label')"></span>
+                        <span class="vb-book-reschedule-datetime" x-text="rescheduleOriginalDisplay"></span>
+                    </div>
+                    <div class="vb-book-reschedule-arrow">
+                        <i data-lucide="arrow-down"></i>
+                    </div>
+                    <div class="vb-book-reschedule-to">
+                        <span class="vb-book-reschedule-label" x-text="t('manage.reschedule_new_label')"></span>
+                        <span class="vb-book-reschedule-datetime" x-text="rescheduleNewDisplay"></span>
+                    </div>
+                </div>
+
+                <div class="vb-book-form-actions">
+                    <button class="vb-book-btn vb-book-btn-brand" @click="confirmReschedule"
+                            x-bind:disabled="rescheduleSubmitting"
+                            x-bind:class="{ 'is-loading': rescheduleSubmitting }">
+                        <span class="vb-book-btn-text" x-text="t('manage.reschedule_confirm_button')"></span>
+                    </button>
+                    <div class="vb-book-back-link">
+                        <button type="button" class="vb-book-btn vb-book-btn-ghost"
+                                @click="goBackToRescheduleDate"
+                                x-text="t('manage.reschedule_back_to_date')"></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Reschedule Step 3: Confirmed ═══ -->
+            <div class="vb-book-step" x-show="isRescheduleConfirmedStep" x-cloak x-transition>
+                <div class="vb-book-confirmation">
+                    <div class="vb-book-checkmark-wrap">
+                        <svg class="vb-book-checkmark" viewBox="0 0 64 64">
+                            <circle class="vb-book-checkmark-circle" cx="32" cy="32" r="28"/>
+                            <path class="vb-book-checkmark-check" d="M20 33 L28 41 L44 25"/>
+                        </svg>
+                    </div>
+                    <div class="vb-book-confirm-heading"
+                         x-text="t('manage.reschedule_success_heading')"></div>
+                    <div class="vb-book-confirm-message"
+                         x-text="t('manage.reschedule_success_message')"></div>
+
+                    <div class="vb-book-confirm-summary">
+                        <div class="vb-book-summary">
+                            <template x-for="row in rescheduleConfirmedRows" x-bind:key="row.label">
+                                <div class="vb-book-summary-row">
+                                    <span class="vb-book-summary-label" x-text="row.label"></span>
+                                    <span class="vb-book-summary-value" x-text="row.value"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="vb-book-confirm-actions-secondary" style="margin-top: 1.5rem;">
+                        <template x-if="rescheduleNewBooking">
+                            <a x-bind:href="manageUrl(rescheduleNewBooking.id)" class="vb-book-btn vb-book-btn-brand"
+                               x-text="t('manage.heading')"></a>
+                        </template>
+                        <a x-bind:href="bookingPageUrl" class="vb-book-btn vb-book-btn-ghost"
+                           x-text="t('buttons.book_another')"></a>
+                    </div>
+                </div>
+            </div>
+
         </main>
 
         <!-- ── Toast ── -->
@@ -1052,11 +1232,13 @@
                  data-lucide="moon"></svg>
         </button>
 
-        <!-- ── Footer ── -->
+        <!-- ── Footer (hidden in embed mode) ── -->
+        <?php if (!($isEmbed ?? false)): ?>
         <footer class="vb-book-footer" x-show="!isLoading">
             <span><?= __('booking.footer.powered_by') ?></span>
             <a href="<?= htmlspecialchars(brand_url(), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><?= htmlspecialchars(app_name(), ENT_QUOTES, 'UTF-8') ?></a>
         </footer>
+        <?php endif; ?>
     </div>
 
     <!-- Tenant config for JS -->
@@ -1064,6 +1246,7 @@
         window.__VB_CONFIG__ = <?= json_encode($tenantConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
         window.__VB_CSRF__ = <?= json_encode($csrfToken) ?>;
         window.__VB_TS__ = Date.now();
+        window.__VB_EMBED__ = <?= json_encode((bool) ($isEmbed ?? false)) ?>;
         window.__VB_I18N__ = <?= json_encode($translations, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
         window.__VB_FMT__ = <?= json_encode($formatting, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
         <?php if (\App\Engine\DemoMode::isActive()): ?>

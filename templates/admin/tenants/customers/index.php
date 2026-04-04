@@ -59,8 +59,8 @@ ob_start();
         <?php endif; ?>
     </div>
 <?php else: ?>
-    <div class="vb-card">
-        <div class="vb-table-wrapper">
+    <div class="vb-table-container">
+        <div class="vb-table-wrap">
             <table class="vb-table" id="customers-table">
                 <thead>
                     <tr>

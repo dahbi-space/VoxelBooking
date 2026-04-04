@@ -98,8 +98,8 @@ final class ReminderJob
 
         $booking = $rows[0];
 
-        // Skip if booking is cancelled, completed, no_show, or still pending approval
-        if (in_array($booking['status'], ['cancelled', 'completed', 'no_show', 'pending'], true)) {
+        // Skip if booking is cancelled, completed, rescheduled, no_show, or still pending approval
+        if (in_array($booking['status'], ['cancelled', 'completed', 'rescheduled', 'no_show', 'pending'], true)) {
             self::markSent($reminder['id']);
             $result['skipped']++;
             return;

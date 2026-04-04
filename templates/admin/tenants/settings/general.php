@@ -94,6 +94,47 @@ ob_start();
                 </div>
 
                 <div class="vb-settings-field">
+                    <label class="vb-label" for="ts-week-start"><?= __('admin.tenant_settings.field_week_start') ?></label>
+                    <select class="vb-input" id="ts-week-start" name="week_start" style="max-width: 200px;">
+                        <?php
+                        $currentWeekStart = $old !== null && array_key_exists('week_start', $old)
+                            ? $old['week_start']
+                            : ($tenant['week_start'] ?? '');
+                        $weekDays = [
+                            '' => __('admin.tenant_settings.field_week_start_auto'),
+                            '1' => __('booking.days.1'), // Monday
+                            '0' => __('booking.days.0'), // Sunday
+                            '6' => __('booking.days.6'), // Saturday
+                        ];
+                        foreach ($weekDays as $wv => $wl):
+                        ?>
+                        <option value="<?= $wv ?>" <?= (string) $currentWeekStart === (string) $wv ? 'selected' : '' ?>><?= e($wl) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_week_start_hint') ?></span>
+                </div>
+
+                <div class="vb-settings-field">
+                    <label class="vb-label" for="ts-time-format"><?= __('admin.tenant_settings.field_time_format') ?></label>
+                    <select class="vb-input" id="ts-time-format" name="time_format" style="max-width: 200px;">
+                        <?php
+                        $currentTimeFormat = $old !== null && array_key_exists('time_format', $old)
+                            ? $old['time_format']
+                            : ($tenant['time_format'] ?? '');
+                        $timeFormats = [
+                            ''    => __('admin.tenant_settings.field_time_format_auto'),
+                            '12h' => __('admin.tenant_settings.field_time_format_12h'),
+                            '24h' => __('admin.tenant_settings.field_time_format_24h'),
+                        ];
+                        foreach ($timeFormats as $tv => $tl):
+                        ?>
+                        <option value="<?= $tv ?>" <?= $currentTimeFormat === $tv ? 'selected' : '' ?>><?= e($tl) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_time_format_hint') ?></span>
+                </div>
+
+                <div class="vb-settings-field">
                     <label class="vb-label" for="ts-pattern"><?= __('admin.tenant_settings.field_pattern') ?></label>
                     <input type="text" class="vb-input" id="ts-pattern"
                            value="<?= e($tenant['booking_pattern'] ?? '') ?>" readonly>

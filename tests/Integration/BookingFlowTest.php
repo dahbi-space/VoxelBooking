@@ -987,28 +987,38 @@ final class BookingFlowTest extends TestCase
      */
     private function getFirstAvailableSlot(string $relativeDay, ?string $staffId = null): array
     {
-        $date = (new \DateTimeImmutable($relativeDay))->format('Y-m-d');
-        $params = '?date=' . $date;
-        if ($staffId !== null) {
-            $params .= '&staff_id=' . $staffId;
+        // Try up to 7 consecutive days starting from $relativeDay to handle
+        // weekends/holidays where the tenant has no availability configured.
+        $baseDate = new \DateTimeImmutable($relativeDay);
+
+        for ($offset = 0; $offset < 7; $offset++) {
+            $date = $baseDate->modify("+{$offset} days")->format('Y-m-d');
+            $params = '?date=' . $date;
+            if ($staffId !== null) {
+                $params .= '&staff_id=' . $staffId;
+            }
+
+            $res = $this->httpGetJson('/api/' . self::$seed['slug'] . '/availability' . $params);
+
+            $this->assertSame(
+                200,
+                $res['code'],
+                "Availability for {$date} must return 200. Got {$res['code']}. Body: {$res['body']}"
+            );
+
+            $data = json_decode($res['body'], true);
+            $this->assertArrayHasKey('slots', $data, 'Response must contain slots key');
+
+            if (!empty($data['slots'])) {
+                $slot = $data['slots'][0];
+                $slot['date'] = $date;
+                return $slot;
+            }
         }
 
-        $res = $this->httpGetJson('/api/' . self::$seed['slug'] . '/availability' . $params);
-
-        $this->assertSame(
-            200,
-            $res['code'],
-            "Availability for {$relativeDay} ({$date}) must return 200. Got {$res['code']}. Body: {$res['body']}"
+        $this->fail(
+            "No available slots found within 7 days starting from {$relativeDay} ({$baseDate->format('Y-m-d')})"
         );
-
-        $data = json_decode($res['body'], true);
-        $this->assertArrayHasKey('slots', $data, 'Response must contain slots key');
-        $this->assertNotEmpty($data['slots'], "{$relativeDay} ({$date}) must have available slots");
-
-        $slot = $data['slots'][0];
-        $slot['date'] = $date;
-
-        return $slot;
     }
 
     // ════════════════════════════════════════════════════════════════

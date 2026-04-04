@@ -50,61 +50,6 @@ ob_start();
     <?php endif; ?>
 </div>
 
-<!-- Status filter pills -->
-<?php
-$pillFilters = array_diff_key($filters ?? [], ['status' => '', 'page' => '']);
-$pillBase = array_filter($pillFilters, fn($v) => $v !== null && $v !== '');
-?>
-<div class="vb-filter-pills vb-fade-in-up stagger-1">
-    <a href="<?= htmlspecialchars($baseUrl . ($pillBase ? '?' . http_build_query($pillBase) : ''), ENT_QUOTES, 'UTF-8') ?>"
-       class="vb-filter-pill <?= empty($filters['status']) ? 'is-active' : '' ?>">
-        <?= __('admin.bookings.filter_all') ?>
-    </a>
-    <?php foreach (['confirmed', 'pending', 'waitlisted', 'cancelled', 'completed', 'no_show', 'rescheduled'] as $s): ?>
-        <a href="<?= htmlspecialchars($baseUrl . '?' . http_build_query(array_filter(array_merge($pillBase, ['status' => $s, 'page' => 1]), fn($v) => $v !== null && $v !== '')), ENT_QUOTES, 'UTF-8') ?>"
-           class="vb-filter-pill <?= ($filters['status'] ?? '') === $s ? 'is-active' : '' ?>">
-            <?= __('admin.bookings.status_' . $s) ?>
-        </a>
-    <?php endforeach; ?>
-</div>
-
-<!-- Date/search filters -->
-<div class="vb-card vb-fade-in-up stagger-2 vb-mb-md">
-    <form method="GET" action="<?= htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8') ?>" class="vb-filter-bar">
-        <?php if (!empty($filters['status'])): ?>
-            <input type="hidden" name="status" value="<?= htmlspecialchars($filters['status'], ENT_QUOTES, 'UTF-8') ?>">
-        <?php endif; ?>
-        <?php if (!empty($sort) && $sort !== 'start_datetime'): ?>
-            <input type="hidden" name="sort" value="<?= htmlspecialchars($sort, ENT_QUOTES, 'UTF-8') ?>">
-        <?php endif; ?>
-        <?php if (!empty($direction) && $direction !== 'desc'): ?>
-            <input type="hidden" name="direction" value="<?= htmlspecialchars($direction, ENT_QUOTES, 'UTF-8') ?>">
-        <?php endif; ?>
-        <div class="vb-form-group">
-            <label for="filter_from" class="vb-label"><?= __('admin.bookings.filter_from') ?></label>
-            <input type="date" id="filter_from" name="from" class="vb-input vb-input-sm"
-                   value="<?= htmlspecialchars($filters['from'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-        </div>
-        <div class="vb-form-group">
-            <label for="filter_to" class="vb-label"><?= __('admin.bookings.filter_to') ?></label>
-            <input type="date" id="filter_to" name="to" class="vb-input vb-input-sm"
-                   value="<?= htmlspecialchars($filters['to'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-        </div>
-        <?php if ($showTenantColumn): ?>
-        <div class="vb-form-group vb-form-group--grow">
-            <label for="filter_search" class="vb-label"><?= __('admin.bookings.filter_search') ?></label>
-            <input type="text" id="filter_search" name="search" class="vb-input vb-input-sm"
-                   placeholder="<?= __('admin.bookings.filter_search') ?>"
-                   value="<?= htmlspecialchars($filters['search'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-        </div>
-        <?php endif; ?>
-        <button type="submit" class="vb-btn vb-btn-primary vb-btn-sm">
-            <i data-lucide="filter"></i>
-            <?= __('admin.bookings.filter_apply') ?>
-        </button>
-    </form>
-</div>
-
 <?php if (empty($bookings)): ?>
     <div class="vb-empty vb-animate-in">
         <i data-lucide="calendar" class="vb-empty-icon"></i>
@@ -112,7 +57,54 @@ $pillBase = array_filter($pillFilters, fn($v) => $v !== null && $v !== '');
         <div class="vb-empty-desc"><?= __('admin.bookings.empty_desc') ?></div>
     </div>
 <?php else: ?>
-    <div class="vb-card">
+    <div class="vb-table-container">
+        <div class="vb-table-toolbar">
+            <div class="vb-filter-tabs">
+                <?php
+                $pillFilters = array_diff_key($filters ?? [], ['status' => '', 'page' => '']);
+                $pillBase = array_filter($pillFilters, fn($v) => $v !== null && $v !== '');
+                $statusTabs = ['', 'confirmed', 'pending', 'waitlisted', 'cancelled', 'completed', 'no_show', 'rescheduled'];
+                $statusLabels = [
+                    ''            => __('admin.bookings.filter_all'),
+                    'confirmed'   => __('admin.bookings.status_confirmed'),
+                    'pending'     => __('admin.bookings.status_pending'),
+                    'waitlisted'  => __('admin.bookings.status_waitlisted'),
+                    'cancelled'   => __('admin.bookings.status_cancelled'),
+                    'completed'   => __('admin.bookings.status_completed'),
+                    'no_show'     => __('admin.bookings.status_no_show'),
+                    'rescheduled' => __('admin.bookings.status_rescheduled'),
+                ];
+                foreach ($statusTabs as $s):
+                    $tabQs = $s ? http_build_query(array_filter(array_merge($pillBase, ['status' => $s, 'page' => 1]), fn($v) => $v !== null && $v !== '')) : ($pillBase ? http_build_query($pillBase) : '');
+                ?>
+                <a href="<?= htmlspecialchars($baseUrl . ($tabQs ? '?' . $tabQs : ''), ENT_QUOTES, 'UTF-8') ?>"
+                   class="vb-filter-tab <?= ($filters['status'] ?? '') === $s ? 'active' : '' ?>">
+                    <?= $statusLabels[$s] ?>
+                </a>
+                <?php endforeach; ?>
+            </div>
+            <div class="vb-table-toolbar-right">
+                <form method="GET" action="<?= htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8') ?>" class="vb-table-toolbar-filters">
+                    <?php if (!empty($filters['status'])): ?>
+                        <input type="hidden" name="status" value="<?= htmlspecialchars($filters['status'], ENT_QUOTES, 'UTF-8') ?>">
+                    <?php endif; ?>
+                    <input type="date" name="from" class="vb-input vb-input-sm"
+                           value="<?= htmlspecialchars($filters['from'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                           title="<?= __('admin.bookings.filter_from') ?>">
+                    <input type="date" name="to" class="vb-input vb-input-sm"
+                           value="<?= htmlspecialchars($filters['to'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                           title="<?= __('admin.bookings.filter_to') ?>">
+                    <?php if ($showTenantColumn): ?>
+                    <input type="text" name="search" class="vb-input vb-input-sm"
+                           placeholder="<?= __('admin.bookings.filter_search') ?>"
+                           value="<?= htmlspecialchars($filters['search'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                    <?php endif; ?>
+                    <button type="submit" class="vb-btn vb-btn-primary vb-btn-sm">
+                        <i data-lucide="filter"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
         <div class="vb-table-wrap">
             <table class="vb-table">
                 <thead>
@@ -162,43 +154,44 @@ $pillBase = array_filter($pillFilters, fn($v) => $v !== null && $v !== '');
                         </td>
                         <?php endif; ?>
                         <td>
-                            <a href="<?= htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($b['id'], ENT_QUOTES, 'UTF-8') ?>"
-                               class="vb-btn vb-btn-ghost vb-btn-sm"
-                               title="<?= __('admin.bookings.view') ?>">
-                                <i data-lucide="eye"></i>
-                            </a>
+                            <div class="vb-action-group">
+                                <a href="<?= htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($b['id'], ENT_QUOTES, 'UTF-8') ?>"
+                                   class="vb-btn vb-btn-ghost vb-btn-sm"
+                                   title="<?= __('admin.bookings.view') ?>">
+                                    <i data-lucide="eye"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
-    </div>
 
-    <!-- Pagination -->
-    <?php if ($totalPages > 1): ?>
-    <div class="vb-pagination">
-        <span class="vb-text-muted">
-            <?= str_replace([':page', ':total'], [(string) $page, (string) $totalPages], __('admin.bookings.page_info')) ?>
-        </span>
-        <div class="vb-pagination-nav">
-            <?php if ($page > 1): ?>
-                <a href="<?= $baseUrl ?>?page=<?= $page - 1 ?><?= $filterParams ? '&' . $filterParams : '' ?>"
-                   class="vb-btn vb-btn-ghost vb-btn-sm">
-                    <i data-lucide="chevron-left"></i>
-                    <?= __('admin.bookings.previous') ?>
-                </a>
-            <?php endif; ?>
-            <?php if ($page < $totalPages): ?>
-                <a href="<?= $baseUrl ?>?page=<?= $page + 1 ?><?= $filterParams ? '&' . $filterParams : '' ?>"
-                   class="vb-btn vb-btn-ghost vb-btn-sm">
-                    <?= __('admin.bookings.next') ?>
-                    <i data-lucide="chevron-right"></i>
-                </a>
-            <?php endif; ?>
+        <?php if ($totalPages > 1): ?>
+        <div class="vb-pagination">
+            <span class="vb-text-muted">
+                <?= str_replace([':page', ':total'], [(string) $page, (string) $totalPages], __('admin.bookings.page_info')) ?>
+            </span>
+            <div class="vb-pagination-nav">
+                <?php if ($page > 1): ?>
+                    <a href="<?= $baseUrl ?>?page=<?= $page - 1 ?><?= $filterParams ? '&' . $filterParams : '' ?>"
+                       class="vb-btn vb-btn-ghost vb-btn-sm">
+                        <i data-lucide="chevron-left"></i>
+                        <?= __('admin.bookings.previous') ?>
+                    </a>
+                <?php endif; ?>
+                <?php if ($page < $totalPages): ?>
+                    <a href="<?= $baseUrl ?>?page=<?= $page + 1 ?><?= $filterParams ? '&' . $filterParams : '' ?>"
+                       class="vb-btn vb-btn-ghost vb-btn-sm">
+                        <?= __('admin.bookings.next') ?>
+                        <i data-lucide="chevron-right"></i>
+                    </a>
+                <?php endif; ?>
+            </div>
         </div>
+        <?php endif; ?>
     </div>
-    <?php endif; ?>
 <?php endif; ?>
 
 <?php

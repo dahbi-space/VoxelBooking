@@ -46,27 +46,43 @@ final class SecurityMiddleware
             return Response::redirect($url, 301);
         }
 
+        // Detect embed-related paths before dispatching
+        $path = $request->path();
+        $isEmbedBooking = str_starts_with($path, '/book/') && ($request->string('embed') === '1');
+        $isEmbedScript  = str_starts_with($path, '/embed/');
+        $isEmbedConfig  = str_starts_with($path, '/api/') && str_ends_with($path, '/embed-config');
+
+        // Mark embed mode on the request so controllers can check it
+        if ($isEmbedBooking) {
+            $request->setAttribute('is_embed', true);
+        }
+
         /** @var Response $response */
         $response = $next($request);
 
         // Universal security headers — present on EVERY response
         $response->header('X-Content-Type-Options', 'nosniff');
-        $response->header('X-Frame-Options', 'SAMEORIGIN');
         $response->header('X-XSS-Protection', '0');
         $response->header('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+        // X-Frame-Options — skip for embed paths that need iframe embedding
+        if (!$isEmbedBooking) {
+            $response->header('X-Frame-Options', 'SAMEORIGIN');
+        }
 
         // HSTS
         if ($forceHttps) {
             $response->header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 
-        // CSP — always present, context-specific policy
-        $path = $request->path();
-
-        if (str_starts_with($path, '/install') || str_starts_with($path, '/admin') || str_starts_with($path, '/book/')) {
-            // Install wizard + admin + booking pages: inline <script> + <style> blocks for theme resolution
-            // All assets self-hosted — no external CDN
+        // CSP — context-specific. Embed booking pages use controller-set
+        // frame-ancestors header; everything else gets the blocking default.
+        if ($isEmbedBooking) {
+            // The controller already set a CSP with frame-ancestors for the
+            // configured allowed domains. Do NOT overwrite it here.
+            // Only supplement if the controller didn't set one.
+        } elseif (str_starts_with($path, '/install') || str_starts_with($path, '/admin') || str_starts_with($path, '/book/')) {
             $response->header('Content-Security-Policy',
                 "default-src 'self'; script-src 'self' 'unsafe-inline'; "
                 . "style-src 'self' 'unsafe-inline'; "
@@ -78,7 +94,10 @@ final class SecurityMiddleware
         }
 
         // Context-specific cache control
-        if (str_starts_with($path, '/admin') || str_starts_with($path, '/install')) {
+        // Embed script and embed-config set their own cache headers — let them through.
+        if ($isEmbedScript || $isEmbedConfig) {
+            // Controller already set Cache-Control; don't overwrite.
+        } elseif (str_starts_with($path, '/admin') || str_starts_with($path, '/install')) {
             $response->header('Cache-Control', 'no-store, no-cache, must-revalidate, private');
             $response->header('Pragma', 'no-cache');
         } elseif (str_starts_with($path, '/api/')) {

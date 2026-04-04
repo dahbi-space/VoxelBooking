@@ -33,7 +33,7 @@ ob_start();
         <div class="vb-empty-desc"><?= __('admin.events.empty_desc') ?></div>
     </div>
 <?php else: ?>
-    <div class="vb-card">
+    <div class="vb-table-container">
         <div class="vb-table-wrap">
             <table class="vb-table">
                 <thead>
@@ -107,7 +107,8 @@ ob_start();
                                       style="display: inline;"
                                       onsubmit="return confirm('<?= __('admin.events.confirm_delete') ?>');">
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-                                    <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-danger">
+                                    <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-destructive"
+                                            title="<?= __('admin.events.confirm_delete') ?>">
                                         <i data-lucide="trash-2"></i>
                                     </button>
                                 </form>

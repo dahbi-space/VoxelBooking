@@ -1,6 +1,12 @@
 <?php
 /**
- * Customer detail — booking history + profile.
+ * Customer detail — premium contact profile surface.
+ *
+ * Architecture:
+ *   Identity header (avatar + name + email + phone)
+ *   Metadata row (joined date, booking count, last visit)
+ *   Notes card (if present)
+ *   Booking history table (shared table system)
  *
  * Variables: $tenant, $customer, $bookings, $liveBookingCount, $liveLastBookingAt, $tenantId, $csrfToken
  */
@@ -22,58 +28,61 @@ ob_start();
     </a>
 </div>
 
-<div class="vb-page-header">
-    <div class="vb-customer-header-info">
-        <span class="vb-avatar vb-avatar-lg"><?= mb_strtoupper(mb_substr($customer['name'], 0, 1)) ?></span>
-        <div>
-            <h2 class="vb-page-title"><?= htmlspecialchars($customer['name'], ENT_QUOTES, 'UTF-8') ?></h2>
-            <p class="vb-page-subtitle"><?= htmlspecialchars($customer['email'], ENT_QUOTES, 'UTF-8') ?></p>
+<!-- Identity header -->
+<div class="vb-profile-header vb-animate-in">
+    <span class="vb-avatar vb-avatar-xl"><?= mb_strtoupper(mb_substr($customer['name'], 0, 1)) ?></span>
+    <div class="vb-profile-header-info">
+        <h2 class="vb-profile-name"><?= htmlspecialchars($customer['name'], ENT_QUOTES, 'UTF-8') ?></h2>
+        <div class="vb-profile-meta-row">
+            <span class="vb-profile-meta-item">
+                <i data-lucide="mail" style="width: 13px; height: 13px;"></i>
+                <?= htmlspecialchars($customer['email'], ENT_QUOTES, 'UTF-8') ?>
+            </span>
+            <?php if ($customer['phone']): ?>
+            <span class="vb-profile-meta-item">
+                <i data-lucide="contact" style="width: 13px; height: 13px;"></i>
+                <?= htmlspecialchars($customer['phone'], ENT_QUOTES, 'UTF-8') ?>
+            </span>
+            <?php endif; ?>
         </div>
     </div>
 </div>
 
-<!-- Customer info cards — stats derived from live bookings, not denormalized columns -->
-<div class="vb-stats-grid vb-stats-grid-4">
-    <div class="vb-stat-card vb-animate-in">
-        <div class="vb-stat-label"><?= __('admin.customers.stat_total_bookings') ?></div>
-        <div class="vb-stat-value"><?= $liveBookingCount ?></div>
+<!-- Stats strip -->
+<div class="vb-profile-stats vb-animate-in">
+    <div class="vb-profile-stat">
+        <span class="vb-profile-stat-value"><?= $liveBookingCount ?></span>
+        <span class="vb-profile-stat-label"><?= __('admin.customers.stat_total_bookings') ?></span>
     </div>
-    <div class="vb-stat-card vb-animate-in">
-        <div class="vb-stat-label"><?= __('admin.customers.stat_last_booking') ?></div>
-        <div class="vb-stat-value vb-stat-value-sm">
+    <div class="vb-profile-stat-divider"></div>
+    <div class="vb-profile-stat">
+        <span class="vb-profile-stat-value vb-profile-stat-value--date">
             <?php if ($liveLastBookingAt): ?>
                 <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($liveLastBookingAt)), ENT_QUOTES, 'UTF-8') ?>
             <?php else: ?>
                 —
             <?php endif; ?>
-        </div>
+        </span>
+        <span class="vb-profile-stat-label"><?= __('admin.customers.stat_last_booking') ?></span>
     </div>
-    <div class="vb-stat-card vb-animate-in">
-        <div class="vb-stat-label"><?= __('admin.customers.stat_phone') ?></div>
-        <div class="vb-stat-value vb-stat-value-sm">
-            <?php if ($customer['phone']): ?>
-                <?= htmlspecialchars($customer['phone'], ENT_QUOTES, 'UTF-8') ?>
-            <?php else: ?>
-                <span class="vb-text-tertiary">—</span>
-            <?php endif; ?>
-        </div>
-    </div>
-    <div class="vb-stat-card vb-animate-in">
-        <div class="vb-stat-label"><?= __('admin.customers.stat_joined') ?></div>
-        <div class="vb-stat-value vb-stat-value-sm">
+    <div class="vb-profile-stat-divider"></div>
+    <div class="vb-profile-stat">
+        <span class="vb-profile-stat-value vb-profile-stat-value--date">
             <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($customer['created_at'])), ENT_QUOTES, 'UTF-8') ?>
-        </div>
+        </span>
+        <span class="vb-profile-stat-label"><?= __('admin.customers.stat_joined') ?></span>
     </div>
 </div>
 
+<!-- Notes -->
 <?php if ($customer['notes']): ?>
-<div class="vb-card vb-animate-in" style="margin-bottom: var(--space-5);">
+<div class="vb-card vb-animate-in vb-mb-lg">
     <div class="vb-card-header">
         <i data-lucide="sticky-note" style="width: 16px; height: 16px;"></i>
         <strong><?= __('admin.customers.notes_title') ?></strong>
     </div>
     <div class="vb-card-body">
-        <p class="vb-text-secondary" style="white-space: pre-wrap;"><?= htmlspecialchars($customer['notes'], ENT_QUOTES, 'UTF-8') ?></p>
+        <p class="vb-text-secondary vb-pre-wrap"><?= htmlspecialchars($customer['notes'], ENT_QUOTES, 'UTF-8') ?></p>
     </div>
 </div>
 <?php endif; ?>
@@ -84,14 +93,14 @@ ob_start();
 </div>
 
 <?php if (empty($bookings)): ?>
-    <div class="vb-empty-state vb-animate-in" style="padding: var(--space-8) var(--space-4);">
-        <i data-lucide="calendar-x" class="vb-empty-icon" style="width: 32px; height: 32px;"></i>
+    <div class="vb-empty-state vb-empty-state--compact vb-animate-in">
+        <i data-lucide="calendar-x" class="vb-empty-icon"></i>
         <h3><?= __('admin.customers.no_bookings_title') ?></h3>
         <p><?= __('admin.customers.no_bookings_desc') ?></p>
     </div>
 <?php else: ?>
-    <div class="vb-card">
-        <div class="vb-table-wrapper">
+    <div class="vb-table-container">
+        <div class="vb-table-wrap">
             <table class="vb-table" id="customer-bookings-table">
                 <thead>
                     <tr>
@@ -125,19 +134,8 @@ ob_start();
                             <?php endif; ?>
                         </td>
                         <td>
-                            <?php
-                            $statusClass = match ($b['status']) {
-                                'confirmed'   => 'vb-badge-success',
-                                'completed'   => 'vb-badge-primary',
-                                'pending'     => 'vb-badge-warning',
-                                'cancelled'   => 'vb-badge-danger',
-                                'no_show'     => 'vb-badge-danger',
-                                'rescheduled' => 'vb-badge-neutral',
-                                default       => 'vb-badge-neutral',
-                            };
-                            ?>
-                            <span class="vb-badge <?= $statusClass ?>">
-                                <?= htmlspecialchars(ucfirst(str_replace('_', ' ', $b['status'])), ENT_QUOTES, 'UTF-8') ?>
+                            <span class="vb-status vb-status-<?= htmlspecialchars($b['status'], ENT_QUOTES, 'UTF-8') ?>">
+                                <?= __('admin.bookings.status_' . $b['status']) ?>
                             </span>
                         </td>
                     </tr>

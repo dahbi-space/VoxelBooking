@@ -372,4 +372,37 @@ final class Booking
             [$tenantId, $date]
         );
     }
+
+    /**
+     * Get bookings for a tenant within a date range (inclusive).
+     *
+     * Used by the calendar month view to fetch all bookings in one query
+     * instead of N per-day queries.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function forTenantDateRange(string $tenantId, string $startDate, string $endDate): array
+    {
+        return Database::query(
+            "SELECT b.`id`, b.`start_datetime`, b.`end_datetime`, b.`status`,
+                    b.`booking_pattern`, b.`staff_id`,
+                    c.`name` AS `customer_name`, c.`email` AS `customer_email`,
+                    s.`name` AS `service_name`, s.`color` AS `service_color`,
+                    st.`name` AS `staff_name`,
+                    r.`name` AS `resource_name`,
+                    ev.`name` AS `event_name`
+             FROM `bookings` b
+             LEFT JOIN `customers` c ON c.`id` = b.`customer_id`
+             LEFT JOIN `services` s ON s.`id` = b.`service_id`
+             LEFT JOIN `staff` st ON st.`id` = b.`staff_id`
+             LEFT JOIN `resources` r ON r.`id` = b.`resource_id`
+             LEFT JOIN `events` ev ON ev.`id` = b.`event_id`
+             WHERE b.`tenant_id` = ?
+               AND DATE(b.`start_datetime`) >= ?
+               AND DATE(b.`start_datetime`) <= ?
+               AND b.`status` NOT IN ('cancelled', 'rescheduled')
+             ORDER BY b.`start_datetime` ASC",
+            [$tenantId, $startDate, $endDate]
+        );
+    }
 }

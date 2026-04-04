@@ -46,8 +46,8 @@ ob_start();
         </a>
     </div>
 <?php else: ?>
-    <div class="vb-card">
-        <div class="vb-table-wrapper">
+    <div class="vb-table-container">
+        <div class="vb-table-wrap">
             <table class="vb-table" id="staff-table">
                 <thead>
                     <tr>
@@ -99,7 +99,7 @@ ob_start();
                                       action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/staff/<?= htmlspecialchars($m['id'], ENT_QUOTES, 'UTF-8') ?>/deactivate"
                                       class="vb-form-flush">
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-                                    <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-danger"
+                                    <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-destructive"
                                             title="<?= __('admin.staff.deactivate') ?>">
                                         <i data-lucide="user-minus" style="width: 14px; height: 14px;"></i>
                                     </button>

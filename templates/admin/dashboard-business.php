@@ -119,123 +119,115 @@ ob_start();
 </div>
 
 <!-- Today's Schedule Strip -->
-<div class="vb-card vb-fade-in-up stagger-5" style="margin-bottom: 1.5rem;">
-    <div class="vb-schedule-header">
-        <div class="vb-schedule-title"><?= __('admin.dashboard.schedule_today') ?></div>
-    </div>
-    <?php if (empty($todaySchedule)): ?>
-        <div style="padding: 1.5rem 0; text-align: center;">
-            <i data-lucide="calendar-off" style="width: 32px; height: 32px; color: var(--vb-text-ghost); margin-bottom: 0.5rem;"></i>
-            <div class="vb-cell-secondary"><?= __('admin.dashboard.no_schedule') ?></div>
-        </div>
-    <?php else: ?>
-        <?php
-        // Group bookings by hour for the schedule grid
-        $hourSlots = [];
-        $minHour = 23;
-        $maxHour = 0;
-        foreach ($todaySchedule as $booking) {
-            $h = (int) date('G', strtotime($booking['start_datetime']));
-            $hourSlots[$h][] = $booking;
-            $minHour = min($minHour, $h);
-            $maxHour = max($maxHour, $h);
-        }
-        // Show range from earliest hour to latest hour + 1
-        $startHour = max(0, $minHour);
-        $endHour = min(23, $maxHour + 1);
-        ?>
-        <div class="vb-schedule-grid" id="schedule-grid">
-            <?php for ($h = $startHour; $h <= $endHour; $h++): ?>
-            <div class="vb-schedule-hour-row">
-                <div class="vb-schedule-time-gutter"><?= sprintf('%02d:00', $h) ?></div>
-                <div class="vb-schedule-cells">
-                    <?php if (isset($hourSlots[$h])): ?>
-                        <?php foreach ($hourSlots[$h] as $booking):
-                            [$pillBg, $pillColor] = schedulePillColors($booking['service_color'] ?? null);
-                            $startTime = date('H:i', strtotime($booking['start_datetime']));
-                            $endTime = date('H:i', strtotime($booking['end_datetime']));
-                        ?>
-                        <div class="vb-schedule-pill"
-                             style="background: <?= $pillBg ?>; color: <?= $pillColor ?>;">
-                            <div class="vb-schedule-pill-title">
-                                <?= htmlspecialchars($booking['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
-                            </div>
-                            <div class="vb-schedule-pill-time">
-                                <?= $startTime ?> – <?= $endTime ?> · <?= htmlspecialchars(booking_display_label($booking), ENT_QUOTES, 'UTF-8') ?>
-                            </div>
-                            <?php if (!empty($booking['staff_name'])): ?>
-                            <div class="vb-schedule-pill-staff">
-                                <?= htmlspecialchars($booking['staff_name'], ENT_QUOTES, 'UTF-8') ?>
-                            </div>
-                            <?php endif; ?>
-                        </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <?php endfor; ?>
-        </div>
-    <?php endif; ?>
-</div>
-
-<!-- Next Up + Actions -->
-<div class="vb-grid vb-grid-2">
-    <!-- Next Up -->
+<div class="vb-dash-schedule-wrap">
     <div class="vb-card vb-fade-in-up stagger-5">
-        <div class="vb-card-header">
-            <div class="vb-card-title"><?= __('admin.dashboard.next_up') ?></div>
+        <div class="vb-schedule-header">
+            <div class="vb-schedule-title"><?= __('admin.dashboard.schedule_today') ?></div>
         </div>
-        <?php if (empty($upcoming)): ?>
-            <div class="vb-empty vb-empty-compact">
-                <i data-lucide="calendar-check" class="vb-empty-icon vb-empty-icon-sm"></i>
-                <div class="vb-empty-desc"><?= __('admin.dashboard.no_upcoming_bookings') ?></div>
+        <?php if (empty($todaySchedule)): ?>
+            <div class="vb-schedule-empty">
+                <i data-lucide="calendar-off" class="vb-schedule-empty-icon"></i>
+                <div class="vb-schedule-empty-text"><?= __('admin.dashboard.no_schedule') ?></div>
             </div>
         <?php else: ?>
-            <div class="vb-table-wrap">
-                <table class="vb-table">
-                    <tbody>
-                        <?php foreach ($upcoming as $b): ?>
-                        <tr>
-                            <td>
-                                <div class="vb-cell-primary"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
-                                <div class="vb-cell-secondary"><?= htmlspecialchars(booking_display_label($b), ENT_QUOTES, 'UTF-8') ?></div>
-                            </td>
-                            <td>
-                                <span class="vb-status vb-status-<?= htmlspecialchars($b['status'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <?= __('admin.bookings.status_' . $b['status']) ?>
-                                </span>
-                            </td>
-                            <td class="vb-text-right">
-                                <div class="vb-cell-primary"><?= date('M j', strtotime($b['start_datetime'])) ?></div>
-                                <div class="vb-cell-secondary"><?= date('H:i', strtotime($b['start_datetime'])) ?></div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+            <?php
+            // Group bookings by hour for the schedule grid
+            $hourSlots = [];
+            $minHour = 23;
+            $maxHour = 0;
+            foreach ($todaySchedule as $booking) {
+                $h = (int) date('G', strtotime($booking['start_datetime']));
+                $hourSlots[$h][] = $booking;
+                $minHour = min($minHour, $h);
+                $maxHour = max($maxHour, $h);
+            }
+            // Show range from earliest hour to latest hour + 1
+            $startHour = max(0, $minHour);
+            $endHour = min(23, $maxHour + 1);
+            ?>
+            <div class="vb-schedule-grid" id="schedule-grid">
+                <?php for ($h = $startHour; $h <= $endHour; $h++): ?>
+                <div class="vb-schedule-hour-row">
+                    <div class="vb-schedule-time-gutter"><?= sprintf('%02d:00', $h) ?></div>
+                    <div class="vb-schedule-cells">
+                        <?php if (isset($hourSlots[$h])): ?>
+                            <?php foreach ($hourSlots[$h] as $booking):
+                                [$pillBg, $pillColor] = schedulePillColors($booking['service_color'] ?? null);
+                                $startTime = date('H:i', strtotime($booking['start_datetime']));
+                                $endTime = date('H:i', strtotime($booking['end_datetime']));
+                            ?>
+                            <div class="vb-schedule-pill"
+                                 style="background: <?= $pillBg ?>; color: <?= $pillColor ?>;">
+                                <div class="vb-schedule-pill-title">
+                                    <?= htmlspecialchars($booking['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                                <div class="vb-schedule-pill-time">
+                                    <?= $startTime ?> – <?= $endTime ?> · <?= htmlspecialchars(booking_display_label($booking), ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                                <?php if (!empty($booking['staff_name'])): ?>
+                                <div class="vb-schedule-pill-staff">
+                                    <?= htmlspecialchars($booking['staff_name'], ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endfor; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<!-- Next Up + Quick Actions -->
+<div class="vb-dash-grid">
+    <!-- Next Up -->
+    <div class="vb-card vb-fade-in-up stagger-5">
+        <div class="vb-dash-section-title"><?= __('admin.dashboard.next_up') ?></div>
+        <?php if (empty($upcoming)): ?>
+            <div class="vb-schedule-empty">
+                <i data-lucide="calendar-check" class="vb-schedule-empty-icon"></i>
+                <div class="vb-schedule-empty-text"><?= __('admin.dashboard.no_upcoming_bookings') ?></div>
+            </div>
+        <?php else: ?>
+            <div class="vb-upcoming-list">
+                <?php foreach ($upcoming as $b): ?>
+                <div class="vb-upcoming-row">
+                    <div>
+                        <div class="vb-upcoming-name"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
+                        <div class="vb-upcoming-service"><?= htmlspecialchars(booking_display_label($b), ENT_QUOTES, 'UTF-8') ?></div>
+                    </div>
+                    <span class="vb-status vb-status-<?= htmlspecialchars($b['status'], ENT_QUOTES, 'UTF-8') ?>">
+                        <?= __('admin.bookings.status_' . $b['status']) ?>
+                    </span>
+                    <div class="vb-upcoming-time">
+                        <div class="vb-upcoming-date"><?= date('M j', strtotime($b['start_datetime'])) ?></div>
+                        <div class="vb-upcoming-clock"><?= date('H:i', strtotime($b['start_datetime'])) ?></div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
             </div>
         <?php endif; ?>
     </div>
 
     <!-- Quick Actions -->
     <div class="vb-card vb-fade-in-up stagger-6">
-        <div class="vb-card-header">
-            <div class="vb-card-title"><?= __('admin.common.actions') ?></div>
-        </div>
-        <div class="vb-card-actions">
+        <div class="vb-dash-section-title"><?= __('admin.common.actions') ?></div>
+        <div class="vb-action-list">
             <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/bookings"
-               class="vb-btn vb-btn-primary vb-btn-block">
+               class="vb-action-row vb-action-row-primary">
                 <i data-lucide="calendar"></i>
                 <?= __('admin.dashboard.view_all_bookings') ?>
             </a>
             <a href="/book/<?= htmlspecialchars($tenant['slug'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                target="_blank" rel="noopener"
-               class="vb-btn vb-btn-ghost vb-btn-block">
+               class="vb-action-row">
                 <i data-lucide="external-link"></i>
                 <?= __('admin.dashboard.view_booking_page') ?>
             </a>
             <button type="button"
-                    class="vb-copy-btn"
+                    class="vb-action-row"
                     data-copy-url="<?= htmlspecialchars((isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/book/' . ($tenant['slug'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                     @click="copyBookingUrl"
                     title="<?= __('admin.common.copy_booking_url') ?>">

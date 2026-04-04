@@ -35,6 +35,14 @@ final class Locale
     private static string $basePath = '';
 
     /**
+     * Per-request tenant overrides.
+     *
+     * Supported keys: 'week_start' (int|null), 'time_format' ('12h'|'24h'|null).
+     * NULL means "follow locale default". Non-null overrides the locale preset.
+     */
+    private static array $tenantOverrides = [];
+
+    /**
      * Initialize the locale engine.
      *
      * @param string $basePath Application root path
@@ -65,6 +73,19 @@ final class Locale
     public static function getLocale(): string
     {
         return self::$locale;
+    }
+
+    /**
+     * Set per-request tenant overrides for week_start and time_format.
+     *
+     * Call once per request after loading the tenant row.
+     * NULL values = follow locale default.
+     *
+     * @param array{week_start?: int|null, time_format?: string|null} $overrides
+     */
+    public static function setTenantOverrides(array $overrides): void
+    {
+        self::$tenantOverrides = $overrides;
     }
 
     /**
@@ -268,8 +289,17 @@ final class Locale
      */
     public static function time(\DateTimeInterface $dt): string
     {
-        $config = self::getConfig();
+        $override = self::$tenantOverrides['time_format'] ?? null;
 
+        if ($override === '12h') {
+            return $dt->format('g:i A');
+        }
+        if ($override === '24h') {
+            return $dt->format('H:i');
+        }
+
+        // Locale default
+        $config = self::getConfig();
         return $dt->format($config['time_format'] ?? 'H:i');
     }
 
@@ -338,9 +368,13 @@ final class Locale
      */
     public static function weekStart(): int
     {
-        $config = self::getConfig();
+        $override = self::$tenantOverrides['week_start'] ?? null;
+        if ($override !== null) {
+            return (int) $override;
+        }
 
-        return $config['week_start'] ?? 0;
+        $config = self::getConfig();
+        return $config['week_start'] ?? 1;
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -472,7 +506,7 @@ final class Locale
         return [
             'locale'           => self::$locale,
             'intl_locale'      => $config['intl_locale'] ?? 'en-US',
-            'week_start'       => $config['week_start'] ?? 0,
+            'week_start'       => self::weekStart(),
             'time_format'      => $config['time_format'] ?? 'H:i',
             'date_format'      => $config['date_format'] ?? 'Y-m-d',
             'date_format_long' => $config['date_format_long'] ?? 'F j, Y',
@@ -588,5 +622,6 @@ final class Locale
         self::$registry = [];
         self::$translations = [];
         self::$basePath = '';
+        self::$tenantOverrides = [];
     }
 }

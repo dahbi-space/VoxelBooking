@@ -102,9 +102,9 @@ ob_start();
 
 <!-- Upcoming Bookings (cross-tenant) -->
 <?php if (!empty($upcoming)): ?>
-<div class="vb-card vb-fade-in-up stagger-5" style="margin-bottom: 1.5rem;">
-    <div class="vb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
-        <div class="vb-card-title"><?= __('admin.dashboard.upcoming') ?></div>
+<div class="vb-table-container vb-fade-in-up stagger-5" style="margin-bottom: 1.5rem;">
+    <div class="vb-table-toolbar">
+        <div class="vb-table-toolbar-title"><?= __('admin.dashboard.upcoming') ?></div>
         <a href="/admin/bookings" class="vb-btn vb-btn-ghost vb-btn-sm">
             <?= __('admin.dashboard.view_all') ?>
             <i data-lucide="arrow-right"></i>

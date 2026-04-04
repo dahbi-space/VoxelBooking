@@ -114,25 +114,25 @@ final class BookingsIndexOutputTest extends TestCase
     // Filter pills
     // ════════════════════════════════════════════════════════════════
 
-    public function test_bookings_index_renders_filter_pills(): void
+    public function test_bookings_index_renders_filter_tabs(): void
     {
         $html = $this->renderBookingsIndex([
             'bookings' => [$this->makeBooking()],
         ]);
 
-        $this->assertStringContainsString('vb-filter-pills', $html);
-        $this->assertStringContainsString('vb-filter-pill', $html);
+        $this->assertStringContainsString('vb-filter-tabs', $html);
+        $this->assertStringContainsString('vb-filter-tab', $html);
     }
 
-    public function test_bookings_index_renders_active_filter_pill(): void
+    public function test_bookings_index_renders_active_filter_tab(): void
     {
         $html = $this->renderBookingsIndex([
             'bookings' => [$this->makeBooking(['status' => 'confirmed'])],
             'filters'  => ['status' => 'confirmed', 'from' => null, 'to' => null, 'search' => null, 'sort' => 'start_datetime', 'direction' => 'desc'],
         ]);
 
-        // The confirmed pill must have is-active; the All pill must not
-        $this->assertMatchesRegularExpression('/vb-filter-pill\s+is-active[^>]*>[\s\S]*?(?:Confirmed|status_confirmed)/', $html);
+        // The confirmed tab must have active class
+        $this->assertMatchesRegularExpression('/vb-filter-tab\s+active[^>]*>[\s\S]*?(?:Confirmed|status_confirmed)/', $html);
     }
 
     // ════════════════════════════════════════════════════════════════

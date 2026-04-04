@@ -96,6 +96,8 @@ CREATE TABLE tenants (
     booking_pattern TEXT NOT NULL DEFAULT 'timeslot',
     locale TEXT NOT NULL DEFAULT 'en',
     locale_override TEXT DEFAULT NULL,
+    week_start INTEGER DEFAULT NULL,
+    time_format TEXT DEFAULT NULL,
     currency TEXT NOT NULL DEFAULT 'EUR',
     brand_color TEXT NOT NULL DEFAULT '#2563EB',
     brand_color_text TEXT NOT NULL DEFAULT '#FFFFFF',

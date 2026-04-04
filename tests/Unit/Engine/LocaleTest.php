@@ -308,15 +308,52 @@ final class LocaleTest extends TestCase
     // Week Start
     // ════════════════════════════════════════════════════════════════
 
-    public function testWeekStartEnglishIsSunday(): void
+    public function testWeekStartEnglishIsMonday(): void
     {
-        $this->assertSame(0, Locale::weekStart());
+        $this->assertSame(1, Locale::weekStart());
     }
 
     public function testWeekStartDutchIsMonday(): void
     {
         Locale::setLocale('nl');
         $this->assertSame(1, Locale::weekStart());
+    }
+
+    public function testWeekStartTenantOverrideTakesPrecedence(): void
+    {
+        // English locale defaults to Monday (1), but tenant sets Sunday (0)
+        Locale::setTenantOverrides(['week_start' => 0]);
+        $this->assertSame(0, Locale::weekStart());
+    }
+
+    public function testWeekStartTenantOverrideNullFollowsLocale(): void
+    {
+        Locale::setTenantOverrides(['week_start' => null]);
+        $this->assertSame(1, Locale::weekStart()); // English default
+    }
+
+    public function testTimeFormatTenantOverride12h(): void
+    {
+        // Dutch locale defaults to 24h (H:i)
+        Locale::setLocale('nl');
+        Locale::setTenantOverrides(['time_format' => '12h']);
+        $dt = new \DateTimeImmutable('2026-03-27 14:30:00');
+        $this->assertSame('2:30 PM', Locale::time($dt));
+    }
+
+    public function testTimeFormatTenantOverride24h(): void
+    {
+        // English locale defaults to 12h (g:i A)
+        Locale::setTenantOverrides(['time_format' => '24h']);
+        $dt = new \DateTimeImmutable('2026-03-27 14:30:00');
+        $this->assertSame('14:30', Locale::time($dt));
+    }
+
+    public function testTimeFormatTenantOverrideNullFollowsLocale(): void
+    {
+        Locale::setTenantOverrides(['time_format' => null]);
+        $dt = new \DateTimeImmutable('2026-03-27 14:30:00');
+        $this->assertSame('2:30 PM', Locale::time($dt));
     }
 
     // ════════════════════════════════════════════════════════════════

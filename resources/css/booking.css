@@ -9,14 +9,11 @@
 
 @import "tailwindcss";
 
-/* ── Self-hosted Inter Variable ── */
-@font-face {
-  font-family: 'Inter';
-  src: url('/assets/fonts/inter-variable.woff2') format('woff2');
-  font-weight: 100 900;
-  font-display: swap;
-  font-style: normal;
-}
+/*
+ * Font-face declarations for Inter are inlined in the booking page <head>
+ * (templates/booking/page.php) to avoid Vite build warnings, identical to
+ * the admin shell strategy in admin-head.php.
+ */
 
 /* ── Design Tokens ── */
 :root {
@@ -2404,4 +2401,102 @@ body {
 
 [data-theme="dark"] .vb-book-btn-danger:hover {
   background: #991B1B;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESCHEDULE — Before/After Comparison Card
+   ═══════════════════════════════════════════════════════════ */
+
+.vb-book-reschedule-compare {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-radius: var(--vb-radius-xl);
+  border: 1px solid var(--vb-border);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.vb-book-reschedule-from,
+.vb-book-reschedule-to {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px;
+}
+
+.vb-book-reschedule-from {
+  background: var(--vb-bg-secondary);
+}
+
+.vb-book-reschedule-to {
+  background: var(--vb-brand-light);
+}
+
+.vb-book-reschedule-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vb-text-tertiary);
+}
+
+.vb-book-reschedule-to .vb-book-reschedule-label {
+  color: var(--vb-brand);
+}
+
+.vb-book-reschedule-datetime {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--vb-text);
+  letter-spacing: -0.011em;
+}
+
+.vb-book-reschedule-from .vb-book-reschedule-datetime {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+
+.vb-book-reschedule-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 0;
+  background: var(--vb-bg);
+  border-top: 1px solid var(--vb-border);
+  border-bottom: 1px solid var(--vb-border);
+  color: var(--vb-brand);
+}
+
+.vb-book-reschedule-arrow svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Dark mode overrides for reschedule compare */
+
+[data-theme="dark"] .vb-book-reschedule-from {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .vb-book-reschedule-to {
+  background: rgba(var(--vb-brand-rgb, 37, 99, 235), 0.08);
+}
+
+/* ─── Embed mode (chromeless iframe) ─── */
+.vb-embed-mode {
+  background: var(--vb-bg-primary, #fff);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.vb-embed-mode .vb-book-app {
+  max-width: 100%;
+  padding: 0.75rem 1rem;
+  margin: 0;
+}
+
+.vb-embed-mode .vb-book-tz-bar {
+  margin-bottom: 0.5rem;
 }

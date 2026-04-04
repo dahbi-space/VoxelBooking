@@ -56,9 +56,15 @@ final class TenantSettingsController
         $name     = trim($request->string('name'));
         $email    = trim($request->string('email'));
         $phone    = trim($request->string('phone')) ?: null;
-        $timezone = trim($request->string('timezone')) ?: 'UTC';
-        $locale   = trim($request->string('locale')) ?: 'en';
-        $currency = trim($request->string('currency')) ?: 'EUR';
+        $timezone   = trim($request->string('timezone')) ?: 'UTC';
+        $locale     = trim($request->string('locale')) ?: 'en';
+        $currency   = trim($request->string('currency')) ?: 'EUR';
+        $weekStartRaw = $request->string('week_start');
+        $weekStart  = $weekStartRaw !== '' ? max(0, min(6, (int) $weekStartRaw)) : null;
+        $timeFormat = trim($request->string('time_format')) ?: null;
+        if ($timeFormat !== null && !in_array($timeFormat, ['12h', '24h'], true)) {
+            $timeFormat = null;
+        }
 
         $errors = [];
         if ($name === '') {
@@ -78,12 +84,14 @@ final class TenantSettingsController
         }
 
         $data = [
-            'name'     => $name,
-            'email'    => $email,
-            'phone'    => $phone,
-            'timezone' => $timezone,
-            'locale'   => $locale,
-            'currency' => $currency,
+            'name'        => $name,
+            'email'       => $email,
+            'phone'       => $phone,
+            'timezone'    => $timezone,
+            'locale'      => $locale,
+            'currency'    => $currency,
+            'week_start'  => $weekStart,
+            'time_format' => $timeFormat,
         ];
 
         $this->saveTenant($tenantId, $data, $tenant, 'general');
@@ -487,6 +495,69 @@ final class TenantSettingsController
         ]);
     }
 
+    // ── Embed Settings ──
+
+    public function embed(Request $request): Response
+    {
+        $tenantId = $request->getAttribute('tenant_id');
+        if (!$this->canAccess($tenantId)) {
+            return $this->forbidden($request);
+        }
+
+        $tenant = $this->loadTenant($tenantId);
+        if ($tenant === null) {
+            return Response::redirect('/admin/tenants');
+        }
+
+        return $this->render('admin.tenants.settings.embed', $tenantId, $tenant, 'embed');
+    }
+
+    public function saveEmbed(Request $request): Response
+    {
+        $tenantId = $request->getAttribute('tenant_id');
+        if (!$this->canAccess($tenantId)) {
+            return $this->forbidden($request);
+        }
+
+        $tenant = $this->loadTenant($tenantId);
+        if ($tenant === null) {
+            return Response::redirect('/admin/tenants');
+        }
+
+        $position = trim($request->string('embed_button_position'));
+        if (!in_array($position, ['bottom-right', 'bottom-left'], true)) {
+            $position = 'bottom-right';
+        }
+
+        $label = trim($request->string('embed_button_label')) ?: 'Book Now';
+        if (mb_strlen($label) > 50) {
+            $label = mb_substr($label, 0, 50);
+        }
+
+        // Parse allowed domains: one per line, strip protocol, trim
+        $domainsRaw = trim($request->string('allowed_embed_domains'));
+        $domains = null;
+        if ($domainsRaw !== '') {
+            $lines = array_filter(array_map(function (string $line): string {
+                $line = trim($line);
+                // Strip protocol if present
+                $line = preg_replace('#^https?://#', '', $line);
+                // Strip trailing slash
+                return rtrim($line, '/');
+            }, explode("\n", $domainsRaw)));
+            $domains = !empty($lines) ? implode(',', $lines) : null;
+        }
+
+        $data = [
+            'embed_button_position'  => $position,
+            'embed_button_label'     => $label,
+            'allowed_embed_domains'  => $domains,
+        ];
+
+        $this->saveTenant($tenantId, $data, $tenant, 'embed');
+        return Response::redirect("/admin/tenants/{$tenantId}/settings/embed");
+    }
+
     public function saveEmails(Request $request): Response
     {
         $tenantId = $request->getAttribute('tenant_id');
@@ -496,8 +567,7 @@ final class TenantSettingsController
 
         // Only customer-facing types are tenant-customizable.
         // staff_notification is operational with fixed copy (not editable).
-        // reschedule_confirmation is deferred until a dedicated reschedule flow exists.
-        $types = ['confirmation', 'reminder', 'cancellation', 'approval_request', 'approval_confirmed'];
+        $types = ['confirmation', 'reminder', 'cancellation', 'reschedule_confirmation', 'approval_request', 'approval_confirmed'];
         $fields = ['subject', 'heading', 'body_intro', 'body_outro', 'cta_label'];
 
         foreach ($types as $type) {

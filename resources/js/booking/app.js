@@ -19,7 +19,7 @@ import {
     ChevronLeft, ChevronRight, ChevronDown, Clock, Globe, Check, X,
     AlertCircle, Info, AlertTriangle, Calendar as CalendarIcon,
     User, Users, ExternalLink, Download, Plus, Minus, MapPin, Ticket,
-    Sun, Moon,
+    Sun, Moon, ArrowDown,
 } from 'lucide';
 import { resolveInitialPartySize } from './party-size.js';
 
@@ -27,7 +27,7 @@ const ICON_SET = {
     ChevronLeft, ChevronRight, ChevronDown, Clock, Globe, Check, X,
     AlertCircle, Info, AlertTriangle, Calendar: CalendarIcon,
     User, Users, ExternalLink, Download, Plus, Minus, MapPin, Ticket,
-    Sun, Moon,
+    Sun, Moon, ArrowDown,
 };
 
 // ── Theme bootstrap (runs before Alpine to prevent FOUC) ──
@@ -172,11 +172,23 @@ Alpine.data('bookingWizard', () => ({
     managedBooking: null,
     manageCanCancel: false,
     manageCanReschedule: false,
+    manageRescheduleReason: null,
     manageCancelReason: '',
     manageCancelModalOpen: false,
     manageCancelling: false,
     manageCancelled: false,
     manageLoading: false,
+
+    // Reschedule flow state
+    rescheduleDate: null,
+    rescheduleSlot: null,
+    rescheduleSlots: [],
+    rescheduleDates: [],
+    rescheduleMonth: new Date().getMonth(),
+    rescheduleYear: new Date().getFullYear(),
+    rescheduleSubmitting: false,
+    rescheduleNewBooking: null,
+    rescheduleCalendarFading: false,
 
     // CSP-safe setters for x-model (nested property assignment is prohibited)
     setCustomerName(val) { this.customerName = val; },
@@ -223,6 +235,9 @@ Alpine.data('bookingWizard', () => ({
     get isEventDetailStep() { return this.step === 'event-detail'; },
     get isEventSpotsStep() { return this.step === 'event-spots'; },
     get isManageStep() { return this.step === 'manage'; },
+    get isRescheduleDateStep() { return this.step === 'reschedule-date'; },
+    get isRescheduleReviewStep() { return this.step === 'reschedule-review'; },
+    get isRescheduleConfirmedStep() { return this.step === 'reschedule-confirmed'; },
     get hasToast() { return !!this.toast; },
     get hasSelectedDate() { return !!this.selectedDate; },
     get hasNoSlots() { return this.availableSlots.length === 0 && !!this.selectedDate; },
@@ -311,6 +326,13 @@ Alpine.data('bookingWizard', () => ({
                     if (focusTarget) {
                         focusTarget.focus({ preventScroll: true });
                     }
+                }
+
+                // Embed mode: notify parent window on booking confirmation
+                if (name === 'confirmed' && window.__VB_EMBED__ && window.parent !== window) {
+                    try {
+                        window.parent.postMessage({ type: 'booking:confirmed' }, '*');
+                    } catch (e) { /* cross-origin safety */ }
                 }
             });
         }, 200); // 150ms exit + 50ms gap
@@ -1061,6 +1083,7 @@ Alpine.data('bookingWizard', () => ({
             this.managedBooking = data.booking;
             this.manageCanCancel = data.can_cancel;
             this.manageCanReschedule = data.can_reschedule;
+            this.manageRescheduleReason = data.reschedule_reason || null;
 
             // If already cancelled, show the cancelled state
             if (data.booking.status === 'cancelled') {
@@ -1099,6 +1122,7 @@ Alpine.data('bookingWizard', () => ({
             this.manageCancelModalOpen = false;
             this.manageCanCancel = false;
             this.manageCanReschedule = false;
+            this.manageRescheduleReason = null;
             if (this.managedBooking) {
                 this.managedBooking.status = 'cancelled';
             }
@@ -1111,6 +1135,271 @@ Alpine.data('bookingWizard', () => ({
 
     // CSP-safe setter for cancel reason textarea
     setManageCancelReason(val) { this.manageCancelReason = val; },
+
+    /**
+     * Returns the correct i18n key for why rescheduling is disabled.
+     */
+    get rescheduleGateMessage() {
+        switch (this.manageRescheduleReason) {
+            case 'too_late':               return t('manage.reschedule_reason_too_late');
+            case 'pattern_not_supported':  return t('manage.reschedule_reason_disabled');
+            case 'rescheduling_disabled':   return t('manage.reschedule_reason_disabled');
+            case 'not_confirmed':          return t('manage.reschedule_reason_not_confirmed');
+            default:                       return t('manage.reschedule_reason_disabled');
+        }
+    },
+
+    // ── Self-service reschedule flow ──
+
+    /**
+     * Start the reschedule wizard from the manage page.
+     * Navigates the calendar to the month of the current booking.
+     */
+    async startReschedule() {
+        if (config.is_demo) {
+            this.showToast(t('demo_notice'), 'error');
+            return;
+        }
+        if (!this.managedBooking || !this.manageCanReschedule) return;
+
+        // Pre-position calendar to the month of the current booking
+        const bookingDate = this.managedBooking.date;
+        if (bookingDate) {
+            const [y, m] = bookingDate.split('-').map(Number);
+            this.rescheduleYear = y;
+            this.rescheduleMonth = m - 1;
+        } else {
+            const now = new Date();
+            this.rescheduleYear = now.getFullYear();
+            this.rescheduleMonth = now.getMonth();
+        }
+
+        this.rescheduleDate = null;
+        this.rescheduleSlot = null;
+        this.rescheduleSlots = [];
+        this.rescheduleDates = [];
+        this.rescheduleNewBooking = null;
+
+        this.step = 'reschedule-date';
+        await this.loadRescheduleDates();
+    },
+
+    /**
+     * Cancel the reschedule flow and return to the manage page.
+     */
+    cancelReschedule() {
+        this.rescheduleDate = null;
+        this.rescheduleSlot = null;
+        this.rescheduleSlots = [];
+        this.rescheduleDates = [];
+        this.rescheduleNewBooking = null;
+        this.step = 'manage';
+    },
+
+    /**
+     * Go back from review to date step (preserves selected date).
+     */
+    goBackToRescheduleDate() {
+        this.rescheduleSlot = null;
+        this.step = 'reschedule-date';
+    },
+
+    /**
+     * Load available dates for the reschedule calendar.
+     */
+    async loadRescheduleDates() {
+        if (!this.managedBooking) return;
+        const b = this.managedBooking;
+        const params = new URLSearchParams({
+            year: this.rescheduleYear,
+            month: this.rescheduleMonth + 1,
+        });
+        if (b.service_id) params.set('service_id', b.service_id);
+        if (b.staff_id) params.set('staff_id', b.staff_id);
+
+        const data = await this.api(`/available-dates?${params}`);
+        this.rescheduleDates = data.dates || [];
+    },
+
+    /**
+     * Navigate to the previous month in the reschedule calendar.
+     */
+    async reschedulePrevMonth() {
+        this.rescheduleCalendarFading = true;
+        this.rescheduleMonth--;
+        if (this.rescheduleMonth < 0) { this.rescheduleMonth = 11; this.rescheduleYear--; }
+        this.rescheduleDate = null;
+        this.rescheduleSlot = null;
+        this.rescheduleSlots = [];
+        await this.loadRescheduleDates();
+        setTimeout(() => { this.rescheduleCalendarFading = false; }, 180);
+    },
+
+    /**
+     * Navigate to the next month in the reschedule calendar.
+     */
+    async rescheduleNextMonth() {
+        this.rescheduleCalendarFading = true;
+        this.rescheduleMonth++;
+        if (this.rescheduleMonth > 11) { this.rescheduleMonth = 0; this.rescheduleYear++; }
+        this.rescheduleDate = null;
+        this.rescheduleSlot = null;
+        this.rescheduleSlots = [];
+        await this.loadRescheduleDates();
+        setTimeout(() => { this.rescheduleCalendarFading = false; }, 180);
+    },
+
+    /**
+     * Calendar month label for the reschedule calendar.
+     */
+    get rescheduleMonthLabel() {
+        const label = new Date(this.rescheduleYear, this.rescheduleMonth, 1)
+            .toLocaleDateString(fmt.intl_locale || config.locale || 'en', { month: 'long', year: 'numeric' });
+        return label.charAt(0).toUpperCase() + label.slice(1);
+    },
+
+    /**
+     * Calendar grid cells for the reschedule calendar.
+     */
+    get rescheduleCalendarCells() {
+        const year = this.rescheduleYear;
+        const month = this.rescheduleMonth;
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const weekStart = fmt.week_start ?? 0;
+        const rawDay = new Date(year, month, 1).getDay();
+        const firstDay = (rawDay - weekStart + 7) % 7;
+
+        const cells = [];
+
+        for (let i = 0; i < firstDay; i++) {
+            cells.push({ day: '', dateStr: '', disabled: true, today: false, hasSlots: false, selected: false });
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const isPast = new Date(dateStr) < new Date(today.toDateString());
+            const hasSlots = this.rescheduleDates.includes(dateStr);
+            cells.push({
+                day,
+                dateStr,
+                disabled: !hasSlots || isPast,
+                today: dateStr === todayStr,
+                hasSlots,
+                selected: dateStr === this.rescheduleDate,
+            });
+        }
+
+        return cells;
+    },
+
+    /**
+     * Select a date in the reschedule calendar and load time slots.
+     */
+    async selectRescheduleDate(cell) {
+        if (cell.disabled || !cell.day) return;
+        this.rescheduleDate = cell.dateStr;
+        this.rescheduleSlot = null;
+        this.rescheduleSlots = [];
+
+        const b = this.managedBooking;
+        const params = new URLSearchParams({ date: cell.dateStr });
+        if (b.service_id) params.set('service_id', b.service_id);
+        if (b.staff_id) params.set('staff_id', b.staff_id);
+
+        const data = await this.api(`/availability?${params}`);
+        this.rescheduleSlots = data.slots || [];
+    },
+
+    /**
+     * Select a time slot and transition to the review step.
+     */
+    selectRescheduleSlot(slot) {
+        this.rescheduleSlot = slot;
+        setTimeout(() => this.step = 'reschedule-review', 250);
+    },
+
+    /**
+     * Display string for the original booking date/time.
+     */
+    get rescheduleOriginalDisplay() {
+        if (!this.managedBooking) return '';
+        const b = this.managedBooking;
+        const dateLabel = this.formatDateDisplay(b.date);
+        const timeLabel = b.time && b.end_time ? `${b.time} – ${b.end_time}` : '';
+        return timeLabel ? `${dateLabel}, ${timeLabel}` : dateLabel;
+    },
+
+    /**
+     * Display string for the new reschedule date/time.
+     */
+    get rescheduleNewDisplay() {
+        if (!this.rescheduleDate || !this.rescheduleSlot) return '';
+        const dateLabel = this.formatDateDisplay(this.rescheduleDate);
+        const endTime = this.rescheduleSlot.end_time || '';
+        const timeLabel = endTime ? `${this.rescheduleSlot.time} – ${endTime}` : this.rescheduleSlot.time;
+        return `${dateLabel}, ${timeLabel}`;
+    },
+
+    /**
+     * Confirm the reschedule via the public API.
+     */
+    async confirmReschedule() {
+        if (this.rescheduleSubmitting || !this.rescheduleDate || !this.rescheduleSlot) return;
+        this.rescheduleSubmitting = true;
+
+        try {
+            const resp = await fetch(`/api/${config.slug}/bookings/${this.manageBookingId}/reschedule`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken,
+                },
+                body: JSON.stringify({
+                    new_date: this.rescheduleDate,
+                    new_time: this.rescheduleSlot.time,
+                }),
+            });
+            const data = await resp.json();
+
+            if (!resp.ok || data.error) {
+                this.showToast(data.message || t('errors.generic'), 'error');
+                return;
+            }
+
+            // Success
+            this.rescheduleNewBooking = data.new_booking;
+            this.step = 'reschedule-confirmed';
+        } catch {
+            this.showToast(t('errors.connection'), 'error');
+        } finally {
+            this.rescheduleSubmitting = false;
+        }
+    },
+
+    /**
+     * Summary rows for the reschedule confirmed state.
+     */
+    get rescheduleConfirmedRows() {
+        const rows = [];
+        if (!this.rescheduleNewBooking) return rows;
+        const nb = this.rescheduleNewBooking;
+
+        if (this.managedBooking?.service_name) {
+            rows.push({ label: t('summary.service_label'), value: this.managedBooking.service_name });
+        }
+        if (this.managedBooking?.staff_name) {
+            rows.push({ label: t('summary.with_label'), value: this.managedBooking.staff_name });
+        }
+        if (nb.date) {
+            rows.push({ label: t('summary.date_label'), value: this.formatDateDisplay(nb.date) });
+        }
+        if (nb.time) {
+            rows.push({ label: t('summary.time_label'), value: `${nb.time} – ${nb.end_time}` });
+        }
+        return rows;
+    },
 
     /**
      * Manage page summary rows for the booking detail card.

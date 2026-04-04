@@ -192,23 +192,29 @@ ob_start();
             <span class="vb-info-label"><?= __('admin.tenants.created') ?></span>
             <span class="vb-info-value"><?= htmlspecialchars($tenant['created_at'] ?? '—', ENT_QUOTES, 'UTF-8') ?></span>
         </div>
-        <div class="vb-info-row">
-            <span class="vb-info-label"><?= __('admin.tenants.view_booking_page') ?></span>
-            <span class="vb-info-value">
+    </div>
+
+    <!-- Public Booking URL -->
+    <?php $bookingUrl = (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/book/' . ($tenant['slug'] ?? ''); ?>
+    <div class="vb-public-url-card vb-fade-in-up">
+        <div class="vb-public-url-label"><?= __('admin.tenants.view_booking_page') ?></div>
+        <div class="vb-public-url-control">
+            <code class="vb-public-url-text"><?= htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8') ?></code>
+            <div class="vb-public-url-actions">
                 <a href="/book/<?= htmlspecialchars($tenant['slug'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                   target="_blank" rel="noopener" class="vb-link">
-                    /book/<?= htmlspecialchars($tenant['slug'] ?? '', ENT_QUOTES, 'UTF-8') ?>
-                    <i data-lucide="external-link" class="vb-icon-inline"></i>
+                   target="_blank" rel="noopener"
+                   class="vb-public-url-btn" title="<?= __('admin.tenants.view_booking_page') ?>">
+                    <i data-lucide="external-link"></i>
                 </a>
                 <button type="button"
-                        class="vb-copy-btn vb-copy-btn-ghost"
-                        data-copy-url="<?= htmlspecialchars((isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/book/' . ($tenant['slug'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                        class="vb-public-url-btn"
+                        data-copy-url="<?= htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8') ?>"
                         @click="copyBookingUrl"
                         title="<?= __('admin.common.copy_booking_url') ?>">
                     <span class="vb-copy-icon"><i data-lucide="copy"></i></span>
                     <span class="vb-copy-check"><i data-lucide="check"></i></span>
                 </button>
-            </span>
+            </div>
         </div>
     </div>
 </div>

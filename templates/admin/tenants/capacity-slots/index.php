@@ -29,7 +29,7 @@ ob_start();
 <?php endif; ?>
 
 <!-- Add Slot Form -->
-<div class="vb-card" style="margin-bottom: 1.5rem;">
+<div class="vb-table-container" style="margin-bottom: 1.5rem;">
     <div class="vb-card-header">
         <h3 class="vb-card-title"><?= __('admin.capacity_slots.add_slot') ?></h3>
     </div>
@@ -88,8 +88,8 @@ ob_start();
         <p><?= __('admin.capacity_slots.empty_description') ?></p>
     </div>
 <?php else: ?>
-    <div class="vb-card">
-        <div class="vb-table-wrapper">
+    <div class="vb-table-container">
+        <div class="vb-table-wrap">
             <table class="vb-table" id="capacity-slots-table">
                 <thead>
                     <tr>
@@ -145,7 +145,7 @@ ob_start();
                                       class="vb-form-flush"
                                       onsubmit="return confirm('<?= __('admin.capacity_slots.confirm_delete') ?>')">
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-                                    <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-danger"
+                                    <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-destructive"
                                             title="<?= __('admin.capacity_slots.btn_delete') ?>">
                                         <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
                                     </button>

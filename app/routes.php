@@ -132,6 +132,8 @@ return function (Router $router): void {
             $router->post('/admin/tenants/{tenant_id}/settings/notifications', \App\Controllers\Admin\TenantSettingsController::class, 'saveNotifications');
             $router->get('/admin/tenants/{tenant_id}/settings/emails', \App\Controllers\Admin\TenantSettingsController::class, 'emails');
             $router->post('/admin/tenants/{tenant_id}/settings/emails', \App\Controllers\Admin\TenantSettingsController::class, 'saveEmails');
+            $router->get('/admin/tenants/{tenant_id}/settings/embed', \App\Controllers\Admin\TenantSettingsController::class, 'embed');
+            $router->post('/admin/tenants/{tenant_id}/settings/embed', \App\Controllers\Admin\TenantSettingsController::class, 'saveEmbed');
 
             // Customer management — tenant-context (all business user roles + operator)
             $router->get('/admin/tenants/{tenant_id}/customers', \App\Controllers\Admin\CustomersController::class, 'index');
@@ -192,7 +194,9 @@ return function (Router $router): void {
             $router->post('/admin/tenants/{tenant_id}/events/{id}/delete', \App\Controllers\Admin\EventsController::class, 'delete');
 
             // Calendar views — tenant-context (all business user roles + operator)
-            $router->get('/admin/tenants/{tenant_id}/calendar', \App\Controllers\Admin\CalendarController::class, 'day');
+            // Month is the primary landing surface (product direction: month-first)
+            $router->get('/admin/tenants/{tenant_id}/calendar', \App\Controllers\Admin\CalendarController::class, 'month');
+            $router->get('/admin/tenants/{tenant_id}/calendar/day', \App\Controllers\Admin\CalendarController::class, 'day');
             $router->get('/admin/tenants/{tenant_id}/calendar/week', \App\Controllers\Admin\CalendarController::class, 'week');
 
             // Impersonation — operator-only (enforced in controller)
@@ -202,6 +206,10 @@ return function (Router $router): void {
 
         // ── Public booking pages ──
         $router->get('/book/{slug}', \App\Controllers\Booking\BookingPageController::class, 'show');
+
+        // ── Embed widget ──
+        $router->get('/embed/{slug}.js', \App\Controllers\Booking\EmbedController::class, 'script');
+        $router->get('/api/{slug}/embed-config', \App\Controllers\Booking\EmbedController::class, 'config');
 
         // ── Public booking API (per-tenant, no auth) ──
         $router->get('/api/{slug}/services', \App\Controllers\Booking\BookingApiController::class, 'services');
@@ -232,6 +240,7 @@ return function (Router $router): void {
         $router->get('/book/{slug}/manage/{booking_id}', \App\Controllers\Booking\BookingPageController::class, 'manage');
         $router->get('/api/{slug}/bookings/{id}', \App\Controllers\Booking\BookingApiController::class, 'bookingDetail');
         $router->post('/api/{slug}/bookings/{id}/cancel', \App\Controllers\Booking\BookingApiController::class, 'cancelBookingAction');
+        $router->post('/api/{slug}/bookings/{id}/reschedule', \App\Controllers\Booking\BookingApiController::class, 'rescheduleBookingAction');
 
         // ── Cron ──
         $router->get('/cron/run', \App\Controllers\CronController::class, 'run');

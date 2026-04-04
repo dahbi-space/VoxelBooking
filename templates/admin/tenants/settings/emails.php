@@ -19,9 +19,8 @@ foreach ($templates as $tpl) {
     $byType[$tpl['type']] = $tpl;
 }
 
-// Define the 5 customer-facing email types exposed in the editor (PRD §VII).
+// Define the 6 customer-facing email types exposed in the editor (PRD §VII).
 // staff_notification is operational (not tenant-customizable).
-// reschedule_confirmation is deferred until a dedicated reschedule flow exists.
 $emailTypes = [
     'confirmation' => [
         'label'   => 'Booking Confirmation',
@@ -56,8 +55,17 @@ $emailTypes = [
             'cta_label'  => 'Book Again',
         ],
     ],
-    // 'reschedule_confirmation' is hidden until a dedicated reschedule flow
-    // that updates booking timestamps exists. The Mailer sender is retained.
+    'reschedule_confirmation' => [
+        'label'   => 'Reschedule Confirmation',
+        'desc'    => 'Sent when a booking is rescheduled (old vs new details).',
+        'defaults' => [
+            'subject'    => 'Booking rescheduled — {business_name}',
+            'heading'    => 'Booking Rescheduled',
+            'body_intro' => 'Your booking has been moved to a new date and time.',
+            'body_outro' => 'If you have any questions, please contact us.',
+            'cta_label'  => 'Add to Calendar',
+        ],
+    ],
     'approval_request' => [
         'label'   => 'Approval Request',
         'desc'    => 'Sent to customers when their booking requires approval.',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
+use App\Engine\Database;
 use App\Engine\Locale;
 use App\Engine\Request;
 use App\Engine\Response;
@@ -18,8 +19,14 @@ use App\Models\Booking;
  *
  * Access: all authenticated admin roles (operator, owner, manager).
  *
- * GET /admin/tenants/{tenant_id}/calendar          → day view (default: today)
- * GET /admin/tenants/{tenant_id}/calendar/week     → week view (default: this week)
+ * GET /admin/tenants/{tenant_id}/calendar          → month view (default, flagship surface)
+ * GET /admin/tenants/{tenant_id}/calendar/day      → day view (detail drill-down)
+ * GET /admin/tenants/{tenant_id}/calendar/week     → week view
+ *
+ * All views load:
+ * - Bookings (from `bookings` table)
+ * - Blocked dates (from `blocked_dates` table, tenant-level)
+ * - Availability schedule (from `availability` table, day-of-week patterns)
  */
 final class CalendarController
 {
@@ -60,6 +67,11 @@ final class CalendarController
             $hours[] = $h;
         }
 
+        // Availability / blocked state for this specific day
+        $isBlocked = $this->isDateBlocked($tenantId, $dateStr);
+        $dayOfWeek = (int) $date->format('w');
+        $hasAvailability = $this->hasDayOfWeekAvailability($tenantId, $dayOfWeek);
+
         return $this->render('admin.tenants.calendar.day', __('admin.calendar.page_title'), [
             'documentTitle' => __('admin.calendar.page_title') . ' — ' . $tenant['name'],
             'tenant'    => $tenant,
@@ -73,6 +85,8 @@ final class CalendarController
             'hours'     => $hours,
             'hourStart' => self::HOUR_START,
             'hourEnd'   => self::HOUR_END,
+            'isBlocked'      => $isBlocked,
+            'hasAvailability' => $hasAvailability,
         ], $tenantId);
     }
 
@@ -108,16 +122,24 @@ final class CalendarController
         $prevWeek = $weekBegin->modify('-7 days')->format('Y-m-d');
         $nextWeek = $weekBegin->modify('+7 days')->format('Y-m-d');
 
-        // Build 7 days with their bookings
+        // Pre-load availability dow map and blocked dates for the week range
+        $weekEndStr = $weekBegin->modify('+6 days')->format('Y-m-d');
+        $availableDows = $this->getAvailableDaysOfWeek($tenantId);
+        $blockedDatesInRange = $this->getBlockedDatesInRange($tenantId, $weekBegin->format('Y-m-d'), $weekEndStr);
+
+        // Build 7 days with their bookings + state
         $days = [];
         for ($i = 0; $i < 7; $i++) {
             $dayDate = $weekBegin->modify("+{$i} days");
             $dayStr  = $dayDate->format('Y-m-d');
+            $dow     = (int) $dayDate->format('w');
             $days[]  = [
-                'date'      => $dayDate,
-                'dateStr'   => $dayStr,
-                'isToday'   => $dayStr === $today,
-                'bookings'  => Booking::forTenantDate($tenantId, $dayStr),
+                'date'            => $dayDate,
+                'dateStr'         => $dayStr,
+                'isToday'         => $dayStr === $today,
+                'bookings'        => Booking::forTenantDate($tenantId, $dayStr),
+                'isBlocked'       => in_array($dayStr, $blockedDatesInRange, true),
+                'hasAvailability' => in_array($dow, $availableDows, true),
             ];
         }
 
@@ -134,16 +156,205 @@ final class CalendarController
         ], $tenantId);
     }
 
-    // ── Helpers ──
+    // ── Month View ──
 
-    private function loadTenant(string $tenantId): ?array
+    public function month(Request $request): Response
     {
-        $rows = \App\Engine\Database::query(
-            'SELECT `id`, `name`, `slug`, `email`, `timezone`, `currency`, `brand_color` FROM `tenants` WHERE `id` = ? LIMIT 1',
+        $tenantId = $request->getAttribute('tenant_id');
+
+        if (!Auth::canAccessTenant($tenantId)) {
+            return $this->forbidden($request);
+        }
+
+        $tenant = $this->loadTenant($tenantId);
+        if ($tenant === null) {
+            return Response::redirect('/admin/tenants');
+        }
+
+        $dateStr = $request->string('date') ?: date('Y-m-d');
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
+            $dateStr = date('Y-m-d');
+        }
+
+        $date      = new \DateTimeImmutable($dateStr);
+        $today     = date('Y-m-d');
+        $year      = (int) $date->format('Y');
+        $month     = (int) $date->format('n');
+        $weekStart = Locale::weekStart(); // 0=Sunday, 1=Monday
+
+        // Previous / next month navigation
+        $prevMonth = $date->modify('first day of previous month')->format('Y-m-d');
+        $nextMonth = $date->modify('first day of next month')->format('Y-m-d');
+
+        // First day of the month and total days
+        $firstOfMonth = new \DateTimeImmutable("$year-$month-01");
+        $daysInMonth  = (int) $firstOfMonth->format('t');
+
+        // Calculate grid padding: how many days from previous month to show
+        $firstDow    = (int) $firstOfMonth->format('w'); // 0=Sun..6=Sat
+        $paddingBefore = ($firstDow - $weekStart + 7) % 7;
+
+        // Grid start date (may be in previous month)
+        $gridStart = $firstOfMonth->modify("-{$paddingBefore} days");
+
+        // Always show 6 rows = 42 cells for a consistent grid height
+        $totalCells   = 42;
+        $gridEnd      = $gridStart->modify('+' . ($totalCells - 1) . ' days');
+
+        // Fetch all bookings in the visible range with a single query
+        $allBookings = Booking::forTenantDateRange(
+            $tenantId,
+            $gridStart->format('Y-m-d'),
+            $gridEnd->format('Y-m-d')
+        );
+
+        // Group bookings by date for O(1) lookup in template
+        $bookingsByDate = [];
+        foreach ($allBookings as $b) {
+            $bDate = substr($b['start_datetime'], 0, 10);
+            $bookingsByDate[$bDate][] = $b;
+        }
+
+        // Pre-load availability + blocked dates for the grid range
+        $availableDows = $this->getAvailableDaysOfWeek($tenantId);
+        $blockedDatesInRange = $this->getBlockedDatesInRange(
+            $tenantId,
+            $gridStart->format('Y-m-d'),
+            $gridEnd->format('Y-m-d')
+        );
+
+        // Build the grid cells
+        $cells = [];
+        for ($i = 0; $i < $totalCells; $i++) {
+            $cellDate = $gridStart->modify("+{$i} days");
+            $cellStr  = $cellDate->format('Y-m-d');
+            $cellMonth = (int) $cellDate->format('n');
+            $dow      = (int) $cellDate->format('w');
+            $cells[] = [
+                'date'            => $cellDate,
+                'dateStr'         => $cellStr,
+                'day'             => (int) $cellDate->format('j'),
+                'isToday'         => $cellStr === $today,
+                'isCurrentMonth'  => $cellMonth === $month,
+                'bookings'        => $bookingsByDate[$cellStr] ?? [],
+                'isBlocked'       => in_array($cellStr, $blockedDatesInRange, true),
+                'hasAvailability' => in_array($dow, $availableDows, true),
+            ];
+        }
+
+        return $this->render('admin.tenants.calendar.month', __('admin.calendar.page_title'), [
+            'documentTitle' => __('admin.calendar.page_title') . ' — ' . $tenant['name'],
+            'tenant'    => $tenant,
+            'date'      => $date,
+            'dateStr'   => $dateStr,
+            'year'      => $year,
+            'month'     => $month,
+            'prevMonth' => $prevMonth,
+            'nextMonth' => $nextMonth,
+            'today'     => $today,
+            'cells'     => $cells,
+        ], $tenantId);
+    }
+
+    // ── Availability & Blocked Dates Helpers ──
+
+    /**
+     * Check if a specific date is blocked for the given tenant (tenant-level blocks only).
+     */
+    private function isDateBlocked(string $tenantId, string $dateStr): bool
+    {
+        $rows = Database::query(
+            'SELECT 1 FROM `blocked_dates`
+             WHERE `tenant_id` = ? AND `staff_id` IS NULL AND `resource_id` IS NULL
+               AND `start_date` <= ? AND `end_date` >= ?
+             LIMIT 1',
+            [$tenantId, $dateStr, $dateStr]
+        );
+
+        return !empty($rows);
+    }
+
+    /**
+     * Check if any availability window exists for a given day of week.
+     */
+    private function hasDayOfWeekAvailability(string $tenantId, int $dayOfWeek): bool
+    {
+        $rows = Database::query(
+            'SELECT 1 FROM `availability`
+             WHERE `tenant_id` = ? AND `staff_id` IS NULL AND `day_of_week` = ?
+             LIMIT 1',
+            [$tenantId, $dayOfWeek]
+        );
+
+        return !empty($rows);
+    }
+
+    /**
+     * Get all days-of-week that have at least one availability window.
+     * Returns array of integers (0=Sun..6=Sat).
+     */
+    private function getAvailableDaysOfWeek(string $tenantId): array
+    {
+        $rows = Database::query(
+            'SELECT DISTINCT `day_of_week` FROM `availability`
+             WHERE `tenant_id` = ? AND `staff_id` IS NULL',
             [$tenantId]
         );
 
-        return $rows[0] ?? null;
+        return array_map(fn($r) => (int) $r['day_of_week'], $rows);
+    }
+
+    /**
+     * Get all blocked dates (expanded) within a range for the tenant.
+     * Returns array of date strings ['2026-04-05', '2026-04-06', ...].
+     */
+    private function getBlockedDatesInRange(string $tenantId, string $startDate, string $endDate): array
+    {
+        $rows = Database::query(
+            'SELECT `start_date`, `end_date` FROM `blocked_dates`
+             WHERE `tenant_id` = ? AND `staff_id` IS NULL AND `resource_id` IS NULL
+               AND `start_date` <= ? AND `end_date` >= ?',
+            [$tenantId, $endDate, $startDate]
+        );
+
+        // Expand ranges into individual date strings
+        $blocked = [];
+        foreach ($rows as $r) {
+            $current = new \DateTimeImmutable($r['start_date']);
+            $end     = new \DateTimeImmutable($r['end_date']);
+            while ($current <= $end) {
+                $ds = $current->format('Y-m-d');
+                // Only include dates within the requested range
+                if ($ds >= $startDate && $ds <= $endDate) {
+                    $blocked[] = $ds;
+                }
+                $current = $current->modify('+1 day');
+            }
+        }
+
+        return array_unique($blocked);
+    }
+
+    // ── Shared Helpers ──
+
+    private function loadTenant(string $tenantId): ?array
+    {
+        $rows = Database::query(
+            'SELECT `id`, `name`, `slug`, `email`, `timezone`, `currency`, `brand_color`, `week_start`, `time_format` FROM `tenants` WHERE `id` = ? LIMIT 1',
+            [$tenantId]
+        );
+
+        $tenant = $rows[0] ?? null;
+
+        if ($tenant !== null) {
+            // Apply tenant-level calendar overrides to the Locale engine
+            Locale::setTenantOverrides([
+                'week_start'   => $tenant['week_start'] !== null ? (int) $tenant['week_start'] : null,
+                'time_format'  => $tenant['time_format'] ?: null,
+            ]);
+        }
+
+        return $tenant;
     }
 
     private function render(string $template, string $pageTitle, array $extra, string $tenantId): Response

@@ -255,9 +255,18 @@ final class RescheduleOutputTest extends TestCase
             'backUrl'    => '/admin/bookings',
         ];
 
+        $vars = array_merge($defaults, $overrides);
+
+        // Derive $canReschedule the same way the controller does:
+        // confirmed + timeslot pattern
+        $b = $vars['booking'];
+        if (!isset($vars['canReschedule'])) {
+            $vars['canReschedule'] = ($b['status'] === 'confirmed' && ($b['booking_pattern'] ?? '') === 'timeslot');
+        }
+
         return $this->renderTemplate(
             $this->templateDir . '/admin/bookings/show.php',
-            array_merge($defaults, $overrides)
+            $vars
         );
     }
 
@@ -282,6 +291,7 @@ final class RescheduleOutputTest extends TestCase
             ob_end_clean();
         }
 
-        return $content ?? '';
+        // Combine $content (main body) + $modals (body-level overlays)
+        return ($content ?? '') . ($modals ?? '');
     }
 }

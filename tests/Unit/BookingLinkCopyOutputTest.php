@@ -40,12 +40,6 @@ final class BookingLinkCopyOutputTest extends TestCase
         $html = $this->renderDashboardBusiness();
 
         $this->assertStringContainsString(
-            'vb-copy-btn',
-            $html,
-            'Dashboard must contain a copy button'
-        );
-
-        $this->assertStringContainsString(
             'data-copy-url="https://voxelbooking-app.test/book/test-salon"',
             $html,
             'Copy button must contain the full booking URL'
@@ -55,6 +49,18 @@ final class BookingLinkCopyOutputTest extends TestCase
             '@click="copyBookingUrl"',
             $html,
             'Copy button must use CSP-safe Alpine method reference'
+        );
+
+        $this->assertStringContainsString(
+            'vb-copy-icon',
+            $html,
+            'Dashboard must contain copy icon element'
+        );
+
+        $this->assertStringContainsString(
+            'vb-action-row',
+            $html,
+            'Dashboard must use bespoke action-row component'
         );
     }
 
@@ -65,21 +71,27 @@ final class BookingLinkCopyOutputTest extends TestCase
         $html = $this->renderTenantList();
 
         $this->assertStringContainsString(
-            'vb-copy-btn',
-            $html,
-            'Tenant list must contain a copy button'
-        );
-
-        $this->assertStringContainsString(
             'data-copy-url="https://voxelbooking-app.test/book/test-salon"',
             $html,
             'Copy button must contain the full booking URL'
         );
 
         $this->assertStringContainsString(
-            'vb-copy-btn-ghost',
+            'vb-copy-icon',
             $html,
-            'Tenant list copy button should use ghost variant'
+            'Tenant list must contain copy icon element'
+        );
+
+        $this->assertStringContainsString(
+            'vb-table-container',
+            $html,
+            'Tenant list must use the new table container system'
+        );
+
+        $this->assertStringContainsString(
+            'vb-table-toolbar',
+            $html,
+            'Tenant list must have a table toolbar'
         );
     }
 
@@ -90,9 +102,9 @@ final class BookingLinkCopyOutputTest extends TestCase
         $html = $this->renderTenantEdit();
 
         $this->assertStringContainsString(
-            'vb-copy-btn',
+            'vb-public-url-btn',
             $html,
-            'Tenant edit page must contain a copy button'
+            'Tenant edit page must use the public URL button component'
         );
 
         $this->assertStringContainsString(
@@ -105,6 +117,12 @@ final class BookingLinkCopyOutputTest extends TestCase
             '@click="copyBookingUrl"',
             $html,
             'Copy button must use CSP-safe Alpine method reference'
+        );
+
+        $this->assertStringContainsString(
+            'vb-public-url-card',
+            $html,
+            'Edit page must use the dedicated public URL card component'
         );
     }
 

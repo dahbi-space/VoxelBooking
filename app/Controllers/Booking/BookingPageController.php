@@ -89,15 +89,40 @@ final class BookingPageController
         $translations = Locale::getTranslationsForDomain('booking');
         $formatting   = Locale::getFormattingConfig();
 
-        // Generate CSRF token
-        $csrfToken = CsrfMiddleware::generateToken();
+        // Detect embed mode (?embed=1) — renders chromeless booking UI in an iframe
+        $isEmbed = ($request->string('embed') === '1');
+
+        // CSRF: embed mode is fully stateless (no session, no cookies).
+        // Booking POST goes through /api/{slug}/bookings which skips CSRF.
+        // Non-embed mode uses a per-session CSRF token as normal.
+        $csrfToken = $isEmbed ? '' : CsrfMiddleware::generateToken();
 
         // Render template to string
         ob_start();
         require __DIR__ . '/../../../templates/booking/page.php';
         $html = ob_get_clean();
 
-        return Response::html($html);
+        $response = Response::html($html);
+
+        // In embed mode, set frame-ancestors CSP to allow configured domains
+        // and prevent the browser from setting cookies (stateless iframe).
+        if ($isEmbed) {
+            $frameAncestors = "'self'";
+            $allowedDomains = $tenant['allowed_embed_domains'] ?? '';
+            if ($allowedDomains !== '' && $allowedDomains !== null) {
+                $domains = array_map('trim', explode(',', $allowedDomains));
+                $frameAncestors .= ' ' . implode(' ', $domains);
+            }
+            // Full CSP with embed-specific frame-ancestors
+            $response->header('Content-Security-Policy',
+                "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                . "style-src 'self' 'unsafe-inline'; "
+                . "img-src 'self' data:; font-src 'self'; "
+                . "connect-src 'self'; frame-ancestors {$frameAncestors}"
+            );
+        }
+
+        return $response;
     }
 
     /**

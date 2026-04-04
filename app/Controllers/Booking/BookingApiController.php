@@ -1510,6 +1510,8 @@ final class BookingApiController
                 'start_datetime'  => $booking['start_datetime'],
                 'end_datetime'    => $booking['end_datetime'],
                 'party_size'      => (int) $booking['party_size'],
+                'service_id'      => $booking['service_id'] ?? null,
+                'staff_id'        => $booking['staff_id'] ?? null,
                 'service_name'    => $booking['service_name'] ?? null,
                 'staff_name'      => $booking['staff_name'] ?? null,
                 'resource_name'   => $booking['resource_name'] ?? null,
@@ -1648,6 +1650,191 @@ final class BookingApiController
             'cancelled'  => true,
             'booking_id' => $bookingId,
             'email_sent' => $emailSent,
+        ]);
+    }
+
+    /**
+     * POST /api/{slug}/bookings/{id}/reschedule — reschedule a booking.
+     *
+     * Validates CSRF, delegates to BookingService::rescheduleBooking(),
+     * dispatches reschedule confirmation and staff notification emails.
+     *
+     * JSON body: { "new_date": "YYYY-MM-DD", "new_time": "HH:MM" }
+     */
+    public function rescheduleBookingAction(Request $request): Response
+    {
+        $slug = $request->getAttribute('slug');
+        $tenant = $this->resolveTenant($slug);
+        if (!$tenant) {
+            return Response::json(['error' => 'tenant_not_found'], 404);
+        }
+
+        $this->resolveLocale($tenant, $request);
+
+        // CSRF validation (same pattern as cancelBookingAction)
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $sessionToken = $_SESSION['_csrf_token'] ?? '';
+        $submittedToken = $request->header('X-CSRF-Token') ?? '';
+        if ($sessionToken === '' || $submittedToken === '' || !hash_equals($sessionToken, $submittedToken)) {
+            return Response::json(['error' => 'csrf_mismatch', 'message' => __('booking.api.csrf_mismatch')], 403);
+        }
+
+        $bookingId = $request->getAttribute('id');
+        $input = $request->json();
+        $newDate = trim($input['new_date'] ?? '');
+        $newTime = trim($input['new_time'] ?? '');
+
+        // Delegate to the engine
+        try {
+            $result = BookingService::rescheduleBooking(
+                $bookingId,
+                $tenant,
+                $newDate,
+                $newTime,
+                'customer', // actor_type
+                'web',      // source
+            );
+        } catch (\RuntimeException $e) {
+            $msg = $e->getMessage();
+            return match ($msg) {
+                'not_found' => Response::json([
+                    'error' => 'booking_not_found',
+                    'message' => __('booking.manage.not_found'),
+                ], 404),
+                'not_confirmed' => Response::json([
+                    'error' => 'not_confirmed',
+                    'message' => __('booking.manage.already_cancelled'),
+                ], 409),
+                'rescheduling_disabled' => Response::json([
+                    'error' => 'rescheduling_disabled',
+                    'message' => __('booking.manage.rescheduling_disabled'),
+                ], 403),
+                'too_late' => Response::json([
+                    'error' => 'time_gate',
+                    'message' => __('booking.manage.time_gate_reschedule'),
+                ], 409),
+                'same_slot' => Response::json([
+                    'error' => 'same_slot',
+                    'message' => __('booking.manage.same_slot'),
+                ], 422),
+                'slot_unavailable' => Response::json([
+                    'error' => 'slot_unavailable',
+                    'message' => __('booking.api.slot_unavailable'),
+                ], 409),
+                'pattern_not_supported' => Response::json([
+                    'error' => 'pattern_not_supported',
+                    'message' => __('booking.manage.rescheduling_disabled'),
+                ], 409),
+                'invalid_date' => Response::json([
+                    'error' => 'invalid_date',
+                    'message' => __('booking.api.invalid_date'),
+                ], 422),
+                'invalid_time' => Response::json([
+                    'error' => 'invalid_time',
+                    'message' => __('booking.api.start_time_required'),
+                ], 422),
+                default => Response::json([
+                    'error' => 'reschedule_failed',
+                    'message' => __('booking.api.booking_failed'),
+                ], 500),
+            };
+        }
+
+        // Post-commit: send reschedule confirmation email to customer
+        $oldBooking = $result['old_booking'];
+        $emailSent = false;
+
+        if (Mailer::isConfigured()) {
+            try {
+                $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+                $newStartDt = new \DateTimeImmutable($result['new_start'], $tz);
+                $newEndDt = new \DateTimeImmutable($result['new_end'], $tz);
+                $serviceName = $oldBooking['service_name'] ?? null;
+
+                // Load service name if not in the booking row
+                if (!$serviceName && !empty($oldBooking['service_id'])) {
+                    $svc = Database::query(
+                        'SELECT `name` FROM `services` WHERE `id` = ? LIMIT 1',
+                        [$oldBooking['service_id']]
+                    );
+                    $serviceName = $svc[0]['name'] ?? null;
+                }
+
+                // Load customer details
+                $customer = Database::query(
+                    'SELECT `name`, `email` FROM `customers` WHERE `id` = ? LIMIT 1',
+                    [$oldBooking['customer_id']]
+                );
+                $customerEmail = $customer[0]['email'] ?? '';
+                $customerName = $customer[0]['name'] ?? '';
+
+                // Load staff name if present
+                $staffName = null;
+                if (!empty($oldBooking['staff_id'])) {
+                    $staffRow = Database::query(
+                        'SELECT `name` FROM `staff` WHERE `id` = ? LIMIT 1',
+                        [$oldBooking['staff_id']]
+                    );
+                    $staffName = $staffRow[0]['name'] ?? null;
+                }
+
+                $emailData = [
+                    'date'           => $result['new_date'],
+                    'formatted_date' => Locale::dateLong($newStartDt),
+                    'time'           => $newStartDt->format('H:i'),
+                    'end_time'       => $newEndDt->format('H:i'),
+                ];
+
+                $emailResult = Mailer::sendRescheduleConfirmation(
+                    $customerEmail,
+                    $customerName,
+                    $emailData,
+                    $serviceName,
+                    $staffName,
+                    $tenant['name'],
+                    $tenant['id'],
+                    $result['new_booking_id'],
+                    $tenant['brand_color'] ?? '#2563EB',
+                );
+                $emailSent = ($emailResult['sent'] ?? false) && Mailer::isProductionSmtp();
+            } catch (\Throwable $e) {
+                Logger::error('Reschedule email dispatch failed', [
+                    'booking' => $result['new_booking_id'],
+                    'error'   => $e->getMessage(),
+                ]);
+            }
+
+            // Staff notification (fire-and-forget)
+            if ((int) ($tenant['notify_on_booking'] ?? 0) === 1) {
+                try {
+                    Mailer::sendStaffBookingNotification(
+                        $emailData, $serviceName, $staffName ?? null,
+                        $customerName,
+                        $tenant['name'], $tenant['id'], $result['new_booking_id'],
+                        $tenant['brand_color'] ?? '#2563EB',
+                    );
+                } catch (\Throwable $e) {
+                    Logger::error('Staff reschedule notification failed', [
+                        'booking' => $result['new_booking_id'],
+                        'error'   => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        // Build response with new booking details
+        return Response::json([
+            'rescheduled'    => true,
+            'new_booking_id' => $result['new_booking_id'],
+            'email_sent'     => $emailSent,
+            'new_booking'    => [
+                'id'       => $result['new_booking_id'],
+                'date'     => $result['new_date'],
+                'time'     => $result['new_time'],
+                'end_time' => (new \DateTimeImmutable($result['new_end']))->format('H:i'),
+            ],
         ]);
     }
 

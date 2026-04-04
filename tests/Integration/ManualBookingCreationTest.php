@@ -492,7 +492,8 @@ final class ManualBookingCreationTest extends TestCase
     {
         $today = date('Y-m-d');
 
-        $res = self::httpGet("/admin/tenants/" . self::$tenantId . "/calendar?date=" . $today, 'operator');
+        // Day view is now at /calendar/day (month is the default at /calendar)
+        $res = self::httpGet("/admin/tenants/" . self::$tenantId . "/calendar/day?date=" . $today, 'operator');
 
         $this->assertSame(200, $res['code']);
         $this->assertStringContainsString('/bookings/create', $res['body'], 'Calendar day must link to create booking');

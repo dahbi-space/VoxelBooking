@@ -110,7 +110,7 @@ ob_start();
 <!-- Recently Processed -->
 <?php if (!empty($processedRequests)): ?>
 <div class="vb-section-muted vb-animate-in stagger-5">
-    <div class="vb-card">
+    <div class="vb-table-container">
         <div class="vb-card-header">
             <div class="vb-card-title"><?= __('admin.deletion.recently_processed') ?></div>
         </div>

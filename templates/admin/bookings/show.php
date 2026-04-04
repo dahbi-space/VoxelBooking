@@ -173,8 +173,8 @@ ob_start();
         </form>
 
         <?php if (!empty($booking['rescheduled_to_id'])): ?>
-            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--vb-border, #e5e7eb);">
-                <p class="vb-text-muted" style="font-size: 0.875rem;">
+            <div class="vb-card-separator">
+                <p class="vb-text-muted vb-text-sm">
                     <?= __('admin.bookings.status_rescheduled') ?>
                     → <a href="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($booking['rescheduled_to_id'], ENT_QUOTES, 'UTF-8') ?>" class="vb-link">
                         <?= __('admin.bookings.view_new_booking') ?? 'View new booking' ?>
@@ -193,8 +193,8 @@ ob_start();
             && !\App\Engine\DemoMode::isActive();
         ?>
         <?php if ($canReschedule): ?>
-        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--vb-border, #e5e7eb);">
-            <button type="button" class="vb-btn vb-btn-secondary" id="btn-reschedule-open" style="width: 100%;">
+        <div class="vb-card-separator">
+            <button type="button" class="vb-btn vb-btn-secondary vb-btn-block" id="btn-reschedule-open">
                 <i data-lucide="calendar-clock"></i>
                 <?= __('admin.bookings.reschedule') ?>
             </button>
@@ -203,69 +203,7 @@ ob_start();
     </div>
 </div>
 
-<?php if ($canReschedule ?? false): ?>
-<!-- Reschedule Modal -->
-<div id="reschedule-modal" class="vb-modal-overlay" style="display: none;">
-    <div class="vb-modal" style="max-width: 420px;">
-        <div class="vb-modal-header">
-            <h3 class="vb-modal-title"><?= __('admin.bookings.reschedule_title') ?></h3>
-            <button type="button" class="vb-modal-close" id="btn-reschedule-close" aria-label="Close">
-                <i data-lucide="x"></i>
-            </button>
-        </div>
-        <div class="vb-modal-body">
-            <p class="vb-text-muted" style="margin-bottom: 1rem; font-size: 0.875rem;">
-                <?= __('admin.bookings.reschedule_desc') ?>
-            </p>
-            <form method="POST" action="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($booking['id'], ENT_QUOTES, 'UTF-8') ?>/reschedule" id="reschedule-form">
-                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
-                <div class="vb-form-group">
-                    <label for="reschedule_date" class="vb-label"><?= __('admin.bookings.reschedule_new_date') ?></label>
-                    <input type="date" id="reschedule_date" name="new_date" class="vb-input"
-                           value="<?= date('Y-m-d', strtotime($booking['start_datetime'])) ?>"
-                           min="<?= date('Y-m-d') ?>" required>
-                </div>
-
-                <div class="vb-form-group">
-                    <label for="reschedule_time" class="vb-label"><?= __('admin.bookings.reschedule_new_time') ?></label>
-                    <input type="time" id="reschedule_time" name="new_time" class="vb-input"
-                           value="<?= date('H:i', strtotime($booking['start_datetime'])) ?>" required>
-                </div>
-
-                <div class="vb-form-actions" style="margin-top: 1.5rem;">
-                    <button type="button" class="vb-btn vb-btn-secondary" id="btn-reschedule-cancel">
-                        <?= __('admin.common.cancel') ?? 'Cancel' ?>
-                    </button>
-                    <button type="submit" class="vb-btn vb-btn-primary">
-                        <i data-lucide="calendar-clock"></i>
-                        <?= __('admin.bookings.btn_reschedule') ?>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-<script>
-(function() {
-    var openBtn = document.getElementById('btn-reschedule-open');
-    var closeBtn = document.getElementById('btn-reschedule-close');
-    var cancelBtn = document.getElementById('btn-reschedule-cancel');
-    var modal = document.getElementById('reschedule-modal');
-    if (!openBtn || !modal) return;
-
-    openBtn.addEventListener('click', function() { modal.style.display = 'flex'; });
-    closeBtn.addEventListener('click', function() { modal.style.display = 'none'; });
-    cancelBtn.addEventListener('click', function() { modal.style.display = 'none'; });
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) modal.style.display = 'none';
-    });
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modal.style.display === 'flex') modal.style.display = 'none';
-    });
-})();
-</script>
-<?php endif; ?>
 
 <!-- Event Timeline -->
 <?php if (!empty($timeline)): ?>
@@ -291,4 +229,90 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
+
+// Capture modal HTML into $modals — rendered at body level by layout.php,
+// outside .vb-content (which creates a containing block via its entrance animation).
+$modals = '';
+if ($canReschedule ?? false):
+    ob_start();
+?>
+<!-- Reschedule Modal -->
+<div id="reschedule-modal" class="vb-modal-overlay" style="display: none;">
+    <div class="vb-modal vb-modal-sm">
+        <div class="vb-modal-header">
+            <h3 class="vb-modal-title"><?= __('admin.bookings.reschedule_title') ?></h3>
+            <button type="button" class="vb-modal-close" id="btn-reschedule-close" aria-label="Close">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="vb-modal-body">
+            <p class="vb-modal-desc"><?= __('admin.bookings.reschedule_desc') ?></p>
+            <form method="POST" action="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($booking['id'], ENT_QUOTES, 'UTF-8') ?>/reschedule" id="reschedule-form">
+                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                <div class="vb-modal-form-row">
+                    <div class="vb-form-group">
+                        <label for="reschedule_date" class="vb-label"><?= __('admin.bookings.reschedule_new_date') ?></label>
+                        <input type="date" id="reschedule_date" name="new_date" class="vb-input"
+                               value="<?= date('Y-m-d', strtotime($booking['start_datetime'])) ?>"
+                               min="<?= date('Y-m-d') ?>" required>
+                    </div>
+                    <div class="vb-form-group">
+                        <label for="reschedule_time" class="vb-label"><?= __('admin.bookings.reschedule_new_time') ?></label>
+                        <input type="time" id="reschedule_time" name="new_time" class="vb-input"
+                               value="<?= date('H:i', strtotime($booking['start_datetime'])) ?>" required>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="vb-modal-footer">
+            <button type="button" class="vb-btn vb-btn-secondary" id="btn-reschedule-cancel">
+                <?= __('admin.common.cancel') ?? 'Cancel' ?>
+            </button>
+            <button type="submit" form="reschedule-form" class="vb-btn vb-btn-primary">
+                <i data-lucide="calendar-clock"></i>
+                <?= __('admin.bookings.btn_reschedule') ?>
+            </button>
+        </div>
+    </div>
+</div>
+<script>
+(function() {
+    var openBtn = document.getElementById('btn-reschedule-open');
+    var closeBtn = document.getElementById('btn-reschedule-close');
+    var cancelBtn = document.getElementById('btn-reschedule-cancel');
+    var modal = document.getElementById('reschedule-modal');
+    if (!openBtn || !modal) return;
+
+    function openModal() {
+        modal.style.display = 'flex';
+        // Re-trigger entrance animations
+        var dialog = modal.querySelector('.vb-modal');
+        if (dialog) {
+            dialog.style.animation = 'none';
+            dialog.offsetHeight; // force reflow
+            dialog.style.animation = '';
+        }
+        modal.style.animation = 'none';
+        modal.offsetHeight;
+        modal.style.animation = '';
+        // Render Lucide icons inside the modal (they are outside .vb-content)
+        if (window.lucide) window.lucide.createIcons({ nodes: [modal] });
+    }
+    function closeModal() { modal.style.display = 'none'; }
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
+    });
+})();
+</script>
+<?php
+    $modals = ob_get_clean();
+endif;
+
 include dirname(__DIR__, 2) . '/admin/layout.php';

@@ -115,6 +115,8 @@
         --vb-sidebar-width: 248px;
         --vb-sidebar-collapsed: 56px;
         --vb-topbar-height: 52px;
+        --vb-banner-height: 38px;
+        --vb-shell-padding-x: 1.75rem;
         /* ── Motion: spring-inspired curves ── */
         --vb-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
         --vb-ease-in: cubic-bezier(0.4, 0, 1, 1);
@@ -448,19 +450,19 @@
     }
     .vb-tab svg { width: 14px; height: 14px; flex-shrink: 0; }
 
-    /* Underline tab variant (for settings pages) */
-    .vb-tabs-line {
-        display: flex; gap: 0; border-bottom: 1px solid var(--vb-border-subtle);
-        padding: 0; margin-bottom: 1.75rem; background: none; border-radius: 0;
+    /* Compact tabs variant — for inline use in calendar/toolbar headers */
+    .vb-tabs.vb-tabs-compact {
+        margin-bottom: 0;
+        padding: 2px;
     }
-    .vb-tabs-line .vb-tab {
-        border-radius: 0; padding: 0.625rem 1rem;
-        border-bottom: 2px solid transparent; margin-bottom: -1px;
+    .vb-tabs-compact .vb-tab {
+        padding: 0.3125rem 0.75rem;
+        font-size: 0.8125rem;
     }
-    .vb-tabs-line .vb-tab.active {
-        border-bottom-color: var(--vb-accent);
-        color: var(--vb-accent); background: none; box-shadow: none;
-    }
+
+
+    /* NOTE: .vb-tabs-line has been retired. All tabs now use the pill variant (.vb-tabs).
+       Settings pages use .vb-tabs, calendar uses .vb-tabs.vb-tabs-compact. */
 
     /* ══════════════════════════════════════════════════════════════
        BADGE SYSTEM — Semantic status indicators

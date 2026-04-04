@@ -22,6 +22,7 @@
 
 import Alpine from '@alpinejs/csp';
 import { createIcons } from 'lucide';
+import { initTooltips } from './tooltips.js';
 
 // ── Icon Registry (tree-shaken) ──
 // Only icons listed here are bundled. Add new icons as needed.
@@ -518,6 +519,9 @@ Alpine.start();
 // ── Lucide: initial render ──
 // Runs after Alpine has processed the DOM so x-if/x-for content is present.
 createIcons({ icons: ICON_SET });
+
+// ── Tooltips: replace native title= with styled tooltips ──
+initTooltips();
 
 // ── Refresh helper for Alpine-rendered content ──
 window.refreshIcons = () => {

@@ -147,10 +147,10 @@ ob_start();
                                    required>
                         </div>
                         <button type="button"
-                                class="vb-btn vb-btn-ghost vb-btn-xs vb-btn-danger"
+                                class="vb-btn vb-btn-ghost vb-btn-xs vb-btn-destructive"
                                 @click="removeWindow(dayIndex, idx)"
                                 :title="'<?= __('admin.availability.remove_window') ?>'">
-                            <i data-lucide="x" style="width: 13px; height: 13px;"></i>
+                            <i data-lucide="minus" style="width: 12px; height: 12px;"></i>
                         </button>
                     </div>
                 </template>

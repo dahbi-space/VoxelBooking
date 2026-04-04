@@ -62,7 +62,36 @@ ob_start();
         </a>
     </div>
 <?php else: ?>
-    <div class="vb-card">
+    <div class="vb-table-container">
+        <div class="vb-table-toolbar">
+            <form action="/admin/tenants" method="GET" class="vb-table-search">
+                <i data-lucide="search" class="vb-table-search-icon"></i>
+                <input type="text"
+                       name="search"
+                       value="<?= htmlspecialchars($_GET['search'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                       placeholder="<?= __('admin.tenants.search_placeholder') ?>"
+                       class="vb-table-search-input" />
+            </form>
+            <div class="vb-table-toolbar-right">
+                <div class="vb-filter-tabs">
+                    <?php
+                    $currentStatus = $_GET['status'] ?? 'all';
+                    $statusFilters = [
+                        'all'      => ['label' => __('admin.common.all'),     'count' => $counts['total'] ?? 0],
+                        'active'   => ['label' => __('admin.tenants.status_active'),   'count' => $counts['active'] ?? 0],
+                        'paused'   => ['label' => __('admin.tenants.status_paused'),   'count' => $counts['paused'] ?? 0],
+                        'archived' => ['label' => __('admin.tenants.status_archived'), 'count' => $counts['archived'] ?? 0],
+                    ];
+                    foreach ($statusFilters as $key => $filter): ?>
+                    <a href="/admin/tenants<?= $key !== 'all' ? '?status=' . $key : '' ?>"
+                       class="vb-filter-tab <?= $currentStatus === $key ? 'active' : '' ?>">
+                        <?= $filter['label'] ?>
+                        <span class="vb-filter-tab-count"><?= $filter['count'] ?></span>
+                    </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
         <div class="vb-table-wrap">
             <table class="vb-table">
                 <thead>
@@ -71,8 +100,8 @@ ob_start();
                         <th><?= __('admin.tenants.name') ?></th>
                         <th><?= __('admin.tenants.pattern') ?></th>
                         <th><?= __('admin.tenants.status') ?></th>
-                        <th><?= __('admin.tenants.bookings') ?></th>
-                        <th><?= __('admin.tenants.services') ?></th>
+                        <th class="vb-text-center"><?= __('admin.tenants.bookings') ?></th>
+                        <th class="vb-text-center"><?= __('admin.tenants.services') ?></th>
                         <th><?= __('admin.tenants.actions') ?></th>
                     </tr>
                 </thead>
@@ -102,8 +131,12 @@ ob_start();
                                 <?= __('admin.tenants.status_' . ($tenant['status'] ?? 'active')) ?>
                             </span>
                         </td>
-                        <td><?= (int) ($tenant['booking_count'] ?? 0) ?></td>
-                        <td><?= (int) ($tenant['service_count'] ?? 0) ?></td>
+                        <td class="vb-text-center">
+                            <span class="vb-cell-numeric"><?= (int) ($tenant['booking_count'] ?? 0) ?></span>
+                        </td>
+                        <td class="vb-text-center">
+                            <span class="vb-cell-numeric"><?= (int) ($tenant['service_count'] ?? 0) ?></span>
+                        </td>
                         <td>
                             <div class="vb-action-group">
                                 <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/edit"
@@ -119,7 +152,7 @@ ob_start();
                                     <i data-lucide="external-link"></i>
                                 </a>
                                 <button type="button"
-                                        class="vb-copy-btn vb-copy-btn-ghost"
+                                        class="vb-btn vb-btn-ghost vb-btn-sm"
                                         data-copy-url="<?= htmlspecialchars((isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/book/' . $tenant['slug'], ENT_QUOTES, 'UTF-8') ?>"
                                         @click="copyBookingUrl"
                                         title="<?= __('admin.common.copy_booking_url') ?>">
