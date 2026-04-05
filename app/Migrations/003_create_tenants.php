@@ -19,6 +19,8 @@ return [
         `booking_pattern` VARCHAR(20) NOT NULL COMMENT 'Valid: timeslot, resource, capacity, event',
         `locale` VARCHAR(10) NOT NULL DEFAULT 'en',
         `locale_override` VARCHAR(10) NULL DEFAULT NULL,
+        `week_start` TINYINT(1) NULL DEFAULT NULL COMMENT 'Week start override (0=Sun,1=Mon,...,6=Sat). NULL=locale default',
+        `time_format` VARCHAR(3) NULL DEFAULT NULL COMMENT 'Time format override: 12h or 24h. NULL=locale default',
         `currency` VARCHAR(3) NOT NULL DEFAULT 'EUR',
         `brand_color` VARCHAR(7) NOT NULL DEFAULT '#2563EB',
         `brand_color_text` VARCHAR(7) NOT NULL DEFAULT '#FFFFFF',

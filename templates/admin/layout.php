@@ -306,8 +306,8 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                                 <span class="vb-profile-dropdown-hint icon-sun"><?= __('admin.nav.theme_light') ?></span>
                                 <span class="vb-profile-dropdown-hint icon-moon"><?= __('admin.nav.theme_dark') ?></span>
                             </button>
-                            <?php if (\App\Engine\Auth::isOperator() && !$isImpersonating): ?>
-                            <a href="/admin/settings/account" class="vb-profile-dropdown-item" @click="closeProfile">
+                            <?php if (!$isImpersonating): ?>
+                            <a href="/admin/account" class="vb-profile-dropdown-item" @click="closeProfile">
                                 <span class="vb-profile-dropdown-icon">
                                     <i data-lucide="user-cog"></i>
                                 </span>
@@ -368,7 +368,7 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                     <?= __('admin.settings.cancel_button') ?? 'Cancel' ?>
                 </button>
                 <button type="button" class="vb-btn vb-btn-destructive" data-confirm-ok>
-                    <span data-confirm-btn-text>Confirm</span>
+                    <span data-confirm-btn-text><?= __('admin.confirm.ok') ?></span>
                 </button>
             </div>
         </div>

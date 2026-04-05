@@ -23,13 +23,13 @@ use App\Middleware\CsrfMiddleware;
  *
  * GET  /admin/settings          → General settings (read + form)
  * POST /admin/settings          → Save general settings
- * GET  /admin/settings/account  → Account password form
- * POST /admin/settings/account  → Change operator password
  * GET  /admin/settings/email    → Email/SMTP config
  * POST /admin/settings/email    → Save email config
  * GET  /admin/settings/cron     → Cron status
  * GET  /admin/settings/logs     → Log viewer
  * GET  /admin/settings/audit    → Audit log viewer (read-only, compliance §5)
+ *
+ * Account management now lives in AccountController (/admin/account).
  */
 final class SettingsController
 {
@@ -114,71 +114,6 @@ final class SettingsController
 
         $this->setFlash('success', __('admin.flash.general_saved'));
         return Response::redirect('/admin/settings');
-    }
-
-    // ── Account ──
-
-    public function account(Request $request): Response
-    {
-        return $this->render('admin.settings.account', 'Account', [
-            'flash' => $this->flash(),
-        ]);
-    }
-
-    public function saveAccount(Request $request): Response
-    {
-        $currentPassword = $request->string('current_password');
-        $newPassword     = $request->string('new_password');
-        $confirmPassword = $request->string('confirm_password');
-
-        if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
-            $this->setFlash('error', __('admin.flash.password_required'));
-            return Response::redirect('/admin/settings/account');
-        }
-
-        if ($newPassword !== $confirmPassword) {
-            $this->setFlash('error', __('admin.flash.password_mismatch'));
-            return Response::redirect('/admin/settings/account');
-        }
-
-        if (strlen($newPassword) < 8) {
-            $this->setFlash('error', __('admin.flash.password_min_length'));
-            return Response::redirect('/admin/settings/account');
-        }
-
-        // Verify current password
-        $user = Auth::user();
-        if ($user === null) {
-            return Response::redirect('/admin/login');
-        }
-
-        try {
-            $table = $user['type'] === 'operator' ? 'operators' : 'business_users';
-            $rows = Database::query(
-                "SELECT `password_hash` FROM `{$table}` WHERE `id` = ? LIMIT 1",
-                [$user['id']]
-            );
-
-            if (empty($rows) || !password_verify($currentPassword, $rows[0]['password_hash'])) {
-                $this->setFlash('error', __('admin.flash.password_incorrect'));
-                return Response::redirect('/admin/settings/account');
-            }
-
-            // Update password (bcrypt, cost 12 per PRD §XV)
-            $newHash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
-            Database::execute(
-                "UPDATE `{$table}` SET `password_hash` = ?, `updated_at` = NOW() WHERE `id` = ?",
-                [$newHash, $user['id']]
-            );
-
-            AuditLog::log('auth.password_changed', $user['type'], $user['id']);
-
-            $this->setFlash('success', __('admin.flash.password_updated'));
-        } catch (\Throwable $e) {
-            $this->setFlash('error', __('admin.flash.password_failed'));
-        }
-
-        return Response::redirect('/admin/settings/account');
     }
 
     // ── Email ──

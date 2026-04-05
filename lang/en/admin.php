@@ -128,10 +128,13 @@ return [
     // ── Confirm Dialog ──
     'confirm' => [
         'title'              => 'Confirm Action',
+        'ok'                 => 'Confirm',
     ],
 
     // ── Settings: Account ──
     'account' => [
+        'page_title'         => 'Account',
+        'page_subtitle'      => 'Manage your credentials and profile.',
         'details_title'      => 'Account Details',
         'details_desc'       => 'Your operator account information.',
         'name_label'         => 'Name',

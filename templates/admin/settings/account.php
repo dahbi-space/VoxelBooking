@@ -1,17 +1,24 @@
 <?php
 /**
- * Account Settings — password change + account info.
+ * Account page — standalone personal surface for credential management.
+ *
+ * Separated from system settings: operators and business users can manage
+ * their own identity here without navigating into the settings namespace.
  *
  * Variables: $user, $version, $csrfToken, $flash, $pageTitle
  */
-$activePage = 'settings.account';
-$activeTab = 'account';
+$activePage = 'account';
 $currentUser = $user ?? [];
 
 ob_start();
-
-include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
 ?>
+
+<div class="vb-page-header">
+    <div>
+        <h2 class="vb-page-title"><?= __('admin.account.page_title') ?></h2>
+        <p class="vb-page-subtitle"><?= __('admin.account.page_subtitle') ?></p>
+    </div>
+</div>
 
 <?php if ($flash): ?>
     <?php include __DIR__ . '/../../partials/alert.php'; ?>
@@ -48,7 +55,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
             <div class="vb-card-title"><?= __('admin.account.change_pw_title') ?></div>
             <div class="vb-card-desc"><?= __('admin.account.change_pw_desc') ?></div>
         </div>
-        <form method="POST" action="/admin/settings/account">
+        <form method="POST" action="/admin/account">
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
             <div class="vb-form-group">

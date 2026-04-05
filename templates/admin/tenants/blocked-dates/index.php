@@ -47,7 +47,7 @@ ob_start();
     <form method="POST"
           action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/blocked-dates"
           style="display: flex; flex-direction: column;"
-          x-data="{ selectedScope: 'tenant' }">
+          x-data="blockedDateScope">
         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
         <div style="padding: 1.5rem;">
@@ -70,7 +70,7 @@ ob_start();
 
                 <div class="vb-form-group" style="margin-bottom: 0;">
                     <label class="vb-label" for="bd-scope"><?= __('admin.blocked_dates.scope') ?></label>
-                    <select class="vb-input w-full" id="bd-scope" x-model="selectedScope">
+                    <select class="vb-input w-full" id="bd-scope" x-model="selectedScope" @change="onScopeChange()">
                         <option value="tenant"><?= __('admin.blocked_dates.scope_tenant') ?></option>
                         
                         <?php if (!empty($staff)): ?>

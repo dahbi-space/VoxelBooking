@@ -8,12 +8,11 @@
  * Renders the canonical page header + tab bar for all operator settings pages.
  * Matches the tenant settings pattern (page-header → tabs → content).
  *
- * Variables: $activeTab (string: general|account|email|cron|logs|audit)
+ * Variables: $activeTab (string: general|email|cron|logs|audit)
  */
 $activeTab = $activeTab ?? 'general';
 $tabs = [
     'general' => ['label' => __('admin.tabs.general'), 'href' => '/admin/settings', 'icon' => 'settings'],
-    'account' => ['label' => __('admin.tabs.account'), 'href' => '/admin/settings/account', 'icon' => 'user'],
     'email'   => ['label' => __('admin.tabs.email'), 'href' => '/admin/settings/email', 'icon' => 'mail'],
     'cron'    => ['label' => __('admin.tabs.cron'), 'href' => '/admin/settings/cron', 'icon' => 'clock'],
     'logs'    => ['label' => __('admin.tabs.logs'), 'href' => '/admin/settings/logs', 'icon' => 'file-text'],

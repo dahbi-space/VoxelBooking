@@ -204,11 +204,11 @@ final class AdminRoutesTest extends TestCase
         $this->assertSame(403, $r['code'], 'Business user should be denied operator-only settings');
     }
 
-    public function test_business_user_settings_account_returns_403(): void
+    public function test_business_user_account_returns_200(): void
     {
         $this->doLoginBusinessUser();
-        $r = $this->get('/admin/settings/account');
-        $this->assertSame(403, $r['code'], 'Business user should be denied operator-only account page');
+        $r = $this->get('/admin/account');
+        $this->assertSame(200, $r['code'], 'Business user should access standalone account page');
     }
 
     public function test_business_user_other_tenant_returns_403(): void

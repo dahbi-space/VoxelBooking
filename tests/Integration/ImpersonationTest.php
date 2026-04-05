@@ -151,7 +151,7 @@ final class ImpersonationTest extends TestCase
 
         $this->assertSame(200, $r['code']);
         $this->assertStringNotContainsString(
-            'href="/admin/settings/account"',
+            'href="/admin/account"',
             $r['body'],
             'Account link should be hidden in dropdown during impersonation'
         );
@@ -165,7 +165,7 @@ final class ImpersonationTest extends TestCase
 
         $this->assertSame(200, $r['code']);
         $this->assertStringContainsString(
-            'href="/admin/settings/account"',
+            'href="/admin/account"',
             $r['body'],
             'Account link should be visible for operators not impersonating'
         );

@@ -214,7 +214,7 @@ ob_start();
     <!-- Quick Actions -->
     <div>
         <div class="vb-dash-section-title vb-fade-in-up stagger-6" style="margin-bottom: 0.75rem; border-bottom: none; padding: 0; padding-top: 0.5rem; text-transform: uppercase; color: var(--vb-text-tertiary); letter-spacing: 0.05em; font-size: 0.75rem;"><?= __('admin.common.actions') ?></div>
-        <div class="vb-quickstart vb-fade-in-up stagger-7" style="grid-template-columns: 1fr;">
+        <div class="vb-action-row vb-quickstart vb-fade-in-up stagger-7" style="grid-template-columns: 1fr;">
             <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/bookings" class="vb-quickstart-card">
                 <div class="vb-quickstart-icon">
                     <i data-lucide="calendar"></i>
