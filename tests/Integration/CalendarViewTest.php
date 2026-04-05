@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
+use App\Engine\Database;
+use App\Engine\Ulid;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -281,6 +283,77 @@ final class CalendarViewTest extends TestCase
         );
     }
 
+    public function test_week_view_uses_iso_availability_day_mapping(): void
+    {
+        $this->doLoginOperator();
+        $tid = TestFixtures::BUSINESS_TENANT_ID;
+        $originalRows = Database::query(
+            'SELECT `day_of_week`, `start_time`, `end_time`
+             FROM `availability`
+             WHERE `tenant_id` = ? AND `staff_id` IS NULL
+             ORDER BY `day_of_week` ASC, `start_time` ASC',
+            [$tid]
+        );
+
+        try {
+            Database::execute(
+                'DELETE FROM `availability` WHERE `tenant_id` = ? AND `staff_id` IS NULL',
+                [$tid]
+            );
+
+            foreach ([0, 1, 2, 3, 4] as $isoDay) {
+                Database::execute(
+                    'INSERT INTO `availability`
+                     (`id`, `tenant_id`, `staff_id`, `day_of_week`, `start_time`, `end_time`, `is_available`)
+                     VALUES (?, ?, NULL, ?, ?, ?, 1)',
+                    [Ulid::generate(), $tid, $isoDay, '09:00:00', '17:00:00']
+                );
+            }
+
+            $r = $this->get("/admin/tenants/{$tid}/calendar/week?date=2026-04-05");
+
+            $this->assertSame(200, $r['code']);
+
+            $headers = $this->extractWeekHeaderColumns($r['body']);
+
+            $this->assertStringNotContainsString(
+                'is-unavailable',
+                $headers['FRIDAY'] ?? '',
+                'Friday should stay open when availability exists for ISO weekday 4'
+            );
+            $this->assertStringContainsString(
+                'is-unavailable',
+                $headers['SATURDAY'] ?? '',
+                'Saturday should be closed when it has no availability'
+            );
+            $this->assertStringContainsString(
+                'is-unavailable',
+                $headers['SUNDAY'] ?? '',
+                'Sunday should be closed when it has no availability'
+            );
+        } finally {
+            Database::execute(
+                'DELETE FROM `availability` WHERE `tenant_id` = ? AND `staff_id` IS NULL',
+                [$tid]
+            );
+
+            foreach ($originalRows as $row) {
+                Database::execute(
+                    'INSERT INTO `availability`
+                     (`id`, `tenant_id`, `staff_id`, `day_of_week`, `start_time`, `end_time`, `is_available`)
+                     VALUES (?, ?, NULL, ?, ?, ?, 1)',
+                    [
+                        Ulid::generate(),
+                        $tid,
+                        (int) $row['day_of_week'],
+                        $row['start_time'],
+                        $row['end_time'],
+                    ]
+                );
+            }
+        }
+    }
+
     // ════════════════════════════════════════════════════════════════
     // Day cells link to /calendar/day (not /calendar)
     // ════════════════════════════════════════════════════════════════
@@ -446,5 +519,22 @@ final class CalendarViewTest extends TestCase
         }
 
         return compact('code', 'body', 'location');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function extractWeekHeaderColumns(string $html): array
+    {
+        preg_match_all('/<a[^>]*class="vb-week-col-header[^"]*"[^>]*>.*?<\/a>/s', $html, $matches);
+
+        $columns = [];
+        foreach ($matches[0] as $columnHtml) {
+            if (preg_match('/vb-week-col-dayname">\s*([^<]+)\s*</', $columnHtml, $dayMatch)) {
+                $columns[strtoupper(trim($dayMatch[1]))] = $columnHtml;
+            }
+        }
+
+        return $columns;
     }
 }

@@ -235,6 +235,7 @@ final class DashboardOutputTest extends TestCase
         $html = $this->renderTenantDashboard([
             'upcoming' => [
                 [
+                    'id' => 'upcoming-test-id',
                     'customer_name' => 'Upcoming Jane',
                     'service_name' => 'Facial',
                     'start_datetime' => date('Y-m-d 15:00:00', strtotime('+1 day')),

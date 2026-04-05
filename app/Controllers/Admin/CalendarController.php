@@ -69,7 +69,7 @@ final class CalendarController
 
         // Availability / blocked state for this specific day
         $isBlocked = $this->isDateBlocked($tenantId, $dateStr);
-        $dayOfWeek = (int) $date->format('w');
+        $dayOfWeek = $this->isoDayOfWeek($date);
         $hasAvailability = $this->hasDayOfWeekAvailability($tenantId, $dayOfWeek);
 
         return $this->render('admin.tenants.calendar.day', __('admin.calendar.page_title'), [
@@ -132,7 +132,7 @@ final class CalendarController
         for ($i = 0; $i < 7; $i++) {
             $dayDate = $weekBegin->modify("+{$i} days");
             $dayStr  = $dayDate->format('Y-m-d');
-            $dow     = (int) $dayDate->format('w');
+            $dow     = $this->isoDayOfWeek($dayDate);
             $days[]  = [
                 'date'            => $dayDate,
                 'dateStr'         => $dayStr,
@@ -229,7 +229,7 @@ final class CalendarController
             $cellDate = $gridStart->modify("+{$i} days");
             $cellStr  = $cellDate->format('Y-m-d');
             $cellMonth = (int) $cellDate->format('n');
-            $dow      = (int) $cellDate->format('w');
+            $dow      = $this->isoDayOfWeek($cellDate);
             $cells[] = [
                 'date'            => $cellDate,
                 'dateStr'         => $cellStr,
@@ -355,6 +355,15 @@ final class CalendarController
         }
 
         return $tenant;
+    }
+
+    /**
+     * Convert PHP weekday numbering to the availability table's ISO convention.
+     * PHP `N`: 1=Mon .. 7=Sun → DB: 0=Mon .. 6=Sun.
+     */
+    private function isoDayOfWeek(\DateTimeInterface $date): int
+    {
+        return (int) $date->format('N') - 1;
     }
 
     private function render(string $template, string $pageTitle, array $extra, string $tenantId): Response
