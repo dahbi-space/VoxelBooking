@@ -721,3 +721,28 @@ document.querySelectorAll('.vb-textarea').forEach((ta) => {
     autosizeTextarea(ta);
     ta.addEventListener('input', () => autosizeTextarea(ta));
 });
+
+// ── Tab Overflow Detection (.vb-tabs) ──
+// Adds 'is-scrollable' class when tab content overflows the container,
+// enabling gradient fade masks. Also scrolls the active tab into view.
+(function () {
+    const tabNavs = document.querySelectorAll('.vb-tabs');
+    if (!tabNavs.length) return;
+
+    const check = () => {
+        tabNavs.forEach((nav) => {
+            nav.classList.toggle('is-scrollable', nav.scrollWidth > nav.clientWidth + 2);
+        });
+    };
+
+    check();
+    window.addEventListener('resize', check, { passive: true });
+
+    // Scroll active tab into view on load
+    tabNavs.forEach((nav) => {
+        const active = nav.querySelector('.vb-tab.active');
+        if (active) {
+            active.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' });
+        }
+    });
+})();

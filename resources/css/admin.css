@@ -436,47 +436,70 @@
     }
 
     /* ══════════════════════════════════════════════════════════════
-       TAB SYSTEM — Premium pill tabs with indicator
+       TAB SYSTEM — Premium underline navigation tabs (routing)
+       For view toggles (same data, different layout), use .vb-segmented.
        ══════════════════════════════════════════════════════════════ */
     .vb-tabs {
-        display: inline-flex; align-items: center; gap: 2px;
-        background: var(--vb-bg-hover);
-        border-radius: var(--vb-radius-lg);
-        padding: 3px;
-        margin-bottom: 1rem;
+        position: relative;
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+        margin-bottom: var(--space-5);
+        border-bottom: 1px solid var(--vb-border-subtle);
+        /* Horizontal scroll for overflow on narrow screens */
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none; /* Firefox */
+        -webkit-overflow-scrolling: touch;
     }
+    .vb-tabs::-webkit-scrollbar { display: none; }
+    /* Gradient fade masks to signal scrollability */
+    .vb-tabs.is-scrollable {
+        mask-image: linear-gradient(
+            to right,
+            transparent 0,
+            black 24px,
+            black calc(100% - 24px),
+            transparent 100%
+        );
+        -webkit-mask-image: linear-gradient(
+            to right,
+            transparent 0,
+            black 24px,
+            black calc(100% - 24px),
+            transparent 100%
+        );
+    }
+
     .vb-tab {
-        display: flex; align-items: center; gap: 0.375rem;
-        padding: 0.4375rem 0.875rem;
-        font-size: var(--vb-text-sm); font-weight: 450;
-        color: var(--vb-text-tertiary); text-decoration: none;
-        border-radius: var(--vb-radius-md);
-        transition: color var(--vb-duration-fast), background var(--vb-duration-fast),
-                    box-shadow var(--vb-duration-fast);
-        white-space: nowrap; cursor: pointer;
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.5rem 0.875rem;
+        font-size: var(--vb-text-sm);
+        font-weight: 500;
+        color: var(--vb-text-secondary);
+        text-decoration: none;
+        white-space: nowrap;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px; /* sit on top of container's bottom border */
+        transition: color var(--vb-duration-fast) var(--vb-ease-out),
+                    border-color var(--vb-duration-fast) var(--vb-ease-out);
+        scroll-margin-inline: 24px;
     }
-    .vb-tab:hover { color: var(--vb-text-primary); }
+    .vb-tab:hover {
+        color: var(--vb-text-primary);
+        border-bottom-color: var(--vb-border-default);
+    }
     .vb-tab.active {
         color: var(--vb-text-primary);
-        background: var(--vb-bg-surface);
-        box-shadow: var(--vb-shadow-sm);
-        font-weight: 500;
+        font-weight: 600;
+        border-bottom-color: var(--vb-accent);
     }
-    .vb-tab svg { width: 14px; height: 14px; flex-shrink: 0; }
-
-    /* Compact tabs variant — for inline use in calendar/toolbar headers */
-    .vb-tabs.vb-tabs-compact {
-        margin-bottom: 0;
-        padding: 2px;
-    }
-    .vb-tabs-compact .vb-tab {
-        padding: 0.3125rem 0.75rem;
-        font-size: 0.8125rem;
-    }
-
-
-    /* NOTE: .vb-tabs-line has been retired. All tabs now use the pill variant (.vb-tabs).
-       Settings pages use .vb-tabs, calendar uses .vb-tabs.vb-tabs-compact. */
+    .vb-tab svg,
+    .vb-tab [data-lucide] { width: 14px; height: 14px; flex-shrink: 0; }
 
     /* ══════════════════════════════════════════════════════════════
        BADGE SYSTEM — Semantic status indicators
