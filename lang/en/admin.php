@@ -1019,6 +1019,7 @@ return [
         'no_changes'                => 'No changes detected.',
         'error_name_required'       => 'Business name is required.',
         'error_email_invalid'       => 'Please enter a valid email address.',
+        'error_slug_invalid'        => 'URL slug may only contain lowercase letters, numbers, and hyphens.',
         'error_slug_taken'          => 'This URL slug is already in use. Please choose a different one.',
         'error_notif_email_invalid' => 'Notification email must be a valid address.',
     ],

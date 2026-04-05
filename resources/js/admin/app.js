@@ -195,7 +195,42 @@ Alpine.data('adminShell', () => ({
     },
 }));
 
+// ── Alpine: Slug Editor (live slug → URL preview) ──
+Alpine.data('slugEditor', (initialSlug = '', baseUrl = '') => ({
+    slug: initialSlug,
+    baseUrl: baseUrl,
+
+    get fullUrl() {
+        return this.baseUrl + this.slug;
+    },
+
+    /** Normalize the slug field as the user types: lowercase, strip invalid chars. */
+    normalize() {
+        const input = this.$el.querySelector('#ts-slug');
+        const cursor = input?.selectionStart ?? 0;
+        const before = this.slug;
+        this.slug = before.toLowerCase().replace(/[^a-z0-9\-]/g, '');
+        // Restore cursor position if chars were stripped
+        this.$nextTick(() => {
+            if (input) {
+                const diff = before.length - this.slug.length;
+                input.setSelectionRange(cursor - diff, cursor - diff);
+            }
+        });
+    },
+
+    /** Copy the current live URL to clipboard. */
+    copyUrl(event) {
+        const btn = event.currentTarget;
+        navigator.clipboard.writeText(this.fullUrl).then(() => {
+            btn.classList.add('is-copied');
+            setTimeout(() => btn.classList.remove('is-copied'), 1500);
+        });
+    },
+}));
+
 // ── Alpine: Pattern Cards (CSP-safe radio card selection) ──
+
 Alpine.data('patternCards', () => ({
     selected: 'timeslot',
 

@@ -139,9 +139,9 @@ final class BookingLinkCopyOutputTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'data-copy-url="https://voxelbooking-app.test/book/test-salon"',
+            'slugEditor(',
             $html,
-            'Copy button must contain the full booking URL'
+            'General settings must use the Alpine slugEditor component for live URL preview'
         );
 
         $this->assertStringContainsString(
@@ -151,15 +151,15 @@ final class BookingLinkCopyOutputTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'vb-public-url-text',
+            'x-text="fullUrl"',
             $html,
-            'Settings must contain the URL text code element'
+            'URL text must use Alpine reactive binding for live preview'
         );
 
         $this->assertStringContainsString(
-            'https://voxelbooking-app.test/book/test-salon',
+            'https://voxelbooking-app.test/book/',
             $html,
-            'The full booking URL must be visible in the settings page'
+            'The base booking URL must be embedded in the slugEditor initializer'
         );
     }
 

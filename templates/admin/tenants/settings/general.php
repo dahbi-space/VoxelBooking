@@ -21,10 +21,8 @@ $val = function (string $field, string $default = '') use ($tenant, $old): strin
     return htmlspecialchars((string) ($tenant[$field] ?? $default), ENT_QUOTES, 'UTF-8');
 };
 
-$slug      = $tenant['slug'] ?? '';
-$baseUrl   = (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https')
+$baseUrl = (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https')
     . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/book/';
-$bookingUrl = $baseUrl . $slug;
 
 ob_start();
 ?>
@@ -75,7 +73,15 @@ ob_start();
     </div>
 
     <!-- Section 2: Booking URL (slug lives here for context) -->
-    <div class="vb-settings-section">
+    <?php
+    // Effective slug: respects old input on validation failure, falls back to tenant row
+    $effectiveSlug = ($old !== null && array_key_exists('slug', $old))
+        ? ($old['slug'] ?? '')
+        : ($tenant['slug'] ?? '');
+    $baseUrlJs = htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8');
+    ?>
+    <div class="vb-settings-section"
+         x-data="slugEditor('<?= htmlspecialchars($effectiveSlug, ENT_QUOTES, 'UTF-8') ?>', '<?= $baseUrlJs ?>')">
         <div class="vb-card">
             <div class="vb-card-header">
                 <div class="vb-card-title-row">
@@ -90,23 +96,23 @@ ob_start();
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-slug"><?= __('admin.tenant_settings.field_slug') ?></label>
                     <input type="text" class="vb-input" id="ts-slug" name="slug"
-                           value="<?= $val('slug') ?>"
-                           pattern="[a-z0-9\-]+" maxlength="100"
+                           x-model="slug"
+                           @input="normalize()"
+                           maxlength="100"
                            placeholder="my-business">
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_slug_hint') ?></span>
                 </div>
                 <div class="vb-public-url-inline">
-                    <code class="vb-public-url-text"><?= htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8') ?></code>
+                    <code class="vb-public-url-text" x-text="fullUrl"></code>
                     <div class="vb-public-url-actions">
-                        <a href="/book/<?= htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') ?>"
+                        <a :href="'/book/' + slug"
                            target="_blank" rel="noopener"
                            class="vb-public-url-btn" title="<?= __('admin.tenants.view_booking_page') ?>">
                             <i data-lucide="external-link"></i>
                         </a>
                         <button type="button"
                                 class="vb-public-url-btn"
-                                data-copy-url="<?= htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8') ?>"
-                                @click="copyBookingUrl"
+                                @click="copyUrl($event)"
                                 title="<?= __('admin.common.copy_booking_url') ?>">
                             <span class="vb-copy-icon"><i data-lucide="copy"></i></span>
                             <span class="vb-copy-check"><i data-lucide="check"></i></span>

@@ -60,7 +60,7 @@ final class TenantSettingsController
         $email    = trim($request->string('email'));
         $phone    = trim($request->string('phone')) ?: null;
         $slugRaw  = trim($request->string('slug'));
-        $slug     = $slugRaw !== '' ? preg_replace('/[^a-z0-9\-]/', '', strtolower($slugRaw)) : null;
+        $slug     = $slugRaw !== '' ? strtolower($slugRaw) : null;
         $timezone   = trim($request->string('timezone')) ?: 'UTC';
         $locale     = trim($request->string('locale')) ?: 'en';
         $currency   = trim($request->string('currency')) ?: 'EUR';
@@ -77,6 +77,9 @@ final class TenantSettingsController
         }
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = __('admin.tenant_settings.error_email_invalid');
+        }
+        if ($slug !== null && $slug !== '' && !preg_match('/^[a-z0-9\-]+$/', $slug)) {
+            $errors[] = __('admin.tenant_settings.error_slug_invalid');
         }
         if ($slug !== null && $slug !== '' && Tenant::slugExists($slug, excludeId: $tenantId)) {
             $errors[] = __('admin.tenant_settings.error_slug_taken');
