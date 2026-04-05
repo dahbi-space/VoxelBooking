@@ -3213,7 +3213,7 @@
     height: 22px;
     border-radius: var(--vb-radius-sm);
     text-decoration: none;
-    opacity: 0.35;
+    opacity: 0.5;
     color: var(--vb-text-tertiary);
     transition: opacity var(--vb-duration-fast) var(--vb-ease-out),
                 color var(--vb-duration-fast) var(--vb-ease-out),
@@ -3232,7 +3232,7 @@
 /* Intensify on parent hover */
 .vb-schedule-pill:hover > .vb-crm-link,
 .vb-upcoming-row:hover > .vb-crm-link {
-    opacity: 0.65;
+    opacity: 0.8;
 }
 
 
@@ -4493,12 +4493,8 @@
     top: 0; left: 0; right: 0;
     height: 2px;
     background: var(--vb-accent-gradient);
-    opacity: 0;
+    opacity: 0.6;
     transition: opacity var(--vb-duration-normal) var(--vb-ease-out);
-}
-.vb-contact-summary:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--vb-shadow-card-hover);
 }
 .vb-contact-summary:hover::before { opacity: 1; }
 
@@ -4553,7 +4549,7 @@
     min-width: 6rem;
 }
 .vb-contact-stat--primary .vb-contact-stat-value {
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 750;
     letter-spacing: -0.04em;
     line-height: 1;
@@ -4577,7 +4573,7 @@
 /* Label: always uppercase micro-text */
 .vb-contact-stat-label {
     font-size: 0.625rem;
-    font-weight: 600;
+    font-weight: 650;
     color: var(--vb-text-ghost);
     text-transform: uppercase;
     letter-spacing: 0.06em;
