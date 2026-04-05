@@ -33,11 +33,11 @@ ob_start();
         <div class="vb-calendar-nav-arrows">
             <a href="<?= $baseUrl ?>/calendar/week?date=<?= htmlspecialchars($prevWeek, ENT_QUOTES, 'UTF-8') ?>"
                class="vb-btn vb-btn-ghost vb-btn-icon" aria-label="<?= __('admin.calendar.prev_week') ?>">
-                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+                <i data-lucide="chevron-left"></i>
             </a>
             <a href="<?= $baseUrl ?>/calendar/week?date=<?= htmlspecialchars($nextWeek, ENT_QUOTES, 'UTF-8') ?>"
                class="vb-btn vb-btn-ghost vb-btn-icon" aria-label="<?= __('admin.calendar.next_week') ?>">
-                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                <i data-lucide="chevron-right"></i>
             </a>
         </div>
         <h2 class="vb-calendar-date-title">

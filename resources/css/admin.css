@@ -356,6 +356,10 @@
     .vb-btn-sm { height: 30px; padding: 0 0.625rem; font-size: var(--vb-text-xs); border-radius: var(--vb-radius-sm); }
     .vb-btn-sm svg,
     .vb-btn-sm [data-lucide] { width: 14px; height: 14px; }
+    /* Icon-only button (nav arrows, etc.) */
+    .vb-btn-icon { width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+    .vb-btn-icon svg,
+    .vb-btn-icon [data-lucide] { width: 16px; height: 16px; }
     .vb-btn-lg {
         height: 42px; padding: 0 1.25rem; font-size: var(--vb-text-base); font-weight: 600;
         border-radius: var(--vb-radius-lg);
@@ -3482,6 +3486,12 @@
     font-size: 0.8125rem;
     font-weight: 500;
 }
+.vb-calendar-state-bar svg,
+.vb-calendar-state-bar [data-lucide] {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
 
 .vb-calendar-state-bar.is-blocked {
     background: color-mix(in srgb, var(--vb-error) 8%, transparent);
@@ -3501,8 +3511,8 @@
 
 .vb-calendar-day-container {
     background: var(--vb-card-bg);
-    border: 1px solid var(--vb-border-subtle);
     border-radius: var(--radius-lg);
+    box-shadow: var(--vb-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
     overflow: hidden;
 }
 
@@ -3639,13 +3649,19 @@
     pointer-events: none;
     white-space: nowrap;
 }
+.vb-calendar-zero-guidance svg,
+.vb-calendar-zero-guidance [data-lucide] {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
 
 /* ── Calendar Week ─────────────────────────────────────────── */
 
 .vb-week {
     background: var(--vb-card-bg);
-    border: 1px solid var(--vb-border-subtle);
     border-radius: var(--radius-lg);
+    box-shadow: var(--vb-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
     overflow: hidden;
 }
 
@@ -3680,7 +3696,7 @@
 }
 
 .vb-week-col-header.is-today {
-    background: color-mix(in srgb, var(--vb-accent) 6%, var(--vb-well));
+    background: color-mix(in srgb, var(--vb-accent) 8%, var(--vb-well));
 }
 
 .vb-week-col-header.is-unavailable {
@@ -3775,7 +3791,8 @@
 }
 
 .vb-week-col.is-today {
-    background: color-mix(in srgb, var(--vb-accent) 2%, transparent);
+    background: color-mix(in srgb, var(--vb-accent) 4%, transparent);
+    box-shadow: inset 3px 0 0 var(--vb-accent);
 }
 
 .vb-week-col.is-unavailable {
@@ -3856,8 +3873,8 @@
 
 .vb-calendar-month {
     background: var(--vb-card-bg);
-    border: 1px solid var(--vb-border-subtle);
     border-radius: var(--radius-lg);
+    box-shadow: var(--vb-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
     overflow: hidden;
 }
 
@@ -3921,9 +3938,10 @@
     opacity: 0.45;
 }
 
-/* Today */
+/* Today — stronger accent presence */
 .vb-calendar-month-cell.is-today {
-    background: color-mix(in srgb, var(--vb-accent) 3%, transparent);
+    background: color-mix(in srgb, var(--vb-accent) 5%, transparent);
+    box-shadow: inset 3px 0 0 var(--vb-accent);
 }
 
 /* Blocked — distinct red-tinted surface with hatch pattern */

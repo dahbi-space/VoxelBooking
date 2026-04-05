@@ -44,11 +44,11 @@ ob_start();
         <div class="vb-calendar-nav-arrows">
             <a href="<?= $baseUrl ?>/calendar?date=<?= htmlspecialchars($prevMonth, ENT_QUOTES, 'UTF-8') ?>"
                class="vb-btn vb-btn-ghost vb-btn-icon" aria-label="<?= __('admin.calendar.prev_month') ?>">
-                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+                <i data-lucide="chevron-left"></i>
             </a>
             <a href="<?= $baseUrl ?>/calendar?date=<?= htmlspecialchars($nextMonth, ENT_QUOTES, 'UTF-8') ?>"
                class="vb-btn vb-btn-ghost vb-btn-icon" aria-label="<?= __('admin.calendar.next_month') ?>">
-                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                <i data-lucide="chevron-right"></i>
             </a>
         </div>
         <h2 class="vb-calendar-date-title"><?= htmlspecialchars($monthLabel, ENT_QUOTES, 'UTF-8') ?></h2>
@@ -117,7 +117,8 @@ ob_start();
             <div class="vb-calendar-month-pills">
                 <?php foreach ($visibleBookings as $b):
                     $color = $b['service_color'] ?: $brandColor;
-                    $time = date('H:i', strtotime($b['start_datetime']));
+                    $startDt = new DateTimeImmutable($b['start_datetime']);
+                    $time = \App\Engine\Locale::time($startDt);
                     $name = $b['customer_name'] ?? __('admin.calendar.no_customer');
                     $tooltipText = htmlspecialchars($name . ' · ' . $time, ENT_QUOTES, 'UTF-8');
                 ?>

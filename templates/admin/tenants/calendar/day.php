@@ -41,11 +41,11 @@ ob_start();
         <div class="vb-calendar-nav-arrows">
             <a href="<?= $baseUrl ?>/calendar/day?date=<?= htmlspecialchars($prevDate, ENT_QUOTES, 'UTF-8') ?>"
                class="vb-btn vb-btn-ghost vb-btn-icon" aria-label="<?= __('admin.calendar.prev_day') ?>">
-                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+                <i data-lucide="chevron-left"></i>
             </a>
             <a href="<?= $baseUrl ?>/calendar/day?date=<?= htmlspecialchars($nextDate, ENT_QUOTES, 'UTF-8') ?>"
                class="vb-btn vb-btn-ghost vb-btn-icon" aria-label="<?= __('admin.calendar.next_day') ?>">
-                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                <i data-lucide="chevron-right"></i>
             </a>
         </div>
         <h2 class="vb-calendar-date-title">
@@ -58,7 +58,7 @@ ob_start();
     <div class="vb-calendar-header-right">
         <a href="<?= $baseUrl ?>/bookings/create?date=<?= htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8') ?>"
            class="vb-btn vb-btn-primary vb-btn-sm" id="btn-calendar-new-booking">
-            <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+            <i data-lucide="plus"></i>
             <?= __('admin.calendar.new_booking') ?>
         </a>
         <nav class="vb-tabs vb-tabs-compact" aria-label="<?= __('admin.calendar.page_title') ?>">
@@ -75,10 +75,10 @@ ob_start();
 <?php if ($isBlocked || !$hasAvailability): ?>
 <div class="vb-calendar-state-bar <?= $isBlocked ? 'is-blocked' : 'is-unavailable' ?>">
     <?php if ($isBlocked): ?>
-        <i data-lucide="ban" style="width: 13px; height: 13px;"></i>
+        <i data-lucide="ban"></i>
         <span><?= __('admin.calendar.day_blocked') ?></span>
     <?php else: ?>
-        <i data-lucide="moon" style="width: 13px; height: 13px;"></i>
+        <i data-lucide="moon"></i>
         <span><?= __('admin.calendar.no_availability') ?></span>
     <?php endif; ?>
 </div>
@@ -146,7 +146,7 @@ ob_start();
 
         <?php if ($bookingCount === 0): ?>
         <div class="vb-calendar-zero-guidance vb-fade-in-up stagger-1">
-            <i data-lucide="mouse-pointer-click" style="width: 16px; height: 16px;"></i>
+            <i data-lucide="mouse-pointer-click"></i>
             <span><?= __('admin.calendar.click_to_book') ?></span>
         </div>
         <?php endif; ?>
