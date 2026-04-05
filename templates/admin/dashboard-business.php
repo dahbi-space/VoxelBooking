@@ -156,7 +156,7 @@ ob_start();
                                 $startTime = date('H:i', strtotime($booking['start_datetime']));
                                 $endTime = date('H:i', strtotime($booking['end_datetime']));
                             ?>
-                            <div class="vb-schedule-pill"
+                            <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/bookings/<?= htmlspecialchars($booking['id'], ENT_QUOTES, 'UTF-8') ?>" class="vb-schedule-pill"
                                  style="background: <?= $pillBg ?>; color: <?= $pillColor ?>;">
                                 <div class="vb-schedule-pill-title">
                                     <?= htmlspecialchars($booking['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
@@ -169,7 +169,7 @@ ob_start();
                                     <?= htmlspecialchars($booking['staff_name'], ENT_QUOTES, 'UTF-8') ?>
                                 </div>
                                 <?php endif; ?>
-                            </div>
+                            </a>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
@@ -193,7 +193,7 @@ ob_start();
         <?php else: ?>
             <div class="vb-upcoming-list">
                 <?php foreach ($upcoming as $b): ?>
-                <div class="vb-upcoming-row">
+                <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/bookings/<?= htmlspecialchars($b['id'], ENT_QUOTES, 'UTF-8') ?>" class="vb-upcoming-row">
                     <div>
                         <div class="vb-upcoming-name"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
                         <div class="vb-upcoming-service"><?= htmlspecialchars(booking_display_label($b), ENT_QUOTES, 'UTF-8') ?></div>
@@ -205,7 +205,7 @@ ob_start();
                         <div class="vb-upcoming-date"><?= date('M j', strtotime($b['start_datetime'])) ?></div>
                         <div class="vb-upcoming-clock"><?= date('H:i', strtotime($b['start_datetime'])) ?></div>
                     </div>
-                </div>
+                </a>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
@@ -234,7 +234,7 @@ ob_start();
                     @click="copyBookingUrl">
                 <span class="vb-action-rail-icon">
                     <i data-lucide="copy" class="vb-copy-icon"></i>
-                    <i data-lucide="check" class="vb-copy-check" style="display: none;"></i>
+                    <i data-lucide="check" class="vb-copy-check"></i>
                 </span>
                 <span class="vb-action-rail-text">
                     <div class="vb-action-rail-label"><?= __('admin.common.copy_booking_url') ?></div>

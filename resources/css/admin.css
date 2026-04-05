@@ -1013,6 +1013,10 @@
     display: flex;
     min-height: 100vh;
 }
+/* When impersonating, subtract the banner height so shell + banner = 100vh */
+body.is-impersonating .vb-shell {
+    min-height: calc(100vh - var(--vb-banner-height));
+}
 
 /* ── Sidebar ─────────────────────────────────────────────────── */
 .vb-sidebar {
@@ -1177,6 +1181,9 @@
     display: flex;
     flex-direction: column;
     background: var(--vb-bg-base);
+}
+body.is-impersonating .vb-main {
+    min-height: calc(100vh - var(--vb-banner-height));
 }
 
 /* ── Topbar: enterprise-grade glass bar ──────────────────────── */
@@ -1700,6 +1707,8 @@
     font-size: var(--vb-text-xs);
     line-height: 1.35;
     cursor: pointer;
+    text-decoration: none;
+    color: inherit;
     transition: transform var(--vb-duration-fast) var(--vb-ease-spring),
                 box-shadow var(--vb-duration-fast);
 }
@@ -1790,6 +1799,8 @@
     gap: 0.75rem;
     padding: 0.875rem 1.25rem;
     border-bottom: 1px solid var(--vb-border-subtle, rgba(0, 0, 0, 0.04));
+    text-decoration: none;
+    color: inherit;
     transition: background var(--vb-duration-fast), transform var(--vb-duration-fast);
 }
 .vb-upcoming-row:last-child {
@@ -3124,6 +3135,14 @@
     font-size: var(--vb-text-xs);
     color: var(--vb-text-tertiary);
     margin-top: 0.0625rem;
+}
+/* Copied state: icon swap + green flash (parity with vb-action-group) */
+.vb-action-rail-item .vb-copy-check { display: none; }
+.vb-action-rail-item.is-copied .vb-copy-icon { display: none; }
+.vb-action-rail-item.is-copied .vb-copy-check { display: inline-flex; }
+.vb-action-rail-item.is-copied,
+.vb-action-rail-item.is-copied .vb-action-rail-icon {
+    color: var(--vb-success, #16A34A);
 }
 /* ── Table cell data patterns ────────────────────────────────── */
 .vb-cell-name   { font-weight: 500; }

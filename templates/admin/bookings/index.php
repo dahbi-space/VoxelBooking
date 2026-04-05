@@ -44,7 +44,7 @@ ob_start();
     <?php if (isset($tenantId) && $tenantId): ?>
     <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/bookings/create"
        class="vb-btn vb-btn-primary vb-btn-sm" id="btn-new-booking">
-        <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+        <i data-lucide="plus" class="vb-icon-sm"></i>
         <?= __('admin.bookings.new_booking') ?>
     </a>
     <?php endif; ?>

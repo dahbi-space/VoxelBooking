@@ -102,10 +102,12 @@ ob_start();
 </div>
 
 <?php if (empty($bookings)): ?>
-    <div class="vb-empty-state vb-empty-state--compact vb-animate-in">
-        <i data-lucide="calendar-x" class="vb-empty-icon"></i>
-        <h3><?= __('admin.customers.no_bookings_title') ?></h3>
-        <p><?= __('admin.customers.no_bookings_desc') ?></p>
+    <div class="vb-card vb-animate-in">
+        <div class="vb-empty-state vb-empty-state--compact">
+            <i data-lucide="calendar-x" class="vb-empty-icon"></i>
+            <h3><?= __('admin.customers.no_bookings_title') ?></h3>
+            <p><?= __('admin.customers.no_bookings_desc') ?></p>
+        </div>
     </div>
 <?php else: ?>
     <div class="vb-table-container vb-animate-in">
@@ -117,6 +119,7 @@ ob_start();
                         <th><?= __('admin.customers.bh_time') ?></th>
                         <th><?= __('admin.customers.bh_service') ?></th>
                         <th><?= __('admin.customers.bh_status') ?></th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -124,6 +127,7 @@ ob_start();
                     <?php
                     $startDt = new DateTimeImmutable($b['start_datetime']);
                     $endDt   = new DateTimeImmutable($b['end_datetime']);
+                    $detailUrl = $baseUrl . '/bookings/' . htmlspecialchars($b['id'], ENT_QUOTES, 'UTF-8');
                     ?>
                     <tr class="vb-fade-in-up stagger-<?= min($i + 1, 6) ?>">
                         <td>
@@ -146,6 +150,11 @@ ob_start();
                             <span class="vb-status vb-status-<?= htmlspecialchars($b['status'], ENT_QUOTES, 'UTF-8') ?>">
                                 <?= __('admin.bookings.status_' . $b['status']) ?>
                             </span>
+                        </td>
+                        <td class="vb-text-right">
+                            <a href="<?= $detailUrl ?>" class="vb-btn vb-btn-ghost vb-btn-sm" title="<?= __('admin.bookings.view') ?>">
+                                <i data-lucide="eye" class="vb-icon-sm"></i>
+                            </a>
                         </td>
                     </tr>
                     <?php endforeach; ?>
