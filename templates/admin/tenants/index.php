@@ -15,7 +15,7 @@ ob_start();
         <div class="vb-alert vb-alert-info vb-fade-in-up">
             <i data-lucide="key"></i>
             <div>
-                <div style="margin-bottom: 0.5rem;"><?= htmlspecialchars($creds['message'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
+                <div class="vb-mb-sm"><?= htmlspecialchars($creds['message'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
                 <div class="vb-credentials-card">
                     <div class="vb-credentials-row">
                         <span class="vb-credentials-label"><?= __('admin.tenants.owner_credentials_email') ?></span>

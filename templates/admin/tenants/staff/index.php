@@ -24,7 +24,7 @@ ob_start();
     <div class="vb-page-actions">
         <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/staff/create"
            class="vb-btn vb-btn-primary" id="new-staff-btn">
-            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+            <i data-lucide="plus" class="vb-icon-md"></i>
             <?= __('admin.staff.new') ?>
         </a>
     </div>
@@ -41,7 +41,7 @@ ob_start();
         <p><?= __('admin.staff.empty_desc') ?></p>
         <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/staff/create"
            class="vb-btn vb-btn-primary">
-            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+            <i data-lucide="plus" class="vb-icon-md"></i>
             <?= __('admin.staff.new') ?>
         </a>
     </div>
@@ -92,7 +92,7 @@ ob_start();
                             <div class="vb-action-group">
                                 <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/staff/<?= htmlspecialchars($m['id'], ENT_QUOTES, 'UTF-8') ?>/edit"
                                    class="vb-btn vb-btn-ghost vb-btn-sm" title="<?= __('admin.common.edit') ?>">
-                                    <i data-lucide="pencil" style="width: 14px; height: 14px;"></i>
+                                    <i data-lucide="pencil" class="vb-icon-sm"></i>
                                 </a>
                                 <?php if ($m['is_active']): ?>
                                 <form method="POST"
@@ -101,7 +101,7 @@ ob_start();
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-destructive"
                                             title="<?= __('admin.staff.deactivate') ?>">
-                                        <i data-lucide="user-minus" style="width: 14px; height: 14px;"></i>
+                                        <i data-lucide="user-minus" class="vb-icon-sm"></i>
                                     </button>
                                 </form>
                                 <?php else: ?>
@@ -111,7 +111,7 @@ ob_start();
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm"
                                             title="<?= __('admin.staff.activate') ?>">
-                                        <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+                                        <i data-lucide="user-check" class="vb-icon-sm"></i>
                                     </button>
                                 </form>
                                 <?php endif; ?>
