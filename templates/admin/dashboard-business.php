@@ -156,25 +156,28 @@ ob_start();
                                 $startTime = date('H:i', strtotime($booking['start_datetime']));
                                 $endTime = date('H:i', strtotime($booking['end_datetime']));
                             ?>
-                            <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/bookings/<?= htmlspecialchars($booking['id'], ENT_QUOTES, 'UTF-8') ?>" class="vb-schedule-pill"
+                            <div class="vb-schedule-pill"
                                  style="background: <?= $pillBg ?>; color: <?= $pillColor ?>;">
-                                <div class="vb-schedule-pill-title">
-                                    <?= htmlspecialchars($booking['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
-                                    <?php if (!empty($booking['customer_id'])): ?>
-                                    <span class="vb-crm-link" onclick="event.preventDefault();event.stopPropagation();window.location='/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/customers/<?= htmlspecialchars($booking['customer_id'], ENT_QUOTES, 'UTF-8') ?>'" title="<?= __('admin.customers.view_customer') ?>">
-                                        <i data-lucide="user" class="vb-icon-xs"></i>
-                                    </span>
+                                <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/bookings/<?= htmlspecialchars($booking['id'], ENT_QUOTES, 'UTF-8') ?>" class="vb-schedule-pill-body">
+                                    <div class="vb-schedule-pill-title">
+                                        <?= htmlspecialchars($booking['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+                                    </div>
+                                    <div class="vb-schedule-pill-time">
+                                        <?= $startTime ?> – <?= $endTime ?> · <?= htmlspecialchars(booking_display_label($booking), ENT_QUOTES, 'UTF-8') ?>
+                                    </div>
+                                    <?php if (!empty($booking['staff_name'])): ?>
+                                    <div class="vb-schedule-pill-staff">
+                                        <?= htmlspecialchars($booking['staff_name'], ENT_QUOTES, 'UTF-8') ?>
+                                    </div>
                                     <?php endif; ?>
-                                </div>
-                                <div class="vb-schedule-pill-time">
-                                    <?= $startTime ?> – <?= $endTime ?> · <?= htmlspecialchars(booking_display_label($booking), ENT_QUOTES, 'UTF-8') ?>
-                                </div>
-                                <?php if (!empty($booking['staff_name'])): ?>
-                                <div class="vb-schedule-pill-staff">
-                                    <?= htmlspecialchars($booking['staff_name'], ENT_QUOTES, 'UTF-8') ?>
-                                </div>
+                                </a>
+                                <?php if (!empty($booking['customer_id'])): ?>
+                                <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/customers/<?= htmlspecialchars($booking['customer_id'], ENT_QUOTES, 'UTF-8') ?>"
+                                   class="vb-crm-link" title="<?= __('admin.customers.view_customer') ?>">
+                                    <i data-lucide="user" class="vb-icon-xs"></i>
+                                </a>
                                 <?php endif; ?>
-                            </a>
+                            </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
@@ -198,26 +201,27 @@ ob_start();
         <?php else: ?>
             <div class="vb-upcoming-list">
                 <?php foreach ($upcoming as $b): ?>
-                <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/bookings/<?= htmlspecialchars($b['id'], ENT_QUOTES, 'UTF-8') ?>" class="vb-upcoming-row">
-                    <div>
-                        <div class="vb-upcoming-name">
-                            <?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
-                            <?php if (!empty($b['customer_id'])): ?>
-                            <span class="vb-crm-link" onclick="event.preventDefault();event.stopPropagation();window.location='/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/customers/<?= htmlspecialchars($b['customer_id'], ENT_QUOTES, 'UTF-8') ?>'" title="<?= __('admin.customers.view_customer') ?>">
-                                <i data-lucide="user" class="vb-icon-xs"></i>
-                            </span>
-                            <?php endif; ?>
+                <div class="vb-upcoming-row">
+                    <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/bookings/<?= htmlspecialchars($b['id'], ENT_QUOTES, 'UTF-8') ?>" class="vb-upcoming-row-body">
+                        <div>
+                            <div class="vb-upcoming-name"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
+                            <div class="vb-upcoming-service"><?= htmlspecialchars(booking_display_label($b), ENT_QUOTES, 'UTF-8') ?></div>
                         </div>
-                        <div class="vb-upcoming-service"><?= htmlspecialchars(booking_display_label($b), ENT_QUOTES, 'UTF-8') ?></div>
-                    </div>
-                    <span class="vb-status vb-status-<?= htmlspecialchars($b['status'], ENT_QUOTES, 'UTF-8') ?>">
-                        <?= __('admin.bookings.status_' . $b['status']) ?>
-                    </span>
-                    <div class="vb-upcoming-time">
-                        <div class="vb-upcoming-date"><?= date('M j', strtotime($b['start_datetime'])) ?></div>
-                        <div class="vb-upcoming-clock"><?= date('H:i', strtotime($b['start_datetime'])) ?></div>
-                    </div>
-                </a>
+                        <span class="vb-status vb-status-<?= htmlspecialchars($b['status'], ENT_QUOTES, 'UTF-8') ?>">
+                            <?= __('admin.bookings.status_' . $b['status']) ?>
+                        </span>
+                        <div class="vb-upcoming-time">
+                            <div class="vb-upcoming-date"><?= date('M j', strtotime($b['start_datetime'])) ?></div>
+                            <div class="vb-upcoming-clock"><?= date('H:i', strtotime($b['start_datetime'])) ?></div>
+                        </div>
+                    </a>
+                    <?php if (!empty($b['customer_id'])): ?>
+                    <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/customers/<?= htmlspecialchars($b['customer_id'], ENT_QUOTES, 'UTF-8') ?>"
+                       class="vb-crm-link" title="<?= __('admin.customers.view_customer') ?>">
+                        <i data-lucide="user" class="vb-icon-xs"></i>
+                    </a>
+                    <?php endif; ?>
+                </div>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>

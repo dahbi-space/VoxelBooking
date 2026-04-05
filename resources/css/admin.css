@@ -1699,6 +1699,7 @@ body.is-impersonating .vb-main {
 }
 
 .vb-schedule-pill {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 1px;
@@ -1707,10 +1708,16 @@ body.is-impersonating .vb-main {
     font-size: var(--vb-text-xs);
     line-height: 1.35;
     cursor: pointer;
-    text-decoration: none;
-    color: inherit;
     transition: transform var(--vb-duration-fast) var(--vb-ease-spring),
                 box-shadow var(--vb-duration-fast);
+}
+/* The body anchor fills the pill and carries the booking-detail link */
+.vb-schedule-pill-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    text-decoration: none;
+    color: inherit;
 }
 .vb-schedule-pill:hover {
     transform: translateY(-1px);
@@ -1793,14 +1800,9 @@ body.is-impersonating .vb-main {
 }
 
 .vb-upcoming-row {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    align-items: center;
-    gap: 0.75rem;
+    position: relative;
     padding: 0.875rem 1.25rem;
     border-bottom: 1px solid var(--vb-border-subtle, rgba(0, 0, 0, 0.04));
-    text-decoration: none;
-    color: inherit;
     transition: background var(--vb-duration-fast), transform var(--vb-duration-fast);
 }
 .vb-upcoming-row:last-child {
@@ -1808,7 +1810,15 @@ body.is-impersonating .vb-main {
 }
 .vb-upcoming-row:hover {
     background: var(--vb-bg-hover);
-    transform: translateX(2px);
+}
+/* The body anchor carries the booking-detail link and the grid layout */
+.vb-upcoming-row-body {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: inherit;
 }
 
 .vb-upcoming-name {
@@ -3172,27 +3182,40 @@ body.is-impersonating .vb-main {
     background: var(--vb-bg-hover);
 }
 
-/* Inline CRM cross-link (secondary navigation inside booking surfaces) */
+/* CRM cross-link: secondary anchor for customer-record navigation.
+   Used as a split-link pattern: parent container holds the primary <a>
+   (booking detail) and a separate <a class="vb-crm-link"> (customer).
+   Positioned in the parent's top-right corner; keyboard-focusable. */
 .vb-crm-link {
-    display: inline-flex;
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    display: flex;
     align-items: center;
-    vertical-align: middle;
-    margin-left: 0.25rem;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--vb-radius-sm);
+    text-decoration: none;
     opacity: 0;
-    cursor: pointer;
     color: var(--vb-text-tertiary);
     transition: opacity var(--vb-duration-fast) var(--vb-ease-out),
-                color var(--vb-duration-fast) var(--vb-ease-out);
+                color var(--vb-duration-fast) var(--vb-ease-out),
+                background var(--vb-duration-fast) var(--vb-ease-out);
 }
 .vb-crm-link:hover {
     color: var(--vb-accent);
     opacity: 1;
+    background: rgba(0, 0, 0, 0.05);
 }
-/* Show on parent hover (pill, upcoming row, table row) */
-.vb-schedule-pill:hover .vb-crm-link,
-.vb-upcoming-row:hover .vb-crm-link,
-.vb-row-link:hover .vb-crm-link,
-tr:hover .vb-crm-link {
+.vb-crm-link:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--vb-accent);
+    outline-offset: 1px;
+}
+/* Reveal on parent hover */
+.vb-schedule-pill:hover > .vb-crm-link,
+.vb-upcoming-row:hover > .vb-crm-link {
     opacity: 0.7;
 }
 
@@ -4383,17 +4406,16 @@ tr:hover .vb-crm-link {
     margin-bottom: 1rem;
 }
 
-/* Hero card: single elevated surface, identity left, metrics right */
+/* Hero card: clean identity surface */
 .vb-contact-hero {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 2rem;
+    gap: 1.25rem;
     padding: 1.5rem;
     background: var(--vb-bg-surface);
     border-radius: var(--vb-radius-lg);
     box-shadow: var(--vb-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
 }
 
 /* Left zone: avatar + name + meta */
@@ -4418,75 +4440,16 @@ tr:hover .vb-crm-link {
     text-overflow: ellipsis;
 }
 
-/* Right zone: metric rail — subgrid aligns icon/value/label tracks */
-.vb-contact-hero-metrics {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(7rem, 1fr));
-    grid-template-rows: auto auto auto; /* icon · value · label */
-    gap: 0;
-    flex-shrink: 0;
+/* ── Metric grid modifiers ──────────────────────────────────── */
+/* Customer / entity pages use 3 columns instead of the dashboard 4 */
+.vb-metrics--3col {
+    grid-template-columns: repeat(3, 1fr);
 }
-.vb-contact-metric {
-    display: grid;
-    grid-row: 1 / -1;
-    grid-template-rows: subgrid;
-    align-items: start;
-    padding: 0 1.25rem;
-    border-left: 1px solid var(--vb-border-subtle, rgba(0,0,0,0.06));
-}
-.vb-contact-metric:first-child {
-    border-left: none;
-    padding-left: 0;
-}
-.vb-contact-metric:last-child {
-    padding-right: 0;
-}
-/* Row 1: icon — subtle semantic anchor */
-.vb-contact-metric-icon {
-    width: 18px;
-    height: 18px;
-    color: var(--vb-accent);
-    opacity: 0.65;
-    margin-bottom: 0.25rem;
-}
-/* Row 2: value — the primary reading */
-.vb-contact-metric-value {
+/* Smaller metric value for date/text content instead of numbers */
+.vb-metric-value--sm {
     font-size: 0.9375rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: var(--vb-text-primary);
-    font-variant-numeric: tabular-nums;
-    line-height: 1.2;
-    align-self: center;
-}
-/* Numeric metrics: large hero treatment */
-.vb-contact-metric-value--number {
-    font-size: 1.75rem;
-    letter-spacing: -0.03em;
-}
-/* Date metrics: readable but subordinate */
-.vb-contact-metric-value--date {
-    font-size: 0.8125rem;
     font-weight: 600;
-}
-/* Row 3: label — uppercase caption */
-.vb-contact-metric-label {
-    font-size: 0.6875rem;
-    font-weight: 500;
-    color: var(--vb-text-ghost);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-    margin-top: 0.25rem;
-    align-self: start;
-}
-/* Fallback for browsers without subgrid */
-@supports not (grid-template-rows: subgrid) {
-    .vb-contact-metric {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-    }
+    letter-spacing: -0.01em;
 }
 
 /* XL avatar (shared between contact hero and any profile surface) */
