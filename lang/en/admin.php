@@ -616,6 +616,7 @@ return [
         'stat_last_booking'    => 'Last Booking',
         'stat_phone'           => 'Phone',
         'stat_joined'          => 'Customer Since',
+        'view_customer'        => 'View customer',
         'notes_title'          => 'Notes',
         'booking_history'      => 'Booking History',
         'no_bookings_title'    => 'No bookings',

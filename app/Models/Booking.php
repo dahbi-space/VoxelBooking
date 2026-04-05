@@ -352,7 +352,7 @@ final class Booking
     public static function forTenantDate(string $tenantId, string $date): array
     {
         return Database::query(
-            "SELECT b.`id`, b.`start_datetime`, b.`end_datetime`, b.`status`,
+            "SELECT b.`id`, b.`customer_id`, b.`start_datetime`, b.`end_datetime`, b.`status`,
                     b.`booking_pattern`, b.`staff_id`,
                     c.`name` AS `customer_name`, c.`email` AS `customer_email`,
                     s.`name` AS `service_name`, s.`color` AS `service_color`,
@@ -384,7 +384,7 @@ final class Booking
     public static function forTenantDateRange(string $tenantId, string $startDate, string $endDate): array
     {
         return Database::query(
-            "SELECT b.`id`, b.`start_datetime`, b.`end_datetime`, b.`status`,
+            "SELECT b.`id`, b.`customer_id`, b.`start_datetime`, b.`end_datetime`, b.`status`,
                     b.`booking_pattern`, b.`staff_id`,
                     c.`name` AS `customer_name`, c.`email` AS `customer_email`,
                     s.`name` AS `service_name`, s.`color` AS `service_color`,

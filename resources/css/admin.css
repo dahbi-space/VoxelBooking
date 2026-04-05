@@ -3094,6 +3094,7 @@ body.is-impersonating .vb-main {
     gap: 0.75rem;
     padding: 0.625rem 0;
     text-decoration: none;
+    text-align: left;
     color: var(--vb-text-primary);
     border: none;
     background: none;
@@ -3169,6 +3170,30 @@ body.is-impersonating .vb-main {
 }
 .vb-row-link:hover {
     background: var(--vb-bg-hover);
+}
+
+/* Inline CRM cross-link (secondary navigation inside booking surfaces) */
+.vb-crm-link {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    margin-left: 0.25rem;
+    opacity: 0;
+    cursor: pointer;
+    color: var(--vb-text-tertiary);
+    transition: opacity var(--vb-duration-fast) var(--vb-ease-out),
+                color var(--vb-duration-fast) var(--vb-ease-out);
+}
+.vb-crm-link:hover {
+    color: var(--vb-accent);
+    opacity: 1;
+}
+/* Show on parent hover (pill, upcoming row, table row) */
+.vb-schedule-pill:hover .vb-crm-link,
+.vb-upcoming-row:hover .vb-crm-link,
+.vb-row-link:hover .vb-crm-link,
+tr:hover .vb-crm-link {
+    opacity: 0.7;
 }
 
 
@@ -4393,18 +4418,19 @@ body.is-impersonating .vb-main {
     text-overflow: ellipsis;
 }
 
-/* Right zone: disciplined metric grid — equal tracks, shared baselines */
+/* Right zone: metric rail — subgrid aligns icon/value/label tracks */
 .vb-contact-hero-metrics {
     display: grid;
     grid-template-columns: repeat(3, minmax(7rem, 1fr));
+    grid-template-rows: auto auto auto; /* icon · value · label */
     gap: 0;
     flex-shrink: 0;
 }
 .vb-contact-metric {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-start;
+    display: grid;
+    grid-row: 1 / -1;
+    grid-template-rows: subgrid;
+    align-items: start;
     padding: 0 1.25rem;
     border-left: 1px solid var(--vb-border-subtle, rgba(0,0,0,0.06));
 }
@@ -4415,15 +4441,15 @@ body.is-impersonating .vb-main {
 .vb-contact-metric:last-child {
     padding-right: 0;
 }
-/* Metric icon: subtle semantic anchor above the value */
+/* Row 1: icon — subtle semantic anchor */
 .vb-contact-metric-icon {
     width: 18px;
     height: 18px;
     color: var(--vb-accent);
-    margin-bottom: 0.375rem;
-    flex-shrink: 0;
-    opacity: 0.7;
+    opacity: 0.65;
+    margin-bottom: 0.25rem;
 }
+/* Row 2: value — the primary reading */
 .vb-contact-metric-value {
     font-size: 0.9375rem;
     font-weight: 700;
@@ -4431,23 +4457,19 @@ body.is-impersonating .vb-main {
     color: var(--vb-text-primary);
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
-    min-height: 1.5rem; /* shared baseline track */
-    display: flex;
-    align-items: baseline;
+    align-self: center;
 }
 /* Numeric metrics: large hero treatment */
 .vb-contact-metric-value--number {
     font-size: 1.75rem;
     letter-spacing: -0.03em;
 }
-/* Date metrics: readable but subordinate to numbers */
+/* Date metrics: readable but subordinate */
 .vb-contact-metric-value--date {
     font-size: 0.8125rem;
     font-weight: 600;
-    min-height: 1.5rem;
-    display: flex;
-    align-items: center;
 }
+/* Row 3: label — uppercase caption */
 .vb-contact-metric-label {
     font-size: 0.6875rem;
     font-weight: 500;
@@ -4456,6 +4478,15 @@ body.is-impersonating .vb-main {
     letter-spacing: 0.04em;
     white-space: nowrap;
     margin-top: 0.25rem;
+    align-self: start;
+}
+/* Fallback for browsers without subgrid */
+@supports not (grid-template-rows: subgrid) {
+    .vb-contact-metric {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
 
 /* XL avatar (shared between contact hero and any profile surface) */

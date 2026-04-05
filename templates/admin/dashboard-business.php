@@ -160,6 +160,11 @@ ob_start();
                                  style="background: <?= $pillBg ?>; color: <?= $pillColor ?>;">
                                 <div class="vb-schedule-pill-title">
                                     <?= htmlspecialchars($booking['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+                                    <?php if (!empty($booking['customer_id'])): ?>
+                                    <span class="vb-crm-link" onclick="event.preventDefault();event.stopPropagation();window.location='/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/customers/<?= htmlspecialchars($booking['customer_id'], ENT_QUOTES, 'UTF-8') ?>'" title="<?= __('admin.customers.view_customer') ?>">
+                                        <i data-lucide="user" class="vb-icon-xs"></i>
+                                    </span>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="vb-schedule-pill-time">
                                     <?= $startTime ?> – <?= $endTime ?> · <?= htmlspecialchars(booking_display_label($booking), ENT_QUOTES, 'UTF-8') ?>
@@ -195,7 +200,14 @@ ob_start();
                 <?php foreach ($upcoming as $b): ?>
                 <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/bookings/<?= htmlspecialchars($b['id'], ENT_QUOTES, 'UTF-8') ?>" class="vb-upcoming-row">
                     <div>
-                        <div class="vb-upcoming-name"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
+                        <div class="vb-upcoming-name">
+                            <?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+                            <?php if (!empty($b['customer_id'])): ?>
+                            <span class="vb-crm-link" onclick="event.preventDefault();event.stopPropagation();window.location='/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/customers/<?= htmlspecialchars($b['customer_id'], ENT_QUOTES, 'UTF-8') ?>'" title="<?= __('admin.customers.view_customer') ?>">
+                                <i data-lucide="user" class="vb-icon-xs"></i>
+                            </span>
+                            <?php endif; ?>
+                        </div>
                         <div class="vb-upcoming-service"><?= htmlspecialchars(booking_display_label($b), ENT_QUOTES, 'UTF-8') ?></div>
                     </div>
                     <span class="vb-status vb-status-<?= htmlspecialchars($b['status'], ENT_QUOTES, 'UTF-8') ?>">
