@@ -354,6 +354,8 @@
 
     /* Sizes */
     .vb-btn-sm { height: 30px; padding: 0 0.625rem; font-size: var(--vb-text-xs); border-radius: var(--vb-radius-sm); }
+    .vb-btn-sm svg,
+    .vb-btn-sm [data-lucide] { width: 14px; height: 14px; }
     .vb-btn-lg {
         height: 42px; padding: 0 1.25rem; font-size: var(--vb-text-base); font-weight: 600;
         border-radius: var(--vb-radius-lg);
@@ -4150,7 +4152,6 @@
     display: flex;
     align-items: center;
     gap: 1.25rem;
-    margin-bottom: 1.5rem;
 }
 .vb-avatar-xl {
     width: 56px;
@@ -4182,18 +4183,21 @@
 }
 .vb-profile-meta-item svg,
 .vb-profile-meta-item [data-lucide] {
+    width: 13px;
+    height: 13px;
     color: var(--vb-text-ghost);
+    flex-shrink: 0;
 }
 
-/* Horizontal stats strip */
+/* Horizontal stats strip — elevated containment */
 .vb-profile-stats {
     display: flex;
     align-items: center;
     gap: 1.5rem;
     padding: 1rem 1.25rem;
     background: var(--vb-bg-card);
-    border: 1px solid var(--vb-border-subtle);
     border-radius: var(--vb-radius-lg);
+    box-shadow: var(--vb-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
     margin-bottom: 1.5rem;
 }
 .vb-profile-stat {

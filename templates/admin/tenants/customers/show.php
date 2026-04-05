@@ -4,10 +4,13 @@
  *
  * Architecture:
  *   Back-link breadcrumb
- *   Identity header (avatar + name + email + phone)
- *   Stats strip (booking count, last visit, joined date)
- *   Notes card (if present)
- *   Booking history table
+ *   Identity card (avatar + name + meta row)
+ *   Stats strip (elevated, shadow-based)
+ *   Notes card with .vb-card-body (if present)
+ *   Booking history section header + table
+ *
+ * No inline styles. Icon sizes via CSS (.vb-profile-meta-item, .vb-btn-sm).
+ * Spacing via design-system classes (.vb-mb-lg).
  *
  * Variables: $tenant, $customer, $bookings, $liveBookingCount, $liveLastBookingAt, $tenantId, $csrfToken
  */
@@ -32,23 +35,25 @@ ob_start();
     </div>
 </div>
 
-<!-- Identity header -->
+<!-- Identity card -->
 <div class="vb-card vb-mb-lg vb-animate-in">
-    <div class="vb-profile-header">
-        <span class="vb-avatar vb-avatar-xl"><?= mb_strtoupper(mb_substr($customer['name'], 0, 1)) ?></span>
-        <div class="vb-profile-header-info">
-            <h2 class="vb-profile-name"><?= htmlspecialchars($customer['name'], ENT_QUOTES, 'UTF-8') ?></h2>
-            <div class="vb-profile-meta-row">
-                <span class="vb-profile-meta-item">
-                    <i data-lucide="mail" style="width: 13px; height: 13px;"></i>
-                    <?= htmlspecialchars($customer['email'], ENT_QUOTES, 'UTF-8') ?>
-                </span>
-                <?php if ($customer['phone']): ?>
-                <span class="vb-profile-meta-item">
-                    <i data-lucide="phone" style="width: 13px; height: 13px;"></i>
-                    <?= htmlspecialchars($customer['phone'], ENT_QUOTES, 'UTF-8') ?>
-                </span>
-                <?php endif; ?>
+    <div class="vb-card-body">
+        <div class="vb-profile-header">
+            <span class="vb-avatar vb-avatar-xl"><?= mb_strtoupper(mb_substr($customer['name'], 0, 1)) ?></span>
+            <div class="vb-profile-header-info">
+                <h2 class="vb-profile-name"><?= htmlspecialchars($customer['name'], ENT_QUOTES, 'UTF-8') ?></h2>
+                <div class="vb-profile-meta-row">
+                    <span class="vb-profile-meta-item">
+                        <i data-lucide="mail"></i>
+                        <?= htmlspecialchars($customer['email'], ENT_QUOTES, 'UTF-8') ?>
+                    </span>
+                    <?php if ($customer['phone']): ?>
+                    <span class="vb-profile-meta-item">
+                        <i data-lucide="phone"></i>
+                        <?= htmlspecialchars($customer['phone'], ENT_QUOTES, 'UTF-8') ?>
+                    </span>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
@@ -82,11 +87,16 @@ ob_start();
 
 <!-- Notes -->
 <?php if ($customer['notes']): ?>
-<div class="vb-card vb-animate-in" style="margin-bottom: 1.5rem;">
+<div class="vb-card vb-mb-lg vb-animate-in">
     <div class="vb-card-header">
-        <div class="vb-card-title"><?= __('admin.customers.notes_title') ?></div>
+        <div class="vb-card-title-row">
+            <i data-lucide="notebook-pen" class="vb-card-icon"></i>
+            <div class="vb-card-title"><?= __('admin.customers.notes_title') ?></div>
+        </div>
     </div>
-    <p class="vb-text-secondary vb-pre-wrap"><?= htmlspecialchars($customer['notes'], ENT_QUOTES, 'UTF-8') ?></p>
+    <div class="vb-card-body">
+        <p class="vb-text-secondary vb-pre-wrap"><?= htmlspecialchars($customer['notes'], ENT_QUOTES, 'UTF-8') ?></p>
+    </div>
 </div>
 <?php endif; ?>
 

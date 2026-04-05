@@ -55,7 +55,7 @@ ob_start();
             <?php if ($search !== ''): ?>
             <div class="vb-table-toolbar-right">
                 <a href="<?= $baseUrl ?>/customers" class="vb-btn vb-btn-ghost vb-btn-sm">
-                    <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                    <i data-lucide="x"></i>
                     <?= __('admin.common.clear') ?>
                 </a>
             </div>
@@ -131,7 +131,7 @@ ob_start();
         <?php if ($page > 1): ?>
             <a href="<?= $baseUrl ?>/customers?page=<?= $page - 1 ?><?= $search !== '' ? '&search=' . urlencode($search) : '' ?>"
                class="vb-btn vb-btn-ghost vb-btn-sm">
-                <i data-lucide="chevron-left" style="width: 14px; height: 14px;"></i>
+                <i data-lucide="chevron-left"></i>
                 <?= __('admin.common.previous') ?>
             </a>
         <?php endif; ?>
@@ -142,7 +142,7 @@ ob_start();
             <a href="<?= $baseUrl ?>/customers?page=<?= $page + 1 ?><?= $search !== '' ? '&search=' . urlencode($search) : '' ?>"
                class="vb-btn vb-btn-ghost vb-btn-sm">
                 <?= __('admin.common.next') ?>
-                <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+                <i data-lucide="chevron-right"></i>
             </a>
         <?php endif; ?>
     </div>
