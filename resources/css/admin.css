@@ -4148,6 +4148,13 @@ body.is-impersonating .vb-main {
     font-weight: 600;
 }
 
+.vb-calendar-month-cell.is-unavailable .vb-calendar-month-day.is-today,
+.vb-calendar-month-cell.is-blocked .vb-calendar-month-day.is-today {
+    background: var(--vb-accent);
+    color: #fff;
+    font-weight: 600;
+}
+
 .vb-calendar-month-count {
     font-size: 0.625rem;
     font-weight: 600;

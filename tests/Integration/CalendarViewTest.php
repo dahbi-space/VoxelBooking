@@ -435,6 +435,77 @@ final class CalendarViewTest extends TestCase
         );
     }
 
+    public function test_month_view_shows_closed_state_on_outside_month_cells(): void
+    {
+        $this->doLoginOperator();
+        $tid = TestFixtures::BUSINESS_TENANT_ID;
+        $originalRows = Database::query(
+            'SELECT `day_of_week`, `start_time`, `end_time`
+             FROM `availability`
+             WHERE `tenant_id` = ? AND `staff_id` IS NULL
+             ORDER BY `day_of_week` ASC, `start_time` ASC',
+            [$tid]
+        );
+
+        try {
+            Database::execute(
+                'DELETE FROM `availability` WHERE `tenant_id` = ? AND `staff_id` IS NULL',
+                [$tid]
+            );
+
+            foreach ([0, 1, 2, 3, 4] as $isoDay) {
+                Database::execute(
+                    'INSERT INTO `availability`
+                     (`id`, `tenant_id`, `staff_id`, `day_of_week`, `start_time`, `end_time`, `is_available`)
+                     VALUES (?, ?, NULL, ?, ?, ?, 1)',
+                    [Ulid::generate(), $tid, $isoDay, '09:00:00', '17:00:00']
+                );
+            }
+
+            $r = $this->get("/admin/tenants/{$tid}/calendar?date=2026-04-05");
+
+            $this->assertSame(200, $r['code']);
+
+            $outsideSunday = $this->extractMonthCellByDate($r['body'], '2026-05-03');
+
+            $this->assertStringContainsString(
+                'is-outside',
+                $outsideSunday,
+                'Trailing next-month cells should keep outside-month styling'
+            );
+            $this->assertStringContainsString(
+                'is-unavailable',
+                $outsideSunday,
+                'Closed state should also render for outside-month weekend cells'
+            );
+            $this->assertStringContainsString(
+                'Closed',
+                $outsideSunday,
+                'Outside-month closed days should still show the closed badge'
+            );
+        } finally {
+            Database::execute(
+                'DELETE FROM `availability` WHERE `tenant_id` = ? AND `staff_id` IS NULL',
+                [$tid]
+            );
+
+            foreach ($originalRows as $row) {
+                Database::execute(
+                    'INSERT INTO `availability`
+                     (`id`, `tenant_id`, `staff_id`, `day_of_week`, `start_time`, `end_time`, `is_available`)
+                     VALUES (?, ?, NULL, ?, ?, ?, 1)',
+                    [
+                        Ulid::generate(),
+                        $tid,
+                        (int) $row['day_of_week'],
+                        $row['start_time'],
+                        $row['end_time'],
+                    ]
+                );
+            }
+        }
+    }
+
     // ════════════════════════════════════════════════════════════════
     // Auth guard
     // ════════════════════════════════════════════════════════════════
@@ -536,5 +607,13 @@ final class CalendarViewTest extends TestCase
         }
 
         return $columns;
+    }
+
+    private function extractMonthCellByDate(string $html, string $date): string
+    {
+        $pattern = '#<a\s+href="/admin/tenants/[^"]+/calendar/day\?date=' . preg_quote($date, '#') . '"[^>]*class="[^"]*vb-calendar-month-cell[^"]*"[^>]*>.*?</a>#s';
+        preg_match($pattern, $html, $matches);
+
+        return $matches[0] ?? '';
     }
 }

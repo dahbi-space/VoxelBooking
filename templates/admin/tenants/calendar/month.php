@@ -89,8 +89,8 @@ ob_start();
             $cellClasses[] = 'stagger-' . min((int)floor($i / 7) + 1, 6);
             if ($cell['isToday']) $cellClasses[] = 'is-today';
             if (!$cell['isCurrentMonth']) $cellClasses[] = 'is-outside';
-            if ($isBlocked && $cell['isCurrentMonth']) $cellClasses[] = 'is-blocked';
-            if (!$hasAvail && !$isBlocked && $cell['isCurrentMonth'] && !$hasBookings) $cellClasses[] = 'is-unavailable';
+            if ($isBlocked) $cellClasses[] = 'is-blocked';
+            if (!$hasAvail && !$isBlocked && !$hasBookings) $cellClasses[] = 'is-unavailable';
         ?>
         <a href="<?= $baseUrl ?>/calendar/day?date=<?= htmlspecialchars($cell['dateStr'], ENT_QUOTES, 'UTF-8') ?>"
            class="<?= implode(' ', $cellClasses) ?>">
@@ -99,9 +99,9 @@ ob_start();
                 // Badge precedence: booking count always wins over state labels
                 if ($hasBookings && $cell['isCurrentMonth']): ?>
                 <span class="vb-calendar-month-count"><?= $bookingCount ?></span>
-                <?php elseif ($isBlocked && $cell['isCurrentMonth']): ?>
+                <?php elseif ($isBlocked): ?>
                 <span class="vb-calendar-month-count is-blocked"><?= __('admin.calendar.blocked') ?></span>
-                <?php elseif (!$hasAvail && !$isBlocked && $cell['isCurrentMonth']): ?>
+                <?php elseif (!$hasAvail && !$isBlocked): ?>
                 <span class="vb-calendar-month-count is-unavailable"><?= __('admin.calendar.closed') ?></span>
                 <?php else: ?>
                 <span></span> <!-- Spacer to push day to right -->
