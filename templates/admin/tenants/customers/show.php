@@ -56,10 +56,12 @@ ob_start();
     </div>
     <div class="vb-contact-hero-metrics">
         <div class="vb-contact-metric">
+            <i data-lucide="calendar-check" class="vb-contact-metric-icon"></i>
             <span class="vb-contact-metric-value vb-contact-metric-value--number"><?= $liveBookingCount ?></span>
             <span class="vb-contact-metric-label"><?= __('admin.customers.stat_total_bookings') ?></span>
         </div>
         <div class="vb-contact-metric">
+            <i data-lucide="clock" class="vb-contact-metric-icon"></i>
             <span class="vb-contact-metric-value vb-contact-metric-value--date">
                 <?php if ($liveLastBookingAt): ?>
                     <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($liveLastBookingAt)), ENT_QUOTES, 'UTF-8') ?>
@@ -70,6 +72,7 @@ ob_start();
             <span class="vb-contact-metric-label"><?= __('admin.customers.stat_last_booking') ?></span>
         </div>
         <div class="vb-contact-metric">
+            <i data-lucide="user-plus" class="vb-contact-metric-icon"></i>
             <span class="vb-contact-metric-value vb-contact-metric-value--date">
                 <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($customer['created_at'])), ENT_QUOTES, 'UTF-8') ?>
             </span>
@@ -129,7 +132,9 @@ ob_start();
                     $endDt   = new DateTimeImmutable($b['end_datetime']);
                     $detailUrl = $baseUrl . '/bookings/' . htmlspecialchars($b['id'], ENT_QUOTES, 'UTF-8');
                     ?>
-                    <tr class="vb-fade-in-up stagger-<?= min($i + 1, 6) ?>">
+                    <tr class="vb-fade-in-up vb-row-link stagger-<?= min($i + 1, 6) ?>"
+                        data-href="<?= $detailUrl ?>"
+                        onclick="window.location=this.dataset.href">
                         <td>
                             <?= htmlspecialchars(\App\Engine\Locale::dateLong($startDt), ENT_QUOTES, 'UTF-8') ?>
                         </td>

@@ -212,8 +212,8 @@ ob_start();
     </div>
 
     <!-- Actions -->
-    <div>
-        <nav class="vb-action-rail vb-fade-in-up stagger-6">
+    <div class="vb-card vb-card-flush vb-fade-in-up stagger-6">
+        <nav class="vb-action-rail">
             <div class="vb-action-rail-title"><?= __('admin.common.actions') ?></div>
             <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/bookings" class="vb-action-rail-item">
                 <span class="vb-action-rail-icon"><i data-lucide="calendar"></i></span>

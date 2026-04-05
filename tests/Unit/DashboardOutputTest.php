@@ -92,6 +92,9 @@ final class DashboardOutputTest extends TestCase
         $html = $this->renderOperatorDashboard([
             'upcoming' => [
                 [
+                    'id' => 'test-booking-id',
+                    'customer_id' => 'test-customer-id',
+                    'tenant_id' => 'test-tenant-id',
                     'customer_name' => 'Jane Doe',
                     'customer_email' => 'jane@example.com',
                     'service_name' => 'Haircut',
@@ -108,6 +111,11 @@ final class DashboardOutputTest extends TestCase
         $this->assertStringContainsString('Jane Doe', $html);
         $this->assertStringContainsString('Test Salon', $html);
         $this->assertStringContainsString('vb-cell-primary', $html);
+        // CRM cross-linking: customer name links to customer detail
+        $this->assertStringContainsString('vb-cell-link', $html);
+        $this->assertStringContainsString('/admin/tenants/test-tenant-id/customers/test-customer-id', $html);
+        // Booking detail link
+        $this->assertStringContainsString('/admin/bookings/test-booking-id', $html);
     }
 
     public function test_operator_dashboard_renders_metric_headers(): void

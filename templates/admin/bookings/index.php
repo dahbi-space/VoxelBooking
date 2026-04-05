@@ -123,8 +123,15 @@ ob_start();
                     <?php foreach ($bookings as $i => $b): ?>
                     <tr class="vb-fade-in-up stagger-<?= min($i + 1, 6) ?>">
                         <td data-label="<?= __('admin.bookings.customer') ?>">
+                            <?php if (!empty($b['customer_id']) && !empty($b['tenant_id'])): ?>
+                            <a href="/admin/tenants/<?= htmlspecialchars($b['tenant_id'], ENT_QUOTES, 'UTF-8') ?>/customers/<?= htmlspecialchars($b['customer_id'], ENT_QUOTES, 'UTF-8') ?>" class="vb-cell-link">
+                                <div class="vb-cell-primary"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
+                                <div class="vb-cell-secondary"><?= htmlspecialchars($b['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
+                            </a>
+                            <?php else: ?>
                             <div class="vb-cell-primary"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
                             <div class="vb-cell-secondary"><?= htmlspecialchars($b['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
+                            <?php endif; ?>
                         </td>
                         <td data-label="<?= __('admin.bookings.service') ?>">
                             <?= htmlspecialchars(booking_display_label($b), ENT_QUOTES, 'UTF-8') ?>
