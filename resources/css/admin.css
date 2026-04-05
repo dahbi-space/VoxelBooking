@@ -3933,6 +3933,12 @@ body.is-impersonating .vb-main {
 .vb-week-col-header.is-unavailable .vb-week-col-number {
     color: var(--vb-text-tertiary);
 }
+/* Today accent circle always wins over unavailable/blocked muting */
+.vb-week-col-header.is-unavailable .vb-week-col-number.is-today,
+.vb-week-col-header.is-blocked .vb-week-col-number.is-today {
+    background: var(--vb-accent);
+    color: #fff;
+}
 
 .vb-week-col-header.is-blocked {
     background: color-mix(in srgb, var(--vb-error) 5%, var(--vb-bg-well));
@@ -4159,11 +4165,11 @@ body.is-impersonating .vb-main {
 
 /* Outside month */
 .vb-calendar-month-cell.is-outside {
-    opacity: 0.3;
+    opacity: 0.5;
 }
 
 .vb-calendar-month-cell.is-outside:hover {
-    opacity: 0.45;
+    opacity: 0.65;
 }
 
 /* Today — stronger accent presence */
