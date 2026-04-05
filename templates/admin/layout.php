@@ -34,7 +34,7 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
     <meta name="robots" content="noindex, nofollow">
     <title><?= htmlspecialchars($documentTitle ?? $pageTitle, ENT_QUOTES, 'UTF-8') ?> — <?= htmlspecialchars(app_name(), ENT_QUOTES, 'UTF-8') ?></title>
     <?php include dirname(__DIR__) . '/partials/admin-head.php'; ?>
-    <link rel="stylesheet" href="/assets/css/admin-css.css">
+    <link rel="stylesheet" href="/assets/css/admin-css.css?v=<?= filemtime(dirname(__DIR__, 2) . '/public/assets/css/admin-css.css') ?>">
 </head>
 <body x-data="adminShell"<?= $isImpersonating ? ' class="is-impersonating"' : '' ?>>
 
@@ -350,6 +350,29 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
 
     <?php /* Modal slot: rendered at body level, outside .vb-content transform container */ ?>
     <?= $modals ?? '' ?>
+
+    <!-- Global System Confirm Modal (vanilla JS, CSP-safe) -->
+    <div id="vb-confirm-overlay" class="vb-modal-overlay" style="display: none;">
+        <div class="vb-modal vb-modal-sm">
+            <div class="vb-modal-header">
+                <h3 class="vb-modal-title"><?= __('admin.confirm.title') ?? 'Confirm Action' ?></h3>
+                <button type="button" class="vb-modal-close" data-confirm-close aria-label="Close">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="vb-modal-body">
+                <p class="vb-modal-desc" data-confirm-message></p>
+            </div>
+            <div class="vb-modal-footer">
+                <button type="button" class="vb-btn vb-btn-secondary" data-confirm-cancel>
+                    <?= __('admin.settings.cancel_button') ?? 'Cancel' ?>
+                </button>
+                <button type="button" class="vb-btn vb-btn-destructive" data-confirm-ok>
+                    <span data-confirm-btn-text>Confirm</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <?php if (\App\Engine\DemoMode::isActive()): ?>
     <script>window.VB_DEMO = true;</script>

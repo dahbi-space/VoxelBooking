@@ -12,7 +12,7 @@ $csrfToken = $csrfToken ?? \App\Middleware\CsrfMiddleware::generateToken();
 ob_start();
 ?>
 
-<div class="vb-empty vb-animate-in vb-error-container">
+<div class="vb-empty vb-fade-in-up stagger-2 vb-error-container">
     <i data-lucide="search" class="vb-empty-icon"></i>
     <div>
         <div class="vb-error-code">404</div>

@@ -13,6 +13,999 @@
    ══════════════════════════════════════════════════════════════ */
 
 @import "tailwindcss";
+@source "../../templates/**/*.php";
+
+
+
+    /* ── Self-hosted Inter (PRD §II: WOFF2, self-hosted) ── */
+    @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 100 900;
+        font-display: swap;
+        src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 100 900;
+        font-display: swap;
+        src: url('/fonts/inter-latin.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+
+    /* ══════════════════════════════════════════════════════════════
+       DESIGN TOKENS
+       ══════════════════════════════════════════════════════════════ */
+    :root {
+        /* ── Surfaces: layered depth, not flat planes ── */
+        --vb-bg-base: #f5f5f7;
+        --vb-bg-surface: #ffffff;
+        --vb-bg-surface-rgb: 255, 255, 255;
+        --vb-bg-raised: #ffffff;
+        --vb-bg-input: #ffffff;
+        --vb-bg-well: #f0f0f2;
+        --vb-bg-hover: rgba(0, 0, 0, 0.03);
+        --vb-bg-active: rgba(0, 0, 0, 0.05);
+        /* ── Borders: barely visible, luminous ── */
+        --vb-border-subtle: rgba(0, 0, 0, 0.06);
+        --vb-border-default: rgba(0, 0, 0, 0.1);
+        --vb-border-strong: rgba(0, 0, 0, 0.16);
+        --vb-border-card: rgba(0, 0, 0, 0.04);
+        /* ── Text: optical weight hierarchy ── */
+        --vb-text-primary: #1a1a2e;
+        --vb-text-secondary: #6b6b80;
+        --vb-text-tertiary: #9999ad;
+        --vb-text-ghost: #c4c4d4;
+        --vb-text-inverted: #ffffff;
+        /* ── Accent: rich indigo with luminous glow ── */
+        --vb-accent: #6366f1;
+        --vb-accent-hover: #5457e5;
+        --vb-accent-active: #4f46e5;
+        --vb-accent-subtle: rgba(99, 102, 241, 0.08);
+        --vb-accent-glow: rgba(99, 102, 241, 0.2);
+        --vb-accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6);
+        /* ── Depth: multi-layer elevation system ── */
+        --vb-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+        --vb-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+        --vb-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+        --vb-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+        --vb-shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
+        --vb-shadow-glow: 0 0 0 1px rgba(99, 102, 241, 0.15), 0 0 20px rgba(99, 102, 241, 0.1);
+        --vb-shadow-card: 0 0 0 1px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.02);
+        --vb-shadow-card-hover: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+        --vb-shadow-modal: 0 12px 32px rgba(0, 0, 0, 0.08);
+        --vb-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        /* ── Semantic ── */
+        --vb-success: #10b981;
+        --vb-success-bg: rgba(16, 185, 129, 0.08);
+        --vb-warning: #f59e0b;
+        --vb-warning-bg: rgba(245, 158, 11, 0.08);
+        --vb-error: #ef4444;
+        --vb-error-bg: rgba(239, 68, 68, 0.06);
+        --vb-info: #3b82f6;
+        --vb-info-bg: rgba(59, 130, 246, 0.08);
+        /* ── Typography: optical precision ── */
+        --vb-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        --vb-font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', ui-monospace, monospace;
+        --vb-text-2xs: 0.625rem;
+        --vb-text-xs: 0.6875rem;
+        --vb-text-sm: 0.8125rem;
+        --vb-text-base: 0.875rem;
+        --vb-text-md: 0.9375rem;
+        --vb-text-lg: 1.0625rem;
+        --vb-text-xl: 1.25rem;
+        --vb-text-2xl: 1.5rem;
+        --vb-text-3xl: 1.875rem;
+        --vb-text-4xl: 2.25rem;
+        --vb-leading-tight: 1.2;
+        --vb-leading-snug: 1.35;
+        --vb-leading-normal: 1.5;
+        --vb-leading-relaxed: 1.65;
+        --vb-tracking-tighter: -0.04em;
+        --vb-tracking-tight: -0.025em;
+        --vb-tracking-normal: -0.011em;
+        --vb-tracking-wide: 0.05em;
+        /* ── Radii ── */
+        --vb-radius-xs: 4px;
+        --vb-radius-sm: 6px;
+        --vb-radius-md: 8px;
+        --vb-radius-lg: 10px;
+        --vb-radius: 12px;
+        --vb-radius-xl: 14px;
+        --vb-radius-2xl: 16px;
+        --vb-radius-3xl: 20px;
+        --vb-radius-full: 9999px;
+        /* ── Layout ── */
+        --vb-sidebar-width: 220px;
+        --vb-sidebar-collapsed: 56px;
+        --vb-topbar-height: 52px;
+        --vb-banner-height: 38px;
+        --vb-shell-padding-x: 1.75rem;
+        /* ── Spacing Scale ── */
+        --space-1: 0.25rem;
+        --space-2: 0.5rem;
+        --space-3: 0.75rem;
+        --space-4: 1rem;
+        --space-5: 1.25rem;
+        --space-6: 1.5rem;
+        --space-8: 2rem;
+        --space-10: 2.5rem;
+        --space-12: 3rem;
+        /* ── Motion: spring-inspired curves ── */
+        --vb-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        --vb-ease-in: cubic-bezier(0.4, 0, 1, 1);
+        --vb-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+        --vb-ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
+        --vb-duration-instant: 100ms;
+        --vb-duration-fast: 150ms;
+        --vb-duration-normal: 220ms;
+        --vb-duration-slow: 320ms;
+        --vb-duration-slower: 500ms;
+    }
+
+    /* ── Dark: luminous depth on dark surfaces ── */
+    [data-theme="dark"] {
+        --vb-bg-base: #0c0c14;
+        --vb-bg-surface: #151520;
+        --vb-bg-surface-rgb: 21, 21, 32;
+        --vb-bg-raised: #1c1c2e;
+        --vb-bg-input: rgba(28, 28, 46, 0.8);
+        --vb-bg-well: #0c0c14;
+        --vb-bg-hover: rgba(255, 255, 255, 0.04);
+        --vb-bg-active: rgba(255, 255, 255, 0.07);
+        --vb-border-subtle: rgba(255, 255, 255, 0.06);
+        --vb-border-default: rgba(255, 255, 255, 0.1);
+        --vb-border-strong: rgba(255, 255, 255, 0.16);
+        --vb-border-card: rgba(255, 255, 255, 0.05);
+        --vb-text-primary: #ededf0;
+        --vb-text-secondary: #8888a0;
+        --vb-text-tertiary: #5c5c72;
+        --vb-text-ghost: #3a3a50;
+        --vb-accent: #818cf8;
+        --vb-accent-hover: #9198fa;
+        --vb-accent-active: #a5aefb;
+        --vb-accent-subtle: rgba(129, 140, 248, 0.1);
+        --vb-accent-glow: rgba(129, 140, 248, 0.25);
+        --vb-accent-gradient: linear-gradient(135deg, #818cf8, #a78bfa);
+        --vb-shadow-xs: none;
+        --vb-shadow-sm: none;
+        --vb-shadow-md: 0 4px 24px rgba(0, 0, 0, 0.3);
+        --vb-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.4);
+        --vb-shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.5);
+        --vb-shadow-glow: 0 0 0 1px rgba(129, 140, 248, 0.2), 0 0 24px rgba(129, 140, 248, 0.08);
+        --vb-shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 2px 8px rgba(0, 0, 0, 0.16);
+        --vb-shadow-card-hover: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 8px 24px rgba(0, 0, 0, 0.3);
+        --vb-shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        --vb-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        --vb-success: #34d399;
+        --vb-success-bg: rgba(52, 211, 153, 0.08);
+        --vb-warning: #fbbf24;
+        --vb-warning-bg: rgba(251, 191, 36, 0.08);
+        --vb-error: #f87171;
+        --vb-error-bg: rgba(248, 113, 113, 0.06);
+        --vb-info: #60a5fa;
+        --vb-info-bg: rgba(96, 165, 250, 0.08);
+    }
+
+    /* ── Token aliases (backward compat for existing pages) ── */
+    :root, [data-theme="dark"] {
+        --vb-admin-bg-base: var(--vb-bg-base);
+        --vb-admin-bg-surface: var(--vb-bg-surface);
+        --vb-admin-bg-surface-rgb: var(--vb-bg-surface-rgb);
+        --vb-admin-bg-raised: var(--vb-bg-raised);
+        --vb-admin-bg-input: var(--vb-bg-input);
+        --vb-admin-bg-well: var(--vb-bg-well);
+        --vb-admin-bg-hover: var(--vb-bg-hover);
+        --vb-admin-border-subtle: var(--vb-border-subtle);
+        --vb-admin-border-medium: var(--vb-border-default);
+        --vb-admin-border-strong: var(--vb-border-strong);
+        --vb-admin-text-primary: var(--vb-text-primary);
+        --vb-admin-text-secondary: var(--vb-text-secondary);
+        --vb-admin-text-tertiary: var(--vb-text-tertiary);
+        --vb-admin-text-ghost: var(--vb-text-ghost);
+        --vb-admin-accent: var(--vb-accent);
+        --vb-admin-accent-hover: var(--vb-accent-hover);
+        --vb-admin-accent-dim: var(--vb-accent-subtle);
+        --vb-admin-accent-glow: var(--vb-accent-glow);
+        --vb-admin-shadow-sm: var(--vb-shadow-sm);
+        --vb-admin-shadow-md: var(--vb-shadow-md);
+        --vb-admin-shadow-lg: var(--vb-shadow-lg);
+        --vb-admin-shadow-xl: var(--vb-shadow-xl);
+        --vb-admin-highlight: var(--vb-inner-glow);
+        --vb-admin-success: var(--vb-success);
+        --vb-admin-success-bg: var(--vb-success-bg);
+        --vb-admin-warning: var(--vb-warning);
+        --vb-admin-warning-bg: var(--vb-warning-bg);
+        --vb-admin-error: var(--vb-error);
+        --vb-admin-error-bg: var(--vb-error-bg);
+        --vb-admin-info: var(--vb-info);
+        --vb-admin-info-bg: var(--vb-info-bg);
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       RESET & BASE
+       ══════════════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { height: 100%; }
+
+    body {
+        font-family: var(--vb-font-sans);
+        font-feature-settings: 'cv02' 1, 'cv03' 1, 'cv04' 1, 'cv11' 1;
+        color: var(--vb-text-primary);
+        line-height: var(--vb-leading-normal);
+        letter-spacing: var(--vb-tracking-normal);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+
+    [data-theme="dark"] body { font-weight: 350; }
+
+    /* ══════════════════════════════════════════════════════════════
+       ANIMATION SYSTEM — Spring-physics inspired
+       ══════════════════════════════════════════════════════════════ */
+    @keyframes vb-fade-in {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+    @keyframes vb-fade-in-up {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes vb-fade-in-down {
+        from { opacity: 0; transform: translateY(-6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes vb-scale-in {
+        from { opacity: 0; transform: scale(0.96); }
+        to   { opacity: 1; transform: scale(1); }
+    }
+    @keyframes vb-shimmer {
+        0%   { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+    @keyframes vb-pulse-ring {
+        0%   { box-shadow: 0 0 0 0 var(--vb-accent-glow); }
+        70%  { box-shadow: 0 0 0 6px transparent; }
+        100% { box-shadow: 0 0 0 0 transparent; }
+    }
+    @keyframes vb-gradient-shift {
+        0%   { background-position: 0% 50%; }
+        50%  { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    @keyframes vb-spin { to { transform: rotate(360deg); } }
+    @keyframes vb-float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-4px); }
+    }
+    @keyframes vb-breathe {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 0.8; }
+    }
+
+    .vb-animate-in {
+        opacity: 0; transform: translateY(6px);
+        animation: vb-fade-in-up var(--vb-duration-slow) var(--vb-ease-out) forwards;
+    }
+    .vb-scale-in { animation: vb-scale-in 250ms var(--vb-ease-spring) both; }
+
+    .stagger-1 { animation-delay: 0ms; }
+    .stagger-2 { animation-delay: 60ms; }
+    .stagger-3 { animation-delay: 120ms; }
+    .stagger-4 { animation-delay: 180ms; }
+    .stagger-5 { animation-delay: 260ms; }
+    .stagger-6 { animation-delay: 340ms; }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       BUTTON SYSTEM — Premium tactile buttons
+       ══════════════════════════════════════════════════════════════ */
+    .vb-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 0.4375rem;
+        height: 36px; padding: 0 0.875rem;
+        font-family: var(--vb-font-sans); font-size: var(--vb-text-sm); font-weight: 500;
+        border: none; border-radius: var(--vb-radius-md); cursor: pointer;
+        transition: all var(--vb-duration-fast) var(--vb-ease-out);
+        text-decoration: none; white-space: nowrap;
+        position: relative; overflow: hidden;
+    }
+    .vb-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .vb-btn:active { transform: scale(0.97); transition-duration: 80ms; }
+    .vb-btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+    /* Primary: gradient with inner glow */
+    .vb-btn-primary {
+        color: #fff;
+        background: var(--vb-accent-gradient);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), var(--vb-inner-glow),
+                    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+    }
+    .vb-btn-primary:hover {
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3), var(--vb-inner-glow),
+                    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+    .vb-btn-primary:active { transform: translateY(0) scale(0.98); }
+
+    /* Secondary: glass border */
+    .vb-btn-secondary {
+        color: var(--vb-text-secondary);
+        background: var(--vb-bg-surface);
+        box-shadow: var(--vb-shadow-card);
+    }
+    .vb-btn-secondary:hover {
+        color: var(--vb-text-primary);
+        box-shadow: var(--vb-shadow-card-hover);
+    }
+
+    /* Ghost: invisible until hovered */
+    .vb-btn-ghost {
+        color: var(--vb-text-secondary); background: transparent; border: none;
+    }
+    .vb-btn-ghost:hover { background: var(--vb-bg-hover); color: var(--vb-text-primary); }
+
+    /* Danger */
+    .vb-btn-danger {
+        color: var(--vb-error); background: transparent;
+        box-shadow: inset 0 0 0 1px var(--vb-error);
+    }
+    .vb-btn-danger:hover { background: var(--vb-error-bg); }
+
+    /* Sizes */
+    .vb-btn-sm { height: 30px; padding: 0 0.625rem; font-size: var(--vb-text-xs); border-radius: var(--vb-radius-sm); }
+    .vb-btn-lg {
+        height: 42px; padding: 0 1.25rem; font-size: var(--vb-text-base); font-weight: 600;
+        border-radius: var(--vb-radius-lg);
+    }
+    .vb-btn-xl {
+        height: 48px; padding: 0 1.5rem; font-size: var(--vb-text-md); font-weight: 600;
+        border-radius: var(--vb-radius);
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       INPUT SYSTEM — Refined form controls
+       ══════════════════════════════════════════════════════════════ */
+    .vb-label {
+        display: block; font-size: var(--vb-text-sm); font-weight: 500;
+        color: var(--vb-text-primary); margin-bottom: 0.375rem;
+    }
+    .vb-hint { font-size: 0.75rem; color: var(--vb-text-tertiary); margin-top: 0.3125rem; }
+
+    .vb-input, .vb-select {
+        display: block; width: 100%; height: 38px; padding: 0 0.75rem;
+        font-family: var(--vb-font-sans); font-size: var(--vb-text-base);
+        color: var(--vb-text-primary); background: var(--vb-bg-input);
+        border: 1px solid var(--vb-border-subtle); border-radius: var(--vb-radius-md);
+        outline: none;
+        transition: border-color var(--vb-duration-fast), box-shadow var(--vb-duration-fast);
+        box-shadow: var(--vb-shadow-xs);
+    }
+    .vb-input:hover, .vb-select:hover { border-color: var(--vb-border-default); }
+    .vb-input:focus, .vb-select:focus {
+        border-color: var(--vb-accent);
+        box-shadow: 0 0 0 3px var(--vb-accent-subtle), var(--vb-shadow-xs);
+    }
+    .vb-input::placeholder { color: var(--vb-text-ghost); }
+    .vb-input[readonly] { background: var(--vb-bg-well); color: var(--vb-text-tertiary); cursor: default; }
+
+    .vb-input-lg { height: 44px; padding: 0 1rem; font-size: var(--vb-text-md); border-radius: var(--vb-radius-lg); }
+    .vb-input-icon { padding-left: 2.75rem; }
+    .vb-input-mono { font-family: var(--vb-font-mono); font-size: var(--vb-text-sm); letter-spacing: 0.02em; }
+
+    .vb-input-wrap { position: relative; }
+    .vb-input-wrap .vb-icon-left {
+        position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%);
+        width: 16px; height: 16px; color: var(--vb-text-ghost); pointer-events: none;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       FORM STRUCTURE
+       ══════════════════════════════════════════════════════════════ */
+    .vb-form-group { margin-bottom: 1.25rem; }
+    .vb-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 640px) { .vb-form-row { grid-template-columns: 1fr; } }
+    .vb-form-actions { margin-top: 1.75rem; display: flex; align-items: center; gap: 0.75rem; }
+
+    /* ══════════════════════════════════════════════════════════════
+       CARD SYSTEM — Luminous layered surfaces
+       ══════════════════════════════════════════════════════════════ */
+    .vb-card {
+        background: var(--vb-bg-surface);
+        border-radius: var(--vb-radius-xl);
+        padding: 1.5rem;
+        box-shadow: var(--vb-shadow-card);
+        transition: box-shadow var(--vb-duration-normal) var(--vb-ease-out);
+    }
+    .vb-card-flush { padding: 0; overflow: hidden; }
+    .vb-card:hover { box-shadow: var(--vb-shadow-card-hover); }
+    .vb-card-header { margin-bottom: 1.25rem; }
+    .vb-card-title {
+        font-size: var(--vb-text-md); font-weight: 600;
+        letter-spacing: var(--vb-tracking-tight);
+    }
+    .vb-card-desc {
+        font-size: var(--vb-text-sm); color: var(--vb-text-secondary);
+        margin-top: 0.25rem;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       TAB SYSTEM — Premium pill tabs with indicator
+       ══════════════════════════════════════════════════════════════ */
+    .vb-tabs {
+        display: inline-flex; align-items: center; gap: 2px;
+        background: var(--vb-bg-hover);
+        border-radius: var(--vb-radius-lg);
+        padding: 3px;
+        margin-bottom: 1rem;
+    }
+    .vb-tab {
+        display: flex; align-items: center; gap: 0.375rem;
+        padding: 0.4375rem 0.875rem;
+        font-size: var(--vb-text-sm); font-weight: 450;
+        color: var(--vb-text-tertiary); text-decoration: none;
+        border-radius: var(--vb-radius-md);
+        transition: color var(--vb-duration-fast), background var(--vb-duration-fast),
+                    box-shadow var(--vb-duration-fast);
+        white-space: nowrap; cursor: pointer;
+    }
+    .vb-tab:hover { color: var(--vb-text-primary); }
+    .vb-tab.active {
+        color: var(--vb-text-primary);
+        background: var(--vb-bg-surface);
+        box-shadow: var(--vb-shadow-sm);
+        font-weight: 500;
+    }
+    .vb-tab svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* Compact tabs variant — for inline use in calendar/toolbar headers */
+    .vb-tabs.vb-tabs-compact {
+        margin-bottom: 0;
+        padding: 2px;
+    }
+    .vb-tabs-compact .vb-tab {
+        padding: 0.3125rem 0.75rem;
+        font-size: 0.8125rem;
+    }
+
+
+    /* NOTE: .vb-tabs-line has been retired. All tabs now use the pill variant (.vb-tabs).
+       Settings pages use .vb-tabs, calendar uses .vb-tabs.vb-tabs-compact. */
+
+    /* ══════════════════════════════════════════════════════════════
+       BADGE SYSTEM — Semantic status indicators
+       ══════════════════════════════════════════════════════════════ */
+    .vb-badge {
+        display: inline-flex; align-items: center; gap: 0.25rem;
+        font-size: var(--vb-text-2xs); font-weight: 600;
+        padding: 0.1875rem 0.5rem; border-radius: var(--vb-radius-full);
+        letter-spacing: 0.02em; white-space: nowrap;
+        text-transform: uppercase;
+    }
+    .vb-badge svg { width: 10px; height: 10px; }
+    .vb-badge-default { background: var(--vb-bg-hover); color: var(--vb-text-secondary); }
+    .vb-badge-accent { background: var(--vb-accent-subtle); color: var(--vb-accent); }
+    .vb-badge-success { background: var(--vb-success-bg); color: var(--vb-success); }
+    .vb-badge-warning { background: var(--vb-warning-bg); color: var(--vb-warning); }
+    .vb-badge-error { background: var(--vb-error-bg); color: var(--vb-error); }
+
+    /* Dot variant — subtle presence indicator */
+    .vb-dot {
+        width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+    .vb-dot-success { background: var(--vb-success); box-shadow: 0 0 6px var(--vb-success); }
+    .vb-dot-warning { background: var(--vb-warning); box-shadow: 0 0 6px var(--vb-warning); }
+    .vb-dot-error { background: var(--vb-error); box-shadow: 0 0 6px var(--vb-error); }
+    .vb-dot-accent { background: var(--vb-accent); box-shadow: 0 0 6px var(--vb-accent); }
+
+    /* ══════════════════════════════════════════════════════════════
+       METRIC CARD — Dashboard analytics
+       ══════════════════════════════════════════════════════════════ */
+    .vb-metric {
+        background: var(--vb-bg-surface);
+        border-radius: var(--vb-radius-xl); padding: 1.375rem 1.5rem;
+        box-shadow: var(--vb-shadow-card);
+        position: relative; overflow: hidden;
+        transition: box-shadow var(--vb-duration-normal) var(--vb-ease-out),
+                    transform var(--vb-duration-normal) var(--vb-ease-out);
+    }
+    .vb-metric:hover {
+        box-shadow: var(--vb-shadow-card-hover);
+        transform: translateY(-1px);
+    }
+    .vb-metric-label {
+        font-size: var(--vb-text-xs); font-weight: 500;
+        letter-spacing: var(--vb-tracking-wide); color: var(--vb-text-tertiary);
+        text-transform: uppercase;
+    }
+    .vb-metric-value {
+        font-size: 2rem; font-weight: 700; letter-spacing: var(--vb-tracking-tighter);
+        font-variant-numeric: tabular-nums; margin-top: 0.375rem;
+        line-height: 1; color: var(--vb-text-primary);
+    }
+    .vb-metric-trend {
+        display: inline-flex; align-items: center; gap: 0.25rem;
+        font-size: var(--vb-text-xs); font-weight: 500; margin-top: 0.625rem;
+    }
+    .vb-metric-trend svg { width: 12px; height: 12px; }
+    .vb-metric-trend.is-up { color: var(--vb-success); }
+    .vb-metric-trend.is-down { color: var(--vb-error); }
+    .vb-metric-trend.is-flat { color: var(--vb-text-ghost); }
+
+    /* Decorative gradient accent bar */
+    .vb-metric-accent {
+        position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+        background: var(--vb-accent-gradient); opacity: 0;
+        transition: opacity var(--vb-duration-normal);
+    }
+    .vb-metric:hover .vb-metric-accent { opacity: 1; }
+
+    /* ── Metric card: redesigned layout with header + delta ── */
+    .vb-metric-header {
+        display: flex; align-items: center; gap: 0.375rem;
+        margin-bottom: 0.5rem;
+    }
+    .vb-metric-icon {
+        width: 16px; height: 16px;
+        color: var(--vb-text-tertiary);
+    }
+    .vb-metric-value-row {
+        display: flex; align-items: baseline; gap: 0.5rem;
+    }
+    .vb-metric-delta {
+        display: inline-flex; align-items: center; gap: 0.125rem;
+        font-size: var(--vb-text-2xs); font-weight: 600;
+        padding: 0.125rem 0.375rem; border-radius: var(--vb-radius-sm);
+    }
+    .vb-metric-delta svg { width: 11px; height: 11px; }
+    .vb-metric-delta.is-up { background: var(--vb-success-bg); color: var(--vb-success); }
+    .vb-metric-delta.is-down { background: var(--vb-error-bg); color: var(--vb-error); }
+
+    /* ══════════════════════════════════════════════════════════════
+       STATUS CHIPS — Dot + label booking status (PRD §VI)
+       ══════════════════════════════════════════════════════════════ */
+    .vb-status {
+        display: inline-flex; align-items: center; gap: 0.375rem;
+        font-size: var(--vb-text-xs); font-weight: 500;
+    }
+    .vb-status::before {
+        content: ''; width: 6px; height: 6px;
+        border-radius: 50%; flex-shrink: 0;
+    }
+    .vb-status-confirmed::before { background: var(--vb-success); }
+    .vb-status-confirmed { color: var(--vb-success); }
+    .vb-status-pending::before { background: var(--vb-warning); }
+    .vb-status-pending { color: var(--vb-warning); }
+    .vb-status-cancelled::before { background: var(--vb-error); }
+    .vb-status-cancelled { color: var(--vb-error); }
+    .vb-status-completed::before { background: var(--vb-text-tertiary); }
+    .vb-status-completed { color: var(--vb-text-tertiary); }
+    .vb-status-no_show::before { background: var(--vb-warning); }
+    .vb-status-no_show { color: var(--vb-warning); }
+    .vb-status-rescheduled::before { background: var(--vb-info); }
+    .vb-status-rescheduled { color: var(--vb-info); }
+    .vb-status-waitlisted::before { background: #8B5CF6; }
+    .vb-status-waitlisted { color: #8B5CF6; }
+
+    /* ══════════════════════════════════════════════════════════════
+       FILTER PILLS — Capsule-style filter bar
+       ══════════════════════════════════════════════════════════════ */
+    .vb-filter-pills {
+        display: flex; align-items: center; gap: 0.5rem;
+        flex-wrap: wrap; margin-bottom: 1rem;
+    }
+    .vb-filter-pill {
+        display: inline-flex; align-items: center; gap: 0.375rem;
+        padding: 0.4375rem 0.75rem;
+        font-size: var(--vb-text-sm); font-weight: 450;
+        color: var(--vb-text-secondary);
+        background: var(--vb-bg-surface);
+        border: 1px solid var(--vb-border-subtle);
+        border-radius: var(--vb-radius-full); cursor: pointer;
+        transition: border-color var(--vb-duration-fast), box-shadow var(--vb-duration-fast);
+    }
+    .vb-filter-pill:hover {
+        border-color: var(--vb-border-default);
+        box-shadow: var(--vb-shadow-xs);
+    }
+    .vb-filter-pill.is-active {
+        border-color: var(--vb-accent); color: var(--vb-accent);
+        background: var(--vb-accent-subtle);
+    }
+    .vb-filter-pill svg, .vb-filter-pill [data-lucide] { width: 14px; height: 14px; }
+
+    /* ══════════════════════════════════════════════════════════════
+       CELL STACK — Two-line compact table cells
+       ══════════════════════════════════════════════════════════════ */
+    .vb-cell-primary {
+        font-size: var(--vb-text-sm); font-weight: 500;
+        color: var(--vb-text-primary);
+    }
+    .vb-cell-secondary {
+        font-size: var(--vb-text-xs); color: var(--vb-text-tertiary);
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       SORTABLE HEADERS — Click-to-sort column headers
+       ══════════════════════════════════════════════════════════════ */
+    .vb-th-sort {
+        cursor: pointer; user-select: none;
+        display: inline-flex; align-items: center; gap: 0.25rem;
+        color: inherit; text-decoration: none;
+    }
+    .vb-th-sort::after {
+        content: ''; display: inline-block;
+        width: 0; height: 0;
+        border-left: 3.5px solid transparent;
+        border-right: 3.5px solid transparent;
+        border-bottom: 5px solid var(--vb-text-ghost);
+        transition: transform var(--vb-duration-fast), border-color var(--vb-duration-fast);
+    }
+    .vb-th-sort:hover::after { border-bottom-color: var(--vb-text-tertiary); }
+    .vb-th-sort.is-asc::after { border-bottom-color: var(--vb-accent); }
+    .vb-th-sort.is-desc::after { border-bottom-color: var(--vb-accent); transform: rotate(180deg); }
+
+    /* ══════════════════════════════════════════════════════════════
+       EVENT TIMELINE — Audit log vertical timeline
+       ══════════════════════════════════════════════════════════════ */
+    .vb-timeline {
+        position: relative;
+        padding-left: 1.5rem;
+    }
+    .vb-timeline::before {
+        content: ''; position: absolute; left: 0.375rem; top: 0; bottom: 0;
+        width: 1px; background: var(--vb-border-subtle);
+    }
+    .vb-timeline-entry {
+        position: relative;
+        padding: 0.5rem 0 0.5rem 0.5rem;
+    }
+    .vb-timeline-entry::before {
+        content: ''; position: absolute;
+        left: -1.125rem; top: 0.875rem;
+        width: 7px; height: 7px; border-radius: 50%;
+        background: var(--vb-text-ghost);
+        border: 1.5px solid var(--vb-bg-card);
+    }
+    .vb-timeline-entry.is-created::before { background: var(--vb-accent); }
+    .vb-timeline-entry.is-status::before { background: var(--vb-success); }
+    .vb-timeline-action {
+        font-size: var(--vb-text-sm); font-weight: 500;
+        color: var(--vb-text-primary);
+    }
+    .vb-timeline-meta {
+        font-size: var(--vb-text-xs); color: var(--vb-text-tertiary);
+        margin-top: 0.125rem;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       SCHEDULE PANEL — Day-view foundation
+       ══════════════════════════════════════════════════════════════ */
+    .vb-schedule-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.75rem 0; margin-bottom: 0.5rem;
+    }
+    .vb-schedule-title {
+        font-size: var(--vb-text-md); font-weight: 600;
+        letter-spacing: var(--vb-tracking-tight);
+    }
+    .vb-schedule-grid {
+        position: relative;
+        border: 1px solid var(--vb-border-subtle);
+        border-radius: var(--vb-radius-lg);
+        overflow: hidden;
+    }
+    .vb-schedule-hour-row {
+        display: flex; min-height: 60px;
+        border-bottom: 1px solid var(--vb-border-subtle);
+    }
+    .vb-schedule-hour-row:last-child { border-bottom: none; }
+    .vb-schedule-time-gutter {
+        width: 56px; flex-shrink: 0;
+        padding: 0.375rem 0.5rem 0 0; text-align: right;
+        font-size: var(--vb-text-xs); font-weight: 500;
+        color: var(--vb-text-tertiary);
+        font-variant-numeric: tabular-nums;
+    }
+    .vb-schedule-cells {
+        flex: 1; position: relative;
+        border-left: 1px solid var(--vb-border-subtle);
+        padding: 0.25rem;
+    }
+    .vb-schedule-pill {
+        border-radius: var(--vb-radius-md);
+        padding: 0.375rem 0.5rem;
+        font-size: var(--vb-text-xs); font-weight: 500;
+        line-height: var(--vb-leading-tight);
+        cursor: pointer; margin-bottom: 0.25rem;
+        transition: box-shadow var(--vb-duration-fast);
+    }
+    .vb-schedule-pill:last-child { margin-bottom: 0; }
+    .vb-schedule-pill:hover { box-shadow: var(--vb-shadow-sm); }
+    .vb-schedule-pill-title { font-weight: 600; }
+    .vb-schedule-pill-time { font-size: var(--vb-text-2xs); opacity: 0.7; }
+    .vb-schedule-pill-staff { font-size: var(--vb-text-2xs); opacity: 0.6; margin-top: 0.0625rem; }
+
+    /* Current-time indicator */
+    .vb-schedule-now {
+        position: absolute; left: 56px; right: 0;
+        height: 2px; background: var(--vb-accent); z-index: 5;
+        pointer-events: none;
+    }
+    .vb-schedule-now::before {
+        content: attr(data-time);
+        position: absolute; left: -56px; top: -8px;
+        font-size: var(--vb-text-2xs); font-weight: 700;
+        color: var(--vb-accent); background: var(--vb-accent-subtle);
+        padding: 0.0625rem 0.25rem; border-radius: var(--vb-radius-xs);
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       EMPTY STATE — Onboarding & placeholder
+       ══════════════════════════════════════════════════════════════ */
+    .vb-empty {
+        background: var(--vb-bg-surface);
+        border-radius: var(--vb-radius-2xl); padding: 2.5rem;
+        box-shadow: var(--vb-shadow-card);
+        display: flex; align-items: flex-start; gap: 1.5rem;
+    }
+    .vb-empty-icon {
+        width: 44px; height: 44px; flex-shrink: 0;
+        color: var(--vb-accent); opacity: 0.4; margin-top: 0.125rem;
+    }
+    .vb-empty-title {
+        font-size: var(--vb-text-xl); font-weight: 650;
+        letter-spacing: var(--vb-tracking-tight); margin-bottom: 0.5rem;
+    }
+    .vb-empty-desc {
+        font-size: var(--vb-text-sm); color: var(--vb-text-secondary);
+        max-width: 440px; margin-bottom: 1.5rem;
+        line-height: var(--vb-leading-relaxed);
+    }
+    .vb-empty-steps {
+        display: flex; gap: 1.5rem; margin-top: 1.25rem;
+        padding-top: 1.25rem; border-top: 1px solid var(--vb-border-subtle);
+    }
+    .vb-empty-step {
+        display: flex; align-items: center; gap: 0.4375rem;
+        font-size: var(--vb-text-xs); color: var(--vb-text-tertiary); font-weight: 500;
+    }
+    .vb-empty-step-num {
+        width: 20px; height: 20px; border-radius: var(--vb-radius-full);
+        background: var(--vb-accent-subtle); color: var(--vb-accent);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.625rem; font-weight: 700; flex-shrink: 0;
+    }
+    .vb-empty-step-arrow { color: var(--vb-text-ghost); width: 13px; height: 13px; }
+    @media (max-width: 640px) {
+        .vb-empty { flex-direction: column; text-align: center; align-items: center; }
+        .vb-empty-steps { flex-direction: column; gap: 0.75rem; }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       ALERT / FLASH — Semantic feedback
+       ══════════════════════════════════════════════════════════════ */
+    .vb-alert {
+        display: flex; align-items: center; gap: 0.625rem;
+        padding: 0.75rem 1rem; border-radius: var(--vb-radius-md);
+        font-size: var(--vb-text-sm); font-weight: 450;
+        margin-bottom: 1rem;
+        animation: vb-fade-in-down var(--vb-duration-normal) var(--vb-ease-out) both;
+    }
+    .vb-alert-icon { width: 16px; height: 16px; flex-shrink: 0; }
+    .vb-alert-text { flex: 1; min-width: 0; }
+    .vb-alert-close {
+        flex-shrink: 0; background: none; border: none; cursor: pointer;
+        color: inherit; opacity: 0.5; padding: 0.125rem;
+        border-radius: var(--vb-radius-sm);
+        transition: opacity var(--vb-duration-fast), background var(--vb-duration-fast);
+    }
+    .vb-alert-close:hover { opacity: 1; background: rgba(0, 0, 0, 0.08); }
+    .vb-alert-close svg, .vb-alert-close i { width: 14px; height: 14px; display: block; }
+    .vb-alert svg:not(.vb-alert-icon):not(.vb-alert-close svg) { width: 16px; height: 16px; flex-shrink: 0; }
+    .vb-alert-success { background: var(--vb-success-bg); color: var(--vb-success); }
+    .vb-alert-error { background: var(--vb-error-bg); color: var(--vb-error); }
+    .vb-alert-warning { background: var(--vb-warning-bg); color: var(--vb-warning); }
+    .vb-alert-info { background: var(--vb-info-bg); color: var(--vb-info); }
+    .vb-alert-info { align-items: flex-start; } /* multi-line info alerts align top */
+
+    /* Credential card (one-time post-creation display) */
+    .vb-credentials-card {
+        margin-top: 0.5rem; padding: 0.75rem 1rem;
+        background: var(--vb-surface); border-radius: var(--vb-radius-md);
+        border: 1px solid var(--vb-border);
+        font-family: var(--vb-font-mono, 'JetBrains Mono', monospace);
+    }
+    .vb-credentials-row {
+        display: flex; align-items: center; gap: 0.5rem;
+        padding: 0.25rem 0; font-size: var(--vb-text-sm);
+    }
+    .vb-credentials-label {
+        color: var(--vb-text-muted); font-weight: 500;
+        min-width: 10rem; font-family: var(--vb-font-sans, Inter, sans-serif);
+    }
+    .vb-credentials-value {
+        color: var(--vb-text); background: transparent;
+        padding: 0; font-size: var(--vb-text-sm);
+        user-select: all; /* easy copy */
+    }
+    .vb-credentials-hint {
+        margin: 0.5rem 0 0; font-size: 12px;
+        color: var(--vb-text-muted); font-style: italic;
+        font-family: var(--vb-font-sans, Inter, sans-serif);
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       OWNER SETUP — Toggle, password field, section divider
+       ══════════════════════════════════════════════════════════════ */
+    .vb-section-divider {
+        height: 1px; background: var(--vb-border);
+        margin: 1rem 0 1.25rem;
+    }
+    .vb-toggle-row {
+        display: flex; align-items: flex-start; gap: 0.75rem;
+        cursor: pointer; user-select: none;
+    }
+    .vb-checkbox {
+        width: 18px; height: 18px; flex-shrink: 0;
+        margin-top: 2px; accent-color: var(--vb-primary);
+        cursor: pointer;
+    }
+    .vb-password-field {
+        display: flex; align-items: center; gap: 0.375rem;
+    }
+    .vb-password-field .vb-input { flex: 1; }
+    .vb-password-field .vb-btn { padding: 0.375rem; }
+    .vb-password-field .vb-btn svg { width: 15px; height: 15px; }
+    .vb-hint-warning {
+        color: var(--vb-warning) !important;
+    }
+    .vb-owner-section {
+        margin-top: 0.5rem;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       SETTINGS SYSTEM — Tabs, info rows, settings cards
+       ══════════════════════════════════════════════════════════════ */
+    /* Info rows (system info, account details) */
+    .vb-info-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--vb-border-subtle);
+    }
+    .vb-info-row:last-child { border-bottom: none; }
+    .vb-info-label { font-size: var(--vb-text-sm); font-weight: 500; color: var(--vb-text-secondary); }
+    .vb-info-value { font-size: var(--vb-text-sm); color: var(--vb-text-primary); }
+    .vb-info-value code {
+        font-family: var(--vb-font-mono); font-size: var(--vb-text-xs);
+        padding: 0.125rem 0.4375rem; background: var(--vb-bg-well);
+        border-radius: var(--vb-radius-xs);
+    }
+
+    /* Log viewer */
+    .vb-log-viewer {
+        font-family: var(--vb-font-mono); font-size: 0.75rem;
+        line-height: 1.6; background: var(--vb-bg-base);
+        color: var(--vb-text-secondary);
+        padding: 1rem; border-radius: var(--vb-radius-md);
+        max-height: 400px; overflow-y: auto;
+        white-space: pre-wrap; word-break: break-all;
+        box-shadow: var(--vb-shadow-card);
+    }
+
+    /* Password strength bar */
+    .vb-pw-track {
+        height: 3px; border-radius: 2px; margin-top: 0.375rem;
+        background: var(--vb-border-subtle); overflow: hidden;
+    }
+    .vb-pw-fill {
+        height: 100%; width: 0; border-radius: 2px;
+        transition: width var(--vb-duration-normal), background var(--vb-duration-normal);
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       TOGGLE SWITCH — Premium slide toggle
+       ══════════════════════════════════════════════════════════════ */
+    .vb-toggle {
+        position: relative; width: 40px; height: 22px;
+        background: var(--vb-border-default); border-radius: 11px;
+        cursor: pointer; border: none;
+        transition: background var(--vb-duration-fast);
+    }
+    .vb-toggle::after {
+        content: ''; position: absolute; top: 2px; left: 2px;
+        width: 18px; height: 18px; border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        transition: transform var(--vb-duration-normal) var(--vb-ease-spring);
+    }
+    .vb-toggle.is-on { background: var(--vb-accent); }
+    .vb-toggle.is-on::after { transform: translateX(18px); }
+
+    /* ══════════════════════════════════════════════════════════════
+       AVATAR — User/entity identity
+       ══════════════════════════════════════════════════════════════ */
+    .vb-avatar {
+        width: 32px; height: 32px; border-radius: var(--vb-radius-full);
+        background: var(--vb-accent-gradient);
+        color: #fff; font-weight: 600; font-size: var(--vb-text-xs);
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; text-transform: uppercase;
+    }
+    .vb-avatar-sm { width: 24px; height: 24px; font-size: 0.5625rem; }
+    .vb-avatar-lg { width: 40px; height: 40px; font-size: var(--vb-text-sm); }
+
+    /* ══════════════════════════════════════════════════════════════
+       TOOLTIP — Contextual hints
+       ══════════════════════════════════════════════════════════════ */
+    .vb-tooltip {
+        position: relative; cursor: help;
+    }
+    .vb-tooltip::before {
+        content: attr(data-tooltip);
+        position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(4px);
+        padding: 0.375rem 0.625rem; border-radius: var(--vb-radius-sm);
+        background: var(--vb-text-primary); color: var(--vb-text-inverted);
+        font-size: var(--vb-text-xs); font-weight: 450;
+        white-space: nowrap; pointer-events: none;
+        opacity: 0; transition: all var(--vb-duration-fast) var(--vb-ease-out);
+    }
+    .vb-tooltip:hover::before {
+        opacity: 1; transform: translateX(-50%) translateY(-6px);
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       DIVIDER — Subtle content separation
+       ══════════════════════════════════════════════════════════════ */
+    .vb-divider {
+        height: 1px; background: var(--vb-border-subtle);
+        margin: 1.5rem 0; border: none;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       UTILITY CLASSES
+       ══════════════════════════════════════════════════════════════ */
+    .vb-nums { font-variant-numeric: tabular-nums; }
+    .vb-mono { font-family: var(--vb-font-mono); }
+    .vb-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+    .vb-grid { display: grid; gap: 1rem; }
+    .vb-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .vb-grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .vb-grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .vb-grid-auto { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    @media (max-width: 768px) { .vb-grid-2, .vb-grid-3, .vb-grid-4 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .vb-grid-2, .vb-grid-3, .vb-grid-4 { grid-template-columns: 1fr; } }
+
+    /* Focus visible */
+    :focus-visible { outline: 2px solid var(--vb-accent); outline-offset: 2px; }
+    :focus:not(:focus-visible) { outline: none; }
+    .vb-input:focus-visible, .vb-select:focus-visible { outline: none; }
+
+    /* Color scheme for native controls (scrollbars, form elements) */
+    :root { color-scheme: light; }
+    [data-theme="dark"] { color-scheme: dark; }
+
+    /* Scrollbar — slim, theme-aware */
+    * { scrollbar-width: thin; scrollbar-color: var(--vb-border-default) transparent; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--vb-border-default); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--vb-border-strong); }
+
+
+/* ── Tailwind 4 Dark Mode Configuration ──────────────────────── */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* Alpine.js: prevent content flash before initialization */
 [x-cloak] { display: none !important; }
@@ -28,7 +1021,6 @@
     width: var(--vb-sidebar-width);
     min-height: 100vh;
     background: var(--vb-bg-surface);
-    border-right: 1px solid var(--vb-border-subtle);
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -37,12 +1029,14 @@
     bottom: 0;
     z-index: 40;
     transition: transform var(--vb-duration-normal) var(--vb-ease-out);
+    /* Restored structural boundary line to prevent visual bleeding on low-contrast monitors */
+    border-right: 1px solid var(--vb-border-subtle);
 }
 
-/* Subtle gradient overlay for depth in dark mode */
+/* Subtle background for dark mode sidebar without aggressive gradients */
 [data-theme="dark"] .vb-sidebar {
-    background: linear-gradient(180deg, rgba(21, 21, 32, 1) 0%, rgba(12, 12, 20, 1) 100%);
-    border-right-color: var(--vb-border-subtle);
+    background: #0f1115; /* very deep slate/zinc, purely solid for spatial depth */
+    box-shadow: 1px 0 0 rgba(255, 255, 255, 0.03);
 }
 
 .vb-sidebar-brand {
@@ -98,22 +1092,22 @@
     align-items: center;
     gap: 0.625rem;
     padding: 0.5rem 0.75rem;
-    margin-bottom: 1px;
-    font-size: var(--vb-text-sm);
-    font-weight: 430;
-    color: var(--vb-text-secondary);
+    margin-bottom: 2px;
+    font-size: 0.8125rem; /* slightly downsized for density */
+    font-weight: 500;
+    color: var(--vb-text-tertiary);
     text-decoration: none;
-    border-radius: var(--vb-radius-md);
+    border-radius: var(--vb-radius-lg);
     transition:
-        background var(--vb-duration-fast),
-        color var(--vb-duration-fast),
-        box-shadow var(--vb-duration-fast);
+        background var(--vb-duration-fast) var(--vb-ease-out),
+        color var(--vb-duration-fast) var(--vb-ease-out),
+        transform var(--vb-duration-fast) var(--vb-ease-spring);
 }
 
 /* Disabled/coming-soon nav items */
 .vb-sidebar-link-disabled {
     cursor: default;
-    opacity: 0.5;
+    opacity: 0.4;
     pointer-events: none;
 }
 
@@ -126,13 +1120,18 @@
 .vb-sidebar-link:hover {
     background: var(--vb-bg-hover);
     color: var(--vb-text-primary);
+    transform: translateX(2px);
 }
 
 .vb-sidebar-link.active {
-    background: var(--vb-accent-subtle);
-    color: var(--vb-accent);
-    font-weight: 530;
-    box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.08);
+    background: var(--vb-bg-hover);
+    color: var(--vb-text-primary);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+[data-theme="dark"] .vb-sidebar-link.active {
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 /* Sidebar icons */
@@ -185,9 +1184,11 @@
 /* ── Topbar: enterprise-grade glass bar ──────────────────────── */
 .vb-topbar {
     height: var(--vb-topbar-height);
-    background: rgba(var(--vb-bg-surface-rgb), 0.72);
-    backdrop-filter: blur(20px) saturate(1.5);
-    border-bottom: 1px solid var(--vb-border-subtle);
+    background: rgba(var(--vb-bg-surface-rgb), 0.65);
+    backdrop-filter: blur(24px) saturate(1.5);
+    border-bottom: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02), 0 0 0 1px rgba(0,0,0,0.02);
+
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -268,16 +1269,22 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.3125rem 0.625rem 0.3125rem 0.3125rem;
-    border: 1px solid transparent;
-    background: transparent;
+    border: 1px solid rgba(0,0,0,0.06);
+    background: var(--vb-bg-surface);
     cursor: pointer;
     border-radius: var(--vb-radius-full);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     transition: background var(--vb-duration-fast) var(--vb-ease-out),
-                border-color var(--vb-duration-fast) var(--vb-ease-out);
+                border-color var(--vb-duration-fast) var(--vb-ease-out),
+                box-shadow var(--vb-duration-fast) var(--vb-ease-out);
+}
+[data-theme="dark"] .vb-profile-trigger {
+    border-color: rgba(255,255,255,0.06);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
 }
 .vb-profile-trigger:hover {
     background: var(--vb-bg-hover);
-    border-color: var(--vb-border-subtle);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
 }
 
 .vb-profile-trigger-name {
@@ -460,24 +1467,30 @@
 .vb-content {
     flex: 1;
     width: 100%;
-    padding: 2rem 2.5rem 3rem;
+    padding: 2.5rem 3rem 4rem; /* increased padding for high-end feel */
     max-width: 1200px;
-    margin: 0 auto;
+    margin-left: 0;
+    margin-right: auto;
     animation: vb-fade-in-up var(--vb-duration-normal) var(--vb-ease-out) both;
 }
 
 
 /* ── Dashboard: Greeting ─────────────────────────────────────── */
 .vb-greeting {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .vb-greeting-title {
-    font-size: var(--vb-text-3xl);
+    font-size: var(--vb-text-4xl);
     font-weight: 700;
     letter-spacing: var(--vb-tracking-tighter);
     line-height: var(--vb-leading-tight);
     margin-bottom: 0.3125rem;
+    background: linear-gradient(180deg, var(--vb-text-primary) 0%, var(--vb-text-secondary) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
 }
 
 .vb-greeting-subtitle {
@@ -491,11 +1504,15 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 /* Metric card: premium elevation with accent gradient stripe */
 .vb-metric {
+    background: var(--vb-bg-surface);
+    border-radius: var(--vb-radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--vb-shadow-card);
     position: relative;
     overflow: hidden;
     transition:
@@ -519,8 +1536,8 @@
 
 /* Metric typography: numbers should feel data-dense, impactful */
 .vb-metric-value {
-    font-size: var(--vb-text-3xl);
-    font-weight: 700;
+    font-size: var(--vb-text-4xl);
+    font-weight: 650;
     letter-spacing: var(--vb-tracking-tighter);
     line-height: 1;
     font-variant-numeric: tabular-nums;
@@ -623,20 +1640,22 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 2rem 1rem;
-    gap: 0.5rem;
+    padding: 3.5rem 1rem;
+    gap: 0.625rem;
+    background: transparent;
 }
 
 .vb-schedule-empty-icon {
-    width: 28px;
-    height: 28px;
-    color: var(--vb-text-ghost);
-    opacity: 0.5;
+    width: 24px;
+    height: 24px;
+    color: var(--vb-text-tertiary);
+    opacity: 0.8;
 }
 
 .vb-schedule-empty-text {
     font-size: var(--vb-text-sm);
-    color: var(--vb-text-tertiary);
+    color: var(--vb-text-secondary);
+    font-weight: 500;
 }
 
 .vb-schedule-grid {
@@ -751,12 +1770,13 @@
 }
 
 .vb-dash-section-title {
-    font-size: var(--vb-text-sm);
+    font-size: 0.8125rem;
     font-weight: 600;
-    letter-spacing: var(--vb-tracking-tight);
-    color: var(--vb-text-primary);
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--vb-border-subtle, rgba(0, 0, 0, 0.04));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--vb-text-tertiary);
+    padding: 1.25rem 1.25rem 0.5rem;
+    border-bottom: none;
 }
 
 /* ── Dashboard: Upcoming booking list (bespoke rows) ─────────── */
@@ -770,15 +1790,16 @@
     grid-template-columns: 1fr auto auto;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.75rem 1.25rem;
+    padding: 0.875rem 1.25rem;
     border-bottom: 1px solid var(--vb-border-subtle, rgba(0, 0, 0, 0.04));
-    transition: background var(--vb-duration-fast);
+    transition: background var(--vb-duration-fast), transform var(--vb-duration-fast);
 }
 .vb-upcoming-row:last-child {
     border-bottom: none;
 }
 .vb-upcoming-row:hover {
     background: var(--vb-bg-hover);
+    transform: translateX(2px);
 }
 
 .vb-upcoming-name {
@@ -1122,6 +2143,12 @@
     margin-bottom: 1.5rem;
 }
 
+/* Tighten header margin when tabs immediately follow */
+.vb-page-header + .vb-tabs,
+.vb-page-header + .vb-alert + .vb-tabs {
+    margin-top: -0.5rem;
+}
+
 .vb-page-header-icon {
     width: 22px;
     height: 22px;
@@ -1183,8 +2210,9 @@
 /* Table container with toolbar */
 .vb-table-container {
     background: var(--vb-bg-surface);
-    border: 1px solid var(--vb-border-subtle);
+    border: none;
     border-radius: var(--vb-radius-lg);
+    box-shadow: var(--vb-shadow-card);
     overflow: hidden;
 }
 
@@ -1317,17 +2345,26 @@
     font-size: var(--vb-text-sm);
 }
 
+.vb-table.vb-text-center { text-align: center; }
+.vb-text-right { text-align: right; }
+
+.vb-bullet-list {
+    list-style-type: disc;
+    margin-left: 1.25rem;
+    margin-top: 0.25rem;
+}
+
 .vb-table th {
-    font-size: var(--vb-text-2xs);
-    font-weight: 600;
+    font-size: 0.6875rem; /* slightly refined headers */
+    font-weight: 530; /* Less harsh font weight */
     color: var(--vb-text-tertiary);
     text-align: left;
-    padding: 0.5rem 1rem;
-    border-bottom: 1px solid var(--vb-border-default);
+    padding: 0.625rem 1rem;
+    border-bottom: 1px solid var(--vb-border-subtle); /* softened from default */
     white-space: nowrap;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    background: var(--vb-bg-elevated);
+    letter-spacing: 0.05em;
+    background: var(--vb-bg-surface); /* Vercel tables have flat headers, no elevated background */
 }
 
 .vb-table td {
@@ -1339,16 +2376,12 @@
 
 .vb-table tr:last-child td { border-bottom: none; }
 
-/* Alternating rows */
-.vb-table tbody tr:nth-child(even) {
-    background: var(--vb-bg-elevated);
-}
-
+/* In premium designs like Linear, zebra striping is removed entirely in favor of clean whitespace and subtle hover */
 .vb-table tbody tr {
     transition: background var(--vb-duration-instant) var(--vb-ease-out);
 }
 .vb-table tbody tr:hover {
-    background: var(--vb-accent-subtle);
+    background: var(--vb-bg-hover);
 }
 .vb-table tbody tr:hover td {
     background: transparent;
@@ -1450,12 +2483,48 @@
 @media (max-width: 768px) {
     .vb-table thead { display: none; }
     .vb-table tr {
-        display: block;
-        padding: 0.75rem;
+        display: grid;
+        gap: 0.375rem;
+        padding: 1rem;
         border-bottom: 1px solid var(--vb-border-subtle);
     }
-    .vb-table td { display: block; padding: 0.25rem 0; border: none; }
-    .vb-table .vb-table-actions { margin-top: 0.5rem; }
+    .vb-table td { 
+        display: flex; 
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.25rem 0; 
+        border: none; 
+        text-align: right;
+    }
+    .vb-table td:first-child:empty { display: none; } /* Hide empty color dots wrapper if present */
+    
+    .vb-table td[data-label]::before {
+        content: attr(data-label);
+        font-size: 0.6875rem;
+        font-weight: 530;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--vb-text-ghost);
+        margin-right: auto;
+        padding-right: 1rem;
+        text-align: left;
+    }
+
+    .vb-table .vb-text-center { text-align: right; } /* Override center alignment on mobile to keep values strictly right-aligned */
+    .vb-table .vb-table-actions { margin-top: 0.5rem; justify-content: flex-end; }
+    
+    /* Ensure action groups don't wrap strangely */
+    .vb-action-group { justify-content: flex-end; width: 100%; }
+
+    /* Override for the primary identifier (Name) cell */
+    .vb-table td:has(.vb-cell-name) {
+        display: block;
+        text-align: left;
+        padding-bottom: 0.5rem;
+    }
+    .vb-table td:has(.vb-cell-name)::before {
+        display: none !important;
+    }
 }
 
 /* ── Confirm Pattern (no-JS) ─────────────────────────────────── */
@@ -2351,7 +3420,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-8);
     flex-wrap: wrap;
 }
 
@@ -2375,10 +3444,10 @@
 }
 
 .vb-calendar-date-title {
-    font-size: 1.125rem;
+    font-size: 1.375rem;
     font-weight: 600;
     color: var(--vb-fg);
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
     margin: 0;
     white-space: nowrap;
 }
@@ -2397,13 +3466,15 @@
 }
 
 .vb-calendar-state-bar.is-blocked {
-    background: color-mix(in srgb, var(--vb-error) 6%, transparent);
+    background: color-mix(in srgb, var(--vb-error) 8%, transparent);
     color: var(--vb-error);
+    border: 1px solid color-mix(in srgb, var(--vb-error) 18%, transparent);
 }
 
 .vb-calendar-state-bar.is-unavailable {
     background: var(--vb-well);
-    color: var(--vb-muted);
+    color: var(--vb-text-secondary);
+    border: 1px solid var(--vb-border-subtle);
 }
 
 /* ── Segmented Toggle ───────────────────────────────────────── */
@@ -2425,14 +3496,14 @@
 .vb-calendar-hour-row {
     display: flex;
     align-items: stretch;
-    min-height: 52px;
+    min-height: 72px;
 }
 
 .vb-calendar-hour-label {
-    width: 76px;
+    width: 90px;
     flex-shrink: 0;
-    padding: 0 var(--space-3);
-    font-size: 0.6875rem;
+    padding: 0 var(--space-4);
+    font-size: 0.75rem;
     font-weight: 500;
     color: var(--vb-text-tertiary);
     letter-spacing: 0.02em;
@@ -2488,13 +3559,13 @@
 /* Booking blocks */
 .vb-booking-block {
     position: absolute;
-    left: 76px;
+    left: 90px;
     right: 12px;
     z-index: 3;
     background: color-mix(in srgb, var(--block-color, var(--vb-accent)) 10%, var(--vb-card-bg));
-    border-left: 3px solid var(--block-color, var(--vb-accent));
-    border-radius: var(--radius-md);
-    padding: var(--space-1) var(--space-2);
+    border-left: 4px solid var(--block-color, var(--vb-accent));
+    border-radius: var(--radius-lg);
+    padding: var(--space-2) var(--space-3);
     cursor: default;
     overflow: hidden;
     transition: box-shadow 0.15s ease;
@@ -2564,18 +3635,22 @@
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     border-bottom: 1px solid var(--vb-border-subtle);
+    background: var(--vb-well);
 }
 
 .vb-week-col-header {
     display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: var(--space-1);
-    padding: var(--space-3) var(--space-2);
+    padding: var(--space-3) 0;
     text-decoration: none;
     color: var(--vb-fg);
     border-right: 1px solid var(--vb-border-subtle);
     transition: background 0.12s ease;
     min-width: 0;
+    position: relative;
 }
 
 .vb-week-col-header:last-child {
@@ -2587,31 +3662,34 @@
 }
 
 .vb-week-col-header.is-today {
-    background: color-mix(in srgb, var(--vb-accent) 3%, transparent);
+    background: color-mix(in srgb, var(--vb-accent) 6%, var(--vb-well));
 }
 
 .vb-week-col-header.is-unavailable {
-    opacity: 0.55;
+    color: var(--vb-text-tertiary);
+}
+.vb-week-col-header.is-unavailable .vb-week-col-number {
+    color: var(--vb-text-tertiary);
 }
 
 .vb-week-col-header.is-blocked {
-    background: color-mix(in srgb, var(--vb-error) 3%, transparent);
+    background: color-mix(in srgb, var(--vb-error) 5%, var(--vb-well));
 }
 
 .vb-week-col-dayname {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    color: var(--vb-text-tertiary);
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: var(--vb-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
 .vb-week-col-number {
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: 1.25rem;
+    font-weight: 400;
     color: var(--vb-fg);
-    min-width: 24px;
-    height: 24px;
+    min-width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2625,21 +3703,28 @@
 
 .vb-week-col-state {
     font-size: 0.5625rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-left: auto;
+    letter-spacing: 0.04em;
+    padding: 1px 5px;
+    border-radius: var(--radius-full);
+    line-height: 1.4;
 }
 
 .vb-week-col-state.is-blocked {
     color: var(--vb-error);
+    background: color-mix(in srgb, var(--vb-error) 10%, transparent);
 }
 
 .vb-week-col-state.is-unavailable {
-    color: var(--vb-text-tertiary);
+    color: var(--vb-text-secondary);
+    background: color-mix(in srgb, var(--vb-text-tertiary) 10%, transparent);
 }
 
 .vb-week-col-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
     font-size: 0.625rem;
     font-weight: 600;
     min-width: 18px;
@@ -2650,7 +3735,6 @@
     border-radius: var(--radius-full);
     background: color-mix(in srgb, var(--vb-accent) 10%, transparent);
     color: var(--vb-accent);
-    margin-left: auto;
 }
 
 .vb-week-body {
@@ -2661,10 +3745,10 @@
 
 .vb-week-col {
     border-right: 1px solid var(--vb-border-subtle);
-    padding: var(--space-2);
+    padding: var(--space-3);
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
+    gap: var(--space-2);
     min-width: 0;
 }
 
@@ -2677,21 +3761,29 @@
 }
 
 .vb-week-col.is-unavailable {
-    opacity: 0.5;
     background: var(--vb-well);
+    color: var(--vb-text-tertiary);
 }
 
 .vb-week-col.is-blocked {
-    background: color-mix(in srgb, var(--vb-error) 2%, transparent);
+    background:
+        repeating-linear-gradient(
+            -45deg,
+            transparent,
+            transparent 6px,
+            color-mix(in srgb, var(--vb-error) 4%, transparent) 6px,
+            color-mix(in srgb, var(--vb-error) 4%, transparent) 7px
+        ),
+        color-mix(in srgb, var(--vb-error) 3%, var(--vb-card-bg));
 }
 
 .vb-week-booking {
     display: flex;
     flex-direction: column;
-    gap: 1px;
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-sm);
-    border-left: 2.5px solid var(--pill-color, var(--vb-accent));
+    gap: 2px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--pill-color, var(--vb-accent));
     background: color-mix(in srgb, var(--pill-color, var(--vb-accent)) 8%, var(--vb-card-bg));
     text-decoration: none;
     color: var(--vb-fg);
@@ -2712,7 +3804,7 @@
 }
 
 .vb-week-booking-name {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     color: var(--vb-fg);
     white-space: nowrap;
@@ -2732,6 +3824,16 @@
     padding: var(--space-3) 0;
 }
 
+.vb-week-col.is-blocked .vb-week-col-empty {
+    color: var(--vb-error);
+    font-weight: 600;
+}
+
+.vb-week-col.is-unavailable .vb-week-col-empty {
+    color: var(--vb-text-tertiary);
+    font-style: italic;
+}
+
 /* ── Calendar Month Grid ───────────────────────────────────── */
 
 .vb-calendar-month {
@@ -2745,15 +3847,16 @@
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     border-bottom: 1px solid var(--vb-border-subtle);
+    background: var(--vb-well);
 }
 
 .vb-calendar-month-dayname {
-    padding: var(--space-2) var(--space-2);
+    padding: var(--space-3) var(--space-3);
     font-size: 0.6875rem;
-    font-weight: 600;
-    color: var(--vb-text-tertiary);
+    font-weight: 700;
+    color: var(--vb-text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
     text-align: center;
     user-select: none;
 }
@@ -2765,15 +3868,15 @@
 
 .vb-calendar-month-cell {
     position: relative;
-    min-height: 100px;
-    padding: var(--space-2);
+    min-height: 120px;
+    padding: var(--space-3);
     border-right: 1px solid var(--vb-border-subtle);
     border-bottom: 1px solid var(--vb-border-subtle);
     text-decoration: none;
     color: var(--vb-fg);
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
+    gap: var(--space-2);
     transition: background 0.12s ease;
     min-width: 0;
     overflow: hidden;
@@ -2805,18 +3908,26 @@
     background: color-mix(in srgb, var(--vb-accent) 3%, transparent);
 }
 
-/* Blocked */
+/* Blocked — distinct red-tinted surface with hatch pattern */
 .vb-calendar-month-cell.is-blocked {
-    background: color-mix(in srgb, var(--vb-error) 2%, transparent);
+    background:
+        repeating-linear-gradient(
+            -45deg,
+            transparent,
+            transparent 6px,
+            color-mix(in srgb, var(--vb-error) 4%, transparent) 6px,
+            color-mix(in srgb, var(--vb-error) 4%, transparent) 7px
+        ),
+        color-mix(in srgb, var(--vb-error) 4%, var(--vb-card-bg));
 }
 
-/* Unavailable — only applied when no bookings */
+/* Unavailable / closed — dimmed surface, NOT just opacity */
 .vb-calendar-month-cell.is-unavailable {
-    opacity: 0.4;
+    background: var(--vb-well);
+    color: var(--vb-text-tertiary);
 }
-
-.vb-calendar-month-cell.is-unavailable:hover {
-    opacity: 0.55;
+.vb-calendar-month-cell.is-unavailable .vb-calendar-month-day {
+    color: var(--vb-text-tertiary);
 }
 
 /* Cell header */
@@ -2825,6 +3936,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-1);
+    margin-bottom: var(--space-1);
     min-width: 0;
 }
 
@@ -2862,21 +3974,25 @@
 }
 
 .vb-calendar-month-count.is-blocked {
-    background: color-mix(in srgb, var(--vb-error) 10%, transparent);
+    background: color-mix(in srgb, var(--vb-error) 12%, transparent);
     color: var(--vb-error);
-    font-size: 0.5625rem;
-    padding: 0 var(--space-1);
+    font-size: 0.625rem;
+    font-weight: 700;
+    padding: 0 var(--space-2);
     min-width: auto;
     white-space: nowrap;
+    letter-spacing: 0.02em;
 }
 
 .vb-calendar-month-count.is-unavailable {
-    background: var(--vb-bg-hover);
-    color: var(--vb-text-tertiary);
-    font-size: 0.5625rem;
-    padding: 0 var(--space-1);
+    background: color-mix(in srgb, var(--vb-text-tertiary) 10%, transparent);
+    color: var(--vb-text-secondary);
+    font-size: 0.625rem;
+    font-weight: 600;
+    padding: 0 var(--space-2);
     min-width: auto;
     white-space: nowrap;
+    letter-spacing: 0.02em;
 }
 
 /* Booking pills */
@@ -2891,8 +4007,8 @@
 .vb-calendar-month-pill {
     display: flex;
     align-items: center;
-    gap: var(--space-1);
-    padding: 1px 0;
+    gap: var(--space-2);
+    padding: 2px 0;
     min-width: 0;
     overflow: hidden;
 }
@@ -3741,6 +4857,16 @@ body.is-impersonating .vb-main .vb-topbar {
     margin-top: 1.5rem;
 }
 
+/* First settings section directly after tabs or form wrapper — no double-spacing.
+   Note: forms have a hidden _csrf_token input as their actual :first-child,
+   so we use :first-of-type to target the first div.vb-settings-section. */
+.vb-animate-in > .vb-settings-section:first-of-type,
+.vb-tabs + .vb-settings-section,
+.vb-tabs + form > .vb-settings-section:first-of-type,
+.vb-tabs + .vb-animate-in > .vb-settings-section:first-of-type {
+    margin-top: 0;
+}
+
 .vb-settings-section + .vb-settings-section {
     margin-top: 1.25rem;
 }
@@ -3865,6 +4991,25 @@ body.is-impersonating .vb-main .vb-topbar {
     background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(6px);
     animation: vb-modal-overlay-in 200ms var(--vb-ease-out, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+/* Confirm dialog: starts hidden, faded in via JS .is-visible class */
+#vb-confirm-overlay {
+    animation: none;
+    opacity: 0;
+    transition: opacity 200ms var(--vb-ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+    pointer-events: none;
+}
+#vb-confirm-overlay.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+#vb-confirm-overlay .vb-modal {
+    transform: scale(0.96) translateY(8px);
+    transition: transform 200ms var(--vb-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+#vb-confirm-overlay.is-visible .vb-modal {
+    transform: scale(1) translateY(0);
 }
 
 [data-theme="dark"] .vb-modal-overlay {

@@ -23,7 +23,7 @@ ob_start();
     <div class="vb-page-actions">
         <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/services/create"
            class="vb-btn vb-btn-primary" id="new-service-btn">
-            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+            <i data-lucide="plus" class="w-4 h-4"></i>
             <?= __('admin.services.new') ?>
         </a>
     </div>
@@ -40,7 +40,7 @@ ob_start();
         <p><?= __('admin.services.empty_desc') ?></p>
         <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/services/create"
            class="vb-btn vb-btn-primary">
-            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+            <i data-lucide="plus" class="w-4 h-4"></i>
             <?= __('admin.services.new') ?>
         </a>
     </div>
@@ -107,7 +107,7 @@ ob_start();
                             <div class="vb-action-group">
                                 <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/services/<?= htmlspecialchars($svc['id'], ENT_QUOTES, 'UTF-8') ?>/edit"
                                    class="vb-btn vb-btn-ghost vb-btn-sm" title="<?= __('admin.common.edit') ?>">
-                                    <i data-lucide="pencil" style="width: 14px; height: 14px;"></i>
+                                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                                 </a>
                                 <?php if ($svc['is_active']): ?>
                                 <form method="POST"
@@ -116,7 +116,7 @@ ob_start();
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-destructive"
                                             title="<?= __('admin.services.deactivate') ?>">
-                                        <i data-lucide="eye-off" style="width: 14px; height: 14px;"></i>
+                                        <i data-lucide="eye-off" class="w-3.5 h-3.5"></i>
                                     </button>
                                 </form>
                                 <?php else: ?>
@@ -126,7 +126,7 @@ ob_start();
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm"
                                             title="<?= __('admin.services.activate') ?>">
-                                        <i data-lucide="eye" style="width: 14px; height: 14px;"></i>
+                                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
                                     </button>
                                 </form>
                                 <?php endif; ?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Manual event booking creation form — tenant-scoped.
+ * Manual event booking creation form — tenant-scoped (event pattern).
  *
  * Variables: $tenant, $tenantId, $events, $csrfToken, $flash, $old
  */
@@ -19,103 +19,127 @@ ob_start();
 
 <div class="vb-page-header">
     <div>
-        <h2 class="vb-page-title">
-            <i data-lucide="plus-circle" class="vb-page-header-icon"></i>
-            <?= __('admin.bookings.create_title') ?>
-        </h2>
-        <div class="vb-page-subtitle"><?= __('admin.bookings.create_subtitle') ?></div>
+        <a href="<?= $baseUrl ?>/bookings" class="vb-back-link">
+            <i data-lucide="chevron-left"></i>
+            <?= __('admin.bookings.title') ?>
+        </a>
+        <h2 class="vb-page-title"><?= __('admin.bookings.create_title') ?></h2>
+        <p class="vb-page-subtitle"><?= __('admin.bookings.create_subtitle') ?></p>
     </div>
-    <a href="<?= $baseUrl ?>/bookings" class="vb-btn vb-btn-ghost vb-btn-sm">
-        <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
-        <?= __('admin.bookings.back_to_list') ?>
-    </a>
 </div>
 
 <form method="POST"
       action="<?= $baseUrl ?>/bookings/create"
-      class="vb-create-booking-form">
+      class="vb-animate-in">
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
-    <!-- Booking details card -->
-    <div class="vb-card vb-fade-in-up stagger-1 vb-mb-md">
-        <div class="vb-card-title"><?= __('admin.events.title') ?></div>
-
-        <div class="vb-form-row vb-form-row--2col">
-            <!-- Event -->
-            <div class="vb-form-group">
-                <label for="create_event_id" class="vb-label"><?= __('admin.events.name_label') ?> <span class="vb-required">*</span></label>
-                <select id="create_event_id" name="event_id" class="vb-select" required>
-                    <option value=""><?= __('booking.event.select_event') ?></option>
-                    <?php foreach ($events as $event): ?>
-                        <option value="<?= htmlspecialchars($event['id'], ENT_QUOTES, 'UTF-8') ?>"
-                                <?= ($old['event_id'] ?? '') === $event['id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($event['name'], ENT_QUOTES, 'UTF-8') ?>
-                            — <?= date('M j, Y H:i', strtotime($event['start_datetime'])) ?>
-                            (<?= (int) $event['max_participants'] ?> max)
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+    <!-- Section 1: Event Details -->
+    <div class="vb-settings-section">
+        <div class="vb-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title"><?= __('admin.events.title') ?></div>
             </div>
 
-            <!-- Spot Count -->
-            <div class="vb-form-group">
-                <label for="create_spot_count" class="vb-label"><?= __('booking.event.spots_title') ?></label>
-                <input type="number" id="create_spot_count" name="spot_count" class="vb-input" min="1"
-                       value="<?= htmlspecialchars($old['spot_count'] ?? '1', ENT_QUOTES, 'UTF-8') ?>">
-            </div>
-        </div>
+            <div class="vb-form-grid">
+                <div class="vb-form-row">
+                    <div class="vb-form-group">
+                        <label for="create_event_id" class="vb-label"><?= __('admin.events.name_label') ?> <span class="vb-required">*</span></label>
+                        <select id="create_event_id" name="event_id" class="vb-input w-full" required>
+                            <option value=""><?= __('booking.event.select_event') ?></option>
+                            <?php foreach ($events as $event): ?>
+                                <option value="<?= htmlspecialchars($event['id'], ENT_QUOTES, 'UTF-8') ?>"
+                                        <?= ($old['event_id'] ?? '') === $event['id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($event['name'], ENT_QUOTES, 'UTF-8') ?>
+                                    — <?= date('M j, Y H:i', strtotime($event['start_datetime'])) ?>
+                                    (<?= (int) $event['max_participants'] ?> max)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
 
-        <!-- Date (for recurring events) -->
-        <div class="vb-form-group">
-            <label for="create_date" class="vb-label"><?= __('booking.event.date_label') ?></label>
-            <input type="date" id="create_date" name="date" class="vb-input"
-                   value="<?= htmlspecialchars($old['date'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-            <div class="vb-form-help"><?= __('admin.events.exception_dates_help') ?></div>
-        </div>
-    </div>
+                    <div class="vb-form-group">
+                        <label for="create_spot_count" class="vb-label"><?= __('booking.event.spots_title') ?></label>
+                        <input type="number" id="create_spot_count" name="spot_count" class="vb-input w-full" min="1"
+                               value="<?= htmlspecialchars($old['spot_count'] ?? '1', ENT_QUOTES, 'UTF-8') ?>">
+                    </div>
+                </div>
 
-    <!-- Customer card -->
-    <div class="vb-card vb-fade-in-up stagger-2 vb-mb-md">
-        <div class="vb-card-title"><?= __('admin.bookings.customer') ?></div>
-
-        <div class="vb-form-row vb-form-row--2col">
-            <div class="vb-form-group">
-                <label for="create_name" class="vb-label"><?= __('admin.bookings.label_name') ?> <span class="vb-required">*</span></label>
-                <input type="text" id="create_name" name="customer_name" class="vb-input" required
-                       value="<?= htmlspecialchars($old['customer_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                       placeholder="<?= __('admin.bookings.placeholder_name') ?>">
-            </div>
-            <div class="vb-form-group">
-                <label for="create_email" class="vb-label"><?= __('admin.bookings.label_email') ?> <span class="vb-required">*</span></label>
-                <input type="email" id="create_email" name="customer_email" class="vb-input" required
-                       value="<?= htmlspecialchars($old['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                       placeholder="<?= __('admin.bookings.placeholder_email') ?>">
-            </div>
-        </div>
-
-        <div class="vb-form-row vb-form-row--2col">
-            <div class="vb-form-group">
-                <label for="create_phone" class="vb-label"><?= __('admin.bookings.label_phone') ?></label>
-                <input type="tel" id="create_phone" name="customer_phone" class="vb-input"
-                       value="<?= htmlspecialchars($old['customer_phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                       placeholder="<?= __('admin.bookings.placeholder_phone') ?>">
+                <div class="vb-form-row">
+                    <div class="vb-form-group">
+                        <label for="create_date" class="vb-label"><?= __('booking.event.date_label') ?></label>
+                        <input type="date" id="create_date" name="date" class="vb-input w-full"
+                               value="<?= htmlspecialchars($old['date'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                        <span class="vb-settings-hint"><?= __('admin.events.exception_dates_help') ?></span>
+                    </div>
+                    <div class="vb-form-group">
+                        <!-- Intentional: reserved for future fields -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Notes card -->
-    <div class="vb-card vb-fade-in-up stagger-3 vb-mb-md">
-        <div class="vb-card-title"><?= __('admin.bookings.label_notes') ?></div>
-        <div class="vb-form-group">
-            <textarea id="create_notes" name="notes" class="vb-textarea" rows="3"
-                      placeholder="<?= __('admin.bookings.placeholder_notes') ?>"><?= htmlspecialchars($old['notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+    <!-- Section 2: Customer -->
+    <div class="vb-settings-section">
+        <div class="vb-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title"><?= __('admin.bookings.customer') ?></div>
+            </div>
+
+            <div class="vb-form-grid">
+                <div class="vb-form-row">
+                    <div class="vb-form-group">
+                        <label for="create_name" class="vb-label"><?= __('admin.bookings.label_customer_name') ?> <span class="vb-required">*</span></label>
+                        <input type="text" id="create_name" name="customer_name" class="vb-input w-full" required
+                               value="<?= htmlspecialchars($old['customer_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                               autocomplete="off">
+                    </div>
+                    <div class="vb-form-group">
+                        <label for="create_email" class="vb-label"><?= __('admin.bookings.label_customer_email') ?> <span class="vb-required">*</span></label>
+                        <input type="email" id="create_email" name="customer_email" class="vb-input w-full" required
+                               value="<?= htmlspecialchars($old['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                               autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="vb-form-row">
+                    <div class="vb-form-group">
+                        <label for="create_phone" class="vb-label"><?= __('admin.bookings.label_customer_phone') ?></label>
+                        <input type="tel" id="create_phone" name="customer_phone" class="vb-input w-full"
+                               value="<?= htmlspecialchars($old['customer_phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                               autocomplete="off">
+                    </div>
+                    <div class="vb-form-group">
+                        <!-- Intentional: reserved for future fields -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Section 3: Internal Notes -->
+    <div class="vb-settings-section">
+        <div class="vb-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title"><?= __('admin.bookings.label_notes') ?></div>
+            </div>
+            <div class="vb-form-grid">
+                <div class="vb-form-group">
+                    <textarea id="create_notes" name="notes" class="vb-input w-full" rows="3"
+                              placeholder="<?= __('admin.bookings.label_notes') ?>…"><?= htmlspecialchars($old['notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
     <div class="vb-form-actions">
+        <a href="<?= $baseUrl ?>/bookings" class="vb-btn vb-btn-ghost">
+            <?= __('admin.common.cancel') ?>
+        </a>
         <button type="submit" class="vb-btn vb-btn-primary" id="btn-create-event-booking">
-            <i data-lucide="check" style="width: 14px; height: 14px;"></i>
-            <?= __('admin.bookings.create_title') ?>
+            <i data-lucide="check" style="width: 15px; height: 15px;"></i>
+            <?= __('admin.bookings.btn_create_booking') ?>
         </button>
     </div>
 </form>

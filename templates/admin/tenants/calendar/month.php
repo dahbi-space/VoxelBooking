@@ -84,7 +84,9 @@ ob_start();
             $hasBookings = $bookingCount > 0;
 
             // State classes — availability is visual-only, never hides bookings
-            $cellClasses = ['vb-calendar-month-cell'];
+            $cellClasses = ['vb-calendar-month-cell', 'vb-fade-in-up'];
+            // Stagger by row (week)
+            $cellClasses[] = 'stagger-' . min((int)floor($i / 7) + 1, 6);
             if ($cell['isToday']) $cellClasses[] = 'is-today';
             if (!$cell['isCurrentMonth']) $cellClasses[] = 'is-outside';
             if ($isBlocked && $cell['isCurrentMonth']) $cellClasses[] = 'is-blocked';
@@ -93,7 +95,6 @@ ob_start();
         <a href="<?= $baseUrl ?>/calendar/day?date=<?= htmlspecialchars($cell['dateStr'], ENT_QUOTES, 'UTF-8') ?>"
            class="<?= implode(' ', $cellClasses) ?>">
             <div class="vb-calendar-month-cell-header">
-                <span class="vb-calendar-month-day <?= $cell['isToday'] ? 'is-today' : '' ?>"><?= $cell['day'] ?></span>
                 <?php
                 // Badge precedence: booking count always wins over state labels
                 if ($hasBookings && $cell['isCurrentMonth']): ?>
@@ -102,7 +103,10 @@ ob_start();
                 <span class="vb-calendar-month-count is-blocked"><?= __('admin.calendar.blocked') ?></span>
                 <?php elseif (!$hasAvail && !$isBlocked && $cell['isCurrentMonth']): ?>
                 <span class="vb-calendar-month-count is-unavailable"><?= __('admin.calendar.closed') ?></span>
+                <?php else: ?>
+                <span></span> <!-- Spacer to push day to right -->
                 <?php endif; ?>
+                <span class="vb-calendar-month-day <?= $cell['isToday'] ? 'is-today' : '' ?>"><?= $cell['day'] ?></span>
             </div>
             <?php
             // Bookings ALWAYS render, regardless of availability state

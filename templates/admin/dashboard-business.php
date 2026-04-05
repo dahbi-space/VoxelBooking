@@ -120,7 +120,7 @@ ob_start();
 
 <!-- Today's Schedule Strip -->
 <div class="vb-dash-schedule-wrap">
-    <div class="vb-card vb-fade-in-up stagger-5">
+    <div class="vb-card vb-card-flush vb-fade-in-up stagger-5">
         <div class="vb-schedule-header">
             <div class="vb-schedule-title"><?= __('admin.dashboard.schedule_today') ?></div>
         </div>
@@ -183,7 +183,7 @@ ob_start();
 <!-- Next Up + Quick Actions -->
 <div class="vb-dash-grid">
     <!-- Next Up -->
-    <div class="vb-card vb-fade-in-up stagger-5">
+    <div class="vb-card vb-card-flush vb-fade-in-up stagger-5">
         <div class="vb-dash-section-title"><?= __('admin.dashboard.next_up') ?></div>
         <?php if (empty($upcoming)): ?>
             <div class="vb-schedule-empty">
@@ -212,28 +212,38 @@ ob_start();
     </div>
 
     <!-- Quick Actions -->
-    <div class="vb-card vb-fade-in-up stagger-6">
-        <div class="vb-dash-section-title"><?= __('admin.common.actions') ?></div>
-        <div class="vb-action-list">
-            <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/bookings"
-               class="vb-action-row vb-action-row-primary">
-                <i data-lucide="calendar"></i>
-                <?= __('admin.dashboard.view_all_bookings') ?>
+    <div>
+        <div class="vb-dash-section-title vb-fade-in-up stagger-6" style="margin-bottom: 0.75rem; border-bottom: none; padding: 0; padding-top: 0.5rem; text-transform: uppercase; color: var(--vb-text-tertiary); letter-spacing: 0.05em; font-size: 0.75rem;"><?= __('admin.common.actions') ?></div>
+        <div class="vb-quickstart vb-fade-in-up stagger-7" style="grid-template-columns: 1fr;">
+            <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/bookings" class="vb-quickstart-card">
+                <div class="vb-quickstart-icon">
+                    <i data-lucide="calendar"></i>
+                </div>
+                <div class="vb-quickstart-text">
+                    <div class="vb-quickstart-title"><?= __('admin.dashboard.view_all_bookings') ?></div>
+                    <div class="vb-quickstart-desc">View the full ledger</div>
+                </div>
             </a>
-            <a href="/book/<?= htmlspecialchars($tenant['slug'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-               target="_blank" rel="noopener"
-               class="vb-action-row">
-                <i data-lucide="external-link"></i>
-                <?= __('admin.dashboard.view_booking_page') ?>
+            <a href="/book/<?= htmlspecialchars($tenant['slug'] ?? '', ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener" class="vb-quickstart-card">
+                <div class="vb-quickstart-icon vb-quickstart-icon-secondary">
+                    <i data-lucide="external-link"></i>
+                </div>
+                <div class="vb-quickstart-text">
+                    <div class="vb-quickstart-title"><?= __('admin.dashboard.view_booking_page') ?></div>
+                    <div class="vb-quickstart-desc">Open customer portal</div>
+                </div>
             </a>
-            <button type="button"
-                    class="vb-action-row"
+            <button type="button" class="vb-quickstart-card" style="text-align: left;"
                     data-copy-url="<?= htmlspecialchars((isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/book/' . ($tenant['slug'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
-                    @click="copyBookingUrl"
-                    title="<?= __('admin.common.copy_booking_url') ?>">
-                <span class="vb-copy-icon"><i data-lucide="copy"></i></span>
-                <span class="vb-copy-check"><i data-lucide="check"></i></span>
-                <?= __('admin.common.copy_booking_url') ?>
+                    @click="copyBookingUrl">
+                <div class="vb-quickstart-icon vb-quickstart-icon-tertiary" style="background: var(--vb-bg-hover); color: var(--vb-text-secondary);">
+                    <i data-lucide="copy" class="vb-copy-icon"></i>
+                    <i data-lucide="check" class="vb-copy-check" style="display: none;"></i>
+                </div>
+                <div class="vb-quickstart-text">
+                    <div class="vb-quickstart-title"><?= __('admin.common.copy_booking_url') ?></div>
+                    <div class="vb-quickstart-desc">Copy to clipboard</div>
+                </div>
             </button>
         </div>
     </div>

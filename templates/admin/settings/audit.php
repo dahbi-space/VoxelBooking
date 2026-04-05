@@ -104,30 +104,30 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                         $createdAt = new \DateTime($entry['created_at']);
                         $actorIcon = $actorIcons[$entry['actor_type']] ?? 'help-circle';
                         ?>
-                        <tr>
-                            <td>
+                        <tr class="vb-fade-in-up">
+                            <td data-label="<?= __('admin.audit.th_time') ?>">
                                 <span class="vb-mono vb-cell-dim">
                                     <?= \App\Engine\Locale::datetimeFull($createdAt) ?>
                                 </span>
                             </td>
-                            <td>
+                            <td data-label="<?= __('admin.audit.th_event') ?>">
                                 <span class="vb-badge vb-badge-<?= $meta['variant'] ?>">
                                     <?= htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8') ?>
                                 </span>
                             </td>
-                            <td class="vb-cell-dim">
+                            <td class="vb-cell-dim" data-label="<?= __('admin.audit.th_actor') ?>">
                                 <span class="vb-audit-actor">
                                     <i data-lucide="<?= $actorIcon ?>" class="vb-audit-actor-icon"></i>
                                     <?= htmlspecialchars(ucfirst(str_replace('_', ' ', $entry['actor_type'])), ENT_QUOTES, 'UTF-8') ?>
                                 </span>
                             </td>
-                            <td class="vb-cell-dim">
+                            <td class="vb-cell-dim" data-label="<?= __('admin.audit.th_entity') ?>">
                                 <?= htmlspecialchars($entry['entity_type'], ENT_QUOTES, 'UTF-8') ?>
                                 <?php if ($entry['entity_id']): ?>
                                     <br><span class="vb-mono vb-cell-micro"><?= htmlspecialchars(substr($entry['entity_id'], 0, 8), ENT_QUOTES, 'UTF-8') ?>…</span>
                                 <?php endif; ?>
                             </td>
-                            <td class="vb-audit-details">
+                            <td class="vb-audit-details" data-label="<?= __('admin.audit.th_details') ?>">
                                 <?php if ($details): ?>
                                     <?php foreach ($details as $key => $value): ?>
                                         <?php if (is_array($value) && isset($value['old'], $value['new'])): ?>
@@ -150,7 +150,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                                     <span class="vb-text-tertiary">—</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
+                            <td data-label="<?= __('admin.audit.th_request') ?>">
                                 <span class="vb-mono vb-cell-micro">
                                     <?= htmlspecialchars(substr($entry['request_id'], 0, 8), ENT_QUOTES, 'UTF-8') ?>…
                                 </span>

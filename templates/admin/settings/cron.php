@@ -38,8 +38,8 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
 
         <div class="vb-form-group">
             <label class="vb-label"><?= __('admin.cron.tasks_title') ?></label>
-            <div class="vb-hint" style="margin-top: 0;">
-                <ul style="margin: 0.25rem 0 0 1.25rem; padding: 0; list-style: disc;">
+            <div class="vb-hint">
+                <ul class="vb-bullet-list vb-text-sm">
                     <li><?= __('admin.cron.task_retention') ?></li>
                     <li><?= __('admin.cron.task_reminders') ?></li>
                     <li><?= __('admin.cron.task_audit') ?></li>
@@ -84,7 +84,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
             </span>
         </div>
 
-        <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--vb-border, #e5e7eb);">
+        <div class="vb-card-separator">
             <form method="POST" action="/admin/settings/cron/run" style="display: inline;">
                 <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                 <button type="submit" class="vb-btn vb-btn-secondary" id="cron-run-now-btn">

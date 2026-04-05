@@ -105,7 +105,7 @@ ob_start();
                                 <form method="POST"
                                       action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/events/<?= htmlspecialchars($event['id'], ENT_QUOTES, 'UTF-8') ?>/delete"
                                       style="display: inline;"
-                                      onsubmit="return confirm('<?= __('admin.events.confirm_delete') ?>');">
+                                      data-confirm="<?= __('admin.events.confirm_delete') ?>" data-confirm-text="<?= __('admin.settings.confirm_button') ?? 'Delete' ?>">
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-destructive"
                                             title="<?= __('admin.events.confirm_delete') ?>">

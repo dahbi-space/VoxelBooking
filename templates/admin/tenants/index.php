@@ -111,14 +111,14 @@ ob_start();
                         <td>
                             <span class="vb-color-dot" style="background: <?= htmlspecialchars($tenant['brand_color'] ?? '#2563EB', ENT_QUOTES, 'UTF-8') ?>"></span>
                         </td>
-                        <td>
+                        <td data-label="<?= __('admin.tenants.name') ?>">
                             <div class="vb-cell-name"><?= htmlspecialchars($tenant['name'], ENT_QUOTES, 'UTF-8') ?></div>
                             <div class="vb-cell-detail">/book/<?= htmlspecialchars($tenant['slug'], ENT_QUOTES, 'UTF-8') ?></div>
                         </td>
-                        <td>
+                        <td data-label="<?= __('admin.tenants.pattern') ?>">
                             <span class="vb-badge vb-badge-default"><?= htmlspecialchars(ucfirst($tenant['booking_pattern'] ?? 'timeslot'), ENT_QUOTES, 'UTF-8') ?></span>
                         </td>
-                        <td>
+                        <td data-label="<?= __('admin.tenants.status') ?>">
                             <?php
                             $statusClass = match ($tenant['status']) {
                                 'active'   => 'vb-badge-success',
@@ -131,13 +131,13 @@ ob_start();
                                 <?= __('admin.tenants.status_' . ($tenant['status'] ?? 'active')) ?>
                             </span>
                         </td>
-                        <td class="vb-text-center">
+                        <td class="vb-text-center" data-label="<?= __('admin.tenants.bookings') ?>">
                             <span class="vb-cell-numeric"><?= (int) ($tenant['booking_count'] ?? 0) ?></span>
                         </td>
-                        <td class="vb-text-center">
+                        <td class="vb-text-center" data-label="<?= __('admin.tenants.services') ?>">
                             <span class="vb-cell-numeric"><?= (int) ($tenant['service_count'] ?? 0) ?></span>
                         </td>
-                        <td>
+                        <td data-label="<?= __('admin.tenants.actions') ?>">
                             <div class="vb-action-group">
                                 <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/edit"
                                    class="vb-btn vb-btn-ghost vb-btn-sm"

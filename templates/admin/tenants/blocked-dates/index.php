@@ -37,97 +37,75 @@ ob_start();
 <?php endif; ?>
 
 <!-- Add blocked date form -->
-<div class="vb-card vb-animate-in" style="margin-bottom: 1.5rem;">
-    <div class="vb-card-header">
-        <h3 class="vb-card-title">
-            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+<div class="vb-card overflow-hidden vb-animate-in" style="margin-bottom: 2rem;">
+    <div style="padding: 1.5rem 1.5rem 0 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+        <h3 style="font-weight: 600; font-size: 0.875rem; color: var(--vb-text-primary); display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+            <i data-lucide="calendar-plus" style="width: 16px; height: 16px; color: var(--vb-text-tertiary);"></i>
             <?= __('admin.blocked_dates.add_title') ?>
         </h3>
     </div>
     <form method="POST"
           action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/blocked-dates"
-          class="vb-blocked-dates-form"
-          x-data="blockedDateScope">
+          style="display: flex; flex-direction: column;"
+          x-data="{ selectedScope: 'tenant' }">
         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
-        <div class="vb-form-grid vb-form-grid-4">
-            <div class="vb-form-group">
-                <label class="vb-label" for="bd-start"><?= __('admin.blocked_dates.start_date') ?></label>
-                <input type="date"
-                       class="vb-input"
-                       id="bd-start"
-                       name="start_date"
-                       required
-                       min="<?= date('Y-m-d') ?>">
-            </div>
+        <div style="padding: 1.5rem;">
+            <div class="vb-form-grid vb-form-grid-4">
+                
+                <div class="vb-form-group" style="margin-bottom: 0;">
+                    <label class="vb-label" for="bd-start"><?= __('admin.blocked_dates.start_date') ?></label>
+                    <input type="date" class="vb-input w-full" id="bd-start" name="start_date" required min="<?= date('Y-m-d') ?>">
+                </div>
 
-            <div class="vb-form-group">
-                <label class="vb-label" for="bd-end"><?= __('admin.blocked_dates.end_date') ?></label>
-                <input type="date"
-                       class="vb-input"
-                       id="bd-end"
-                       name="end_date"
-                       required
-                       min="<?= date('Y-m-d') ?>">
-            </div>
+                <div class="vb-form-group" style="margin-bottom: 0;">
+                    <label class="vb-label" for="bd-end"><?= __('admin.blocked_dates.end_date') ?></label>
+                    <input type="date" class="vb-input w-full" id="bd-end" name="end_date" required min="<?= date('Y-m-d') ?>">
+                </div>
 
-            <div class="vb-form-group">
-                <label class="vb-label" for="bd-reason"><?= __('admin.blocked_dates.reason') ?></label>
-                <input type="text"
-                       class="vb-input"
-                       id="bd-reason"
-                       name="reason"
-                       placeholder="<?= __('admin.blocked_dates.reason_placeholder') ?>"
-                       maxlength="255">
-            </div>
+                <div class="vb-form-group" style="margin-bottom: 0;">
+                    <label class="vb-label" for="bd-reason"><?= __('admin.blocked_dates.reason') ?></label>
+                    <input type="text" class="vb-input w-full" id="bd-reason" name="reason" placeholder="<?= __('admin.blocked_dates.reason_placeholder') ?>" maxlength="255">
+                </div>
 
-            <div class="vb-form-group">
-                <label class="vb-label" for="bd-scope"><?= __('admin.blocked_dates.scope') ?></label>
-                <select class="vb-input"
-                        id="bd-scope"
-                        x-model="scope"
-                        @change="onScopeChange()">
-                    <option value="tenant"><?= __('admin.blocked_dates.scope_tenant') ?></option>
-                    <?php if (!empty($staff)): ?>
-                    <option value="staff"><?= __('admin.blocked_dates.scope_staff') ?></option>
-                    <?php endif; ?>
-                    <?php if (!empty($resources)): ?>
-                    <option value="resource"><?= __('admin.blocked_dates.scope_resource') ?></option>
-                    <?php endif; ?>
-                </select>
+                <div class="vb-form-group" style="margin-bottom: 0;">
+                    <label class="vb-label" for="bd-scope"><?= __('admin.blocked_dates.scope') ?></label>
+                    <select class="vb-input w-full" id="bd-scope" x-model="selectedScope">
+                        <option value="tenant"><?= __('admin.blocked_dates.scope_tenant') ?></option>
+                        
+                        <?php if (!empty($staff)): ?>
+                        <optgroup label="<?= __('admin.blocked_dates.scope_staff') ?>">
+                            <?php foreach ($staff as $s): ?>
+                            <option value="staff:<?= htmlspecialchars($s['id'], ENT_QUOTES, 'UTF-8') ?>">
+                                <?= htmlspecialchars($s['name'], ENT_QUOTES, 'UTF-8') ?>
+                                <?php if ($s['title']): ?>(<?= htmlspecialchars($s['title'], ENT_QUOTES, 'UTF-8') ?>)<?php endif; ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <?php endif; ?>
+
+                        <?php if (!empty($resources)): ?>
+                        <optgroup label="<?= __('admin.blocked_dates.scope_resource') ?>">
+                            <?php foreach ($resources as $r): ?>
+                            <option value="resource:<?= htmlspecialchars($r['id'], ENT_QUOTES, 'UTF-8') ?>">
+                                <?= htmlspecialchars($r['name'], ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <?php endif; ?>
+                    </select>
+                    
+                    <!-- Dynamic payload generation -->
+                    <input type="hidden" name="scope" :value="selectedScope === 'tenant' ? 'tenant' : selectedScope.split(':')[0]">
+                    <input type="hidden" name="staff_id" :value="selectedScope.startsWith('staff:') ? selectedScope.split(':')[1] : ''">
+                    <input type="hidden" name="resource_id" :value="selectedScope.startsWith('resource:') ? selectedScope.split(':')[1] : ''">
+                </div>
             </div>
         </div>
 
-        <?php if (!empty($staff)): ?>
-        <div class="vb-form-group" x-show="scope === 'staff'" x-cloak style="margin-top: 0.75rem; max-width: 320px;">
-            <select class="vb-input" id="bd-staff" name="staff_id">
-                <option value="">— <?= __('admin.blocked_dates.scope_staff') ?> —</option>
-                <?php foreach ($staff as $s): ?>
-                <option value="<?= htmlspecialchars($s['id'], ENT_QUOTES, 'UTF-8') ?>">
-                    <?= htmlspecialchars($s['name'], ENT_QUOTES, 'UTF-8') ?>
-                    <?php if ($s['title']): ?>(<?= htmlspecialchars($s['title'], ENT_QUOTES, 'UTF-8') ?>)<?php endif; ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <?php endif; ?>
-
-        <?php if (!empty($resources)): ?>
-        <div class="vb-form-group" x-show="scope === 'resource'" x-cloak style="margin-top: 0.75rem; max-width: 320px;">
-            <select class="vb-input" id="bd-resource" name="resource_id">
-                <option value="">— <?= __('admin.blocked_dates.scope_resource') ?> —</option>
-                <?php foreach ($resources as $r): ?>
-                <option value="<?= htmlspecialchars($r['id'], ENT_QUOTES, 'UTF-8') ?>">
-                    <?= htmlspecialchars($r['name'], ENT_QUOTES, 'UTF-8') ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <?php endif; ?>
-
-        <div class="vb-form-actions" style="margin-top: 1rem;">
-            <button type="submit" class="vb-btn vb-btn-primary" id="add-blocked-date-btn">
-                <i data-lucide="calendar-x" style="width: 16px; height: 16px;"></i>
+        <div style="padding: 0 1.5rem 1.5rem 1.5rem; display: flex; justify-content: flex-end;">
+            <button type="submit" class="vb-btn vb-btn-primary shadow-card" id="add-blocked-date-btn">
+                <i data-lucide="plus" style="width: 16px; height: 16px; margin-right: 0.25rem;"></i>
                 <?= __('admin.blocked_dates.add') ?>
             </button>
         </div>
@@ -136,9 +114,9 @@ ob_start();
 
 <!-- Upcoming / Active -->
 <?php if (!empty($upcoming)): ?>
-<div class="vb-card vb-animate-in">
-    <div class="vb-card-header">
-        <h3 class="vb-card-title"><?= __('admin.blocked_dates.upcoming') ?></h3>
+<div class="vb-card overflow-hidden vb-animate-in" style="margin-bottom: 2rem;">
+    <div style="padding: 1.5rem 1.5rem 0 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+        <h3 style="font-weight: 600; font-size: 0.875rem; color: var(--vb-text-primary); margin: 0;"><?= __('admin.blocked_dates.upcoming') ?></h3>
         <span class="vb-badge vb-badge-accent"><?= count($upcoming) ?></span>
     </div>
     <div class="vb-table-wrap">
@@ -189,7 +167,7 @@ ob_start();
                         <form method="POST"
                               action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/blocked-dates/<?= htmlspecialchars($bd['id'], ENT_QUOTES, 'UTF-8') ?>/delete"
                               class="vb-form-flush"
-                              onsubmit="return confirm('<?= __('admin.blocked_dates.delete_confirm') ?>')">
+                              data-confirm="<?= __('admin.blocked_dates.delete_confirm') ?>" data-confirm-text="Delete">
                             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                             <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-destructive"
                                     title="<?= __('admin.blocked_dates.delete') ?>">
@@ -207,9 +185,12 @@ ob_start();
 
 <!-- Past (collapsed by default) -->
 <?php if (!empty($past)): ?>
-<details class="vb-card vb-animate-in" style="margin-top: 1rem;">
-    <summary class="vb-card-header" style="cursor: pointer; user-select: none;">
-        <h3 class="vb-card-title"><?= __('admin.blocked_dates.past') ?></h3>
+<details class="vb-card overflow-hidden vb-animate-in group" style="margin-top: 1rem;">
+    <summary style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;" class="group-open:border-b border-[var(--vb-border-subtle)]">
+        <h3 style="font-weight: 600; font-size: 0.875rem; color: var(--vb-text-secondary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="chevron-right" style="width: 16px; height: 16px;" class="transition-transform group-open:rotate-90"></i>
+            <?= __('admin.blocked_dates.past') ?>
+        </h3>
         <span class="vb-badge vb-badge-muted"><?= count($past) ?></span>
     </summary>
     <div class="vb-table-wrap">
@@ -257,7 +238,7 @@ ob_start();
                         <form method="POST"
                               action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/blocked-dates/<?= htmlspecialchars($bd['id'], ENT_QUOTES, 'UTF-8') ?>/delete"
                               class="vb-form-flush"
-                              onsubmit="return confirm('<?= __('admin.blocked_dates.delete_confirm') ?>')">
+                              data-confirm="<?= __('admin.blocked_dates.delete_confirm') ?>" data-confirm-text="Delete">
                             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                             <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-destructive"
                                     title="<?= __('admin.blocked_dates.delete') ?>">

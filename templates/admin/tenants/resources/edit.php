@@ -19,7 +19,7 @@ ob_start();
     <div class="vb-page-actions">
         <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/resources"
            class="vb-btn vb-btn-ghost">
-            <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
             <?= __('admin.resources.title') ?>
         </a>
     </div>
@@ -29,7 +29,7 @@ ob_start();
     <?php include __DIR__ . '/../../../partials/alert.php'; ?>
 <?php endif; ?>
 
-<div class="vb-card vb-animate-in">
+<div class="vb-card p-6 vb-animate-in">
     <form method="POST"
           action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/resources/<?= htmlspecialchars($resource['id'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
           id="resource-form">
@@ -37,9 +37,9 @@ ob_start();
 
         <?php include __DIR__ . '/_form.php'; ?>
 
-        <div class="vb-form-actions">
+        <div class="vb-form-actions mt-8">
             <button type="submit" class="vb-btn vb-btn-primary" id="save-resource-btn">
-                <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+                <i data-lucide="check" class="w-4 h-4"></i>
                 <?= __('admin.common.save') ?>
             </button>
         </div>

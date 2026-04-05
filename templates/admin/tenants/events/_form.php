@@ -136,6 +136,8 @@ if ($isEdit && !$exceptionDates && $event['exception_dates']) {
     </div>
 </div>
 
+<div class="vb-section-divider"></div>
+
 <!-- Recurring Toggle -->
 <div class="vb-form-group">
     <label class="vb-checkbox-label">
@@ -171,6 +173,8 @@ if ($isEdit && !$exceptionDates && $event['exception_dates']) {
         <div class="vb-form-help"><?= __('admin.events.exception_dates_help') ?></div>
     </div>
 </div>
+
+<div class="vb-section-divider"></div>
 
 <!-- Waitlist -->
 <div class="vb-form-group">

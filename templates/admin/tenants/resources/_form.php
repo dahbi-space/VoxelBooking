@@ -19,16 +19,15 @@ $sortOrder   = htmlspecialchars((string) ($old['sort_order'] ?? $resource['sort_
 $amenitiesStr = htmlspecialchars($old['amenities'] ?? (is_array($resource['amenities'] ?? null) ? implode(', ', $resource['amenities']) : ''), ENT_QUOTES, 'UTF-8');
 ?>
 
-<div class="vb-form-section">
-    <div class="vb-form-group">
+    <div class="vb-form-group col-span-full">
         <label for="resource-name" class="vb-label"><?= __('admin.resources.field_name') ?> <span class="vb-required">*</span></label>
         <input type="text" name="name" id="resource-name" value="<?= $name ?>"
                class="vb-input" required placeholder="e.g. Sea View Suite">
     </div>
 
-    <div class="vb-form-group">
+    <div class="vb-form-group col-span-full">
         <label for="resource-description" class="vb-label"><?= __('admin.resources.field_description') ?></label>
-        <textarea name="description" id="resource-description" class="vb-textarea" rows="3"
+        <textarea name="description" id="resource-description" class="vb-input resize-y" rows="3"
                   placeholder="Describe the room or resource"><?= $description ?></textarea>
     </div>
 
@@ -68,13 +67,15 @@ $amenitiesStr = htmlspecialchars($old['amenities'] ?? (is_array($resource['ameni
     <div class="vb-form-group">
         <label for="resource-sort-order" class="vb-label"><?= __('admin.resources.field_sort_order') ?></label>
         <input type="number" name="sort_order" id="resource-sort-order" value="<?= $sortOrder ?>"
-               class="vb-input" min="0">
+               class="vb-input max-w-[100px]" min="0">
     </div>
-</div>
 
 <?php if ($isEdit): ?>
-<div class="vb-form-section">
-    <h3 class="vb-form-section-title"><?= __('admin.resources.seasonal_title') ?></h3>
+<div class="vb-section-divider"></div>
+    <label class="vb-label vb-icon-label mb-1">
+        <i data-lucide="sun"></i>
+        <?= __('admin.resources.seasonal_title') ?>
+    </label>
 
     <div id="seasonal-pricing-rows">
         <?php if (empty($seasonalPricing)): ?>
@@ -102,9 +103,10 @@ $amenitiesStr = htmlspecialchars($old['amenities'] ?? (is_array($resource['ameni
         <?php endforeach; ?>
     </div>
 
-    <button type="button" class="vb-btn vb-btn-ghost vb-btn-sm" id="add-seasonal-btn">
-        <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-        <?= __('admin.resources.seasonal_add') ?>
-    </button>
-</div>
+    <div class="mt-4">
+        <button type="button" class="vb-btn vb-btn-ghost vb-btn-sm" id="add-seasonal-btn">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <?= __('admin.resources.seasonal_add') ?>
+        </button>
+    </div>
 <?php endif; ?>

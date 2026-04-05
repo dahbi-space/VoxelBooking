@@ -122,38 +122,30 @@ ob_start();
                 <tbody>
                     <?php foreach ($bookings as $i => $b): ?>
                     <tr class="vb-fade-in-up stagger-<?= min($i + 1, 6) ?>">
-                        <td>
+                        <td data-label="<?= __('admin.bookings.customer') ?>">
                             <div class="vb-cell-primary"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
                             <div class="vb-cell-secondary"><?= htmlspecialchars($b['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
                         </td>
-                        <td>
-                            <?php
-                            $itemName = match ($b['booking_pattern'] ?? 'timeslot') {
-                                'resource' => $b['resource_name'] ?? '—',
-                                'event'    => $b['event_name'] ?? '—',
-                                'capacity' => __('admin.bookings.capacity_booking'),
-                                default    => $b['service_name'] ?? '—',
-                            };
-                            ?>
-                            <?= htmlspecialchars($itemName, ENT_QUOTES, 'UTF-8') ?>
+                        <td data-label="<?= __('admin.bookings.service') ?>">
+                            <?= htmlspecialchars(booking_display_label($b), ENT_QUOTES, 'UTF-8') ?>
                         </td>
-                        <td>
+                        <td data-label="<?= __('admin.bookings.date_time') ?>">
                             <div class="vb-cell-primary"><?= date('M j, Y', strtotime($b['start_datetime'])) ?></div>
                             <div class="vb-cell-secondary">
                                 <?= date('H:i', strtotime($b['start_datetime'])) ?> – <?= date('H:i', strtotime($b['end_datetime'])) ?>
                             </div>
                         </td>
-                        <td>
+                        <td data-label="<?= __('admin.bookings.status') ?>">
                             <span class="vb-status vb-status-<?= htmlspecialchars($b['status'], ENT_QUOTES, 'UTF-8') ?>">
                                 <?= __('admin.bookings.status_' . $b['status']) ?>
                             </span>
                         </td>
                         <?php if ($showTenantColumn): ?>
-                        <td>
+                        <td data-label="<?= __('admin.bookings.tenant') ?>">
                             <span class="vb-text-muted"><?= htmlspecialchars($b['tenant_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></span>
                         </td>
                         <?php endif; ?>
-                        <td>
+                        <td data-label="<?= __('admin.bookings.actions') ?>">
                             <div class="vb-action-group">
                                 <a href="<?= htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($b['id'], ENT_QUOTES, 'UTF-8') ?>"
                                    class="vb-btn vb-btn-ghost vb-btn-sm"

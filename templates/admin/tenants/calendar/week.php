@@ -94,7 +94,7 @@ ob_start();
             $dayBookings = $day['bookings'];
             $hasBookings = !empty($dayBookings);
 
-            $colClasses = ['vb-week-col'];
+            $colClasses = ['vb-week-col', 'vb-fade-in-up', 'stagger-' . min($i + 1, 6)];
             if ($day['isToday']) $colClasses[] = 'is-today';
             if ($isBlocked) $colClasses[] = 'is-blocked';
             if (!$hasAvail && !$isBlocked) $colClasses[] = 'is-unavailable';

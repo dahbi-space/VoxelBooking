@@ -75,15 +75,7 @@ ob_start();
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.bookings.service') ?></span>
             <span class="vb-info-value">
-                <?php
-                $itemLabel = match ($booking['booking_pattern'] ?? 'timeslot') {
-                    'resource' => $booking['resource_name'] ?? '—',
-                    'event'    => $booking['event_name'] ?? '—',
-                    'capacity' => __('admin.bookings.capacity_booking'),
-                    default    => $booking['service_name'] ?? '—',
-                };
-                ?>
-                <?= htmlspecialchars($itemLabel, ENT_QUOTES, 'UTF-8') ?>
+                <?= htmlspecialchars(booking_display_label($booking), ENT_QUOTES, 'UTF-8') ?>
             </span>
         </div>
         <?php if (!empty($booking['staff_name'])): ?>

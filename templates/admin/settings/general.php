@@ -9,6 +9,7 @@
  */
 $activePage = 'settings.general';
 $activeTab = 'general';
+$timezones = get_supported_timezones();
 
 ob_start();
 
@@ -45,7 +46,13 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
             <div class="vb-form-row">
                 <div class="vb-form-group">
                     <label for="timezone" class="vb-label"><?= __('admin.settings.timezone_label') ?></label>
-                    <input type="text" id="timezone" name="timezone" class="vb-input" value="<?= htmlspecialchars($settings['timezone'] ?? 'UTC', ENT_QUOTES, 'UTF-8') ?>" placeholder="Europe/Amsterdam">
+                    <select id="timezone" name="timezone" class="vb-select">
+                        <?php foreach ($timezones as $tz): ?>
+                            <option value="<?= htmlspecialchars($tz, ENT_QUOTES, 'UTF-8') ?>" <?= ($settings['timezone'] ?? 'UTC') === $tz ? 'selected' : '' ?>>
+                                <?= htmlspecialchars(format_timezone($tz), ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
                 <div class="vb-form-group">
                     <label for="date_format" class="vb-label"><?= __('admin.settings.date_format_label') ?></label>

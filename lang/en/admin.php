@@ -99,6 +99,8 @@ return [
 
     // ── Settings: General ──
     'settings' => [
+        'title'              => 'Settings',
+        'subtitle'           => 'System-wide configuration and preferences.',
         'general_title'      => 'General',
         'account_title'      => 'Account',
         'email_title'        => 'Email',
@@ -106,6 +108,8 @@ return [
         'logs_title'         => 'Logs',
         'saved'              => 'Settings saved.',
         'save_button'        => 'Save changes',
+        'cancel_button'      => 'Cancel',
+        'confirm_button'     => 'Confirm',
         'app_title'          => 'Application',
         'app_desc'           => 'Core application configuration.',
         'app_name_label'     => 'Application name',
@@ -119,6 +123,11 @@ return [
         'memory_limit'       => 'Memory limit',
         'server'             => 'Server',
         'database'           => 'Database',
+    ],
+
+    // ── Confirm Dialog ──
+    'confirm' => [
+        'title'              => 'Confirm Action',
     ],
 
     // ── Settings: Account ──

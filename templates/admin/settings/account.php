@@ -34,8 +34,10 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
         </div>
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.account.role_label') ?></span>
-            <span class="vb-info-value vb-capitalize">
-                <?= htmlspecialchars($currentUser['type'] ?? 'operator', ENT_QUOTES, 'UTF-8') ?>
+            <span class="vb-info-value">
+                <span class="vb-badge vb-badge-primary vb-capitalize">
+                    <?= htmlspecialchars($currentUser['type'] ?? 'operator', ENT_QUOTES, 'UTF-8') ?>
+                </span>
             </span>
         </div>
     </div>
@@ -88,7 +90,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
             if (/[^A-Za-z0-9]/.test(v)) s++;
             var pct = Math.min(s * 20, 100);
             fill.style.width = pct + '%';
-            fill.style.background = pct <= 20 ? 'var(--vb-admin-error)' : pct <= 60 ? 'var(--vb-admin-warning)' : 'var(--vb-admin-success)';
+            fill.style.background = pct <= 20 ? 'var(--vb-error)' : pct <= 60 ? 'var(--vb-warning)' : 'var(--vb-success)';
         });
     }
 })();

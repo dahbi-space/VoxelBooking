@@ -105,7 +105,7 @@ ob_start();
                                 <form method="POST"
                                       action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/users/<?= htmlspecialchars($bu['id'], ENT_QUOTES, 'UTF-8') ?>/deactivate"
                                       style="display: inline;"
-                                      onsubmit="return confirm('<?= __('admin.users.deactivate_confirm') ?>');">
+                                      data-confirm="<?= __('admin.users.deactivate_confirm') ?>" data-confirm-text="<?= __('admin.users.deactivate') ?>">
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-danger-text">
                                         <?= __('admin.users.deactivate') ?>
@@ -115,7 +115,7 @@ ob_start();
                                 <form method="POST"
                                       action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/users/<?= htmlspecialchars($bu['id'], ENT_QUOTES, 'UTF-8') ?>/activate"
                                       style="display: inline;"
-                                      onsubmit="return confirm('<?= __('admin.users.activate_confirm') ?>');">
+                                      data-confirm="<?= __('admin.users.activate_confirm') ?>" data-confirm-text="<?= __('admin.users.activate') ?>">
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm">
                                         <?= __('admin.users.activate') ?>

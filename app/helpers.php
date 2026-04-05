@@ -196,3 +196,64 @@ function booking_display_label(array $booking): string
     };
 }
 
+/**
+ * Get all supported currencies with their display labels in a unified array.
+ */
+function get_supported_currencies(): array
+{
+    return [
+        'EUR' => '€ EUR — Euro',
+        'USD' => '$ USD — US Dollar',
+        'GBP' => '£ GBP — British Pound',
+        'CHF' => 'CHF — Swiss Franc',
+        'SEK' => 'SEK — Swedish Krona',
+        'NOK' => 'NOK — Norwegian Krone',
+        'DKK' => 'DKK — Danish Krone',
+        'PLN' => 'PLN — Polish Złoty',
+        'CZK' => 'CZK — Czech Koruna',
+        'HUF' => 'HUF — Hungarian Forint',
+        'RON' => 'RON — Romanian Leu',
+        'BGN' => 'BGN — Bulgarian Lev',
+        'HRK' => 'HRK — Croatian Kuna',
+        'CAD' => 'CAD — Canadian Dollar',
+        'AUD' => 'AUD — Australian Dollar',
+        'NZD' => 'NZD — New Zealand Dollar',
+        'BRL' => 'BRL — Brazilian Real',
+        'MXN' => 'MXN — Mexican Peso',
+        'ARS' => 'ARS — Argentine Peso',
+        'JPY' => '¥ JPY — Japanese Yen',
+        'CNY' => '¥ CNY — Chinese Yuan',
+        'KRW' => '₩ KRW — South Korean Won',
+        'INR' => '₹ INR — Indian Rupee',
+        'SGD' => 'SGD — Singapore Dollar',
+        'THB' => '฿ THB — Thai Baht',
+        'IDR' => 'IDR — Indonesian Rupiah',
+        'AED' => 'AED — UAE Dirham',
+        'ZAR' => 'ZAR — South African Rand',
+        'TRY' => '₺ TRY — Turkish Lira',
+        'ILS' => '₪ ILS — Israeli Shekel',
+        'EGP' => 'EGP — Egyptian Pound',
+        'NGN' => '₦ NGN — Nigerian Naira',
+    ];
+}
+
+/**
+ * Get all standard PHP timezones for consistent global availability.
+ */
+function get_supported_timezones(): array
+{
+    static $tzs = null;
+    if ($tzs === null) {
+        $tzs = timezone_identifiers_list();
+    }
+    return $tzs;
+}
+
+/**
+ * Formats a raw timezone string ('America/New_York') into a clean display label ('America / New York').
+ */
+function format_timezone(string $tz): string
+{
+    if ($tz === 'UTC') return 'UTC';
+    return str_replace(['_', '/'], [' ', ' / '], $tz);
+}

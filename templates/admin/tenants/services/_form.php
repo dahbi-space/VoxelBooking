@@ -26,20 +26,21 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
 <form method="POST" action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') ?>" class="vb-animate-in">
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
-    <div class="vb-card">
-        <div class="vb-form-grid vb-form-grid-2" style="padding: 1.25rem;">
-            <div class="vb-form-group" style="grid-column: 1 / -1;">
-                <label class="vb-label" for="svc-name"><?= __('admin.services.field_name') ?> *</label>
+    <div class="vb-card p-6">
+        <div class="vb-form-grid vb-form-grid-2">
+            <div class="vb-form-group col-span-full">
+                <label class="vb-label" for="svc-name"><?= __('admin.services.field_name') ?> <span class="text-red-500">*</span></label>
                 <input type="text" class="vb-input" id="svc-name" name="name"
                        value="<?= $v('name') ?>" required maxlength="255" autofocus>
             </div>
 
-            <div class="vb-form-group" style="grid-column: 1 / -1;">
+            <div class="vb-form-group col-span-full">
                 <label class="vb-label" for="svc-desc"><?= __('admin.services.field_description') ?></label>
-                <textarea class="vb-input" id="svc-desc" name="description" rows="3"
-                          style="resize: vertical;"><?= $v('description') ?></textarea>
+                <textarea class="vb-input resize-y" id="svc-desc" name="description" rows="3"><?= $v('description') ?></textarea>
             </div>
+        </div>
 
+        <div class="vb-form-row pt-4">
             <div class="vb-form-group">
                 <label class="vb-label" for="svc-duration"><?= __('admin.services.field_duration') ?> *</label>
                 <input type="number" class="vb-input" id="svc-duration" name="duration_minutes"
@@ -51,7 +52,9 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
                 <input type="number" class="vb-input" id="svc-price" name="price"
                        value="<?= $v('price') ?>" min="0" step="0.01">
             </div>
+        </div>
 
+        <div class="vb-form-row">
             <div class="vb-form-group">
                 <label class="vb-label" for="svc-price-label">
                     <?= __('admin.services.field_price_label') ?>
@@ -69,17 +72,20 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
                 <input type="text" class="vb-input" id="svc-category" name="category"
                        value="<?= $v('category') ?>" maxlength="100">
             </div>
+        </div>
 
-            <div class="vb-form-group">
-                <label class="vb-label" for="svc-color"><?= __('admin.services.field_color') ?></label>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="color" id="svc-color" name="color"
-                           value="<?= $v('color', '#6366F1') ?>"
-                           style="width: 36px; height: 36px; padding: 2px; border: 1px solid var(--vb-border); border-radius: var(--radius-md); cursor: pointer;">
-                    <input type="text" class="vb-input" id="svc-color-text"
-                           value="<?= $v('color', '#6366F1') ?>"
-                           pattern="^#[0-9a-fA-F]{6}$" maxlength="7" style="max-width: 100px; font-family: var(--vb-font-mono, monospace); font-size: 0.8125rem;"
-                           oninput="document.getElementById('svc-color').value = this.value">
+        <div class="vb-form-row">
+            <!-- Calendar Color -->
+            <div class="vb-form-group" x-data="colorSync">
+                <label class="vb-label vb-icon-label" for="svc-color-text">
+                    <i data-lucide="palette"></i>
+                    <?= __('admin.services.field_color') ?>
+                </label>
+                <div class="vb-color-field">
+                    <input type="color" x-ref="colorPicker" value="<?= $v('color', '#6366F1') ?>" class="vb-color-input"
+                           @input="onPickerChange">
+                    <input type="text" x-ref="colorText" id="svc-color-text" name="color" value="<?= $v('color', '#6366F1') ?>" class="vb-input"
+                           maxlength="7" placeholder="#6366F1" @input="onTextChange">
                 </div>
             </div>
 
@@ -89,19 +95,16 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
                        value="<?= $v('sort_order', '0') ?>" min="0" step="1">
             </div>
         </div>
-    </div>
 
-    <!-- Staff assignment -->
-    <?php if (!empty($staff)): ?>
-    <div class="vb-card" style="margin-top: 1rem;">
-        <div class="vb-card-header">
-            <h3 class="vb-card-title">
-                <i data-lucide="users" style="width: 15px; height: 15px;"></i>
+        <!-- Staff assignment -->
+        <?php if (!empty($staff)): ?>
+        <div class="vb-section-divider"></div>
+        <div class="vb-form-group">
+            <label class="vb-label vb-icon-label mb-1">
+                <i data-lucide="users"></i>
                 <?= __('admin.services.field_staff') ?>
-            </h3>
-        </div>
-        <div style="padding: 1rem 1.25rem;">
-            <p class="vb-text-secondary" style="font-size: 0.8125rem; margin: 0 0 0.75rem;"><?= __('admin.services.field_staff_hint') ?></p>
+            </label>
+            <p class="vb-text-secondary text-sm mb-4"><?= __('admin.services.field_staff_hint') ?></p>
             <div class="vb-checkbox-grid">
                 <?php foreach ($staff as $s): ?>
                 <label class="vb-checkbox-label">
@@ -118,15 +121,15 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
                 <?php endforeach; ?>
             </div>
         </div>
-    </div>
-    <?php endif; ?>
+        <?php endif; ?>
 
-    <div class="vb-form-actions" style="margin-top: 1.25rem;">
-        <button type="submit" class="vb-btn vb-btn-primary" id="save-service-btn">
-            <i data-lucide="save" style="width: 16px; height: 16px;"></i>
-            <?= $service ? __('admin.services.updated') : __('admin.services.created') ?>
-        </button>
-        <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/services"
-           class="vb-btn vb-btn-ghost"><?= __('admin.common.cancel') ?></a>
+        <div class="vb-form-actions mt-8">
+            <button type="submit" class="vb-btn vb-btn-primary" id="save-service-btn">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                <?= $service ? __('admin.services.updated') : __('admin.services.created') ?>
+            </button>
+            <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/services"
+               class="vb-btn vb-btn-ghost"><?= __('admin.common.cancel') ?></a>
+        </div>
     </div>
 </form>

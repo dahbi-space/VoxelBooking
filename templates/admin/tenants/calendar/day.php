@@ -93,7 +93,7 @@ ob_start();
             $timeObj = new DateTimeImmutable(sprintf('%02d:00', $h));
             $hourTime = sprintf('%02d:00', $h);
         ?>
-        <div class="vb-calendar-hour-row">
+        <div class="vb-calendar-hour-row vb-fade-in-up stagger-<?= min(((int)$h - $hourStart) + 1, 6) ?>">
             <div class="vb-calendar-hour-label">
                 <?= htmlspecialchars(\App\Engine\Locale::time($timeObj), ENT_QUOTES, 'UTF-8') ?>
             </div>

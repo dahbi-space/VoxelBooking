@@ -12,55 +12,8 @@
  */
 $activePage = 'tenants';
 
-$timezones = [
-    'UTC', 'Europe/London', 'Europe/Amsterdam', 'Europe/Berlin', 'Europe/Paris',
-    'Europe/Madrid', 'Europe/Rome', 'Europe/Zurich', 'Europe/Stockholm',
-    'Europe/Oslo', 'Europe/Helsinki', 'Europe/Warsaw', 'Europe/Prague',
-    'Europe/Vienna', 'Europe/Brussels', 'Europe/Lisbon', 'Europe/Athens',
-    'Europe/Bucharest', 'Europe/Istanbul', 'Europe/Moscow',
-    'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
-    'America/Toronto', 'America/Vancouver', 'America/Sao_Paulo', 'America/Mexico_City',
-    'America/Argentina/Buenos_Aires',
-    'Asia/Dubai', 'Asia/Kolkata', 'Asia/Bangkok', 'Asia/Singapore', 'Asia/Tokyo',
-    'Asia/Shanghai', 'Asia/Seoul', 'Asia/Hong_Kong', 'Asia/Jakarta',
-    'Australia/Sydney', 'Australia/Melbourne', 'Pacific/Auckland',
-    'Africa/Cairo', 'Africa/Johannesburg', 'Africa/Lagos',
-];
-
-$currencies = [
-    'EUR' => '€ EUR — Euro',
-    'USD' => '$ USD — US Dollar',
-    'GBP' => '£ GBP — British Pound',
-    'CHF' => 'CHF — Swiss Franc',
-    'SEK' => 'SEK — Swedish Krona',
-    'NOK' => 'NOK — Norwegian Krone',
-    'DKK' => 'DKK — Danish Krone',
-    'PLN' => 'PLN — Polish Złoty',
-    'CZK' => 'CZK — Czech Koruna',
-    'HUF' => 'HUF — Hungarian Forint',
-    'RON' => 'RON — Romanian Leu',
-    'BGN' => 'BGN — Bulgarian Lev',
-    'HRK' => 'HRK — Croatian Kuna',
-    'CAD' => 'CAD — Canadian Dollar',
-    'AUD' => 'AUD — Australian Dollar',
-    'NZD' => 'NZD — New Zealand Dollar',
-    'BRL' => 'BRL — Brazilian Real',
-    'MXN' => 'MXN — Mexican Peso',
-    'ARS' => 'ARS — Argentine Peso',
-    'JPY' => '¥ JPY — Japanese Yen',
-    'CNY' => '¥ CNY — Chinese Yuan',
-    'KRW' => '₩ KRW — South Korean Won',
-    'INR' => '₹ INR — Indian Rupee',
-    'SGD' => 'SGD — Singapore Dollar',
-    'THB' => '฿ THB — Thai Baht',
-    'IDR' => 'IDR — Indonesian Rupiah',
-    'AED' => 'AED — UAE Dirham',
-    'ZAR' => 'ZAR — South African Rand',
-    'TRY' => '₺ TRY — Turkish Lira',
-    'ILS' => '₪ ILS — Israeli Shekel',
-    'EGP' => 'EGP — Egyptian Pound',
-    'NGN' => '₦ NGN — Nigerian Naira',
-];
+$timezones = get_supported_timezones();
+$currencies = get_supported_currencies();
 
 $tenantTimezone = $tenant['timezone'] ?? 'UTC';
 $tenantCurrency = $tenant['currency'] ?? 'EUR';
@@ -116,8 +69,8 @@ ob_start();
                     </label>
                     <select id="tenant_timezone" name="timezone" class="vb-select">
                         <?php foreach ($timezones as $tz): ?>
-                            <option value="<?= $tz ?>" <?= $tz === $tenantTimezone ? 'selected' : '' ?>>
-                                <?= str_replace(['_', '/'], [' ', ' / '], $tz) ?>
+                            <option value="<?= htmlspecialchars($tz, ENT_QUOTES, 'UTF-8') ?>" <?= $tz === $tenantTimezone ? 'selected' : '' ?>>
+                                <?= htmlspecialchars(format_timezone($tz), ENT_QUOTES, 'UTF-8') ?>
                             </option>
                         <?php endforeach; ?>
                     </select>

@@ -1,9 +1,12 @@
 <?php
 /**
- * Settings Tab Navigation — Visual Design §7.2.
+ * Settings Tab Navigation — Visual Design §7.2 / §12.10.
  *
  * Uses .vb-tabs / .vb-tab classes from admin-head.php.
  * Icons: Lucide via data-lucide attribute (tree-shaken in app.js).
+ *
+ * Renders the canonical page header + tab bar for all operator settings pages.
+ * Matches the tenant settings pattern (page-header → tabs → content).
  *
  * Variables: $activeTab (string: general|account|email|cron|logs|audit)
  */
@@ -17,6 +20,13 @@ $tabs = [
     'audit'   => ['label' => __('admin.tabs.audit'), 'href' => '/admin/settings/audit', 'icon' => 'shield'],
 ];
 ?>
+
+<div class="vb-page-header">
+    <div>
+        <h2 class="vb-page-title"><?= __('admin.settings.title') ?></h2>
+        <p class="vb-page-subtitle"><?= __('admin.settings.subtitle') ?></p>
+    </div>
+</div>
 
 <nav class="vb-tabs" aria-label="<?= __('admin.tabs.aria') ?>">
     <?php foreach ($tabs as $key => $tab): ?>

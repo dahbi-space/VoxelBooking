@@ -512,6 +512,7 @@ Alpine.data('bookingCreate', () => ({
     },
 }));
 
+
 // ── Alpine: start ──
 window.Alpine = Alpine;
 Alpine.start();
@@ -588,3 +589,85 @@ function showDemoToast() {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+
+// ── Global Confirm Dialog (vanilla JS, CSP-safe) ──
+// Intercepts form submissions on forms with data-confirm="message" attribute.
+// Uses a static modal element rendered in layout.php — no Alpine involvement.
+(function () {
+    let pendingForm = null;
+
+    const overlay = document.getElementById('vb-confirm-overlay');
+    if (!overlay) return; // guard: modal not in DOM
+
+    const msgEl    = overlay.querySelector('[data-confirm-message]');
+    const btnText  = overlay.querySelector('[data-confirm-btn-text]');
+    const btnOk    = overlay.querySelector('[data-confirm-ok]');
+    const btnCancel = overlay.querySelector('[data-confirm-cancel]');
+    const btnClose  = overlay.querySelector('[data-confirm-close]');
+
+    function open(form) {
+        pendingForm = form;
+        const message = form.getAttribute('data-confirm') || 'Are you sure?';
+        const label   = form.getAttribute('data-confirm-text') || 'Confirm';
+
+        if (msgEl)   msgEl.textContent = message;
+        if (btnText) btnText.textContent = label;
+
+        overlay.style.display = '';
+        requestAnimationFrame(() => overlay.classList.add('is-visible'));
+    }
+
+    function close() {
+        overlay.classList.remove('is-visible');
+        setTimeout(() => { overlay.style.display = 'none'; }, 200);
+        pendingForm = null;
+    }
+
+    function confirm() {
+        if (pendingForm) {
+            const form = pendingForm;
+            pendingForm = null; // clear before submit to prevent re-intercept
+            overlay.classList.remove('is-visible');
+            setTimeout(() => { overlay.style.display = 'none'; }, 200);
+            // Submit natively, bypassing this listener
+            form.removeAttribute('data-confirm');
+            form.requestSubmit();
+        }
+    }
+
+    // Intercept form submissions with data-confirm
+    document.addEventListener('submit', (e) => {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        if (!form.hasAttribute('data-confirm')) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        open(form);
+    }, true);
+
+    // Button handlers
+    if (btnOk)     btnOk.addEventListener('click', confirm);
+    if (btnCancel) btnCancel.addEventListener('click', close);
+    if (btnClose)  btnClose.addEventListener('click', close);
+
+    // Close on overlay background click
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) close();
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && pendingForm) close();
+    });
+})();
+
+// ── Clickable Rows (CSP-safe navigation) ──
+// Rows with [data-href] navigate on click. Replaces inline onclick handlers.
+document.addEventListener('click', (e) => {
+    const row = e.target.closest('[data-href]');
+    if (!row) return;
+    // Don't hijack clicks on interactive children (links, buttons, inputs)
+    if (e.target.closest('a, button, input, select, textarea, [role="button"]')) return;
+    window.location = row.getAttribute('data-href');
+});

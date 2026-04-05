@@ -3,10 +3,11 @@
  * Customer detail — premium contact profile surface.
  *
  * Architecture:
+ *   Back-link breadcrumb
  *   Identity header (avatar + name + email + phone)
- *   Metadata row (joined date, booking count, last visit)
+ *   Stats strip (booking count, last visit, joined date)
  *   Notes card (if present)
- *   Booking history table (shared table system)
+ *   Booking history table
  *
  * Variables: $tenant, $customer, $bookings, $liveBookingCount, $liveLastBookingAt, $tenantId, $csrfToken
  */
@@ -16,34 +17,39 @@ $bookings = $bookings ?? [];
 $liveBookingCount = $liveBookingCount ?? 0;
 $liveLastBookingAt = $liveLastBookingAt ?? null;
 $tenantId = $tenantId ?? '';
+$baseUrl = "/admin/tenants/" . htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8');
 
 ob_start();
 ?>
 
-<!-- Breadcrumb -->
-<div class="vb-breadcrumb">
-    <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/customers" class="vb-breadcrumb-link">
-        <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
-        <?= __('admin.customers.page_title') ?>
-    </a>
+<div class="vb-page-header">
+    <div>
+        <a href="<?= $baseUrl ?>/customers" class="vb-back-link">
+            <i data-lucide="chevron-left"></i>
+            <?= __('admin.customers.page_title') ?>
+        </a>
+        <h2 class="vb-page-title"><?= htmlspecialchars($customer['name'], ENT_QUOTES, 'UTF-8') ?></h2>
+    </div>
 </div>
 
 <!-- Identity header -->
-<div class="vb-profile-header vb-animate-in">
-    <span class="vb-avatar vb-avatar-xl"><?= mb_strtoupper(mb_substr($customer['name'], 0, 1)) ?></span>
-    <div class="vb-profile-header-info">
-        <h2 class="vb-profile-name"><?= htmlspecialchars($customer['name'], ENT_QUOTES, 'UTF-8') ?></h2>
-        <div class="vb-profile-meta-row">
-            <span class="vb-profile-meta-item">
-                <i data-lucide="mail" style="width: 13px; height: 13px;"></i>
-                <?= htmlspecialchars($customer['email'], ENT_QUOTES, 'UTF-8') ?>
-            </span>
-            <?php if ($customer['phone']): ?>
-            <span class="vb-profile-meta-item">
-                <i data-lucide="contact" style="width: 13px; height: 13px;"></i>
-                <?= htmlspecialchars($customer['phone'], ENT_QUOTES, 'UTF-8') ?>
-            </span>
-            <?php endif; ?>
+<div class="vb-card vb-mb-lg vb-animate-in">
+    <div class="vb-profile-header">
+        <span class="vb-avatar vb-avatar-xl"><?= mb_strtoupper(mb_substr($customer['name'], 0, 1)) ?></span>
+        <div class="vb-profile-header-info">
+            <h2 class="vb-profile-name"><?= htmlspecialchars($customer['name'], ENT_QUOTES, 'UTF-8') ?></h2>
+            <div class="vb-profile-meta-row">
+                <span class="vb-profile-meta-item">
+                    <i data-lucide="mail" style="width: 13px; height: 13px;"></i>
+                    <?= htmlspecialchars($customer['email'], ENT_QUOTES, 'UTF-8') ?>
+                </span>
+                <?php if ($customer['phone']): ?>
+                <span class="vb-profile-meta-item">
+                    <i data-lucide="phone" style="width: 13px; height: 13px;"></i>
+                    <?= htmlspecialchars($customer['phone'], ENT_QUOTES, 'UTF-8') ?>
+                </span>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
@@ -76,20 +82,20 @@ ob_start();
 
 <!-- Notes -->
 <?php if ($customer['notes']): ?>
-<div class="vb-card vb-animate-in vb-mb-lg">
+<div class="vb-card vb-animate-in" style="margin-bottom: 1.5rem;">
     <div class="vb-card-header">
-        <i data-lucide="sticky-note" style="width: 16px; height: 16px;"></i>
-        <strong><?= __('admin.customers.notes_title') ?></strong>
+        <div class="vb-card-title"><?= __('admin.customers.notes_title') ?></div>
     </div>
-    <div class="vb-card-body">
-        <p class="vb-text-secondary vb-pre-wrap"><?= htmlspecialchars($customer['notes'], ENT_QUOTES, 'UTF-8') ?></p>
-    </div>
+    <p class="vb-text-secondary vb-pre-wrap"><?= htmlspecialchars($customer['notes'], ENT_QUOTES, 'UTF-8') ?></p>
 </div>
 <?php endif; ?>
 
 <!-- Booking history -->
 <div class="vb-section-header">
     <h3 class="vb-section-title"><?= __('admin.customers.booking_history') ?></h3>
+    <?php if (!empty($bookings)): ?>
+        <span class="vb-badge vb-badge-neutral"><?= count($bookings) ?></span>
+    <?php endif; ?>
 </div>
 
 <?php if (empty($bookings)): ?>
@@ -99,7 +105,7 @@ ob_start();
         <p><?= __('admin.customers.no_bookings_desc') ?></p>
     </div>
 <?php else: ?>
-    <div class="vb-table-container">
+    <div class="vb-table-container vb-animate-in">
         <div class="vb-table-wrap">
             <table class="vb-table" id="customer-bookings-table">
                 <thead>

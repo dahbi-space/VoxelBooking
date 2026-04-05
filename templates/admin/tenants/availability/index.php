@@ -87,7 +87,7 @@ ob_start();
         <?php if ($currentStaffId && ($hasOverride ?? false)): ?>
         <form method="POST"
               action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/availability/staff/<?= htmlspecialchars($currentStaffId, ENT_QUOTES, 'UTF-8') ?>/reset"
-              onsubmit="return confirm('Reset this staff member\'s hours to tenant defaults?')"
+              data-confirm="Reset this staff member's hours to tenant defaults?" data-confirm-text="Reset"
               style="margin-left: auto;">
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
             <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-danger">
@@ -109,59 +109,78 @@ ob_start();
       class="vb-animate-in">
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
-    <div class="vb-availability-grid">
-        <template x-for="(daySlots, dayIndex) in days" :key="dayIndex">
-        <div class="vb-availability-day" :class="daySlots.length === 0 && 'is-closed'">
-            <div class="vb-availability-day-header">
-                <div class="vb-availability-day-label-group">
-                    <h4 class="vb-availability-day-label" x-text="dayLabels[dayIndex] || ''"></h4>
-                    <span class="vb-availability-day-count"
-                          x-text="daySlots.length > 0 ? daySlots.length + (daySlots.length === 1 ? ' window' : ' windows') : ''"></span>
+    <div class="vb-card overflow-hidden">
+        <div class="flex flex-col">
+            <template x-for="(daySlots, dayIndex) in days" :key="dayIndex">
+            <div class="flex flex-col md:flex-row md:items-start gap-4 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors border-b border-[var(--vb-border-subtle)] last:border-0"
+                 style="padding: 1.25rem 1.5rem;"
+                 :class="daySlots.length === 0 ? 'opacity-60' : ''">
+                 
+                <!-- Day Label -->
+                <div class="w-full md:w-56 flex items-center justify-between h-[36px]">
+                    <div class="flex items-center gap-4">
+                        <label class="relative flex items-center cursor-pointer">
+                            <input type="checkbox" 
+                                   class="sr-only peer"
+                                   :checked="daySlots.length > 0"
+                                   @change="$el.checked ? addWindow(dayIndex) : daySlots.splice(0, daySlots.length)">
+                            <div class="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                        <span class="font-medium text-[0.9rem] text-[var(--vb-text-primary)]" 
+                              x-text="dayLabels[dayIndex]"></span>
+                    </div>
                 </div>
-                <button type="button"
-                        class="vb-btn vb-btn-ghost vb-btn-xs"
-                        @click="addWindow(dayIndex)"
-                        :title="'<?= __('admin.availability.add_window') ?>'">
-                    <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-                </button>
-            </div>
 
-            <div class="vb-availability-windows">
-                <template x-if="daySlots.length === 0">
-                    <p class="vb-availability-closed"><?= __('admin.availability.closed') ?></p>
-                </template>
+                <!-- Time Windows -->
+                <div class="flex-1 flex flex-col gap-3">
+                    <template x-if="daySlots.length === 0">
+                        <div class="text-[0.9rem] text-[var(--vb-text-tertiary)] flex items-center h-[36px] font-medium">
+                            <?= __('admin.availability.closed') ?>
+                        </div>
+                    </template>
 
-                <template x-for="(window, idx) in daySlots" :key="idx">
-                    <div class="vb-availability-window">
-                        <div class="vb-availability-inputs">
+                    <template x-for="(window, idx) in daySlots" :key="idx">
+                        <div class="flex items-center gap-3 group mb-3 last:mb-0">
                             <input type="time"
-                                   class="vb-input vb-input-sm"
+                                   class="vb-input px-3 py-1.5 h-[36px] text-sm md:w-36 w-full max-w-[140px]"
                                    :name="'schedule[' + dayIndex + '][' + idx + '][start]'"
                                    x-model="window.start"
                                    required>
-                            <span class="vb-availability-separator">→</span>
+                            <span class="text-[var(--vb-text-tertiary)] text-sm font-medium">to</span>
                             <input type="time"
-                                   class="vb-input vb-input-sm"
+                                   class="vb-input px-3 py-1.5 h-[36px] text-sm md:w-36 w-full max-w-[140px]"
                                    :name="'schedule[' + dayIndex + '][' + idx + '][end]'"
                                    x-model="window.end"
                                    required>
+                            <button type="button"
+                                    class="text-[var(--vb-text-tertiary)] hover:text-[var(--vb-error)] p-1.5 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                    @click="removeWindow(dayIndex, idx)"
+                                    title="<?= __('admin.availability.remove_window') ?>">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
                         </div>
-                        <button type="button"
-                                class="vb-btn vb-btn-ghost vb-btn-xs vb-btn-destructive"
-                                @click="removeWindow(dayIndex, idx)"
-                                :title="'<?= __('admin.availability.remove_window') ?>'">
-                            <i data-lucide="minus" style="width: 12px; height: 12px;"></i>
-                        </button>
-                    </div>
-                </template>
+                    </template>
+                </div>
+
+                <!-- Actions -->
+                <div class="md:w-16 flex justify-end h-[36px] items-center">
+                    <button type="button"
+                            class="text-[var(--vb-text-secondary)] hover:text-[var(--vb-text-primary)] p-1.5 rounded-md transition-colors"
+                            x-show="daySlots.length > 0"
+                            @click="addWindow(dayIndex)"
+                            title="<?= __('admin.availability.add_window') ?>">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
             </div>
+            </template>
         </div>
-        </template>
     </div>
 
-    <div class="vb-form-actions" style="margin-top: 1.5rem;">
+    <div class="vb-form-actions mt-6">
         <button type="submit" class="vb-btn vb-btn-primary" id="save-availability-btn">
-            <i data-lucide="save" style="width: 16px; height: 16px;"></i>
+            <i data-lucide="save" class="w-4 h-4"></i>
             <?= __('admin.availability.save') ?>
         </button>
     </div>
