@@ -117,6 +117,51 @@ final class Locale
     }
 
     /**
+     * Get locale options for admin select fields.
+     *
+     * Discovers available locales by scanning the lang/ directory, then
+     * enriches each with human-readable labels from the locale registry.
+     * A locale must exist in both the registry AND have a lang/ directory
+     * to appear as a selectable option.
+     *
+     * @return array<string, string> Locale code => display label
+     */
+    public static function localeOptions(): array
+    {
+        $options = [];
+        $langDir = self::$basePath . '/lang';
+
+        if (!is_dir($langDir)) {
+            return ['en' => 'English (English)'];
+        }
+
+        foreach (scandir($langDir) as $entry) {
+            if ($entry === '.' || $entry === '..' || !is_dir($langDir . '/' . $entry)) {
+                continue;
+            }
+            if (!isset(self::$registry[$entry])) {
+                continue;
+            }
+
+            $meta = self::$registry[$entry];
+            $name = $meta['name'] ?? $entry;
+            $native = $meta['native_name'] ?? $name;
+            $label = $name === $native ? $name : "{$name} ({$native})";
+            $options[$entry] = $label;
+        }
+
+        // Sort alphabetically by label, but keep 'en' first
+        uasort($options, fn(string $a, string $b) => strcasecmp($a, $b));
+        if (isset($options['en'])) {
+            $en = $options['en'];
+            unset($options['en']);
+            $options = ['en' => $en] + $options;
+        }
+
+        return $options ?: ['en' => 'English (English)'];
+    }
+
+    /**
      * Check if a locale has translation files (lang/{locale}/ directory exists).
      *
      * A locale can be registered (formatting rules) but not yet translated.

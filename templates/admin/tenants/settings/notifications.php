@@ -2,6 +2,9 @@
 /**
  * Tenant Settings — Notifications tab.
  *
+ * Structure: card-header → toggle group + detail field.
+ * No inline styles — all layout via design system classes.
+ *
  * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old
  */
 $tenant   = $tenant ?? [];
@@ -41,8 +44,13 @@ ob_start();
 <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/settings/notifications" class="vb-animate-in">
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
+    <!-- Section 1: Delivery -->
     <div class="vb-settings-section">
         <div class="vb-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title"><?= __('admin.tenant_settings.section_delivery') ?></div>
+                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_delivery_desc') ?></div>
+            </div>
             <div class="vb-form-grid">
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-notif-email"><?= __('admin.tenant_settings.field_notif_email') ?></label>
@@ -51,7 +59,18 @@ ob_start();
                            placeholder="<?= e($tenant['email'] ?? '') ?>">
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_notif_email_hint') ?></span>
                 </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Section 2: Triggers -->
+    <div class="vb-settings-section">
+        <div class="vb-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title"><?= __('admin.tenant_settings.section_triggers') ?></div>
+                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_triggers_desc') ?></div>
+            </div>
+            <div class="vb-form-grid">
                 <div class="vb-settings-toggles">
                     <label class="vb-settings-toggle-item">
                         <input type="hidden" name="notify_on_booking" value="0">
@@ -76,11 +95,11 @@ ob_start();
                     </label>
                 </div>
 
-                <div class="vb-settings-field">
+                <div class="vb-settings-toggle-detail">
                     <label class="vb-label" for="ts-reminder-hrs"><?= __('admin.tenant_settings.field_reminder_hours') ?></label>
-                    <input type="number" class="vb-input" id="ts-reminder-hrs" name="reminder_hours_before"
+                    <input type="number" class="vb-input vb-input-narrow" id="ts-reminder-hrs" name="reminder_hours_before"
                            value="<?= $val('reminder_hours_before', '24') ?>"
-                           min="1" step="1" style="max-width: 100px;">
+                           min="1" step="1">
                 </div>
             </div>
         </div>
@@ -88,7 +107,7 @@ ob_start();
 
     <div class="vb-form-actions">
         <button type="submit" class="vb-btn vb-btn-primary" id="save-notifications-btn">
-            <i data-lucide="save" style="width: 15px; height: 15px;"></i>
+            <i data-lucide="save"></i>
             <?= __('admin.settings.save_button') ?>
         </button>
     </div>

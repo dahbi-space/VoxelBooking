@@ -671,3 +671,17 @@ document.addEventListener('click', (e) => {
     if (e.target.closest('a, button, input, select, textarea, [role="button"]')) return;
     window.location = row.getAttribute('data-href');
 });
+
+// ── Textarea Autosize (.vb-textarea) ──
+// Textareas with .vb-textarea automatically grow to fit content.
+// overflow: hidden is set in CSS to prevent scrollbar flash.
+function autosizeTextarea(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+}
+
+// Initialize on page load
+document.querySelectorAll('.vb-textarea').forEach((ta) => {
+    autosizeTextarea(ta);
+    ta.addEventListener('input', () => autosizeTextarea(ta));
+});

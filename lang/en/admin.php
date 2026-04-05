@@ -873,7 +873,13 @@ return [
         'tab_emails'           => 'Emails',
         'tab_embed'            => 'Embed',
 
-        // Booking Rules (timeslot pattern)
+        // Booking Rules — section headers
+        'section_scheduling'          => 'Scheduling',
+        'section_scheduling_desc'     => 'Default slot duration and buffer between bookings.',
+        'section_constraints'         => 'Constraints',
+        'section_constraints_desc'    => 'Limits on advance booking and daily customer booking volume.',
+
+        // Booking Rules — fields (timeslot pattern)
         'field_slot_duration'      => 'Default slot duration (minutes)',
         'field_slot_duration_hint' => 'How long each time slot is when no service specifies its own duration.',
         'field_buffer'             => 'Buffer between slots (minutes)',
@@ -951,7 +957,13 @@ return [
         'field_description'       => 'Booking page description',
         'field_description_hint'  => 'Short text below the heading.',
 
-        // Privacy
+        // Privacy — section headers
+        'section_consent'              => 'Consent',
+        'section_consent_desc'         => 'Require customer consent before processing booking data.',
+        'section_data_retention'       => 'Data Retention',
+        'section_data_retention_desc'  => 'How long to keep customer data before anonymizing.',
+
+        // Privacy — fields
         'field_requires_consent'    => 'Require consent checkbox',
         'field_privacy_url'         => 'Privacy policy URL',
         'field_consent_text'        => 'Consent text',
@@ -959,7 +971,13 @@ return [
         'field_data_retention'      => 'Data retention (months)',
         'field_data_retention_hint' => 'Customer data is anonymized after this period.',
 
-        // Notifications
+        // Notifications — section headers
+        'section_delivery'              => 'Delivery',
+        'section_delivery_desc'         => 'Where notifications are sent.',
+        'section_triggers'              => 'Triggers',
+        'section_triggers_desc'         => 'Which events trigger staff notifications and customer reminders.',
+
+        // Notifications — fields
         'field_notif_email'         => 'Notification email',
         'field_notif_email_hint'    => 'Override. Defaults to the tenant contact email.',
         'field_notify_booking'      => 'Notify on new booking',

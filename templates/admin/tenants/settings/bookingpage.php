@@ -56,14 +56,14 @@ ob_start();
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-confirmation-msg"><?= __('admin.tenant_settings.field_confirmation_message') ?></label>
                     <textarea class="vb-input vb-textarea" id="ts-confirmation-msg" name="confirmation_message"
-                              rows="3" placeholder="<?= __('admin.tenant_settings.field_confirmation_message_placeholder') ?>"><?= $val('confirmation_message') ?></textarea>
+                              rows="2" placeholder="<?= __('admin.tenant_settings.field_confirmation_message_placeholder') ?>"><?= $val('confirmation_message') ?></textarea>
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_confirmation_message_hint') ?></span>
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-cancel-policy"><?= __('admin.tenant_settings.field_cancellation_policy') ?></label>
                     <textarea class="vb-input vb-textarea" id="ts-cancel-policy" name="cancellation_policy"
-                              rows="3" placeholder="<?= __('admin.tenant_settings.field_cancellation_policy_placeholder') ?>"><?= $val('cancellation_policy') ?></textarea>
+                              rows="2" placeholder="<?= __('admin.tenant_settings.field_cancellation_policy_placeholder') ?>"><?= $val('cancellation_policy') ?></textarea>
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_cancellation_policy_hint') ?></span>
                 </div>
             </div>

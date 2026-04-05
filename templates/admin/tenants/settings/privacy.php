@@ -2,6 +2,9 @@
 /**
  * Tenant Settings — Privacy tab.
  *
+ * Structure: card-header → toggle + text fields.
+ * No inline styles — all layout via design system classes.
+ *
  * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old
  */
 $tenant   = $tenant ?? [];
@@ -28,8 +31,13 @@ ob_start();
 <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/settings/privacy" class="vb-animate-in">
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
+    <!-- Section 1: Consent -->
     <div class="vb-settings-section">
         <div class="vb-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title"><?= __('admin.tenant_settings.section_consent') ?></div>
+                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_consent_desc') ?></div>
+            </div>
             <div class="vb-form-grid">
                 <div class="vb-settings-toggles">
                     <label class="vb-settings-toggle-item">
@@ -54,12 +62,23 @@ ob_start();
                            value="<?= e($tenant['consent_text'] ?? '') ?>" maxlength="500">
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_consent_hint') ?></span>
                 </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Section 2: Data Retention -->
+    <div class="vb-settings-section">
+        <div class="vb-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title"><?= __('admin.tenant_settings.section_data_retention') ?></div>
+                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_data_retention_desc') ?></div>
+            </div>
+            <div class="vb-form-grid">
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-retention"><?= __('admin.tenant_settings.field_data_retention') ?></label>
-                    <input type="number" class="vb-input" id="ts-retention" name="data_retention_months"
+                    <input type="number" class="vb-input vb-input-narrow" id="ts-retention" name="data_retention_months"
                            value="<?= e((string) ($tenant['data_retention_months'] ?? '24')) ?>"
-                           min="1" step="1" style="max-width: 100px;">
+                           min="1" step="1">
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_data_retention_hint') ?></span>
                 </div>
             </div>
@@ -68,7 +87,7 @@ ob_start();
 
     <div class="vb-form-actions">
         <button type="submit" class="vb-btn vb-btn-primary" id="save-privacy-btn">
-            <i data-lucide="save" style="width: 15px; height: 15px;"></i>
+            <i data-lucide="save"></i>
             <?= __('admin.settings.save_button') ?>
         </button>
     </div>

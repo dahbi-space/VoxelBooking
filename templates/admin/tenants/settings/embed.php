@@ -6,6 +6,9 @@
  * Tenant configures allowed embed domains, button position, button label.
  * Shows copyable embed code snippet with live preview.
  *
+ * No inline styles except dynamic brand color on the preview button
+ * (allowed per design system: dynamic values only).
+ *
  * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old
  */
 $tenant    = $tenant ?? [];
@@ -60,31 +63,33 @@ ob_start();
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
     <!-- Embed Code Snippet -->
-    <div class="vb-card vb-embed-hero-card" style="margin-top: 1.25rem;">
-        <div class="vb-card-header">
-            <div class="vb-card-title-row">
-                <i data-lucide="code" class="vb-card-icon"></i>
-                <div>
-                    <div class="vb-card-title"><?= __('admin.tenant_settings.embed_code_title') ?></div>
-                    <div class="vb-card-desc"><?= __('admin.tenant_settings.embed_code_desc') ?></div>
+    <div class="vb-settings-section">
+        <div class="vb-card vb-embed-hero-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title-row">
+                    <i data-lucide="code" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.tenant_settings.embed_code_title') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.tenant_settings.embed_code_desc') ?></div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="vb-card-body">
-            <div class="vb-embed-code-wrap">
-                <div class="vb-embed-code-content">
-                    <code id="embed-code-snippet" class="vb-embed-code">&lt;script src="<?= htmlspecialchars($origin, ENT_QUOTES, 'UTF-8') ?>/embed/<?= htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') ?>.js" defer&gt;&lt;/script&gt;</code>
+            <div class="vb-card-body">
+                <div class="vb-embed-code-wrap">
+                    <div class="vb-embed-code-content">
+                        <code id="embed-code-snippet" class="vb-embed-code">&lt;script src="<?= htmlspecialchars($origin, ENT_QUOTES, 'UTF-8') ?>/embed/<?= htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') ?>.js" defer&gt;&lt;/script&gt;</code>
+                    </div>
+                    <button type="button" class="vb-btn vb-btn-secondary vb-btn-sm vb-embed-copy-btn" id="btn-copy-embed"
+                            data-copy-target="embed-code-snippet">
+                        <i data-lucide="copy" class="vb-btn-icon-sm"></i>
+                        <span class="vb-embed-copy-label"><?= __('admin.tenant_settings.embed_copy_btn') ?></span>
+                    </button>
                 </div>
-                <button type="button" class="vb-btn vb-btn-secondary vb-btn-sm vb-embed-copy-btn" id="btn-copy-embed"
-                        data-copy-target="embed-code-snippet">
-                    <i data-lucide="copy" class="vb-btn-icon-sm"></i>
-                    <span class="vb-embed-copy-label"><?= __('admin.tenant_settings.embed_copy_btn') ?></span>
-                </button>
+                <p class="vb-embed-code-hint">
+                    <i data-lucide="info" class="vb-hint-icon"></i>
+                    <?= __('admin.tenant_settings.embed_code_hint') ?? 'Paste this script tag before the closing &lt;/body&gt; of any page where you want the booking button.' ?>
+                </p>
             </div>
-            <p class="vb-embed-code-hint">
-                <i data-lucide="info" class="vb-hint-icon"></i>
-                <?= __('admin.tenant_settings.embed_code_hint') ?? 'Paste this script tag before the closing &lt;/body&gt; of any page where you want the booking button.' ?>
-            </p>
         </div>
     </div>
 
@@ -158,8 +163,8 @@ ob_start();
             <div class="vb-card-body">
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-embed-domains"><?= __('admin.tenant_settings.embed_domains_label') ?></label>
-                    <textarea class="vb-input vb-embed-domains-input" id="ts-embed-domains" name="allowed_embed_domains"
-                              rows="3" placeholder="example.com&#10;shop.mydomain.com"><?= $domainsForTextarea ?></textarea>
+                    <textarea class="vb-input vb-textarea vb-embed-domains-input" id="ts-embed-domains" name="allowed_embed_domains"
+                              rows="2" placeholder="example.com&#10;shop.mydomain.com"><?= $domainsForTextarea ?></textarea>
                     <div class="vb-settings-hint">
                         <i data-lucide="info" class="vb-hint-icon"></i>
                         <?= __('admin.tenant_settings.embed_domains_hint') ?>

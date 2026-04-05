@@ -6,6 +6,8 @@
  * Tenant customizes subject, heading, intro, outro, CTA label per email type.
  * When a row doesn't exist, system defaults are shown as placeholders.
  *
+ * No inline styles — all layout via design system classes.
+ *
  * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old, $templates
  */
 $tenant    = $tenant ?? [];
@@ -128,28 +130,28 @@ ob_start();
 <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/settings/emails" class="vb-animate-in">
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
-    <div class="vb-settings-hint-block" style="margin-bottom: 1.5rem;">
-        <i data-lucide="info" style="width: 16px; height: 16px; flex-shrink: 0;"></i>
+    <div class="vb-settings-info">
+        <i data-lucide="info"></i>
         <div>
             <?= __('admin.tenant_settings.emails_section_desc') ?>
-            <br><small style="opacity: 0.7;"><?= __('admin.tenant_settings.emails_placeholders_hint') ?></small>
+            <div class="vb-settings-info-subtle"><?= __('admin.tenant_settings.emails_placeholders_hint') ?></div>
         </div>
     </div>
 
     <?php foreach ($emailTypes as $type => $meta): ?>
     <div class="vb-settings-section">
         <div class="vb-card">
-            <div class="vb-card-header" style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="vb-card-header vb-card-header-toggle">
                 <div>
                     <div class="vb-card-title"><?= htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8') ?></div>
                     <div class="vb-card-desc"><?= htmlspecialchars($meta['desc'], ENT_QUOTES, 'UTF-8') ?></div>
                 </div>
-                <label class="vb-settings-toggle-item" style="margin: 0; padding: 0;">
+                <label class="vb-settings-toggle-item vb-settings-toggle-inline">
                     <input type="hidden" name="<?= $type ?>_is_enabled" value="0">
                     <input type="checkbox" name="<?= $type ?>_is_enabled" value="1" <?= $isTypeEnabled($type) ? 'checked' : '' ?>>
                 </label>
             </div>
-            <div class="vb-form-grid" style="gap: 0.75rem;">
+            <div class="vb-form-grid">
                 <div class="vb-settings-field">
                     <label class="vb-label" for="tpl-<?= $type ?>-subject"><?= __('admin.tenant_settings.email_field_subject') ?></label>
                     <input type="text" class="vb-input" id="tpl-<?= $type ?>-subject" name="<?= $type ?>_subject"
@@ -164,20 +166,19 @@ ob_start();
                 </div>
                 <div class="vb-settings-field">
                     <label class="vb-label" for="tpl-<?= $type ?>-intro"><?= __('admin.tenant_settings.email_field_intro') ?></label>
-                    <textarea class="vb-input" id="tpl-<?= $type ?>-intro" name="<?= $type ?>_body_intro"
+                    <textarea class="vb-input vb-textarea" id="tpl-<?= $type ?>-intro" name="<?= $type ?>_body_intro"
                               rows="2" placeholder="<?= htmlspecialchars($meta['defaults']['body_intro'], ENT_QUOTES, 'UTF-8') ?>"><?= $getVal($type, 'body_intro') ?></textarea>
                 </div>
                 <div class="vb-settings-field">
                     <label class="vb-label" for="tpl-<?= $type ?>-outro"><?= __('admin.tenant_settings.email_field_outro') ?></label>
-                    <textarea class="vb-input" id="tpl-<?= $type ?>-outro" name="<?= $type ?>_body_outro"
+                    <textarea class="vb-input vb-textarea" id="tpl-<?= $type ?>-outro" name="<?= $type ?>_body_outro"
                               rows="2" placeholder="<?= htmlspecialchars($meta['defaults']['body_outro'], ENT_QUOTES, 'UTF-8') ?>"><?= $getVal($type, 'body_outro') ?></textarea>
                 </div>
                 <div class="vb-settings-field">
                     <label class="vb-label" for="tpl-<?= $type ?>-cta"><?= __('admin.tenant_settings.email_field_cta') ?></label>
-                    <input type="text" class="vb-input" id="tpl-<?= $type ?>-cta" name="<?= $type ?>_cta_label"
+                    <input type="text" class="vb-input vb-input-medium" id="tpl-<?= $type ?>-cta" name="<?= $type ?>_cta_label"
                            value="<?= $getVal($type, 'cta_label') ?>"
-                           placeholder="<?= htmlspecialchars($meta['defaults']['cta_label'], ENT_QUOTES, 'UTF-8') ?>"
-                           style="max-width: 220px;">
+                           placeholder="<?= htmlspecialchars($meta['defaults']['cta_label'], ENT_QUOTES, 'UTF-8') ?>">
                 </div>
             </div>
         </div>
@@ -186,7 +187,7 @@ ob_start();
 
     <div class="vb-form-actions">
         <button type="submit" class="vb-btn vb-btn-primary" id="save-emails-btn">
-            <i data-lucide="save" style="width: 15px; height: 15px;"></i>
+            <i data-lucide="save"></i>
             <?= __('admin.settings.save_button') ?>
         </button>
     </div>

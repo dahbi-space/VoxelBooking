@@ -97,7 +97,7 @@ ob_start();
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-desc"><?= __('admin.tenant_settings.field_description') ?></label>
                     <textarea class="vb-input vb-textarea" id="ts-desc" name="booking_page_description"
-                              rows="3"><?= e($tenant['booking_page_description'] ?? '') ?></textarea>
+                              rows="2"><?= e($tenant['booking_page_description'] ?? '') ?></textarea>
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_description_hint') ?></span>
                 </div>
             </div>

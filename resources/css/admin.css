@@ -4965,17 +4965,23 @@ body.is-impersonating .vb-main .vb-topbar {
 
 /* ── Form Utilities (settings forms) ─── */
 
-/* Textarea styling: proper padding, vertical resize */
+/* Textarea styling: proper padding, vertical resize, autosize-ready */
 .vb-textarea {
     resize: vertical;
     height: auto;
     padding: 0.625rem 0.75rem;
     min-height: 5rem;
+    overflow: hidden; /* autosize: prevents scrollbar flash during resize */
 }
 
 /* Narrow numeric input (hours, currency codes) */
 .vb-input-narrow {
     max-width: 100px;
+}
+
+/* Medium-width input (CTA labels, short strings) */
+.vb-input-medium {
+    max-width: 220px;
 }
 
 /* Required field asterisk */
@@ -4986,6 +4992,48 @@ body.is-impersonating .vb-main .vb-topbar {
 /* Indented detail field below a toggle (e.g. "hours before" under "allow cancellation") */
 .vb-settings-toggle-detail {
     padding-left: 2.625rem; /* checkbox width + gap */
+}
+
+/* Toggle hint text (below toggle label) */
+.vb-settings-toggle-hint {
+    font-size: var(--vb-text-xs);
+    color: var(--vb-text-tertiary);
+    margin-top: 0.125rem;
+}
+
+/* Toggle placed inline in a card-header (enable/disable per section) */
+.vb-settings-toggle-inline {
+    margin: 0;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+/* Informational callout block (icon + text, e.g. email template placeholders) */
+.vb-settings-info {
+    display: flex;
+    gap: 0.625rem;
+    align-items: flex-start;
+    padding: 0.75rem 1rem;
+    background: var(--vb-bg-hover);
+    border-radius: var(--vb-radius-md);
+    font-size: var(--vb-text-sm);
+    color: var(--vb-text-secondary);
+    line-height: var(--vb-leading-relaxed);
+    margin-bottom: 1.25rem;
+}
+
+.vb-settings-info i {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    color: var(--vb-text-tertiary);
+}
+
+.vb-settings-info-subtle {
+    font-size: var(--vb-text-xs);
+    color: var(--vb-text-tertiary);
+    margin-top: 0.25rem;
 }
 
 /* ── Modal Dialog (§6.7) ─────────────────────────────────────── */

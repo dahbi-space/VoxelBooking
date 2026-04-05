@@ -38,7 +38,9 @@ final class TenantSettingsController
             return Response::redirect('/admin/tenants');
         }
 
-        return $this->render('admin.tenants.settings.general', $tenantId, $tenant, 'general');
+        return $this->render('admin.tenants.settings.general', $tenantId, $tenant, 'general', [
+            'localeOptions' => \App\Engine\Locale::localeOptions(),
+        ]);
     }
 
     public function saveGeneral(Request $request): Response
@@ -400,9 +402,9 @@ final class TenantSettingsController
         $this->setFlash('success', __('admin.tenant_settings.saved'));
     }
 
-    private function render(string $template, string $tenantId, array $tenant, string $activeTab): Response
+    private function render(string $template, string $tenantId, array $tenant, string $activeTab, array $extraData = []): Response
     {
-        return View::response($template, [
+        return View::response($template, array_merge([
             'user'          => Auth::user(),
             'version'       => Version::get(),
             'pageTitle'     => __('admin.tenant_settings.title'),
@@ -414,7 +416,7 @@ final class TenantSettingsController
             'tenant'        => $tenant,
             'old'           => $this->getOldInput(),
             'flash'         => $this->flash(),
-        ]);
+        ], $extraData));
     }
 
     private function forbidden(Request $request): Response

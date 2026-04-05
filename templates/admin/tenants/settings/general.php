@@ -3,14 +3,15 @@
  * Tenant Settings — General tab.
  *
  * Structure: card-header → form-grid with proper grouping.
- * Locale uses a labeled <select> sourced from config/locales.php.
+ * Locale uses a labeled <select> from Locale::localeOptions() (controller-provided).
  * No inline styles — all layout via design system classes.
  *
- * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old
+ * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old, $localeOptions
  */
-$tenant   = $tenant ?? [];
-$tenantId = $tenantId ?? '';
-$old      = $old ?? null;
+$tenant        = $tenant ?? [];
+$tenantId      = $tenantId ?? '';
+$old           = $old ?? null;
+$localeOptions = $localeOptions ?? ['en' => 'English'];
 
 $val = function (string $field, string $default = '') use ($tenant, $old): string {
     if ($old !== null && array_key_exists($field, $old)) {
@@ -18,9 +19,6 @@ $val = function (string $field, string $default = '') use ($tenant, $old): strin
     }
     return htmlspecialchars((string) ($tenant[$field] ?? $default), ENT_QUOTES, 'UTF-8');
 };
-
-// Load registered locales for the select
-$locales = require dirname(__DIR__, 4) . '/config/locales.php';
 
 ob_start();
 ?>
@@ -124,9 +122,14 @@ ob_start();
                         $currentLocale = ($old !== null && array_key_exists('locale', $old))
                             ? $old['locale']
                             : ($tenant['locale'] ?? 'en');
-                        foreach ($locales as $code => $meta):
+                        // Ensure current value always appears (e.g. old input for a not-yet-translated locale)
+                        $effectiveOptions = $localeOptions;
+                        if ($currentLocale !== '' && !isset($effectiveOptions[$currentLocale])) {
+                            $effectiveOptions[$currentLocale] = $currentLocale;
+                        }
+                        foreach ($effectiveOptions as $code => $label):
                         ?>
-                        <option value="<?= $code ?>" <?= $currentLocale === $code ? 'selected' : '' ?>><?= htmlspecialchars($meta['name'] . ' (' . $meta['native_name'] . ')', ENT_QUOTES, 'UTF-8') ?></option>
+                        <option value="<?= $code ?>" <?= $currentLocale === $code ? 'selected' : '' ?>><?= e($label) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
