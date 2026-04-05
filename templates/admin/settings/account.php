@@ -1,9 +1,10 @@
 <?php
 /**
- * Account page — standalone personal surface for credential management.
+ * Account page — standalone personal surface.
  *
- * Separated from system settings: operators and business users can manage
- * their own identity here without navigating into the settings namespace.
+ * Full credential and profile management for any authenticated user
+ * (operator or business user). Sits outside the settings namespace
+ * to provide a calm, first-class personal workspace.
  *
  * Variables: $user, $version, $csrfToken, $flash, $pageTitle
  */
@@ -25,28 +26,43 @@ ob_start();
 <?php endif; ?>
 
 <div class="vb-grid vb-grid-2">
-    <!-- Account Details -->
+    <!-- Profile Details (Editable) -->
     <div class="vb-card vb-fade-in-up stagger-1">
         <div class="vb-card-header">
-            <div class="vb-card-title"><?= __('admin.account.details_title') ?></div>
-            <div class="vb-card-desc"><?= __('admin.account.details_desc') ?></div>
+            <div class="vb-card-title"><?= __('admin.account.profile_title') ?></div>
+            <div class="vb-card-desc"><?= __('admin.account.profile_desc') ?></div>
         </div>
-        <div class="vb-info-row">
-            <span class="vb-info-label"><?= __('admin.account.name_label') ?></span>
-            <span class="vb-info-value"><?= htmlspecialchars($currentUser['name'] ?? __('admin.layout.operator'), ENT_QUOTES, 'UTF-8') ?></span>
-        </div>
-        <div class="vb-info-row">
-            <span class="vb-info-label"><?= __('admin.account.email_label') ?></span>
-            <span class="vb-info-value"><?= htmlspecialchars($currentUser['email'] ?? '—', ENT_QUOTES, 'UTF-8') ?></span>
-        </div>
-        <div class="vb-info-row">
-            <span class="vb-info-label"><?= __('admin.account.role_label') ?></span>
-            <span class="vb-info-value">
-                <span class="vb-badge vb-badge-primary vb-capitalize">
-                    <?= htmlspecialchars($currentUser['type'] ?? 'operator', ENT_QUOTES, 'UTF-8') ?>
+        <form method="POST" action="/admin/account" autocomplete="off">
+            <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+            <input type="hidden" name="_action" value="profile">
+
+            <div class="vb-form-group">
+                <label for="account_name" class="vb-label"><?= __('admin.account.name_label') ?></label>
+                <input type="text" id="account_name" name="name" class="vb-input"
+                       value="<?= htmlspecialchars($currentUser['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                       required autocomplete="name">
+            </div>
+            <div class="vb-form-group">
+                <label for="account_email" class="vb-label"><?= __('admin.account.email_label') ?></label>
+                <input type="email" id="account_email" name="email" class="vb-input"
+                       value="<?= htmlspecialchars($currentUser['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                       required autocomplete="email">
+            </div>
+            <div class="vb-info-row" style="margin-top: 4px;">
+                <span class="vb-info-label"><?= __('admin.account.role_label') ?></span>
+                <span class="vb-info-value">
+                    <span class="vb-badge vb-badge-primary vb-capitalize">
+                        <?= htmlspecialchars($currentUser['type'] ?? 'operator', ENT_QUOTES, 'UTF-8') ?>
+                    </span>
                 </span>
-            </span>
-        </div>
+            </div>
+            <div class="vb-form-actions">
+                <button type="submit" class="vb-btn vb-btn-primary">
+                    <i data-lucide="save"></i>
+                    <?= __('admin.account.save_profile_button') ?>
+                </button>
+            </div>
+        </form>
     </div>
 
     <!-- Change Password -->
@@ -55,8 +71,9 @@ ob_start();
             <div class="vb-card-title"><?= __('admin.account.change_pw_title') ?></div>
             <div class="vb-card-desc"><?= __('admin.account.change_pw_desc') ?></div>
         </div>
-        <form method="POST" action="/admin/account">
+        <form method="POST" action="/admin/account" autocomplete="off">
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+            <input type="hidden" name="_action" value="password">
 
             <div class="vb-form-group">
                 <label for="current_password" class="vb-label"><?= __('admin.account.current_pw_label') ?></label>

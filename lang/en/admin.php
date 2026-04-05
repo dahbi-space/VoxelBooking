@@ -131,21 +131,22 @@ return [
         'ok'                 => 'Confirm',
     ],
 
-    // ── Settings: Account ──
+    // ── Account (shared personal surface) ──
     'account' => [
-        'page_title'         => 'Account',
-        'page_subtitle'      => 'Manage your credentials and profile.',
-        'details_title'      => 'Account Details',
-        'details_desc'       => 'Your operator account information.',
-        'name_label'         => 'Name',
-        'email_label'        => 'Email',
-        'role_label'         => 'Role',
-        'change_pw_title'    => 'Change Password',
-        'change_pw_desc'     => 'Update your account password. Minimum 8 characters.',
-        'current_pw_label'   => 'Current password',
-        'new_pw_label'       => 'New password',
-        'confirm_pw_label'   => 'Confirm new password',
-        'update_pw_button'   => 'Update password',
+        'page_title'          => 'Account',
+        'page_subtitle'       => 'Manage your profile and credentials.',
+        'profile_title'       => 'Profile',
+        'profile_desc'        => 'Your name and email across the platform.',
+        'name_label'          => 'Name',
+        'email_label'         => 'Email',
+        'role_label'          => 'Role',
+        'save_profile_button' => 'Save profile',
+        'change_pw_title'     => 'Change Password',
+        'change_pw_desc'      => 'Update your account password. Minimum 8 characters.',
+        'current_pw_label'    => 'Current password',
+        'new_pw_label'        => 'New password',
+        'confirm_pw_label'    => 'Confirm new password',
+        'update_pw_button'    => 'Update password',
     ],
 
     // ── Settings: Email ──
@@ -320,6 +321,11 @@ return [
         'password_mismatch'   => 'New passwords do not match.',
         'password_min_length' => 'New password must be at least 8 characters.',
         'password_incorrect'  => 'Current password is incorrect.',
+        'profile_updated'     => 'Profile updated.',
+        'profile_failed'      => 'Failed to update profile. Please try again.',
+        'profile_name_required' => 'Name is required.',
+        'profile_email_invalid' => 'Please enter a valid email address.',
+        'profile_email_taken' => 'This email address is already in use.',
     ],
 
     // ── Error pages ──
