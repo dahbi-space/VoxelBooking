@@ -28,6 +28,8 @@ SKIP_PREFIXES = (
     '--tw-', '--color-', '--animate-', '--default-', '--spacing',
     '--container', '--breakpoint', '--font-', '--blur', '--ring',
     '--inset-', '--radius', '--shadow', '--alpha',
+    '--_',    # CSS-native private scoped properties (internal calc helpers)
+    '--col-', # Inline booking column properties set by template
 )
 
 

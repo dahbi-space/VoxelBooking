@@ -125,7 +125,7 @@ ob_start();
             $tooltipText = htmlspecialchars($customerName . ' · ' . \App\Engine\Locale::time($start) . '–' . \App\Engine\Locale::time($end) . ($blockLabel !== '—' ? ' · ' . $blockLabel : ''), ENT_QUOTES, 'UTF-8');
         ?>
         <div class="vb-booking-block <?= $statusClass ?> vb-fade-in-up stagger-<?= min($i + 1, 6) ?>"
-             style="top: <?= round($topPct, 2) ?>%; height: <?= round($heightPct, 2) ?>%; --block-color: <?= htmlspecialchars($color, ENT_QUOTES, 'UTF-8') ?>;"
+             style="top: <?= round($topPct, 2) ?>%; height: <?= round($heightPct, 2) ?>%; --block-color: <?= htmlspecialchars($color, ENT_QUOTES, 'UTF-8') ?>; --col-index: <?= (int) ($b['colIndex'] ?? 0) ?>; --col-total: <?= (int) ($b['colTotal'] ?? 1) ?>;"
              title="<?= $tooltipText ?>">
             <div class="vb-booking-block-content">
                 <span class="vb-booking-block-name">

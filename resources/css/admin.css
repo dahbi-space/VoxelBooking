@@ -3765,7 +3765,7 @@
 .vb-calendar-day-container {
     background: var(--vb-bg-surface);
     border-radius: var(--vb-radius-lg);
-    box-shadow: var(--vb-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
+    box-shadow: var(--vb-shadow-card);
     overflow: hidden;
 }
 
@@ -3784,11 +3784,11 @@
     width: 90px;
     flex-shrink: 0;
     padding: 0 var(--space-4);
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 500;
+    font-variant-numeric: tabular-nums;
     color: var(--vb-text-tertiary);
     letter-spacing: 0.02em;
-    text-transform: uppercase;
     display: flex;
     align-items: flex-start;
     padding-top: 2px;
@@ -3837,23 +3837,29 @@
     opacity: 1;
 }
 
-/* Booking blocks */
+/* ── Booking blocks (day view) ── */
 .vb-booking-block {
+    --_label-w: 90px;
+    --_gutter: 12px;
+    --_gap: 2px;
+    --_track: calc(100% - var(--_label-w) - var(--_gutter));
     position: absolute;
-    left: 90px;
-    right: 12px;
+    left: calc(var(--_label-w) + var(--_track) * var(--col-index, 0) / var(--col-total, 1) + var(--_gap));
+    width: calc(var(--_track) / var(--col-total, 1) - var(--_gap) * 2);
     z-index: 3;
-    background: color-mix(in srgb, var(--block-color, var(--vb-accent)) 10%, var(--vb-bg-surface));
-    border-left: 4px solid var(--block-color, var(--vb-accent));
-    border-radius: var(--vb-radius-lg);
-    padding: var(--space-2) var(--space-3);
+    background: color-mix(in srgb, var(--block-color, var(--vb-accent)) 8%, var(--vb-bg-surface));
+    border-left: 3px solid var(--block-color, var(--vb-accent));
+    border-radius: var(--vb-radius-md);
+    padding: 6px 10px;
     cursor: default;
     overflow: hidden;
-    transition: box-shadow 0.15s ease;
+    transition: box-shadow var(--vb-duration-fast) ease,
+                transform 100ms ease;
 }
 
 .vb-booking-block:hover {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transform: translateY(-0.5px);
 }
 
 .vb-booking-block-content {
@@ -3874,6 +3880,7 @@
 
 .vb-booking-block-time {
     font-size: 0.6875rem;
+    font-weight: 500;
     color: var(--vb-text-secondary);
     white-space: nowrap;
 }
@@ -3914,7 +3921,7 @@
 .vb-week {
     background: var(--vb-bg-surface);
     border-radius: var(--vb-radius-lg);
-    box-shadow: var(--vb-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
+    box-shadow: var(--vb-shadow-card);
     overflow: hidden;
 }
 
@@ -3922,7 +3929,6 @@
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     border-bottom: 1px solid var(--vb-border-subtle);
-    background: var(--vb-bg-well);
 }
 
 .vb-week-col-header {
@@ -3934,22 +3940,21 @@
     padding: var(--space-3) 0;
     text-decoration: none;
     color: var(--vb-text-primary);
-    border-right: 1px solid var(--vb-border-subtle);
-    transition: background 0.12s ease;
+    transition: background var(--vb-duration-fast) ease;
     min-width: 0;
     position: relative;
 }
-
-.vb-week-col-header:last-child {
-    border-right: none;
+/* Ultra-faint vertical separators */
+.vb-week-col-header:not(:last-child) {
+    box-shadow: 1px 0 0 var(--vb-border-subtle);
 }
 
 .vb-week-col-header:hover {
-    background: var(--vb-bg-hover);
+    background: color-mix(in srgb, var(--vb-accent) 2%, var(--vb-bg-surface));
 }
 
 .vb-week-col-header.is-today {
-    background: color-mix(in srgb, var(--vb-accent) 8%, var(--vb-bg-well));
+    background: color-mix(in srgb, var(--vb-accent) 3%, var(--vb-bg-surface));
 }
 
 .vb-week-col-header.is-unavailable {
@@ -3971,10 +3976,10 @@
 
 .vb-week-col-dayname {
     font-size: 0.625rem;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--vb-text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
 }
 
 .vb-week-col-number {
@@ -4037,16 +4042,15 @@
 }
 
 .vb-week-col {
-    border-right: 1px solid var(--vb-border-subtle);
     padding: var(--space-3);
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
     min-width: 0;
 }
-
-.vb-week-col:last-child {
-    border-right: none;
+/* Ultra-faint vertical separators */
+.vb-week-col:not(:last-child) {
+    box-shadow: 1px 0 0 var(--vb-border-subtle);
 }
 
 .vb-week-col.is-today {
@@ -4054,7 +4058,7 @@
 }
 
 .vb-week-col.is-unavailable {
-    background: var(--vb-bg-well);
+    background: var(--vb-bg-base);
     color: var(--vb-text-tertiary);
 }
 
@@ -4087,6 +4091,7 @@
 .vb-week-booking:hover {
     background: color-mix(in srgb, var(--pill-color, var(--vb-accent)) 14%, var(--vb-bg-surface));
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    transform: translateY(-0.5px);
 }
 
 .vb-week-booking-time {

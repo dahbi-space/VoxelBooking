@@ -61,6 +61,9 @@ final class CalendarController
 
         $bookings = Booking::forTenantDate($tenantId, $dateStr);
 
+        // Assign columns for concurrent bookings (side-by-side layout)
+        $bookings = $this->assignOverlapColumns($bookings);
+
         // Build hour slots for the timeline
         $hours = [];
         for ($h = self::HOUR_START; $h <= self::HOUR_END; $h++) {
@@ -336,6 +339,67 @@ final class CalendarController
     }
 
     // ── Shared Helpers ──
+
+    /**
+     * Assign side-by-side columns for concurrent bookings.
+     *
+     * Uses a greedy column-packing algorithm: sort by start, assign each
+     * booking to the leftmost column where it doesn't overlap with any
+     * existing booking. Each booking gets `colIndex` (0-based) and
+     * `colTotal` (max columns in its overlap group).
+     *
+     * @param  array<int, array<string, mixed>>  $bookings
+     * @return array<int, array<string, mixed>>
+     */
+    private function assignOverlapColumns(array $bookings): array
+    {
+        if (count($bookings) <= 1) {
+            foreach ($bookings as &$b) {
+                $b['colIndex'] = 0;
+                $b['colTotal'] = 1;
+            }
+            return $bookings;
+        }
+
+        // Sort by start time, then by end time (broader first)
+        usort($bookings, function (array $a, array $b): int {
+            $cmp = $a['start_datetime'] <=> $b['start_datetime'];
+            return $cmp !== 0 ? $cmp : ($a['end_datetime'] <=> $b['end_datetime']);
+        });
+
+        // Track column end-times: $columns[$col] = latest end_datetime in that column
+        $columns = [];
+
+        foreach ($bookings as &$booking) {
+            $start = $booking['start_datetime'];
+            $placed = false;
+
+            // Try to fit into the leftmost available column
+            foreach ($columns as $col => $colEnd) {
+                if ($start >= $colEnd) {
+                    $columns[$col] = $booking['end_datetime'];
+                    $booking['colIndex'] = $col;
+                    $placed = true;
+                    break;
+                }
+            }
+
+            if (!$placed) {
+                $booking['colIndex'] = count($columns);
+                $columns[] = $booking['end_datetime'];
+            }
+        }
+        unset($booking);
+
+        // Now find connected overlap groups and assign colTotal
+        $totalCols = count($columns);
+        foreach ($bookings as &$booking) {
+            $booking['colTotal'] = $totalCols;
+        }
+        unset($booking);
+
+        return $bookings;
+    }
 
     private function loadTenant(string $tenantId): ?array
     {
