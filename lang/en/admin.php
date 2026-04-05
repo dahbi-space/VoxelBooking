@@ -84,6 +84,9 @@ return [
         'no_schedule'         => 'No bookings scheduled for today',
         'view_all'            => 'View all',
         'upcoming'            => 'Upcoming',
+        'action_bookings_hint'      => 'Full booking ledger',
+        'action_booking_page_hint'  => 'Open customer portal',
+        'action_copy_hint'          => 'Copy to clipboard',
     ],
 
     // ── Settings Tabs ──

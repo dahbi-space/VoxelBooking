@@ -58,9 +58,9 @@ final class BookingLinkCopyOutputTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'vb-action-row',
+            'vb-action-rail',
             $html,
-            'Dashboard must use bespoke action-row component'
+            'Dashboard must use bespoke action-rail component'
         );
     }
 

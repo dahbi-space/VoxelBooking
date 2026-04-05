@@ -3053,6 +3053,75 @@
     line-height: var(--vb-leading-snug);
     margin-top: 0.125rem;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   ACTION RAIL — flat link list for dashboard/detail actions.
+   No card padding. No hover lift. No background wash.
+   Icon + text on a single-line rhythm with a subtle left accent.
+   ══════════════════════════════════════════════════════════════ */
+.vb-action-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.vb-action-rail-title {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--vb-text-ghost);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0 0 0.625rem;
+    margin: 0;
+}
+.vb-action-rail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0;
+    text-decoration: none;
+    color: var(--vb-text-primary);
+    border: none;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+    width: 100%;
+    border-top: 1px solid var(--vb-border-subtle, rgba(0,0,0,0.06));
+    transition: color var(--vb-duration-fast) var(--vb-ease-out);
+}
+.vb-action-rail-item:first-of-type {
+    border-top: none;
+}
+.vb-action-rail-item:hover {
+    color: var(--vb-accent);
+}
+.vb-action-rail-item:hover .vb-action-rail-icon {
+    color: var(--vb-accent);
+}
+.vb-action-rail-icon {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: var(--vb-text-tertiary);
+    transition: color var(--vb-duration-fast) var(--vb-ease-out);
+}
+.vb-action-rail-icon svg,
+.vb-action-rail-icon [data-lucide] {
+    width: 1rem;
+    height: 1rem;
+}
+.vb-action-rail-text {
+    flex: 1;
+    min-width: 0;
+}
+.vb-action-rail-label {
+    font-size: var(--vb-text-sm);
+    font-weight: 500;
+}
+.vb-action-rail-hint {
+    font-size: var(--vb-text-xs);
+    color: var(--vb-text-tertiary);
+    margin-top: 0.0625rem;
+}
 /* ── Table cell data patterns ────────────────────────────────── */
 .vb-cell-name   { font-weight: 500; }
 .vb-cell-detail { font-size: var(--vb-text-xs); color: var(--vb-text-tertiary); }
@@ -4206,29 +4275,48 @@
     text-overflow: ellipsis;
 }
 
-/* Right zone: metrics row */
+/* Right zone: disciplined metric grid — equal tracks, shared baselines */
 .vb-contact-hero-metrics {
-    display: flex;
-    align-items: flex-start;
-    gap: 2rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(7rem, 1fr));
+    gap: 0;
     flex-shrink: 0;
 }
 .vb-contact-metric {
     display: flex;
     flex-direction: column;
-    gap: 0.125rem;
+    align-items: center;
+    justify-content: flex-start;
     text-align: center;
+    padding: 0 1.25rem;
+    border-left: 1px solid var(--vb-border-subtle, rgba(0,0,0,0.06));
+}
+.vb-contact-metric:first-child {
+    border-left: none;
+    padding-left: 0;
+}
+.vb-contact-metric:last-child {
+    padding-right: 0;
 }
 .vb-contact-metric-value {
-    font-size: 1.375rem;
+    font-size: 0.9375rem;
     font-weight: 700;
     letter-spacing: -0.02em;
     color: var(--vb-text-primary);
     font-variant-numeric: tabular-nums;
     line-height: 1.3;
+    min-height: 1.25rem; /* shared baseline track for all values */
+    display: flex;
+    align-items: baseline;
 }
+/* Numeric metrics get the large hero treatment */
+.vb-contact-metric-value--number {
+    font-size: 1.5rem;
+    letter-spacing: -0.03em;
+}
+/* Date metrics: same weight, smaller size, same baseline container */
 .vb-contact-metric-value--date {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 600;
 }
 .vb-contact-metric-label {
@@ -4238,6 +4326,7 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
     white-space: nowrap;
+    margin-top: 0.25rem;
 }
 
 /* XL avatar (shared between contact hero and any profile surface) */
@@ -4279,7 +4368,7 @@
     }
     .vb-contact-hero-metrics {
         width: 100%;
-        justify-content: space-between;
+        grid-template-columns: repeat(3, 1fr);
         padding-top: 1rem;
         border-top: 1px solid var(--vb-border-subtle);
     }

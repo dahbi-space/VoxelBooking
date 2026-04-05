@@ -56,7 +56,7 @@ ob_start();
     </div>
     <div class="vb-contact-hero-metrics">
         <div class="vb-contact-metric">
-            <span class="vb-contact-metric-value"><?= $liveBookingCount ?></span>
+            <span class="vb-contact-metric-value vb-contact-metric-value--number"><?= $liveBookingCount ?></span>
             <span class="vb-contact-metric-label"><?= __('admin.customers.stat_total_bookings') ?></span>
         </div>
         <div class="vb-contact-metric">
