@@ -34,12 +34,12 @@ ob_start();
     </a>
 </div>
 
-<!-- Contact hero: identity surface -->
-<div class="vb-contact-hero vb-animate-in">
-    <div class="vb-contact-hero-identity">
+<!-- Contact summary: unified CRM hero — identity + integrated metrics -->
+<div class="vb-contact-summary vb-animate-in">
+    <div class="vb-contact-summary-identity">
         <span class="vb-avatar vb-avatar-xl"><?= mb_strtoupper(mb_substr($customer['name'], 0, 1)) ?></span>
-        <div class="vb-contact-hero-info">
-            <h2 class="vb-contact-hero-name"><?= htmlspecialchars($customer['name'], ENT_QUOTES, 'UTF-8') ?></h2>
+        <div class="vb-contact-summary-info">
+            <h2 class="vb-contact-summary-name"><?= htmlspecialchars($customer['name'], ENT_QUOTES, 'UTF-8') ?></h2>
             <div class="vb-profile-meta-row">
                 <span class="vb-profile-meta-item">
                     <i data-lucide="mail"></i>
@@ -54,47 +54,27 @@ ob_start();
             </div>
         </div>
     </div>
-</div>
-
-<!-- CRM metrics — reuses dashboard .vb-metric cards for consistency -->
-<div class="vb-metrics vb-metrics--3col vb-animate-in">
-    <div class="vb-metric">
-        <div class="vb-metric-header">
-            <i data-lucide="calendar-check" class="vb-metric-icon"></i>
-            <span class="vb-metric-label"><?= __('admin.customers.stat_total_bookings') ?></span>
+    <div class="vb-contact-summary-stats">
+        <div class="vb-contact-stat vb-contact-stat--primary">
+            <div class="vb-contact-stat-value"><?= $liveBookingCount ?></div>
+            <div class="vb-contact-stat-label"><?= __('admin.customers.stat_total_bookings') ?></div>
         </div>
-        <div class="vb-metric-value-row">
-            <span class="vb-metric-value"><?= $liveBookingCount ?></span>
-        </div>
-        <div class="vb-metric-accent"></div>
-    </div>
-    <div class="vb-metric">
-        <div class="vb-metric-header">
-            <i data-lucide="clock" class="vb-metric-icon"></i>
-            <span class="vb-metric-label"><?= __('admin.customers.stat_last_booking') ?></span>
-        </div>
-        <div class="vb-metric-value-row">
-            <span class="vb-metric-value vb-metric-value--sm">
+        <div class="vb-contact-stat">
+            <div class="vb-contact-stat-label"><?= __('admin.customers.stat_last_booking') ?></div>
+            <div class="vb-contact-stat-value vb-contact-stat-value--date">
                 <?php if ($liveLastBookingAt): ?>
                     <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($liveLastBookingAt)), ENT_QUOTES, 'UTF-8') ?>
                 <?php else: ?>
                     <span class="vb-text-tertiary">—</span>
                 <?php endif; ?>
-            </span>
+            </div>
         </div>
-        <div class="vb-metric-accent"></div>
-    </div>
-    <div class="vb-metric">
-        <div class="vb-metric-header">
-            <i data-lucide="user-plus" class="vb-metric-icon"></i>
-            <span class="vb-metric-label"><?= __('admin.customers.stat_joined') ?></span>
-        </div>
-        <div class="vb-metric-value-row">
-            <span class="vb-metric-value vb-metric-value--sm">
+        <div class="vb-contact-stat">
+            <div class="vb-contact-stat-label"><?= __('admin.customers.stat_joined') ?></div>
+            <div class="vb-contact-stat-value vb-contact-stat-value--date">
                 <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($customer['created_at'])), ENT_QUOTES, 'UTF-8') ?>
-            </span>
+            </div>
         </div>
-        <div class="vb-metric-accent"></div>
     </div>
 </div>
 

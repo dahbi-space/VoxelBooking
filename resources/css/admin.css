@@ -3183,9 +3183,9 @@ body.is-impersonating .vb-main {
 }
 
 /* CRM cross-link: secondary anchor for customer-record navigation.
-   Used as a split-link pattern: parent container holds the primary <a>
-   (booking detail) and a separate <a class="vb-crm-link"> (customer).
-   Positioned in the parent's top-right corner; keyboard-focusable. */
+   Split-link pattern: parent holds primary <a> (booking detail) and
+   a separate <a class="vb-crm-link"> (customer record). Always visible
+   at secondary opacity; keyboard-focusable via :focus-visible. */
 .vb-crm-link {
     position: absolute;
     top: 0.25rem;
@@ -3197,7 +3197,7 @@ body.is-impersonating .vb-main {
     height: 22px;
     border-radius: var(--vb-radius-sm);
     text-decoration: none;
-    opacity: 0;
+    opacity: 0.35;
     color: var(--vb-text-tertiary);
     transition: opacity var(--vb-duration-fast) var(--vb-ease-out),
                 color var(--vb-duration-fast) var(--vb-ease-out),
@@ -3213,10 +3213,10 @@ body.is-impersonating .vb-main {
     outline: 2px solid var(--vb-accent);
     outline-offset: 1px;
 }
-/* Reveal on parent hover */
+/* Intensify on parent hover */
 .vb-schedule-pill:hover > .vb-crm-link,
 .vb-upcoming-row:hover > .vb-crm-link {
-    opacity: 0.7;
+    opacity: 0.65;
 }
 
 
@@ -4399,36 +4399,56 @@ body.is-impersonating .vb-main {
     font-weight: 600;
 }
 
-/* ── Contact Hero ─── unified identity + metrics surface ──── */
+/* ── Contact Summary ─── purpose-designed CRM hero ──────────── */
 
 /* Slim page header: back-link only, no h2, tighter spacing */
 .vb-page-header--slim {
     margin-bottom: 1rem;
 }
 
-/* Hero card: clean identity surface */
-.vb-contact-hero {
+/* Unified surface: identity left, stat strip right, one card */
+.vb-contact-summary {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
-    padding: 1.5rem;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 1.5rem 1.75rem;
     background: var(--vb-bg-surface);
     border-radius: var(--vb-radius-lg);
-    box-shadow: var(--vb-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
-    margin-bottom: 0.75rem;
+    box-shadow: var(--vb-shadow-card);
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform var(--vb-duration-fast) var(--vb-ease-spring),
+                box-shadow var(--vb-duration-normal) var(--vb-ease-out);
 }
+.vb-contact-summary::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--vb-accent-gradient);
+    opacity: 0;
+    transition: opacity var(--vb-duration-normal) var(--vb-ease-out);
+}
+.vb-contact-summary:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--vb-shadow-card-hover);
+}
+.vb-contact-summary:hover::before { opacity: 1; }
 
-/* Left zone: avatar + name + meta */
-.vb-contact-hero-identity {
+/* Left: avatar + name + contact meta */
+.vb-contact-summary-identity {
     display: flex;
     align-items: center;
     gap: 1.25rem;
     min-width: 0;
+    flex: 1 1 auto;
 }
-.vb-contact-hero-info {
+.vb-contact-summary-info {
     min-width: 0;
 }
-.vb-contact-hero-name {
+.vb-contact-summary-name {
     font-size: 1.375rem;
     font-weight: 700;
     letter-spacing: -0.025em;
@@ -4440,16 +4460,63 @@ body.is-impersonating .vb-main {
     text-overflow: ellipsis;
 }
 
-/* ── Metric grid modifiers ──────────────────────────────────── */
-/* Customer / entity pages use 3 columns instead of the dashboard 4 */
-.vb-metrics--3col {
-    grid-template-columns: repeat(3, 1fr);
+/* Right: integrated stat strip with vertical dividers */
+.vb-contact-summary-stats {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    flex-shrink: 0;
 }
-/* Smaller metric value for date/text content instead of numbers */
-.vb-metric-value--sm {
-    font-size: 0.9375rem;
+.vb-contact-stat {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 1.25rem;
+    border-left: 1px solid var(--vb-border-subtle, rgba(0,0,0,0.06));
+    min-width: 5.5rem;
+}
+.vb-contact-stat:first-child {
+    border-left: none;
+    padding-left: 0;
+}
+.vb-contact-stat:last-child {
+    padding-right: 0;
+}
+/* Primary stat: booking count — oversized, anchors the eye */
+.vb-contact-stat--primary {
+    text-align: center;
+    min-width: 6rem;
+}
+.vb-contact-stat--primary .vb-contact-stat-value {
+    font-size: 2rem;
+    font-weight: 750;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--vb-accent);
+    font-variant-numeric: tabular-nums;
+}
+/* Default stat value */
+.vb-contact-stat-value {
+    font-size: 0.875rem;
     font-weight: 600;
+    color: var(--vb-text-primary);
+    line-height: 1.3;
     letter-spacing: -0.01em;
+}
+/* Date variant: slightly muted */
+.vb-contact-stat-value--date {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--vb-text-secondary);
+}
+/* Label: always uppercase micro-text */
+.vb-contact-stat-label {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--vb-text-ghost);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
 }
 
 /* XL avatar (shared between contact hero and any profile surface) */
