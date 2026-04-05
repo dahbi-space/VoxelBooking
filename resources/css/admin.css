@@ -4963,6 +4963,31 @@ body.is-impersonating .vb-main .vb-topbar {
     letter-spacing: 0.02em;
 }
 
+/* ── Form Utilities (settings forms) ─── */
+
+/* Textarea styling: proper padding, vertical resize */
+.vb-textarea {
+    resize: vertical;
+    height: auto;
+    padding: 0.625rem 0.75rem;
+    min-height: 5rem;
+}
+
+/* Narrow numeric input (hours, currency codes) */
+.vb-input-narrow {
+    max-width: 100px;
+}
+
+/* Required field asterisk */
+.vb-required {
+    color: var(--vb-error);
+}
+
+/* Indented detail field below a toggle (e.g. "hours before" under "allow cancellation") */
+.vb-settings-toggle-detail {
+    padding-left: 2.625rem; /* checkbox width + gap */
+}
+
 /* ── Modal Dialog (§6.7) ─────────────────────────────────────── */
 /* Centered overlay + dialog. Fade + scale entrance (200ms).
    - Confirmation dialogs: max-width 420px

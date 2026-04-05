@@ -2,6 +2,10 @@
 /**
  * Tenant Settings — General tab.
  *
+ * Structure: card-header → form-grid with proper grouping.
+ * Locale uses a labeled <select> sourced from config/locales.php.
+ * No inline styles — all layout via design system classes.
+ *
  * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old
  */
 $tenant   = $tenant ?? [];
@@ -14,6 +18,9 @@ $val = function (string $field, string $default = '') use ($tenant, $old): strin
     }
     return htmlspecialchars((string) ($tenant[$field] ?? $default), ENT_QUOTES, 'UTF-8');
 };
+
+// Load registered locales for the select
+$locales = require dirname(__DIR__, 4) . '/config/locales.php';
 
 ob_start();
 ?>
@@ -34,17 +41,22 @@ ob_start();
 <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/settings" class="vb-animate-in">
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
+    <!-- Section 1: Identity -->
     <div class="vb-settings-section">
         <div class="vb-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title"><?= __('admin.tenant_settings.section_identity') ?></div>
+                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_identity_desc') ?></div>
+            </div>
             <div class="vb-form-grid vb-form-grid-2">
                 <div class="vb-settings-field">
-                    <label class="vb-label" for="ts-name"><?= __('admin.tenant_settings.field_name') ?> <span style="color: var(--vb-error);">*</span></label>
+                    <label class="vb-label" for="ts-name"><?= __('admin.tenant_settings.field_name') ?> <span class="vb-required">*</span></label>
                     <input type="text" class="vb-input" id="ts-name" name="name"
                            value="<?= $val('name') ?>" required maxlength="255">
                 </div>
 
                 <div class="vb-settings-field">
-                    <label class="vb-label" for="ts-email"><?= __('admin.tenant_settings.field_email') ?> <span style="color: var(--vb-error);">*</span></label>
+                    <label class="vb-label" for="ts-email"><?= __('admin.tenant_settings.field_email') ?> <span class="vb-required">*</span></label>
                     <input type="email" class="vb-input" id="ts-email" name="email"
                            value="<?= $val('email') ?>" required>
                 </div>
@@ -76,26 +88,52 @@ ob_start();
                 </div>
 
                 <div class="vb-settings-field">
+                    <label class="vb-label" for="ts-pattern"><?= __('admin.tenant_settings.field_pattern') ?></label>
+                    <input type="text" class="vb-input" id="ts-pattern"
+                           value="<?= e($tenant['booking_pattern'] ?? '') ?>" readonly>
+                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_pattern_hint') ?></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Regional -->
+    <div class="vb-settings-section">
+        <div class="vb-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title"><?= __('admin.tenant_settings.section_regional') ?></div>
+                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_regional_desc') ?></div>
+            </div>
+            <div class="vb-form-grid vb-form-grid-2">
+                <div class="vb-settings-field">
                     <label class="vb-label" for="ts-timezone"><?= __('admin.tenant_settings.field_timezone') ?></label>
                     <input type="text" class="vb-input" id="ts-timezone" name="timezone"
                            value="<?= $val('timezone', 'UTC') ?>" maxlength="100">
                 </div>
 
                 <div class="vb-settings-field">
-                    <label class="vb-label" for="ts-locale"><?= __('admin.tenant_settings.field_locale') ?></label>
-                    <input type="text" class="vb-input" id="ts-locale" name="locale"
-                           value="<?= $val('locale', 'en') ?>" maxlength="10">
+                    <label class="vb-label" for="ts-currency"><?= __('admin.tenant_settings.field_currency') ?></label>
+                    <input type="text" class="vb-input vb-input-narrow" id="ts-currency" name="currency"
+                           value="<?= $val('currency', 'EUR') ?>" maxlength="3">
                 </div>
 
                 <div class="vb-settings-field">
-                    <label class="vb-label" for="ts-currency"><?= __('admin.tenant_settings.field_currency') ?></label>
-                    <input type="text" class="vb-input" id="ts-currency" name="currency"
-                           value="<?= $val('currency', 'EUR') ?>" maxlength="3" style="max-width: 80px;">
+                    <label class="vb-label" for="ts-locale"><?= __('admin.tenant_settings.field_locale') ?></label>
+                    <select class="vb-input" id="ts-locale" name="locale">
+                        <?php
+                        $currentLocale = ($old !== null && array_key_exists('locale', $old))
+                            ? $old['locale']
+                            : ($tenant['locale'] ?? 'en');
+                        foreach ($locales as $code => $meta):
+                        ?>
+                        <option value="<?= $code ?>" <?= $currentLocale === $code ? 'selected' : '' ?>><?= htmlspecialchars($meta['name'] . ' (' . $meta['native_name'] . ')', ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-week-start"><?= __('admin.tenant_settings.field_week_start') ?></label>
-                    <select class="vb-input" id="ts-week-start" name="week_start" style="max-width: 200px;">
+                    <select class="vb-input" id="ts-week-start" name="week_start">
                         <?php
                         $currentWeekStart = $old !== null && array_key_exists('week_start', $old)
                             ? $old['week_start']
@@ -116,7 +154,7 @@ ob_start();
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-time-format"><?= __('admin.tenant_settings.field_time_format') ?></label>
-                    <select class="vb-input" id="ts-time-format" name="time_format" style="max-width: 200px;">
+                    <select class="vb-input" id="ts-time-format" name="time_format">
                         <?php
                         $currentTimeFormat = $old !== null && array_key_exists('time_format', $old)
                             ? $old['time_format']
@@ -133,20 +171,13 @@ ob_start();
                     </select>
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_time_format_hint') ?></span>
                 </div>
-
-                <div class="vb-settings-field">
-                    <label class="vb-label" for="ts-pattern"><?= __('admin.tenant_settings.field_pattern') ?></label>
-                    <input type="text" class="vb-input" id="ts-pattern"
-                           value="<?= e($tenant['booking_pattern'] ?? '') ?>" readonly>
-                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_pattern_hint') ?></span>
-                </div>
             </div>
         </div>
     </div>
 
     <div class="vb-form-actions">
         <button type="submit" class="vb-btn vb-btn-primary" id="save-general-btn">
-            <i data-lucide="save" style="width: 15px; height: 15px;"></i>
+            <i data-lucide="save"></i>
             <?= __('admin.settings.save_button') ?>
         </button>
     </div>

@@ -911,7 +911,13 @@ return [
         'field_rescheduling_hours_before'     => 'Rescheduling cutoff (hours before)',
         'field_rescheduling_hours_before_hint'=> 'Minimum hours before the appointment that rescheduling is allowed.',
 
-        // General
+        // General — section headers
+        'section_identity'         => 'Identity',
+        'section_identity_desc'    => 'Core business details and booking URL.',
+        'section_regional'         => 'Regional',
+        'section_regional_desc'    => 'Locale, timezone, currency, and calendar preferences.',
+
+        // General — fields
         'field_name'           => 'Business name',
         'field_slug'           => 'URL slug',
         'field_slug_hint'      => 'Read-only. Set during tenant creation.',
@@ -931,7 +937,13 @@ return [
         'field_pattern'        => 'Booking pattern',
         'field_pattern_hint'   => 'Read-only. Set during tenant creation.',
 
-        // Branding
+        // Branding — section headers
+        'section_colors'           => 'Brand Colors',
+        'section_colors_desc'      => 'Primary color and text color for the booking page.',
+        'section_page_content'     => 'Page Content',
+        'section_page_content_desc'=> 'Heading and description shown on the public booking page.',
+
+        // Branding — fields
         'field_brand_color'       => 'Brand color',
         'field_brand_color_text'  => 'Brand text color',
         'field_heading'           => 'Booking page heading',

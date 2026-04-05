@@ -2,6 +2,10 @@
 /**
  * Tenant Settings — Branding tab.
  *
+ * Uses the shared `colorSync` Alpine component (x-data="colorSync")
+ * with `.vb-color-field` for bidirectional picker ↔ hex sync.
+ * No inline styles — all layout via design system classes.
+ *
  * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old
  */
 $tenant   = $tenant ?? [];
@@ -26,46 +30,74 @@ ob_start();
 <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/settings/branding" class="vb-animate-in">
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
+    <!-- Section 1: Colors -->
     <div class="vb-settings-section">
         <div class="vb-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title"><?= __('admin.tenant_settings.section_colors') ?></div>
+                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_colors_desc') ?></div>
+            </div>
             <div class="vb-form-grid vb-form-grid-2">
-                <div class="vb-settings-field">
-                    <label class="vb-label" for="ts-brand-color"><?= __('admin.tenant_settings.field_brand_color') ?></label>
-                    <div class="vb-settings-color-pair">
-                        <input type="color" id="ts-brand-color" name="brand_color"
-                               class="vb-settings-color-swatch"
-                               value="<?= e($tenant['brand_color'] ?? '#2563EB') ?>">
-                        <input type="text" class="vb-input vb-settings-color-hex" id="ts-brand-color-hex"
+                <div class="vb-settings-field" x-data="colorSync">
+                    <label class="vb-label vb-icon-label" for="ts-brand-color-text">
+                        <i data-lucide="palette"></i>
+                        <?= __('admin.tenant_settings.field_brand_color') ?>
+                    </label>
+                    <div class="vb-color-field">
+                        <input type="color" x-ref="colorPicker"
                                value="<?= e($tenant['brand_color'] ?? '#2563EB') ?>"
-                               pattern="^#[0-9a-fA-F]{6}$" maxlength="7"
-                               oninput="document.getElementById('ts-brand-color').value = this.value">
+                               class="vb-color-input"
+                               @input="onPickerChange">
+                        <input type="text" x-ref="colorText" id="ts-brand-color-text"
+                               name="brand_color"
+                               value="<?= e($tenant['brand_color'] ?? '#2563EB') ?>"
+                               class="vb-input"
+                               maxlength="7" placeholder="#2563EB"
+                               @input="onTextChange">
                     </div>
                 </div>
 
-                <div class="vb-settings-field">
-                    <label class="vb-label" for="ts-brand-text"><?= __('admin.tenant_settings.field_brand_color_text') ?></label>
-                    <div class="vb-settings-color-pair">
-                        <input type="color" id="ts-brand-text" name="brand_color_text"
-                               class="vb-settings-color-swatch"
-                               value="<?= e($tenant['brand_color_text'] ?? '#FFFFFF') ?>">
-                        <input type="text" class="vb-input vb-settings-color-hex" id="ts-brand-text-hex"
+                <div class="vb-settings-field" x-data="colorSync">
+                    <label class="vb-label vb-icon-label" for="ts-brand-text-text">
+                        <i data-lucide="type"></i>
+                        <?= __('admin.tenant_settings.field_brand_color_text') ?>
+                    </label>
+                    <div class="vb-color-field">
+                        <input type="color" x-ref="colorPicker"
                                value="<?= e($tenant['brand_color_text'] ?? '#FFFFFF') ?>"
-                               pattern="^#[0-9a-fA-F]{6}$" maxlength="7"
-                               oninput="document.getElementById('ts-brand-text').value = this.value">
+                               class="vb-color-input"
+                               @input="onPickerChange">
+                        <input type="text" x-ref="colorText" id="ts-brand-text-text"
+                               name="brand_color_text"
+                               value="<?= e($tenant['brand_color_text'] ?? '#FFFFFF') ?>"
+                               class="vb-input"
+                               maxlength="7" placeholder="#FFFFFF"
+                               @input="onTextChange">
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <div class="vb-settings-field" style="grid-column: 1 / -1;">
+    <!-- Section 2: Booking Page Content -->
+    <div class="vb-settings-section">
+        <div class="vb-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title"><?= __('admin.tenant_settings.section_page_content') ?></div>
+                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_page_content_desc') ?></div>
+            </div>
+            <div class="vb-form-grid">
+                <div class="vb-settings-field">
                     <label class="vb-label" for="ts-heading"><?= __('admin.tenant_settings.field_heading') ?></label>
                     <input type="text" class="vb-input" id="ts-heading" name="booking_page_heading"
                            value="<?= e($tenant['booking_page_heading'] ?? '') ?>" maxlength="255">
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_heading_hint') ?></span>
                 </div>
 
-                <div class="vb-settings-field" style="grid-column: 1 / -1;">
+                <div class="vb-settings-field">
                     <label class="vb-label" for="ts-desc"><?= __('admin.tenant_settings.field_description') ?></label>
-                    <textarea class="vb-input" id="ts-desc" name="booking_page_description"
-                              rows="3" style="resize: vertical; height: auto; padding: 0.625rem 0.75rem;"><?= e($tenant['booking_page_description'] ?? '') ?></textarea>
+                    <textarea class="vb-input vb-textarea" id="ts-desc" name="booking_page_description"
+                              rows="3"><?= e($tenant['booking_page_description'] ?? '') ?></textarea>
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_description_hint') ?></span>
                 </div>
             </div>
@@ -74,7 +106,7 @@ ob_start();
 
     <div class="vb-form-actions">
         <button type="submit" class="vb-btn vb-btn-primary" id="save-branding-btn">
-            <i data-lucide="save" style="width: 15px; height: 15px;"></i>
+            <i data-lucide="save"></i>
             <?= __('admin.settings.save_button') ?>
         </button>
     </div>
