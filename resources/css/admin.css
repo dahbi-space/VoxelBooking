@@ -845,7 +845,7 @@
        OWNER SETUP — Toggle, password field, section divider
        ══════════════════════════════════════════════════════════════ */
     .vb-section-divider {
-        height: 1px; background: var(--vb-border);
+        height: 1px; background: var(--vb-border-default);
         margin: 1rem 0 1.25rem;
     }
     .vb-toggle-row {
@@ -854,7 +854,7 @@
     }
     .vb-checkbox {
         width: 18px; height: 18px; flex-shrink: 0;
-        margin-top: 2px; accent-color: var(--vb-primary);
+        margin-top: 2px; accent-color: var(--vb-accent);
         cursor: pointer;
     }
     .vb-password-field {
@@ -1939,13 +1939,13 @@
     margin-top: 0.75rem;
     padding: 0.5rem 0.75rem;
     border-radius: var(--vb-radius-md);
-    background: var(--vb-bg-secondary);
+    background: var(--vb-bg-well);
     border: 1px solid var(--vb-border-subtle);
 }
 
 .vb-public-url-card {
     margin-top: 1rem;
-    border: 1px solid var(--vb-border);
+    border: 1px solid var(--vb-border-default);
     border-radius: var(--vb-radius-lg, 10px);
     overflow: hidden;
     background: var(--vb-bg-surface);
@@ -2131,7 +2131,7 @@
     left: 50%;
     transform: translateX(-50%) translateY(1rem);
     background: var(--vb-bg-surface);
-    border: 1px solid var(--vb-warning-border, hsla(38, 92%, 50%, 0.25));
+    border: 1px solid var(--vb-warning-bg);
     border-radius: var(--vb-radius-md);
     padding: 0.625rem 1rem;
     display: flex;
@@ -2314,7 +2314,7 @@
     align-items: center;
     gap: 2px;
     padding: 2px;
-    background: var(--vb-bg-elevated);
+    background: var(--vb-bg-raised);
     border-radius: var(--vb-radius-md);
 }
 
@@ -2349,7 +2349,7 @@
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     color: var(--vb-text-ghost);
-    background: var(--vb-bg-elevated);
+    background: var(--vb-bg-raised);
     padding: 0.0625rem 0.375rem;
     border-radius: 999px;
     min-width: 1.125rem;
@@ -2810,7 +2810,7 @@
     border-radius: var(--vb-radius-md);
     background: var(--vb-success-bg, hsla(142, 76%, 36%, 0.08));
     color: var(--vb-success, #22c55e);
-    border: 1px solid var(--vb-success-border, hsla(142, 76%, 36%, 0.15));
+    border: 1px solid var(--vb-success-bg);
 }
 .vb-alert-success svg {
     width: 16px; height: 16px; flex-shrink: 0;
@@ -4131,8 +4131,8 @@
 }
 
 .vb-stat-card {
-    background: var(--vb-card);
-    border: 1px solid var(--vb-border);
+    background: var(--vb-bg-surface);
+    border: 1px solid var(--vb-border-default);
     border-radius: var(--vb-radius-lg);
     padding: var(--space-4) var(--space-5);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -4140,7 +4140,7 @@
 
 .vb-stat-card:hover {
     border-color: var(--vb-accent);
-    box-shadow: 0 0 0 1px var(--vb-accent-faint);
+    box-shadow: 0 0 0 1px var(--vb-accent-subtle);
 }
 
 .vb-stat-label {
@@ -4353,7 +4353,7 @@
 }
 
 .vb-clickable-row:hover {
-    background: var(--vb-hover) !important;
+    background: var(--vb-bg-hover) !important;
 }
 
 /* ── Section Header ─────────────────────────────────────────── */
@@ -4979,7 +4979,7 @@ body.is-impersonating .vb-main .vb-topbar {
 .vb-settings-url-text {
     font-size: var(--vb-text-xs);
     color: var(--vb-text-secondary);
-    background: var(--vb-bg-secondary);
+    background: var(--vb-bg-well);
     padding: 4px 8px;
     border-radius: var(--vb-radius-md);
     border: 1px solid var(--vb-border-subtle);
@@ -5305,7 +5305,7 @@ body.is-impersonating .vb-main .vb-topbar {
 .vb-card-icon {
     width: 20px;
     height: 20px;
-    color: var(--vb-admin-accent);
+    color: var(--vb-accent);
     flex-shrink: 0;
     margin-top: 2px;
 }
@@ -5330,10 +5330,10 @@ body.is-impersonating .vb-main .vb-topbar {
     display: flex;
     align-items: stretch;
     gap: 0;
-    border: 1px solid var(--vb-border);
+    border: 1px solid var(--vb-border-default);
     border-radius: var(--vb-radius-lg, 10px);
     overflow: hidden;
-    background: var(--vb-bg-secondary);
+    background: var(--vb-bg-well);
 }
 
 .vb-embed-code-content {
@@ -5356,7 +5356,7 @@ body.is-impersonating .vb-main .vb-topbar {
 
 .vb-embed-copy-btn {
     border-radius: 0 !important;
-    border-left: 1px solid var(--vb-border) !important;
+    border-left: 1px solid var(--vb-border-default) !important;
     height: auto !important;
     padding: 0.875rem 1rem !important;
     display: flex !important;
@@ -5414,8 +5414,8 @@ body.is-impersonating .vb-main .vb-topbar {
     position: relative;
     width: 100%;
     aspect-ratio: 4/3;
-    background: var(--vb-bg-secondary);
-    border: 1px solid var(--vb-border);
+    background: var(--vb-bg-well);
+    border: 1px solid var(--vb-border-default);
     border-radius: var(--vb-radius-lg, 10px);
     overflow: hidden;
     padding: 1rem;
@@ -5431,14 +5431,14 @@ body.is-impersonating .vb-main .vb-topbar {
 .vb-embed-preview-site-bar {
     width: 100%;
     height: 6px;
-    background: var(--vb-border);
+    background: var(--vb-border-default);
     border-radius: 3px;
     opacity: 0.6;
 }
 
 .vb-embed-preview-site-line {
     height: 4px;
-    background: var(--vb-border);
+    background: var(--vb-border-default);
     border-radius: 2px;
     opacity: 0.4;
 }
@@ -5502,7 +5502,7 @@ body.is-impersonating .vb-main .vb-topbar {
 
     .vb-embed-copy-btn {
         border-left: none !important;
-        border-top: 1px solid var(--vb-border) !important;
+        border-top: 1px solid var(--vb-border-default) !important;
         border-radius: 0 !important;
         justify-content: center;
     }

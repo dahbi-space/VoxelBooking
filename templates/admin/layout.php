@@ -167,7 +167,7 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                     <?php if ($canManage && $tenantPattern === 'capacity'): ?>
                     <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/capacity-slots"
                        class="vb-sidebar-link <?= $activePage === 'capacity-slots' ? 'active' : '' ?>">
-                        <i data-lucide="grid-3x3"></i>
+                        <i data-lucide="layout-grid"></i>
                         <?= __('admin.nav.capacity_slots') ?>
                     </a>
                     <?php endif; ?>
