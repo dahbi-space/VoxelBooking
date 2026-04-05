@@ -30,22 +30,22 @@
        ══════════════════════════════════════════════════════════════ */
     :root {
         /* ── Surfaces: layered depth, not flat planes ── */
-        --vb-bg-base: #f5f5f7;
+        --vb-bg-base: #F9FAFB;
         --vb-bg-surface: #ffffff;
         --vb-bg-surface-rgb: 255, 255, 255;
         --vb-bg-raised: #ffffff;
         --vb-bg-input: #ffffff;
-        --vb-bg-well: #f0f0f2;
+        --vb-bg-well: #F1F5F9;
         --vb-bg-hover: rgba(0, 0, 0, 0.03);
         --vb-bg-active: rgba(0, 0, 0, 0.05);
         /* ── Borders: barely visible, luminous ── */
-        --vb-border-subtle: rgba(0, 0, 0, 0.06);
-        --vb-border-default: rgba(0, 0, 0, 0.1);
+        --vb-border-subtle: rgba(0, 0, 0, 0.05);
+        --vb-border-default: rgba(0, 0, 0, 0.08);
         --vb-border-strong: rgba(0, 0, 0, 0.16);
         --vb-border-card: rgba(0, 0, 0, 0.04);
         /* ── Text: optical weight hierarchy ── */
         --vb-text-primary: #1a1a2e;
-        --vb-text-secondary: #6b6b80;
+        --vb-text-secondary: #64748B;
         --vb-text-tertiary: #9999ad;
         --vb-text-ghost: #c4c4d4;
         --vb-text-inverted: #ffffff;
@@ -1013,10 +1013,6 @@
     display: flex;
     min-height: 100vh;
 }
-/* When impersonating, subtract the banner height so shell + banner = 100vh */
-body.is-impersonating .vb-shell {
-    min-height: calc(100vh - var(--vb-banner-height));
-}
 
 /* ── Sidebar ─────────────────────────────────────────────────── */
 .vb-sidebar {
@@ -1181,9 +1177,6 @@ body.is-impersonating .vb-shell {
     display: flex;
     flex-direction: column;
     background: var(--vb-bg-base);
-}
-body.is-impersonating .vb-main {
-    min-height: calc(100vh - var(--vb-banner-height));
 }
 
 /* ── Topbar: enterprise-grade glass bar ──────────────────────── */
@@ -3670,7 +3663,7 @@ body.is-impersonating .vb-main {
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
-    margin-bottom: var(--space-8);
+    margin-bottom: var(--space-5);
     flex-wrap: wrap;
 }
 
@@ -3694,12 +3687,44 @@ body.is-impersonating .vb-main {
 }
 
 .vb-calendar-date-title {
-    font-size: 1.375rem;
-    font-weight: 600;
+    font-size: var(--vb-text-xl);
+    font-weight: 650;
     color: var(--vb-text-primary);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     margin: 0;
     white-space: nowrap;
+}
+
+/* ── Segmented Control (Month/Week/Day toggle) ─────────────── */
+.vb-segmented {
+    display: inline-flex;
+    padding: 3px;
+    background: var(--vb-bg-well);
+    border-radius: var(--vb-radius-md);
+    border: 1px solid var(--vb-border-subtle);
+}
+.vb-segmented-item {
+    padding: 5px 14px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--vb-text-secondary);
+    border-radius: calc(var(--vb-radius-md) - 2px);
+    text-decoration: none;
+    transition: color var(--vb-duration-fast) var(--vb-ease-out),
+                background var(--vb-duration-fast) var(--vb-ease-out),
+                box-shadow var(--vb-duration-fast) var(--vb-ease-out);
+    cursor: pointer;
+    white-space: nowrap;
+}
+.vb-segmented-item:hover {
+    color: var(--vb-text-primary);
+}
+.vb-segmented-item.active {
+    background: var(--vb-bg-surface);
+    color: var(--vb-text-primary);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06),
+                0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 
 /* ── Calendar State Bar (blocked / unavailable notice) ─────── */
@@ -4025,8 +4050,7 @@ body.is-impersonating .vb-main {
 }
 
 .vb-week-col.is-today {
-    background: color-mix(in srgb, var(--vb-accent) 4%, transparent);
-    box-shadow: inset 3px 0 0 var(--vb-accent);
+    background: color-mix(in srgb, var(--vb-accent) 3%, var(--vb-bg-surface));
 }
 
 .vb-week-col.is-unavailable {
@@ -4108,7 +4132,7 @@ body.is-impersonating .vb-main {
 .vb-calendar-month {
     background: var(--vb-bg-surface);
     border-radius: var(--vb-radius-lg);
-    box-shadow: var(--vb-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
+    box-shadow: var(--vb-shadow-card);
     overflow: hidden;
 }
 
@@ -4116,16 +4140,15 @@ body.is-impersonating .vb-main {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     border-bottom: 1px solid var(--vb-border-subtle);
-    background: var(--vb-bg-well);
 }
 
 .vb-calendar-month-dayname {
-    padding: var(--space-3) var(--space-3);
+    padding: 10px var(--space-3);
     font-size: 0.6875rem;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--vb-text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-align: center;
     user-select: none;
 }
@@ -4135,84 +4158,85 @@ body.is-impersonating .vb-main {
     grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
+/* ── Cell: the fundamental spatial unit ── */
 .vb-calendar-month-cell {
     position: relative;
-    min-height: 120px;
-    padding: var(--space-3);
-    border-right: 1px solid var(--vb-border-subtle);
+    min-height: 110px;
+    padding: 8px;
     border-bottom: 1px solid var(--vb-border-subtle);
     text-decoration: none;
     color: var(--vb-text-primary);
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-    transition: background 0.12s ease;
+    gap: var(--space-1);
+    background: var(--vb-bg-surface);
+    transition: background var(--vb-duration-fast) ease;
     min-width: 0;
     overflow: hidden;
 }
-
-.vb-calendar-month-cell:nth-child(7n) {
-    border-right: none;
+/* Ultra-faint vertical separators via box-shadow — no border-right */
+.vb-calendar-month-cell:not(:nth-child(7n)) {
+    box-shadow: 1px 0 0 var(--vb-border-subtle);
 }
-
+/* Remove bottom border on last row */
 .vb-calendar-month-cell:nth-last-child(-n+7) {
     border-bottom: none;
 }
 
 .vb-calendar-month-cell:hover {
-    background: var(--vb-bg-hover);
+    background: color-mix(in srgb, var(--vb-accent) 2%, var(--vb-bg-surface));
 }
 
-/* Outside month */
+/* Outside month — canvas bg, muted */
 .vb-calendar-month-cell.is-outside {
     opacity: 0.5;
+    background: var(--vb-bg-base);
 }
-
 .vb-calendar-month-cell.is-outside:hover {
     opacity: 0.65;
 }
 
-/* Today — stronger accent presence */
+/* Today — subtle accent tint, no harsh border */
 .vb-calendar-month-cell.is-today {
-    background: color-mix(in srgb, var(--vb-accent) 5%, transparent);
-    box-shadow: inset 3px 0 0 var(--vb-accent);
+    background: color-mix(in srgb, var(--vb-accent) 3%, var(--vb-bg-surface));
 }
 
-/* Blocked — distinct red-tinted surface with hatch pattern */
+/* Blocked — light hatch pattern */
 .vb-calendar-month-cell.is-blocked {
     background:
         repeating-linear-gradient(
             -45deg,
             transparent,
             transparent 6px,
-            color-mix(in srgb, var(--vb-error) 4%, transparent) 6px,
-            color-mix(in srgb, var(--vb-error) 4%, transparent) 7px
+            color-mix(in srgb, var(--vb-error) 3%, transparent) 6px,
+            color-mix(in srgb, var(--vb-error) 3%, transparent) 7px
         ),
-        color-mix(in srgb, var(--vb-error) 4%, var(--vb-bg-surface));
+        color-mix(in srgb, var(--vb-error) 3%, var(--vb-bg-surface));
 }
 
-/* Unavailable / closed — dimmed surface, NOT just opacity */
+/* Unavailable / closed */
 .vb-calendar-month-cell.is-unavailable {
-    background: var(--vb-bg-well);
+    background: var(--vb-bg-base);
     color: var(--vb-text-tertiary);
 }
 .vb-calendar-month-cell.is-unavailable .vb-calendar-month-day {
     color: var(--vb-text-tertiary);
 }
 
-/* Cell header */
+/* ── Cell header: day number + badge ── */
 .vb-calendar-month-cell-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-1);
-    margin-bottom: var(--space-1);
+    margin-bottom: 2px;
     min-width: 0;
 }
 
 .vb-calendar-month-day {
     font-size: 0.8125rem;
     font-weight: 500;
+    font-variant-numeric: tabular-nums;
     color: var(--vb-text-primary);
     min-width: 24px;
     height: 24px;
@@ -4236,6 +4260,7 @@ body.is-impersonating .vb-main {
     font-weight: 600;
 }
 
+/* Booking count badge */
 .vb-calendar-month-count {
     font-size: 0.625rem;
     font-weight: 600;
@@ -4251,9 +4276,9 @@ body.is-impersonating .vb-main {
 }
 
 .vb-calendar-month-count.is-blocked {
-    background: color-mix(in srgb, var(--vb-error) 12%, transparent);
+    background: color-mix(in srgb, var(--vb-error) 10%, transparent);
     color: var(--vb-error);
-    font-size: 0.625rem;
+    font-size: 0.5625rem;
     font-weight: 700;
     padding: 0 var(--space-2);
     min-width: auto;
@@ -4262,21 +4287,21 @@ body.is-impersonating .vb-main {
 }
 
 .vb-calendar-month-count.is-unavailable {
-    background: color-mix(in srgb, var(--vb-text-tertiary) 10%, transparent);
-    color: var(--vb-text-secondary);
-    font-size: 0.625rem;
+    background: transparent;
+    color: var(--vb-text-tertiary);
+    font-size: 0.5625rem;
     font-weight: 600;
-    padding: 0 var(--space-2);
+    padding: 0;
     min-width: auto;
     white-space: nowrap;
     letter-spacing: 0.02em;
 }
 
-/* Booking pills */
+/* ── Booking pills: tactile, color-coded ── */
 .vb-calendar-month-pills {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     min-width: 0;
     overflow: hidden;
 }
@@ -4284,23 +4309,29 @@ body.is-impersonating .vb-main {
 .vb-calendar-month-pill {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    padding: 2px 0;
+    gap: 0;
+    padding: 2px 6px;
     min-width: 0;
     overflow: hidden;
+    border-radius: var(--vb-radius-xs);
+    border-left: 2px solid var(--pill-color, var(--vb-accent));
+    background: color-mix(in srgb, var(--pill-color, var(--vb-accent)) 8%, transparent);
+    transition: background var(--vb-duration-fast) ease,
+                transform 100ms ease;
+}
+.vb-calendar-month-pill:hover {
+    background: color-mix(in srgb, var(--pill-color, var(--vb-accent)) 14%, transparent);
+    transform: translateY(-0.5px);
 }
 
+/* Remove the dot — replaced by left-border color-code */
 .vb-calendar-month-pill-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: var(--vb-radius-full);
-    background: var(--pill-color, var(--vb-accent));
-    flex-shrink: 0;
+    display: none;
 }
 
 .vb-calendar-month-pill-text {
     font-size: 0.6875rem;
-    line-height: 1.3;
+    line-height: 1.35;
     color: var(--vb-text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -4316,7 +4347,7 @@ body.is-impersonating .vb-main {
 
 .vb-calendar-month-more {
     font-size: 0.625rem;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--vb-accent);
     padding: 1px 0;
 }
@@ -4685,54 +4716,53 @@ body.is-impersonating .vb-main {
  * - Left padding aligns the banner icon center with the sidebar brand icon center.
  *   Sidebar brand: padding-left 1.125rem, logo 24px → center at 1.125rem + 12px ≈ 30px.
  *   Banner icon: 14px → center at padding-left + 7px. To hit 30px: padding-left = 23px ≈ 1.4375rem.
- * - Right padding matches topbar right edge (var(--vb-shell-padding-x)).
- * - Height: 38px — tight, functional, subservient to the topbar.
+ * - Floating frosted-glass pill, centered above all content.
+ * - position: fixed, removed from DOM flow — no layout offsets.
+ * - backdrop-filter: blur for depth when content scrolls behind.
  */
 
 .vb-impersonation-banner {
+    position: fixed;
+    top: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0 var(--vb-shell-padding-x) 0 1.4375rem;
-    height: var(--vb-banner-height);
-    background: #d97706;
-    font-size: 0.8125rem;
+    gap: 0.75rem;
+    padding: 6px 10px 6px 14px;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(12px) saturate(1.5);
+    -webkit-backdrop-filter: blur(12px) saturate(1.5);
+    border: 1px solid rgba(245, 158, 11, 0.18);
+    border-radius: var(--vb-radius-full);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06),
+                0 0 0 1px rgba(0, 0, 0, 0.03);
+    font-size: 0.75rem;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.92);
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    width: 100%;
+    color: #92400E;
     letter-spacing: -0.005em;
+    white-space: nowrap;
 }
 
-/* When impersonating, push the fixed sidebar down by the banner height */
-body.is-impersonating .vb-sidebar {
-    top: var(--vb-banner-height);
-    height: calc(100vh - var(--vb-banner-height));
-    min-height: calc(100vh - var(--vb-banner-height));
-}
-body.is-impersonating .vb-main .vb-topbar {
-    top: var(--vb-banner-height);
-}
+/* No layout offsets needed — banner floats above everything */
 
 .vb-impersonation-banner-content {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.375rem;
 }
 
 .vb-impersonation-banner-icon {
-    width: 14px;
-    height: 14px;
-    color: rgba(255, 255, 255, 0.55);
+    width: 13px;
+    height: 13px;
+    color: #D97706;
     flex-shrink: 0;
 }
 
 .vb-impersonation-banner strong {
-    font-weight: 600;
-    color: #fff;
+    font-weight: 650;
+    color: #78350F;
 }
 
 .vb-impersonation-exit-btn {
@@ -4740,27 +4770,29 @@ body.is-impersonating .vb-main .vb-topbar {
     align-items: center;
     font-family: var(--vb-font-sans);
     gap: 0.25rem;
-    padding: 0.1875rem 0.625rem;
+    padding: 3px 10px;
     font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.005em;
-    border: none;
+    border: 1px solid rgba(217, 119, 6, 0.2);
     border-radius: var(--vb-radius-full);
-    color: #92400e;
-    background: rgba(255, 255, 255, 0.92);
+    color: #92400E;
+    background: rgba(245, 158, 11, 0.08);
     cursor: pointer;
     transition: background var(--vb-duration-fast) var(--vb-ease-out),
+                border-color var(--vb-duration-fast) var(--vb-ease-out),
                 transform var(--vb-duration-fast) var(--vb-ease-out);
     white-space: nowrap;
 }
 .vb-impersonation-exit-btn svg {
-    width: 12px;
-    height: 12px;
-    opacity: 0.6;
+    width: 11px;
+    height: 11px;
+    opacity: 0.55;
 }
 
 .vb-impersonation-exit-btn:hover {
-    background: #fff;
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(217, 119, 6, 0.35);
 }
 .vb-impersonation-exit-btn:active {
     transform: scale(0.97);

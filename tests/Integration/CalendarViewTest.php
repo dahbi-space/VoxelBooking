@@ -157,10 +157,10 @@ final class CalendarViewTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════
-    // View switcher uses .vb-tabs (not .vb-segmented)
+    // View switcher uses .vb-segmented control
     // ════════════════════════════════════════════════════════════════
 
-    public function test_month_view_uses_tabs_not_segmented(): void
+    public function test_month_view_uses_segmented_control(): void
     {
         $this->doLoginOperator();
         $tid = TestFixtures::BUSINESS_TENANT_ID;
@@ -169,14 +169,14 @@ final class CalendarViewTest extends TestCase
 
         $this->assertSame(200, $r['code']);
         $this->assertStringContainsString(
-            'vb-tabs',
-            $r['body'],
-            'View switcher should use .vb-tabs premium tab system'
-        );
-        $this->assertStringNotContainsString(
             'vb-segmented',
             $r['body'],
-            'View switcher should NOT use the old .vb-segmented component'
+            'View switcher should use .vb-segmented premium control'
+        );
+        $this->assertStringContainsString(
+            'vb-segmented-item active',
+            $r['body'],
+            'Active view should be marked with .vb-segmented-item.active'
         );
     }
 
@@ -234,7 +234,7 @@ final class CalendarViewTest extends TestCase
         );
     }
 
-    public function test_day_view_uses_tabs_not_segmented(): void
+    public function test_day_view_uses_segmented_control(): void
     {
         $this->doLoginOperator();
         $tid = TestFixtures::BUSINESS_TENANT_ID;
@@ -242,10 +242,10 @@ final class CalendarViewTest extends TestCase
         $r = $this->get("/admin/tenants/{$tid}/calendar/day");
 
         $this->assertSame(200, $r['code']);
-        $this->assertStringNotContainsString(
+        $this->assertStringContainsString(
             'vb-segmented',
             $r['body'],
-            'Day view should NOT use the old .vb-segmented component'
+            'Day view should use .vb-segmented control'
         );
     }
 
@@ -268,7 +268,7 @@ final class CalendarViewTest extends TestCase
         );
     }
 
-    public function test_week_view_uses_tabs_not_segmented(): void
+    public function test_week_view_uses_segmented_control(): void
     {
         $this->doLoginOperator();
         $tid = TestFixtures::BUSINESS_TENANT_ID;
@@ -276,10 +276,10 @@ final class CalendarViewTest extends TestCase
         $r = $this->get("/admin/tenants/{$tid}/calendar/week");
 
         $this->assertSame(200, $r['code']);
-        $this->assertStringNotContainsString(
+        $this->assertStringContainsString(
             'vb-segmented',
             $r['body'],
-            'Week view should NOT use the old .vb-segmented component'
+            'Week view should use .vb-segmented control'
         );
     }
 

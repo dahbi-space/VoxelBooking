@@ -61,13 +61,13 @@ ob_start();
             <i data-lucide="plus"></i>
             <?= __('admin.calendar.new_booking') ?>
         </a>
-        <nav class="vb-tabs vb-tabs-compact" aria-label="<?= __('admin.calendar.page_title') ?>">
+        <nav class="vb-segmented" aria-label="<?= __('admin.calendar.page_title') ?>">
             <a href="<?= $baseUrl ?>/calendar?date=<?= htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8') ?>"
-               class="vb-tab"><?= __('admin.calendar.view_month') ?></a>
+               class="vb-segmented-item"><?= __('admin.calendar.view_month') ?></a>
             <a href="<?= $baseUrl ?>/calendar/week?date=<?= htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8') ?>"
-               class="vb-tab"><?= __('admin.calendar.view_week') ?></a>
+               class="vb-segmented-item"><?= __('admin.calendar.view_week') ?></a>
             <a href="<?= $baseUrl ?>/calendar/day?date=<?= htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8') ?>"
-               class="vb-tab active"><?= __('admin.calendar.view_day') ?></a>
+               class="vb-segmented-item active"><?= __('admin.calendar.view_day') ?></a>
         </nav>
     </div>
 </div>
