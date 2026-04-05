@@ -145,9 +145,9 @@ final class BookingLinkCopyOutputTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'vb-public-url-card',
+            'vb-public-url-inline',
             $html,
-            'Settings must use the public URL card component (matching tenant edit)'
+            'Settings must use the inline public URL component inside the booking URL card'
         );
 
         $this->assertStringContainsString(

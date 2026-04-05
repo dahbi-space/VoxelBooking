@@ -918,10 +918,12 @@ return [
         'field_rescheduling_hours_before_hint'=> 'Minimum hours before the appointment that rescheduling is allowed.',
 
         // General — section headers
-        'section_identity'         => 'Identity',
-        'section_identity_desc'    => 'Core business details and booking URL.',
-        'section_regional'         => 'Regional',
-        'section_regional_desc'    => 'Locale, timezone, currency, and calendar preferences.',
+        'section_identity'          => 'Identity',
+        'section_identity_desc'     => 'Core business details.',
+        'section_booking_url'       => 'Booking Page URL',
+        'section_booking_url_desc'  => 'Your public booking page address. Change the slug to customise your URL.',
+        'section_regional'          => 'Regional',
+        'section_regional_desc'     => 'Locale, timezone, currency, and calendar preferences.',
 
         // General — fields
         'field_name'           => 'Business name',

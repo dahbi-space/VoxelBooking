@@ -2,10 +2,9 @@
 /**
  * Tenant Settings — General tab.
  *
- * Structure: card-header → form-grid with proper 2-column alignment.
- * Locale uses a labeled <select> from Locale::localeOptions() (controller-provided).
- * Slug is editable (uniqueness validated server-side).
- * Booking page URL uses the vb-public-url-card component (open + copy).
+ * Structure: Identity card → Booking URL card (slug + live URL) → Regional card.
+ * Locale uses Locale::localeOptions() (controller-provided).
+ * Slug is editable inside the booking URL card for contextual clarity.
  * No inline styles — all layout via design system classes.
  *
  * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old, $localeOptions
@@ -22,9 +21,10 @@ $val = function (string $field, string $default = '') use ($tenant, $old): strin
     return htmlspecialchars((string) ($tenant[$field] ?? $default), ENT_QUOTES, 'UTF-8');
 };
 
-$bookingUrl = (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https')
-    . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
-    . '/book/' . ($tenant['slug'] ?? '');
+$slug      = $tenant['slug'] ?? '';
+$baseUrl   = (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https')
+    . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/book/';
+$bookingUrl = $baseUrl . $slug;
 
 ob_start();
 ?>
@@ -66,6 +66,28 @@ ob_start();
                 </div>
 
                 <div class="vb-settings-field">
+                    <label class="vb-label" for="ts-phone"><?= __('admin.tenant_settings.field_phone') ?></label>
+                    <input type="tel" class="vb-input" id="ts-phone" name="phone"
+                           value="<?= $val('phone') ?>">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Booking URL (slug lives here for context) -->
+    <div class="vb-settings-section">
+        <div class="vb-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title-row">
+                    <i data-lucide="globe" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.tenant_settings.section_booking_url') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.tenant_settings.section_booking_url_desc') ?></div>
+                    </div>
+                </div>
+            </div>
+            <div class="vb-card-body">
+                <div class="vb-settings-field">
                     <label class="vb-label" for="ts-slug"><?= __('admin.tenant_settings.field_slug') ?></label>
                     <input type="text" class="vb-input" id="ts-slug" name="slug"
                            value="<?= $val('slug') ?>"
@@ -73,47 +95,29 @@ ob_start();
                            placeholder="my-business">
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_slug_hint') ?></span>
                 </div>
-
-                <div class="vb-settings-field">
-                    <label class="vb-label" for="ts-phone"><?= __('admin.tenant_settings.field_phone') ?></label>
-                    <input type="tel" class="vb-input" id="ts-phone" name="phone"
-                           value="<?= $val('phone') ?>">
-                </div>
-
-                <div class="vb-settings-field">
-                    <label class="vb-label" for="ts-pattern"><?= __('admin.tenant_settings.field_pattern') ?></label>
-                    <input type="text" class="vb-input" id="ts-pattern"
-                           value="<?= e($tenant['booking_pattern'] ?? '') ?>" readonly>
-                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_pattern_hint') ?></span>
+                <div class="vb-public-url-inline">
+                    <code class="vb-public-url-text"><?= htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8') ?></code>
+                    <div class="vb-public-url-actions">
+                        <a href="/book/<?= htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') ?>"
+                           target="_blank" rel="noopener"
+                           class="vb-public-url-btn" title="<?= __('admin.tenants.view_booking_page') ?>">
+                            <i data-lucide="external-link"></i>
+                        </a>
+                        <button type="button"
+                                class="vb-public-url-btn"
+                                data-copy-url="<?= htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                @click="copyBookingUrl"
+                                title="<?= __('admin.common.copy_booking_url') ?>">
+                            <span class="vb-copy-icon"><i data-lucide="copy"></i></span>
+                            <span class="vb-copy-check"><i data-lucide="check"></i></span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Booking Page URL (matches operator tenant edit pattern) -->
-    <div class="vb-public-url-card">
-        <div class="vb-public-url-label"><?= __('admin.tenants.view_booking_page') ?></div>
-        <div class="vb-public-url-control">
-            <code class="vb-public-url-text"><?= htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8') ?></code>
-            <div class="vb-public-url-actions">
-                <a href="/book/<?= htmlspecialchars($tenant['slug'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                   target="_blank" rel="noopener"
-                   class="vb-public-url-btn" title="<?= __('admin.tenants.view_booking_page') ?>">
-                    <i data-lucide="external-link"></i>
-                </a>
-                <button type="button"
-                        class="vb-public-url-btn"
-                        data-copy-url="<?= htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8') ?>"
-                        @click="copyBookingUrl"
-                        title="<?= __('admin.common.copy_booking_url') ?>">
-                    <span class="vb-copy-icon"><i data-lucide="copy"></i></span>
-                    <span class="vb-copy-check"><i data-lucide="check"></i></span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Section 2: Regional -->
+    <!-- Section 3: Regional -->
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
@@ -140,7 +144,6 @@ ob_start();
                         $currentLocale = ($old !== null && array_key_exists('locale', $old))
                             ? $old['locale']
                             : ($tenant['locale'] ?? 'en');
-                        // Ensure current value always appears (e.g. old input for a not-yet-translated locale)
                         $effectiveOptions = $localeOptions;
                         if ($currentLocale !== '' && !isset($effectiveOptions[$currentLocale])) {
                             $effectiveOptions[$currentLocale] = $currentLocale;
@@ -161,9 +164,9 @@ ob_start();
                             : ($tenant['week_start'] ?? '');
                         $weekDays = [
                             '' => __('admin.tenant_settings.field_week_start_auto'),
-                            '1' => __('booking.days.1'), // Monday
-                            '0' => __('booking.days.0'), // Sunday
-                            '6' => __('booking.days.6'), // Saturday
+                            '1' => __('booking.days.1'),
+                            '0' => __('booking.days.0'),
+                            '6' => __('booking.days.6'),
                         ];
                         foreach ($weekDays as $wv => $wl):
                         ?>
