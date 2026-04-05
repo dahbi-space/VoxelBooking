@@ -13,6 +13,7 @@ use App\Engine\Ulid;
 use App\Engine\Version;
 use App\Engine\View;
 use App\Middleware\CsrfMiddleware;
+use App\Models\Tenant;
 
 /**
  * Tenant settings controller (tenant-scoped, all patterns).
@@ -58,6 +59,8 @@ final class TenantSettingsController
         $name     = trim($request->string('name'));
         $email    = trim($request->string('email'));
         $phone    = trim($request->string('phone')) ?: null;
+        $slugRaw  = trim($request->string('slug'));
+        $slug     = $slugRaw !== '' ? preg_replace('/[^a-z0-9\-]/', '', strtolower($slugRaw)) : null;
         $timezone   = trim($request->string('timezone')) ?: 'UTC';
         $locale     = trim($request->string('locale')) ?: 'en';
         $currency   = trim($request->string('currency')) ?: 'EUR';
@@ -75,12 +78,15 @@ final class TenantSettingsController
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = __('admin.tenant_settings.error_email_invalid');
         }
+        if ($slug !== null && $slug !== '' && Tenant::slugExists($slug, excludeId: $tenantId)) {
+            $errors[] = __('admin.tenant_settings.error_slug_taken');
+        }
 
         if (!empty($errors)) {
             $this->setFlash('error', implode(' ', $errors));
             $this->setOldInput([
                 'name' => $name, 'email' => $email, 'phone' => $phone ?? '',
-                'timezone' => $timezone, 'locale' => $locale, 'currency' => $currency,
+                'slug' => $slug ?? '', 'timezone' => $timezone, 'locale' => $locale, 'currency' => $currency,
             ]);
             return Response::redirect("/admin/tenants/{$tenantId}/settings");
         }
@@ -89,6 +95,7 @@ final class TenantSettingsController
             'name'        => $name,
             'email'       => $email,
             'phone'       => $phone,
+            'slug'        => $slug !== null && $slug !== '' ? $slug : ($tenant['slug'] ?? null),
             'timezone'    => $timezone,
             'locale'      => $locale,
             'currency'    => $currency,

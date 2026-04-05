@@ -133,9 +133,9 @@ final class BookingLinkCopyOutputTest extends TestCase
         $html = $this->renderGeneralSettings();
 
         $this->assertStringContainsString(
-            'vb-copy-btn',
+            'vb-public-url-btn',
             $html,
-            'General settings must contain a copy button'
+            'General settings must contain a public URL button'
         );
 
         $this->assertStringContainsString(
@@ -145,13 +145,13 @@ final class BookingLinkCopyOutputTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'vb-settings-booking-url',
+            'vb-public-url-card',
             $html,
-            'Settings must contain the booking URL display container'
+            'Settings must use the public URL card component (matching tenant edit)'
         );
 
         $this->assertStringContainsString(
-            'vb-settings-url-text',
+            'vb-public-url-text',
             $html,
             'Settings must contain the URL text code element'
         );

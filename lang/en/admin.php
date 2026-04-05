@@ -926,7 +926,7 @@ return [
         // General — fields
         'field_name'           => 'Business name',
         'field_slug'           => 'URL slug',
-        'field_slug_hint'      => 'Read-only. Set during tenant creation.',
+        'field_slug_hint'      => 'Lowercase letters, numbers, and hyphens only. This is the public URL path.',
         'field_email'          => 'Contact email',
         'field_phone'          => 'Phone number',
         'field_timezone'       => 'Timezone',
@@ -1017,6 +1017,7 @@ return [
         'no_changes'                => 'No changes detected.',
         'error_name_required'       => 'Business name is required.',
         'error_email_invalid'       => 'Please enter a valid email address.',
+        'error_slug_taken'          => 'This URL slug is already in use. Please choose a different one.',
         'error_notif_email_invalid' => 'Notification email must be a valid address.',
     ],
 

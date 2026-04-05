@@ -4746,8 +4746,8 @@ body.is-impersonating .vb-main .vb-topbar {
 
 .vb-form-grid {
     display: grid;
-    gap: 0.75rem;
-    padding: 1rem 1.25rem;
+    gap: 1.5rem 1.25rem; /* row-gap: generous breathing | column-gap: tighter horizontal */
+    padding: 1.25rem;
 }
 .vb-form-grid-2 { grid-template-columns: repeat(2, 1fr); }
 .vb-form-grid-3 { grid-template-columns: repeat(3, 1fr); }
@@ -4876,9 +4876,9 @@ body.is-impersonating .vb-main .vb-topbar {
     gap: 0.375rem;
 }
 
-.vb-settings-field + .vb-settings-field {
-    margin-top: 1.25rem;
-}
+/* In multi-column grids, the grid row-gap (1.5rem) handles vertical
+   spacing between fields automatically. No .vb-settings-field sibling
+   margin is used — all spacing lives on the grid container. */
 
 .vb-settings-hint {
     font-size: var(--vb-text-xs);
