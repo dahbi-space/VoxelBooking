@@ -47,13 +47,13 @@ ob_start();
             <div class="vb-role-cards">
                 <label class="vb-role-card" :class="roleOwnerClass">
                     <input type="radio" name="role" value="owner" :checked="isOwner" @change="selectOwner" class="vb-sr-only">
-                    <i data-lucide="shield-check" style="width: 20px; height: 20px; margin-bottom: 4px;"></i>
+                    <i data-lucide="shield-check" class="vb-icon-lg vb-mb-0"></i>
                     <span class="vb-role-card-title"><?= __('admin.users.invite_role_owner_title') ?></span>
                     <span class="vb-role-card-desc"><?= __('admin.users.invite_role_owner_desc') ?></span>
                 </label>
                 <label class="vb-role-card" :class="roleManagerClass">
                     <input type="radio" name="role" value="manager" :checked="isManager" @change="selectManager" class="vb-sr-only">
-                    <i data-lucide="briefcase" style="width: 20px; height: 20px; margin-bottom: 4px;"></i>
+                    <i data-lucide="briefcase" class="vb-icon-lg vb-mb-0"></i>
                     <span class="vb-role-card-title"><?= __('admin.users.invite_role_manager_title') ?></span>
                     <span class="vb-role-card-desc"><?= __('admin.users.invite_role_manager_desc') ?></span>
                 </label>
@@ -86,14 +86,14 @@ ob_start();
                        @change="onToggleSendEmail"
                        :disabled="smtpNotConfigured"
                        class="vb-checkbox">
-                <label for="invite_send_email" style="cursor: pointer;">
-                    <span class="vb-label" style="margin-bottom: 0;">
-                        <i data-lucide="mail" style="width: 14px; height: 14px; display: inline; vertical-align: -2px; margin-right: 4px;"></i>
+                <label for="invite_send_email" class="vb-toggle-label">
+                    <span class="vb-label vb-mb-0">
+                        <i data-lucide="mail" class="vb-icon-sm"></i>
                         <?= __('admin.users.invite_send_email') ?>
                     </span>
                     <?php if (!\App\Engine\Mailer::isConfigured()): ?>
-                        <span class="vb-hint vb-hint-warning" style="margin-top: 2px;">
-                            <i data-lucide="alert-triangle" style="width: 12px; height: 12px; display: inline; vertical-align: -1px; margin-right: 3px;"></i>
+                        <span class="vb-hint vb-hint-warning">
+                            <i data-lucide="alert-triangle" class="vb-icon-xs"></i>
                             <?= __('admin.users.invite_smtp_hint') ?>
                         </span>
                     <?php endif; ?>
@@ -103,7 +103,7 @@ ob_start();
 
         <div class="vb-form-actions">
             <button type="submit" class="vb-btn vb-btn-primary">
-                <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i>
+                <i data-lucide="user-plus" class="vb-icon-md"></i>
                 <?= __('admin.users.invite_submit') ?>
             </button>
             <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/users" class="vb-btn vb-btn-ghost">

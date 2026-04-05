@@ -16,7 +16,7 @@ ob_start();
         <p class="vb-page-subtitle"><?= __('admin.users.page_subtitle') ?></p>
     </div>
     <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/users/invite" class="vb-btn vb-btn-primary">
-        <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i>
+        <i data-lucide="user-plus" class="vb-icon-md"></i>
         <?= __('admin.users.invite_btn') ?>
     </a>
 </div>
@@ -27,10 +27,10 @@ ob_start();
     <?php if (!empty($flash['credentials'])): ?>
         <div class="vb-card vb-credentials-card">
             <div class="vb-card-header">
-                <i data-lucide="key" style="width: 16px; height: 16px;"></i>
+                <i data-lucide="key" class="vb-icon-md"></i>
                 <strong><?= __('admin.users.credentials_title') ?></strong>
             </div>
-            <p class="vb-hint" style="margin-bottom: 12px;"><?= __('admin.users.credentials_hint') ?></p>
+            <p class="vb-hint vb-mb-md"><?= __('admin.users.credentials_hint') ?></p>
             <div class="vb-credentials-grid">
                 <div class="vb-credentials-row">
                     <span class="vb-credentials-label"><?= __('admin.users.credentials_email') ?></span>
@@ -54,8 +54,8 @@ ob_start();
         <i data-lucide="users" class="vb-empty-icon"></i>
         <h3><?= __('admin.users.empty_title') ?></h3>
         <p><?= __('admin.users.empty_desc') ?></p>
-        <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/users/invite" class="vb-btn vb-btn-primary" style="margin-top: 12px;">
-            <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i>
+        <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/users/invite" class="vb-btn vb-btn-primary vb-mb-md">
+            <i data-lucide="user-plus" class="vb-icon-md"></i>
             <?= __('admin.users.invite_btn') ?>
         </a>
     </div>
@@ -70,7 +70,7 @@ ob_start();
                         <th><?= __('admin.users.col_role') ?></th>
                         <th><?= __('admin.users.col_status') ?></th>
                         <th><?= __('admin.users.col_last_login') ?></th>
-                        <th style="text-align: right;"><?= __('admin.users.col_actions') ?></th>
+                        <th class="vb-text-right"><?= __('admin.users.col_actions') ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -100,11 +100,11 @@ ob_start();
                                 <span class="vb-text-tertiary">—</span>
                             <?php endif; ?>
                         </td>
-                        <td style="text-align: right;">
+                        <td class="vb-text-right">
                             <?php if ($bu['is_active']): ?>
                                 <form method="POST"
                                       action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/users/<?= htmlspecialchars($bu['id'], ENT_QUOTES, 'UTF-8') ?>/deactivate"
-                                      style="display: inline;"
+                                      class="vb-form-flush"
                                       data-confirm="<?= __('admin.users.deactivate_confirm') ?>" data-confirm-text="<?= __('admin.users.deactivate') ?>">
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-danger-text">
@@ -114,7 +114,7 @@ ob_start();
                             <?php else: ?>
                                 <form method="POST"
                                       action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/users/<?= htmlspecialchars($bu['id'], ENT_QUOTES, 'UTF-8') ?>/activate"
-                                      style="display: inline;"
+                                      class="vb-form-flush"
                                       data-confirm="<?= __('admin.users.activate_confirm') ?>" data-confirm-text="<?= __('admin.users.activate') ?>">
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm">

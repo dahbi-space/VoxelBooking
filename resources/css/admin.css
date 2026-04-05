@@ -494,6 +494,9 @@
     .vb-badge-success { background: var(--vb-success-bg); color: var(--vb-success); }
     .vb-badge-warning { background: var(--vb-warning-bg); color: var(--vb-warning); }
     .vb-badge-error { background: var(--vb-error-bg); color: var(--vb-error); }
+    .vb-badge-xs { font-size: 0.6rem; padding: 0.125rem 0.375rem; }
+    .vb-text-accent { color: var(--vb-accent); }
+    .vb-toggle-label { cursor: pointer; }
 
     /* Dot variant — subtle presence indicator */
     .vb-dot {
@@ -3146,6 +3149,68 @@
     padding-top: 1rem;
     border-top: 1px solid var(--vb-border-subtle, rgba(0, 0, 0, 0.06));
 }
+
+/* ── Card Section Header/Footer ─────────────────────────────── */
+/* Replaces inline padding/flex on card header areas */
+.vb-card-section-header {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+.vb-card-section-header + .vb-card-body { padding-top: 0; }
+.vb-card-section-title {
+    font-weight: 600;
+    font-size: var(--vb-text-sm);
+    color: var(--vb-text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+.vb-card-section-title--muted { color: var(--vb-text-secondary); }
+.vb-card-section-footer {
+    padding: 0 1.5rem 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+/* ── Staff/Scope Selector Strip ─────────────────────────────── */
+.vb-selector-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding: 0.875rem 1.25rem;
+}
+.vb-selector-strip .vb-label {
+    margin: 0;
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    color: var(--vb-text-secondary);
+}
+.vb-selector-strip .vb-input {
+    max-width: 280px;
+    font-size: 0.8125rem;
+}
+
+/* ── Lucide Icon Sizing ─────────────────────────────────────── */
+/* Shared icon sizing — icons as typography, not stickers */
+.vb-icon-xs { width: 11px; height: 11px; }
+.vb-icon-sm { width: 14px; height: 14px; }
+.vb-icon-md { width: 16px; height: 16px; }
+.vb-icon-lg { width: 20px; height: 20px; }
+.vb-icon-xs, .vb-icon-sm, .vb-icon-md, .vb-icon-lg { flex-shrink: 0; }
+
+/* ── Spacing Utilities ──────────────────────────────────────── */
+.vb-mb-0 { margin-bottom: 0; }
+.vb-mb-sm { margin-bottom: 0.75rem; }
+.vb-mb-md { margin-bottom: 1rem; }
+.vb-mb-lg { margin-bottom: 1.5rem; }
+.vb-mb-xl { margin-bottom: 2rem; }
+.vb-ml-auto { margin-left: auto; }
 
 /* Full-width button (block style) */
 .vb-btn-block {

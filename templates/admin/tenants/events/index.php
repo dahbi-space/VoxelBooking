@@ -21,7 +21,7 @@ ob_start();
     </div>
     <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/events/create"
        class="vb-btn vb-btn-primary vb-btn-sm" id="btn-new-event">
-        <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+        <i data-lucide="plus" class="vb-icon-sm"></i>
         <?= __('admin.events.new_event') ?>
     </a>
 </div>
@@ -54,8 +54,8 @@ ob_start();
                                 <div class="vb-cell-secondary"><?= htmlspecialchars($event['location'], ENT_QUOTES, 'UTF-8') ?></div>
                             <?php endif; ?>
                             <?php if ((int) $event['is_recurring']): ?>
-                                <span class="vb-badge vb-badge-info" style="font-size: 0.65rem; margin-top: 2px;">
-                                    <i data-lucide="refresh-cw" style="width: 10px; height: 10px;"></i>
+                                <span class="vb-badge vb-badge-info vb-badge-xs">
+                                    <i data-lucide="refresh-cw" class="vb-icon-xs"></i>
                                     <?= htmlspecialchars($event['rrule'] ?? '', ENT_QUOTES, 'UTF-8') ?>
                                 </span>
                             <?php endif; ?>
@@ -71,7 +71,7 @@ ob_start();
                                 <?= str_replace([':count', ':max'], [(string) (int) $event['booked_count'], (string) (int) $event['max_participants']], __('admin.events.participants_label')) ?>
                             </div>
                             <?php if ((int) $event['waitlist_count'] > 0): ?>
-                                <div class="vb-cell-secondary" style="color: #8B5CF6;">
+                                <div class="vb-cell-secondary vb-text-accent">
                                     <?= str_replace(':count', (string) (int) $event['waitlist_count'], __('admin.events.waitlisted_label')) ?>
                                 </div>
                             <?php endif; ?>
@@ -84,14 +84,14 @@ ob_start();
                             <?php endif; ?>
                         </td>
                         <td>
-                            <div style="display: flex; gap: 4px;">
+                            <div class="vb-action-group">
                                 <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/events/<?= htmlspecialchars($event['id'], ENT_QUOTES, 'UTF-8') ?>/edit"
                                    class="vb-btn vb-btn-ghost vb-btn-sm" title="<?= __('admin.events.edit_title') ?>">
                                     <i data-lucide="pencil"></i>
                                 </a>
                                 <form method="POST"
                                       action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/events/<?= htmlspecialchars($event['id'], ENT_QUOTES, 'UTF-8') ?>/toggle"
-                                      style="display: inline;">
+                                      class="vb-form-flush">
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm"
                                             title="<?= (int) $event['is_active'] ? __('admin.events.flash_deactivated') : __('admin.events.flash_activated') ?>">
@@ -104,7 +104,7 @@ ob_start();
                                 </form>
                                 <form method="POST"
                                       action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/events/<?= htmlspecialchars($event['id'], ENT_QUOTES, 'UTF-8') ?>/delete"
-                                      style="display: inline;"
+                                      class="vb-form-flush"
                                       data-confirm="<?= __('admin.events.confirm_delete') ?>" data-confirm-text="<?= __('admin.settings.confirm_button') ?? 'Delete' ?>">
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-destructive"

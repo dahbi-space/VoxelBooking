@@ -55,15 +55,14 @@ ob_start();
 
 <!-- Staff selector -->
 <?php if (!empty($staff)): ?>
-<div class="vb-card vb-animate-in" style="margin-bottom: 1.5rem;">
-    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; padding: 0.875rem 1.25rem;">
-        <label class="vb-label" for="availability-staff-selector" style="margin: 0; white-space: nowrap; font-size: 0.8125rem; color: var(--vb-text-secondary);">
-            <i data-lucide="users" style="width: 14px; height: 14px; display: inline; vertical-align: -2px; margin-right: 0.25rem;"></i>
+<div class="vb-card vb-animate-in vb-mb-lg">
+    <div class="vb-selector-strip">
+        <label class="vb-label" for="availability-staff-selector">
+            <i data-lucide="users" class="vb-icon-sm"></i>
             <?= __('admin.availability.staff_selector_label') ?>
         </label>
         <select id="availability-staff-selector"
                 class="vb-input"
-                style="max-width: 280px; font-size: 0.8125rem;"
                 onchange="if(this.value==='defaults'){location.href='/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/availability'}else{location.href='/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/availability/staff/'+this.value}">
             <option value="defaults" <?= !$currentStaffId ? 'selected' : '' ?>>
                 <?= __('admin.availability.tenant_defaults') ?>
@@ -88,10 +87,10 @@ ob_start();
         <form method="POST"
               action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/availability/staff/<?= htmlspecialchars($currentStaffId, ENT_QUOTES, 'UTF-8') ?>/reset"
               data-confirm="Reset this staff member's hours to tenant defaults?" data-confirm-text="Reset"
-              style="margin-left: auto;">
+              class="vb-ml-auto">
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
             <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-danger">
-                <i data-lucide="rotate-ccw" style="width: 13px; height: 13px;"></i>
+                <i data-lucide="rotate-ccw" class="vb-icon-sm"></i>
                 <?= __('admin.availability.reset_to_defaults') ?>
             </button>
         </form>

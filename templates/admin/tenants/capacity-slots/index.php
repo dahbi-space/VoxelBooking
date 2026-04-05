@@ -29,14 +29,14 @@ ob_start();
 <?php endif; ?>
 
 <!-- Add Slot Form -->
-<div class="vb-table-container" style="margin-bottom: 1.5rem;">
+<div class="vb-table-container vb-mb-lg">
     <div class="vb-card-header">
         <h3 class="vb-card-title"><?= __('admin.capacity_slots.add_slot') ?></h3>
     </div>
     <div class="vb-card-body">
         <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/capacity-slots" id="add-slot-form">
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-            <div class="vb-form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; align-items: end;">
+            <div class="vb-form-grid vb-form-grid-4">
                 <div class="vb-form-group">
                     <label class="vb-label" for="slot-day"><?= __('admin.capacity_slots.label_day') ?></label>
                     <select name="day_of_week" id="slot-day" class="vb-select" required>
@@ -71,7 +71,7 @@ ob_start();
                 </div>
                 <div class="vb-form-group">
                     <button type="submit" class="vb-btn vb-btn-primary" id="add-slot-btn">
-                        <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                        <i data-lucide="plus" class="vb-icon-md"></i>
                         <?= __('admin.capacity_slots.add_slot') ?>
                     </button>
                 </div>
@@ -137,7 +137,7 @@ ob_start();
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm"
                                             title="<?= (int) $slot['is_active'] ? __('admin.capacity_slots.btn_deactivate') : __('admin.capacity_slots.btn_activate') ?>">
-                                        <i data-lucide="<?= (int) $slot['is_active'] ? 'eye-off' : 'eye' ?>" style="width: 14px; height: 14px;"></i>
+                                        <i data-lucide="<?= (int) $slot['is_active'] ? 'eye-off' : 'eye' ?>" class="vb-icon-sm"></i>
                                     </button>
                                 </form>
                                 <form method="POST"
@@ -147,7 +147,7 @@ ob_start();
                                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                     <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-destructive"
                                             title="<?= __('admin.capacity_slots.btn_delete') ?>">
-                                        <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                                        <i data-lucide="trash-2" class="vb-icon-sm"></i>
                                     </button>
                                 </form>
                             </div>

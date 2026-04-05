@@ -37,38 +37,37 @@ ob_start();
 <?php endif; ?>
 
 <!-- Add blocked date form -->
-<div class="vb-card overflow-hidden vb-animate-in" style="margin-bottom: 2rem;">
-    <div style="padding: 1.5rem 1.5rem 0 1.5rem; display: flex; align-items: center; justify-content: space-between;">
-        <h3 style="font-weight: 600; font-size: 0.875rem; color: var(--vb-text-primary); display: flex; align-items: center; gap: 0.5rem; margin: 0;">
-            <i data-lucide="calendar-plus" style="width: 16px; height: 16px; color: var(--vb-text-tertiary);"></i>
+<div class="vb-card overflow-hidden vb-animate-in vb-mb-xl">
+    <div class="vb-card-section-header">
+        <h3 class="vb-card-section-title">
+            <i data-lucide="calendar-plus" class="vb-icon-md"></i>
             <?= __('admin.blocked_dates.add_title') ?>
         </h3>
     </div>
     <form method="POST"
           action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/blocked-dates"
-          style="display: flex; flex-direction: column;"
           x-data="blockedDateScope">
         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
-        <div style="padding: 1.5rem;">
+        <div class="vb-card-body">
             <div class="vb-form-grid vb-form-grid-4">
                 
-                <div class="vb-form-group" style="margin-bottom: 0;">
+                <div class="vb-form-group vb-mb-0">
                     <label class="vb-label" for="bd-start"><?= __('admin.blocked_dates.start_date') ?></label>
                     <input type="date" class="vb-input w-full" id="bd-start" name="start_date" required min="<?= date('Y-m-d') ?>">
                 </div>
 
-                <div class="vb-form-group" style="margin-bottom: 0;">
+                <div class="vb-form-group vb-mb-0">
                     <label class="vb-label" for="bd-end"><?= __('admin.blocked_dates.end_date') ?></label>
                     <input type="date" class="vb-input w-full" id="bd-end" name="end_date" required min="<?= date('Y-m-d') ?>">
                 </div>
 
-                <div class="vb-form-group" style="margin-bottom: 0;">
+                <div class="vb-form-group vb-mb-0">
                     <label class="vb-label" for="bd-reason"><?= __('admin.blocked_dates.reason') ?></label>
                     <input type="text" class="vb-input w-full" id="bd-reason" name="reason" placeholder="<?= __('admin.blocked_dates.reason_placeholder') ?>" maxlength="255">
                 </div>
 
-                <div class="vb-form-group" style="margin-bottom: 0;">
+                <div class="vb-form-group vb-mb-0">
                     <label class="vb-label" for="bd-scope"><?= __('admin.blocked_dates.scope') ?></label>
                     <select class="vb-input w-full" id="bd-scope" x-model="selectedScope" @change="onScopeChange()">
                         <option value="tenant"><?= __('admin.blocked_dates.scope_tenant') ?></option>
@@ -103,9 +102,9 @@ ob_start();
             </div>
         </div>
 
-        <div style="padding: 0 1.5rem 1.5rem 1.5rem; display: flex; justify-content: flex-end;">
+        <div class="vb-card-section-footer">
             <button type="submit" class="vb-btn vb-btn-primary shadow-card" id="add-blocked-date-btn">
-                <i data-lucide="plus" style="width: 16px; height: 16px; margin-right: 0.25rem;"></i>
+                <i data-lucide="plus" class="vb-icon-md"></i>
                 <?= __('admin.blocked_dates.add') ?>
             </button>
         </div>
@@ -114,9 +113,9 @@ ob_start();
 
 <!-- Upcoming / Active -->
 <?php if (!empty($upcoming)): ?>
-<div class="vb-card overflow-hidden vb-animate-in" style="margin-bottom: 2rem;">
-    <div style="padding: 1.5rem 1.5rem 0 1.5rem; display: flex; align-items: center; justify-content: space-between;">
-        <h3 style="font-weight: 600; font-size: 0.875rem; color: var(--vb-text-primary); margin: 0;"><?= __('admin.blocked_dates.upcoming') ?></h3>
+<div class="vb-card overflow-hidden vb-animate-in vb-mb-xl">
+    <div class="vb-card-section-header">
+        <h3 class="vb-card-section-title"><?= __('admin.blocked_dates.upcoming') ?></h3>
         <span class="vb-badge vb-badge-accent"><?= count($upcoming) ?></span>
     </div>
     <div class="vb-table-wrap">
@@ -145,17 +144,17 @@ ob_start();
                     <td>
                         <?php if ($bd['resource_id']): ?>
                             <span class="vb-badge vb-badge-muted">
-                                <i data-lucide="bed" style="width: 11px; height: 11px; margin-right: 0.1875rem;"></i>
+                                <i data-lucide="bed" class="vb-icon-xs"></i>
                                 <?= htmlspecialchars($bd['resource_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
                             </span>
                         <?php elseif ($bd['staff_id']): ?>
                             <span class="vb-badge vb-badge-muted">
-                                <i data-lucide="user" style="width: 11px; height: 11px; margin-right: 0.1875rem;"></i>
+                                <i data-lucide="user" class="vb-icon-xs"></i>
                                 <?= htmlspecialchars($bd['staff_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
                             </span>
                         <?php else: ?>
                             <span class="vb-badge vb-badge-accent">
-                                <i data-lucide="building-2" style="width: 11px; height: 11px; margin-right: 0.1875rem;"></i>
+                                <i data-lucide="building-2" class="vb-icon-xs"></i>
                                 <?= __('admin.blocked_dates.tenant_level') ?>
                             </span>
                         <?php endif; ?>
@@ -171,7 +170,7 @@ ob_start();
                             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                             <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-destructive"
                                     title="<?= __('admin.blocked_dates.delete') ?>">
-                                <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                                <i data-lucide="trash-2" class="vb-icon-sm"></i>
                             </button>
                         </form>
                     </td>
@@ -185,10 +184,10 @@ ob_start();
 
 <!-- Past (collapsed by default) -->
 <?php if (!empty($past)): ?>
-<details class="vb-card overflow-hidden vb-animate-in group" style="margin-top: 1rem;">
-    <summary style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;" class="group-open:border-b border-[var(--vb-border-subtle)]">
-        <h3 style="font-weight: 600; font-size: 0.875rem; color: var(--vb-text-secondary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-            <i data-lucide="chevron-right" style="width: 16px; height: 16px;" class="transition-transform group-open:rotate-90"></i>
+<details class="vb-card overflow-hidden vb-animate-in group vb-mb-md">
+    <summary class="vb-card-section-header group-open:border-b border-[var(--vb-border-subtle)]" style="cursor: pointer; user-select: none;">
+        <h3 class="vb-card-section-title vb-card-section-title--muted">
+            <i data-lucide="chevron-right" class="vb-icon-md transition-transform group-open:rotate-90"></i>
             <?= __('admin.blocked_dates.past') ?>
         </h3>
         <span class="vb-badge vb-badge-muted"><?= count($past) ?></span>
@@ -242,7 +241,7 @@ ob_start();
                             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                             <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-destructive"
                                     title="<?= __('admin.blocked_dates.delete') ?>">
-                                <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                                <i data-lucide="trash-2" class="vb-icon-sm"></i>
                             </button>
                         </form>
                     </td>
