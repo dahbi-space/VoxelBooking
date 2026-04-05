@@ -1,16 +1,17 @@
 <?php
 /**
- * Customer detail — premium contact profile surface.
+ * Customer detail — premium contact workspace.
  *
  * Architecture:
- *   Back-link breadcrumb
- *   Identity card (avatar + name + meta row)
- *   Stats strip (elevated, shadow-based)
- *   Notes card with .vb-card-body (if present)
- *   Booking history section header + table
+ *   Back-link (slim breadcrumb, no duplicate title)
+ *   Contact hero (.vb-contact-hero):
+ *     Left:  avatar + name + meta (email, phone)
+ *     Right: inline metrics (bookings, last visit, joined)
+ *   Notes card (if present)
+ *   Booking history section + table
  *
- * No inline styles. Icon sizes via CSS (.vb-profile-meta-item, .vb-btn-sm).
- * Spacing via design-system classes (.vb-mb-lg).
+ * The name appears once — inside the hero. The page header is reduced to
+ * a back-link only, eliminating the identity duplication.
  *
  * Variables: $tenant, $customer, $bookings, $liveBookingCount, $liveLastBookingAt, $tenantId, $csrfToken
  */
@@ -25,63 +26,55 @@ $baseUrl = "/admin/tenants/" . htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8');
 ob_start();
 ?>
 
-<div class="vb-page-header">
-    <div>
-        <a href="<?= $baseUrl ?>/customers" class="vb-back-link">
-            <i data-lucide="chevron-left"></i>
-            <?= __('admin.customers.page_title') ?>
-        </a>
-        <h2 class="vb-page-title"><?= htmlspecialchars($customer['name'], ENT_QUOTES, 'UTF-8') ?></h2>
-    </div>
+<!-- Back-link only — no duplicate title -->
+<div class="vb-page-header vb-page-header--slim">
+    <a href="<?= $baseUrl ?>/customers" class="vb-back-link">
+        <i data-lucide="chevron-left"></i>
+        <?= __('admin.customers.page_title') ?>
+    </a>
 </div>
 
-<!-- Identity card -->
-<div class="vb-card vb-mb-lg vb-animate-in">
-    <div class="vb-card-body">
-        <div class="vb-profile-header">
-            <span class="vb-avatar vb-avatar-xl"><?= mb_strtoupper(mb_substr($customer['name'], 0, 1)) ?></span>
-            <div class="vb-profile-header-info">
-                <h2 class="vb-profile-name"><?= htmlspecialchars($customer['name'], ENT_QUOTES, 'UTF-8') ?></h2>
-                <div class="vb-profile-meta-row">
-                    <span class="vb-profile-meta-item">
-                        <i data-lucide="mail"></i>
-                        <?= htmlspecialchars($customer['email'], ENT_QUOTES, 'UTF-8') ?>
-                    </span>
-                    <?php if ($customer['phone']): ?>
-                    <span class="vb-profile-meta-item">
-                        <i data-lucide="phone"></i>
-                        <?= htmlspecialchars($customer['phone'], ENT_QUOTES, 'UTF-8') ?>
-                    </span>
-                    <?php endif; ?>
-                </div>
+<!-- Contact hero: identity + metrics in one unified surface -->
+<div class="vb-contact-hero vb-animate-in">
+    <div class="vb-contact-hero-identity">
+        <span class="vb-avatar vb-avatar-xl"><?= mb_strtoupper(mb_substr($customer['name'], 0, 1)) ?></span>
+        <div class="vb-contact-hero-info">
+            <h2 class="vb-contact-hero-name"><?= htmlspecialchars($customer['name'], ENT_QUOTES, 'UTF-8') ?></h2>
+            <div class="vb-profile-meta-row">
+                <span class="vb-profile-meta-item">
+                    <i data-lucide="mail"></i>
+                    <?= htmlspecialchars($customer['email'], ENT_QUOTES, 'UTF-8') ?>
+                </span>
+                <?php if ($customer['phone']): ?>
+                <span class="vb-profile-meta-item">
+                    <i data-lucide="phone"></i>
+                    <?= htmlspecialchars($customer['phone'], ENT_QUOTES, 'UTF-8') ?>
+                </span>
+                <?php endif; ?>
             </div>
         </div>
     </div>
-</div>
-
-<!-- Stats strip -->
-<div class="vb-profile-stats vb-animate-in">
-    <div class="vb-profile-stat">
-        <span class="vb-profile-stat-value"><?= $liveBookingCount ?></span>
-        <span class="vb-profile-stat-label"><?= __('admin.customers.stat_total_bookings') ?></span>
-    </div>
-    <div class="vb-profile-stat-divider"></div>
-    <div class="vb-profile-stat">
-        <span class="vb-profile-stat-value vb-profile-stat-value--date">
-            <?php if ($liveLastBookingAt): ?>
-                <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($liveLastBookingAt)), ENT_QUOTES, 'UTF-8') ?>
-            <?php else: ?>
-                —
-            <?php endif; ?>
-        </span>
-        <span class="vb-profile-stat-label"><?= __('admin.customers.stat_last_booking') ?></span>
-    </div>
-    <div class="vb-profile-stat-divider"></div>
-    <div class="vb-profile-stat">
-        <span class="vb-profile-stat-value vb-profile-stat-value--date">
-            <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($customer['created_at'])), ENT_QUOTES, 'UTF-8') ?>
-        </span>
-        <span class="vb-profile-stat-label"><?= __('admin.customers.stat_joined') ?></span>
+    <div class="vb-contact-hero-metrics">
+        <div class="vb-contact-metric">
+            <span class="vb-contact-metric-value"><?= $liveBookingCount ?></span>
+            <span class="vb-contact-metric-label"><?= __('admin.customers.stat_total_bookings') ?></span>
+        </div>
+        <div class="vb-contact-metric">
+            <span class="vb-contact-metric-value vb-contact-metric-value--date">
+                <?php if ($liveLastBookingAt): ?>
+                    <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($liveLastBookingAt)), ENT_QUOTES, 'UTF-8') ?>
+                <?php else: ?>
+                    —
+                <?php endif; ?>
+            </span>
+            <span class="vb-contact-metric-label"><?= __('admin.customers.stat_last_booking') ?></span>
+        </div>
+        <div class="vb-contact-metric">
+            <span class="vb-contact-metric-value vb-contact-metric-value--date">
+                <?= htmlspecialchars(\App\Engine\Locale::dateLong(new DateTimeImmutable($customer['created_at'])), ENT_QUOTES, 'UTF-8') ?>
+            </span>
+            <span class="vb-contact-metric-label"><?= __('admin.customers.stat_joined') ?></span>
+        </div>
     </div>
 </div>
 

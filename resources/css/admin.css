@@ -4146,13 +4146,83 @@
     font-weight: 600;
 }
 
-/* ── Customer Profile ─── premium contact/identity surface ─── */
+/* ── Contact Hero ─── unified identity + metrics surface ──── */
 
-.vb-profile-header {
+/* Slim page header: back-link only, no h2, tighter spacing */
+.vb-page-header--slim {
+    margin-bottom: 1rem;
+}
+
+/* Hero card: single elevated surface, identity left, metrics right */
+.vb-contact-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 1.5rem;
+    background: var(--vb-bg-card);
+    border-radius: var(--vb-radius-lg);
+    box-shadow: var(--vb-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
+    margin-bottom: 1.5rem;
+}
+
+/* Left zone: avatar + name + meta */
+.vb-contact-hero-identity {
     display: flex;
     align-items: center;
     gap: 1.25rem;
+    min-width: 0;
 }
+.vb-contact-hero-info {
+    min-width: 0;
+}
+.vb-contact-hero-name {
+    font-size: 1.375rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--vb-text-primary);
+    margin: 0 0 0.1875rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Right zone: metrics row */
+.vb-contact-hero-metrics {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    flex-shrink: 0;
+}
+.vb-contact-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    text-align: center;
+}
+.vb-contact-metric-value {
+    font-size: 1.375rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--vb-text-primary);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.3;
+}
+.vb-contact-metric-value--date {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+.vb-contact-metric-label {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--vb-text-ghost);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+/* XL avatar (shared between contact hero and any profile surface) */
 .vb-avatar-xl {
     width: 56px;
     height: 56px;
@@ -4160,14 +4230,8 @@
     font-weight: 700;
     flex-shrink: 0;
 }
-.vb-profile-name {
-    font-size: 1.375rem;
-    font-weight: 700;
-    letter-spacing: -0.025em;
-    color: var(--vb-text-primary);
-    margin: 0 0 0.1875rem;
-    line-height: 1.2;
-}
+
+/* Profile meta row (shared component, used inside hero and other surfaces) */
 .vb-profile-meta-row {
     display: flex;
     align-items: center;
@@ -4189,57 +4253,26 @@
     flex-shrink: 0;
 }
 
-/* Horizontal stats strip — elevated containment */
-.vb-profile-stats {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    padding: 1rem 1.25rem;
-    background: var(--vb-bg-card);
-    border-radius: var(--vb-radius-lg);
-    box-shadow: var(--vb-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
-    margin-bottom: 1.5rem;
-}
-.vb-profile-stat {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-}
-.vb-profile-stat-value {
-    font-size: 1.375rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: var(--vb-text-primary);
-    font-variant-numeric: tabular-nums;
-}
-.vb-profile-stat-value--date {
-    font-size: 0.875rem;
-    font-weight: 600;
-}
-.vb-profile-stat-label {
-    font-size: 0.6875rem;
-    font-weight: 500;
-    color: var(--vb-text-ghost);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-.vb-profile-stat-divider {
-    width: 1px;
-    height: 2rem;
-    background: var(--vb-border-subtle);
-    flex-shrink: 0;
-}
-
-@media (max-width: 640px) {
-    .vb-profile-header { gap: 0.875rem; }
+@media (max-width: 768px) {
+    .vb-contact-hero {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.25rem;
+    }
+    .vb-contact-hero-metrics {
+        width: 100%;
+        justify-content: space-between;
+        padding-top: 1rem;
+        border-top: 1px solid var(--vb-border-subtle);
+    }
+    .vb-contact-hero-identity { gap: 0.875rem; }
     .vb-avatar-xl { width: 44px; height: 44px; font-size: 1rem; }
-    .vb-profile-name { font-size: 1.125rem; }
-    .vb-profile-stats { flex-wrap: wrap; gap: 1rem; }
-    .vb-profile-stat-divider { display: none; }
+    .vb-contact-hero-name { font-size: 1.125rem; }
 }
 
 /* Pre-wrap for notes */
 .vb-pre-wrap { white-space: pre-wrap; }
+
 
 /* ── Breadcrumb ─────────────────────────────────────────────── */
 
