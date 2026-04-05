@@ -102,7 +102,7 @@ ob_start();
 
 <!-- Upcoming Bookings (cross-tenant) -->
 <?php if (!empty($upcoming)): ?>
-<div class="vb-table-container vb-fade-in-up stagger-5" style="margin-bottom: 1.5rem;">
+<div class="vb-table-container vb-fade-in-up stagger-5 vb-mb-lg">
     <div class="vb-table-toolbar">
         <div class="vb-table-toolbar-title"><?= __('admin.dashboard.upcoming') ?></div>
         <a href="/admin/bookings" class="vb-btn vb-btn-ghost vb-btn-sm">
@@ -119,6 +119,7 @@ ob_start();
                     <th><?= __('admin.bookings.date_time') ?></th>
                     <th><?= __('admin.bookings.status') ?></th>
                     <th><?= __('admin.bookings.tenant') ?></th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -140,6 +141,12 @@ ob_start();
                     </td>
                     <td>
                         <span class="vb-cell-secondary"><?= htmlspecialchars($b['tenant_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></span>
+                    </td>
+                    <td class="vb-text-right">
+                        <a href="/admin/bookings/<?= htmlspecialchars($b['id'], ENT_QUOTES, 'UTF-8') ?>"
+                           class="vb-btn vb-btn-ghost vb-btn-sm" title="<?= __('admin.bookings.view') ?>">
+                            <i data-lucide="eye" class="vb-icon-sm"></i>
+                        </a>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -181,27 +188,32 @@ ob_start();
     </div>
 </div>
 <?php else: ?>
-<!-- Quick Actions -->
-<div class="vb-section-title vb-fade-in-up stagger-5" style="margin-bottom: 0.75rem;"><?= __('admin.common.actions') ?></div>
-<div class="vb-quickstart vb-fade-in-up stagger-5">
-    <a href="/admin/tenants/create" class="vb-quickstart-card">
-        <div class="vb-quickstart-icon">
-            <i data-lucide="plus"></i>
-        </div>
-        <div class="vb-quickstart-text">
-            <div class="vb-quickstart-title"><?= __('admin.tenants.create') ?></div>
-            <div class="vb-quickstart-desc"><?= __('admin.dashboard.create_desc') ?></div>
-        </div>
-    </a>
-    <a href="/admin/tenants" class="vb-quickstart-card">
-        <div class="vb-quickstart-icon vb-quickstart-icon-secondary">
-            <i data-lucide="building-2"></i>
-        </div>
-        <div class="vb-quickstart-text">
-            <div class="vb-quickstart-title"><?= __('admin.tenants.title') ?></div>
-            <div class="vb-quickstart-desc"><?= __('admin.dashboard.tenants_desc') ?></div>
-        </div>
-    </a>
+<!-- Quick Actions — action rail pattern -->
+<div class="vb-card vb-card-flush vb-fade-in-up stagger-5">
+    <nav class="vb-action-rail">
+        <div class="vb-action-rail-title"><?= __('admin.common.actions') ?></div>
+        <a href="/admin/tenants/create" class="vb-action-rail-item">
+            <span class="vb-action-rail-icon"><i data-lucide="plus"></i></span>
+            <span class="vb-action-rail-text">
+                <div class="vb-action-rail-label"><?= __('admin.tenants.create') ?></div>
+                <div class="vb-action-rail-hint"><?= __('admin.dashboard.create_desc') ?></div>
+            </span>
+        </a>
+        <a href="/admin/tenants" class="vb-action-rail-item">
+            <span class="vb-action-rail-icon"><i data-lucide="building-2"></i></span>
+            <span class="vb-action-rail-text">
+                <div class="vb-action-rail-label"><?= __('admin.tenants.title') ?></div>
+                <div class="vb-action-rail-hint"><?= __('admin.dashboard.tenants_desc') ?></div>
+            </span>
+        </a>
+        <a href="/admin/bookings" class="vb-action-rail-item">
+            <span class="vb-action-rail-icon"><i data-lucide="calendar"></i></span>
+            <span class="vb-action-rail-text">
+                <div class="vb-action-rail-label"><?= __('admin.bookings.title') ?></div>
+                <div class="vb-action-rail-hint"><?= __('admin.dashboard.view_all_bookings_desc') ?></div>
+            </span>
+        </a>
+    </nav>
 </div>
 <?php endif; ?>
 

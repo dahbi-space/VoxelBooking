@@ -111,8 +111,7 @@ ob_start();
     <div class="vb-card overflow-hidden">
         <div class="flex flex-col">
             <template x-for="(daySlots, dayIndex) in days" :key="dayIndex">
-            <div class="flex flex-col md:flex-row md:items-start gap-4 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors border-b border-[var(--vb-border-subtle)] last:border-0"
-                 style="padding: 1.25rem 1.5rem;"
+            <div class="flex flex-col md:flex-row md:items-start gap-4 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors border-b border-[var(--vb-border-subtle)] last:border-0 vb-avail-day-row"
                  :class="daySlots.length === 0 ? 'opacity-60' : ''">
                  
                 <!-- Day Label -->
@@ -155,7 +154,7 @@ ob_start();
                                     class="text-[var(--vb-text-tertiary)] hover:text-[var(--vb-error)] p-1.5 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                                     @click="removeWindow(dayIndex, idx)"
                                     title="<?= __('admin.availability.remove_window') ?>">
-                                <i data-lucide="x" class="w-4 h-4"></i>
+                                <i data-lucide="x" class="vb-icon-md"></i>
                             </button>
                         </div>
                     </template>
@@ -168,7 +167,7 @@ ob_start();
                             x-show="daySlots.length > 0"
                             @click="addWindow(dayIndex)"
                             title="<?= __('admin.availability.add_window') ?>">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <i data-lucide="plus" class="vb-icon-md"></i>
                     </button>
                 </div>
 
@@ -179,7 +178,7 @@ ob_start();
 
     <div class="vb-form-actions mt-6">
         <button type="submit" class="vb-btn vb-btn-primary" id="save-availability-btn">
-            <i data-lucide="save" class="w-4 h-4"></i>
+            <i data-lucide="save" class="vb-icon-md"></i>
             <?= __('admin.availability.save') ?>
         </button>
     </div>

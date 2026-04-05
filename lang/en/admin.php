@@ -79,6 +79,7 @@ return [
         'completed'           => 'Completed',
         'create_desc'         => 'Set up a new business with services and booking page',
         'tenants_desc'        => 'Manage existing businesses, services, and bookings',
+        'view_all_bookings_desc' => 'Cross-tenant booking ledger',
         'vs_last_period'      => 'vs last period',
         'schedule_today'      => 'Today\'s schedule',
         'no_schedule'         => 'No bookings scheduled for today',

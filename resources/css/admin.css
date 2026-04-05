@@ -3077,6 +3077,7 @@ body.is-impersonating .vb-main {
     display: flex;
     flex-direction: column;
     gap: 0;
+    padding: 0.75rem 1.25rem;
 }
 .vb-action-rail-title {
     font-size: 0.6875rem;
@@ -3213,6 +3214,11 @@ body.is-impersonating .vb-main {
 .vb-selector-strip .vb-input {
     max-width: 280px;
     font-size: 0.8125rem;
+}
+
+/* ── Availability Day Row ──────────────────────────────────── */
+.vb-avail-day-row {
+    padding: 1.25rem 1.5rem;
 }
 
 /* ── Lucide Icon Sizing ─────────────────────────────────────── */
