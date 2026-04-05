@@ -163,6 +163,39 @@ final class BookingLinkCopyOutputTest extends TestCase
         );
     }
 
+    // ── Surface 4b: General Settings — Server-rendered fallbacks ──
+
+    public function test_general_settings_slug_has_server_rendered_value(): void
+    {
+        $html = $this->renderGeneralSettings();
+
+        // Input must have a real value attribute so the form works without JS
+        $this->assertMatchesRegularExpression(
+            '/name="slug"[^>]*value="test-salon"/',
+            $html,
+            'Slug input must have a server-rendered value attribute for progressive enhancement'
+        );
+    }
+
+    public function test_general_settings_url_preview_has_server_rendered_text(): void
+    {
+        $html = $this->renderGeneralSettings();
+
+        // URL code element must contain server-rendered URL text (not empty)
+        $this->assertMatchesRegularExpression(
+            '/<code[^>]*>https:\/\/voxelbooking-app\.test\/book\/test-salon<\/code>/',
+            $html,
+            'URL preview <code> must contain server-rendered booking URL for no-JS fallback'
+        );
+
+        // Open link must have a real href (not just an Alpine :href)
+        $this->assertStringContainsString(
+            'href="/book/test-salon"',
+            $html,
+            'Open link must have a server-rendered href attribute for no-JS fallback'
+        );
+    }
+
     // ── Renderers ──
 
     private function renderDashboardBusiness(): string

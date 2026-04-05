@@ -93,9 +93,11 @@ ob_start();
                 </div>
             </div>
             <div class="vb-card-body">
+                <?php $effectiveSlugEsc = htmlspecialchars($effectiveSlug, ENT_QUOTES, 'UTF-8'); ?>
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-slug"><?= __('admin.tenant_settings.field_slug') ?></label>
                     <input type="text" class="vb-input" id="ts-slug" name="slug"
+                           value="<?= $effectiveSlugEsc ?>"
                            x-model="slug"
                            @input="normalize()"
                            maxlength="100"
@@ -103,9 +105,10 @@ ob_start();
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_slug_hint') ?></span>
                 </div>
                 <div class="vb-public-url-inline">
-                    <code class="vb-public-url-text" x-text="fullUrl"></code>
+                    <code class="vb-public-url-text" x-text="fullUrl"><?= htmlspecialchars($baseUrl . $effectiveSlug, ENT_QUOTES, 'UTF-8') ?></code>
                     <div class="vb-public-url-actions">
-                        <a :href="'/book/' + slug"
+                        <a href="/book/<?= $effectiveSlugEsc ?>"
+                           :href="'/book/' + slug"
                            target="_blank" rel="noopener"
                            class="vb-public-url-btn" title="<?= __('admin.tenants.view_booking_page') ?>">
                             <i data-lucide="external-link"></i>

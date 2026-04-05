@@ -60,7 +60,7 @@ final class TenantSettingsController
         $email    = trim($request->string('email'));
         $phone    = trim($request->string('phone')) ?: null;
         $slugRaw  = trim($request->string('slug'));
-        $slug     = $slugRaw !== '' ? strtolower($slugRaw) : null;
+        $slug     = $slugRaw !== '' ? $slugRaw : null;
         $timezone   = trim($request->string('timezone')) ?: 'UTC';
         $locale     = trim($request->string('locale')) ?: 'en';
         $currency   = trim($request->string('currency')) ?: 'EUR';
