@@ -29,6 +29,15 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
 <!DOCTYPE html>
 <html lang="<?= \App\Engine\Locale::getLocale() ?>">
 <head>
+    <script>
+    // Theme bootstrap: must run before CSS paints to prevent FOUC.
+    // Reads stored preference, falls back to system prefers-color-scheme.
+    (function(){
+        var t = localStorage.getItem('vb-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+    })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">

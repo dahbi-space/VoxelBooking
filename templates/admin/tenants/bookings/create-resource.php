@@ -10,6 +10,7 @@ $resources = $resources ?? [];
 $old       = $old ?? [];
 $baseUrl   = "/admin/tenants/" . htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8');
 
+$activePage  = 'bookings';
 ob_start();
 ?>
 
@@ -44,7 +45,7 @@ ob_start();
                 <div class="vb-form-row">
                     <div class="vb-form-group">
                         <label for="create_resource_id" class="vb-label"><?= __('admin.bookings.label_resource') ?> <span class="vb-required">*</span></label>
-                        <select id="create_resource_id" name="resource_id" class="vb-input w-full" required>
+                        <select id="create_resource_id" name="resource_id" class="vb-input" required>
                             <option value=""><?= __('admin.bookings.placeholder_select_resource') ?></option>
                             <?php foreach ($resources as $r): ?>
                                 <option value="<?= htmlspecialchars($r['id'], ENT_QUOTES, 'UTF-8') ?>"
@@ -58,7 +59,7 @@ ob_start();
 
                     <div class="vb-form-group">
                         <label for="create_guest_count" class="vb-label"><?= __('admin.bookings.label_guests') ?> <span class="vb-required">*</span></label>
-                        <input type="number" id="create_guest_count" name="guest_count" class="vb-input w-full" required
+                        <input type="number" id="create_guest_count" name="guest_count" class="vb-input" required
                                min="1" value="<?= htmlspecialchars($old['guest_count'] ?? '1', ENT_QUOTES, 'UTF-8') ?>">
                     </div>
                 </div>
@@ -66,13 +67,13 @@ ob_start();
                 <div class="vb-form-row">
                     <div class="vb-form-group">
                         <label for="create_check_in" class="vb-label"><?= __('admin.bookings.label_check_in') ?> <span class="vb-required">*</span></label>
-                        <input type="date" id="create_check_in" name="check_in" class="vb-input w-full" required
+                        <input type="date" id="create_check_in" name="check_in" class="vb-input" required
                                value="<?= htmlspecialchars($old['check_in'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                     </div>
 
                     <div class="vb-form-group">
                         <label for="create_check_out" class="vb-label"><?= __('admin.bookings.label_check_out') ?> <span class="vb-required">*</span></label>
-                        <input type="date" id="create_check_out" name="check_out" class="vb-input w-full" required
+                        <input type="date" id="create_check_out" name="check_out" class="vb-input" required
                                value="<?= htmlspecialchars($old['check_out'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                     </div>
                 </div>
@@ -91,13 +92,13 @@ ob_start();
                 <div class="vb-form-row">
                     <div class="vb-form-group">
                         <label for="create_customer_name" class="vb-label"><?= __('admin.bookings.label_customer_name') ?> <span class="vb-required">*</span></label>
-                        <input type="text" id="create_customer_name" name="customer_name" class="vb-input w-full" required
+                        <input type="text" id="create_customer_name" name="customer_name" class="vb-input" required
                                value="<?= htmlspecialchars($old['customer_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                autocomplete="off">
                     </div>
                     <div class="vb-form-group">
                         <label for="create_customer_email" class="vb-label"><?= __('admin.bookings.label_customer_email') ?> <span class="vb-required">*</span></label>
-                        <input type="email" id="create_customer_email" name="customer_email" class="vb-input w-full" required
+                        <input type="email" id="create_customer_email" name="customer_email" class="vb-input" required
                                value="<?= htmlspecialchars($old['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                autocomplete="off">
                     </div>
@@ -111,7 +112,7 @@ ob_start();
                                 <span class="vb-required">*</span>
                             <?php endif; ?>
                         </label>
-                        <input type="tel" id="create_customer_phone" name="customer_phone" class="vb-input w-full"
+                        <input type="tel" id="create_customer_phone" name="customer_phone" class="vb-input"
                                value="<?= htmlspecialchars($old['customer_phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                <?php if ((int) ($tenant['require_phone'] ?? 0) === 1): ?>required<?php endif; ?>
                                autocomplete="off">
@@ -132,7 +133,7 @@ ob_start();
             </div>
             <div class="vb-form-grid">
                 <div class="vb-form-group">
-                    <textarea id="create_notes" name="notes" class="vb-input w-full" rows="3"
+                    <textarea id="create_notes" name="notes" class="vb-input" rows="3"
                               placeholder="<?= __('admin.bookings.label_notes') ?>…"><?= htmlspecialchars($old['notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
                 </div>
             </div>
@@ -145,7 +146,7 @@ ob_start();
             <?= __('admin.common.cancel') ?>
         </a>
         <button type="submit" class="vb-btn vb-btn-primary">
-            <i data-lucide="check" style="width: 15px; height: 15px;"></i>
+            <i data-lucide="check" class="vb-icon-sm"></i>
             <?= __('admin.bookings.btn_create_booking') ?>
         </button>
     </div>

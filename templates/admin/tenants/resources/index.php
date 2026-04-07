@@ -2,7 +2,7 @@
 /**
  * Resources list — tenant-scoped, resource-pattern only.
  *
- * Columns: Name, Capacity, Price/night, Stay range, Status, Active bookings, Actions.
+ * Columns: Order, Name, Capacity, Price/night, Stay range, Status, Active bookings, Actions.
  *
  * Variables: $tenant, $resources, $tenantId, $csrfToken, $flash
  */
@@ -50,6 +50,7 @@ ob_start();
             <table class="vb-table" id="resources-table">
                 <thead>
                     <tr>
+                        <th class="vb-text-center"><?= __('admin.common.col_order') ?></th>
                         <th><?= __('admin.resources.col_name') ?></th>
                         <th class="vb-text-center"><?= __('admin.resources.col_capacity') ?></th>
                         <th><?= __('admin.resources.col_price') ?></th>
@@ -60,8 +61,37 @@ ob_start();
                     </tr>
                 </thead>
                 <tbody>
+                    <?php
+                    // Pre-compute group boundaries for chevron disabled state.
+                    // Table sorts: is_active DESC, sort_order ASC — active rows first.
+                    $groupFirst = $groupLast = [];
+                    foreach ($resources as $idx => $r) {
+                        $g = (int) $r['is_active'];
+                        if (!isset($groupFirst[$g])) $groupFirst[$g] = $idx;
+                        $groupLast[$g] = $idx;
+                    }
+                    ?>
                     <?php foreach ($resources as $i => $res): ?>
+                    <?php $grp = (int) $res['is_active']; ?>
                     <tr class="vb-fade-in-up stagger-<?= min($i + 1, 6) ?> <?= !$res['is_active'] ? 'vb-row-inactive' : '' ?>">
+                        <td class="vb-text-center">
+                            <div class="vb-reorder-group">
+                                <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/resources/<?= htmlspecialchars($res['id'], ENT_QUOTES, 'UTF-8') ?>/reorder" class="vb-form-flush">
+                                    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="direction" value="up">
+                                    <button type="submit" class="vb-reorder-btn" title="<?= __('admin.common.move_up') ?>" <?= $i === $groupFirst[$grp] ? 'disabled' : '' ?>>
+                                        <i data-lucide="chevron-up"></i>
+                                    </button>
+                                </form>
+                                <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/resources/<?= htmlspecialchars($res['id'], ENT_QUOTES, 'UTF-8') ?>/reorder" class="vb-form-flush">
+                                    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="direction" value="down">
+                                    <button type="submit" class="vb-reorder-btn" title="<?= __('admin.common.move_down') ?>" <?= $i === $groupLast[$grp] ? 'disabled' : '' ?>>
+                                        <i data-lucide="chevron-down"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
                         <td>
                             <div>
                                 <span class="vb-cell-name"><?= htmlspecialchars($res['name'], ENT_QUOTES, 'UTF-8') ?></span>

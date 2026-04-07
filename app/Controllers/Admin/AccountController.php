@@ -28,7 +28,7 @@ final class AccountController
 {
     public function show(Request $request): Response
     {
-        return $this->render('admin.settings.account', __('admin.account.page_title'), [
+        return $this->render('admin.account', __('admin.account.page_title'), [
             'flash' => $this->flash(),
         ]);
     }

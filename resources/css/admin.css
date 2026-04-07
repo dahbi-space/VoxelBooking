@@ -424,6 +424,7 @@
         transition: box-shadow var(--vb-duration-normal) var(--vb-ease-out);
     }
     .vb-card-flush { padding: 0; overflow: hidden; }
+    .vb-card-clip  { overflow: hidden; }
     .vb-card:hover { box-shadow: var(--vb-shadow-card-hover); }
     .vb-card-header { margin-bottom: 1.25rem; }
     .vb-card-title {
@@ -935,24 +936,6 @@
         transition: width var(--vb-duration-normal), background var(--vb-duration-normal);
     }
 
-    /* ══════════════════════════════════════════════════════════════
-       TOGGLE SWITCH — Premium slide toggle
-       ══════════════════════════════════════════════════════════════ */
-    .vb-toggle {
-        position: relative; width: 40px; height: 22px;
-        background: var(--vb-border-default); border-radius: 11px;
-        cursor: pointer; border: none;
-        transition: background var(--vb-duration-fast);
-    }
-    .vb-toggle::after {
-        content: ''; position: absolute; top: 2px; left: 2px;
-        width: 18px; height: 18px; border-radius: 50%;
-        background: #fff;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-        transition: transform var(--vb-duration-normal) var(--vb-ease-spring);
-    }
-    .vb-toggle.is-on { background: var(--vb-accent); }
-    .vb-toggle.is-on::after { transform: translateX(18px); }
 
     /* ══════════════════════════════════════════════════════════════
        AVATAR — User/entity identity
@@ -1816,10 +1799,12 @@
 }
 
 .vb-upcoming-row {
-    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
     padding: 0.875rem 1.25rem;
     border-bottom: 1px solid var(--vb-border-subtle, rgba(0, 0, 0, 0.04));
-    transition: background var(--vb-duration-fast), transform var(--vb-duration-fast);
+    transition: background var(--vb-duration-fast);
 }
 .vb-upcoming-row:last-child {
     border-bottom: none;
@@ -1827,7 +1812,7 @@
 .vb-upcoming-row:hover {
     background: var(--vb-bg-hover);
 }
-/* The body anchor carries the booking-detail link and the grid layout */
+/* The body anchor carries the booking-detail link and its internal grid */
 .vb-upcoming-row-body {
     display: grid;
     grid-template-columns: 1fr auto auto;
@@ -1835,6 +1820,36 @@
     gap: 0.75rem;
     text-decoration: none;
     color: inherit;
+    min-width: 0;
+}
+/* CRM action cell — right-hand column of upcoming-row grid.
+   Replaces the old absolute-positioned vb-crm-link pattern. */
+.vb-upcoming-crm {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    margin-left: 0.5rem;
+    border-radius: var(--vb-radius-md);
+    text-decoration: none;
+    color: var(--vb-text-tertiary);
+    opacity: 0.45;
+    transition: opacity var(--vb-duration-fast), color var(--vb-duration-fast),
+                background var(--vb-duration-fast);
+}
+.vb-upcoming-crm:hover {
+    color: var(--vb-accent);
+    opacity: 1;
+    background: var(--vb-accent-subtle);
+}
+.vb-upcoming-crm:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--vb-accent);
+    outline-offset: 1px;
+}
+.vb-upcoming-row:hover .vb-upcoming-crm {
+    opacity: 0.7;
 }
 
 .vb-upcoming-name {
@@ -2484,6 +2499,49 @@
 .vb-action-group .is-copied .vb-copy-check { display: inline-flex; }
 .vb-action-group .is-copied { color: var(--vb-success, #16A34A); }
 
+/* Row reorder — iOS-style segmented pill */
+.vb-reorder-group {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1px;
+    padding: 2px;
+    background: var(--vb-border-default);
+    border-radius: 8px;
+}
+.vb-reorder-group .vb-reorder-btn {
+    width: 30px;
+    height: 26px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    color: var(--vb-text-secondary);
+    background: var(--vb-bg-surface);
+    border: none;
+    cursor: pointer;
+    transition: color 120ms ease, background 120ms ease;
+}
+.vb-reorder-group .vb-reorder-btn:hover:not(:disabled) {
+    color: var(--vb-accent);
+    background: var(--vb-accent-subtle);
+}
+.vb-reorder-group .vb-reorder-btn:active:not(:disabled) {
+    transform: scale(0.92);
+}
+.vb-reorder-group .vb-reorder-btn:disabled {
+    color: var(--vb-text-ghost);
+    background: var(--vb-bg-surface);
+    cursor: default;
+    pointer-events: none;
+}
+.vb-reorder-group .vb-reorder-btn svg,
+.vb-reorder-group .vb-reorder-btn [data-lucide] {
+    width: 14px;
+    height: 14px;
+}
+
 /* Right-aligned text */
 .vb-table th.vb-text-right,
 .vb-table td.vb-text-right { text-align: right; }
@@ -2991,35 +3049,6 @@
 .vb-th-actions { text-align: right; }
 
 /* ══════════════════════════════════════════════════════════════
-   FILTER BAR — Bookings filter strip
-   ══════════════════════════════════════════════════════════════ */
-.vb-filter-bar {
-    display: flex;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    flex-wrap: wrap;
-    align-items: flex-end;
-}
-
-.vb-filter-bar .vb-form-group {
-    margin: 0;
-}
-
-.vb-filter-bar .vb-form-group--min {
-    min-width: 140px;
-}
-
-.vb-filter-bar .vb-form-group--grow {
-    flex: 1;
-    min-width: 180px;
-}
-
-.vb-filter-bar .vb-label {
-    font-size: var(--vb-text-xs);
-    margin-bottom: 2px;
-}
-
-/* ══════════════════════════════════════════════════════════════
    QUICKSTART — Dashboard action cards
    ══════════════════════════════════════════════════════════════ */
 .vb-quickstart {
@@ -3229,9 +3258,8 @@
     outline: 2px solid var(--vb-accent);
     outline-offset: 1px;
 }
-/* Intensify on parent hover */
-.vb-schedule-pill:hover > .vb-crm-link,
-.vb-upcoming-row:hover > .vb-crm-link {
+/* Intensify on parent hover (schedule pills) */
+.vb-schedule-pill:hover > .vb-crm-link {
     opacity: 0.8;
 }
 
@@ -3301,10 +3329,6 @@
     font-size: 0.8125rem;
 }
 
-/* ── Availability Day Row ──────────────────────────────────── */
-.vb-avail-day-row {
-    padding: 1.25rem 1.5rem;
-}
 
 /* ── Lucide Icon Sizing ─────────────────────────────────────── */
 /* Shared icon sizing — icons as typography, not stickers */
@@ -3321,6 +3345,25 @@
 .vb-mb-lg { margin-bottom: 1.5rem; }
 .vb-mb-xl { margin-bottom: 2rem; }
 .vb-ml-auto { margin-left: auto; }
+
+/* ── Details Accordion ─────────────────────────────────────── */
+/* Replaces Tailwind group/open utilities for <details> collapse.
+   Uses native [open] attribute selector — no JS needed. */
+.vb-details-summary {
+    cursor: pointer;
+    user-select: none;
+}
+.vb-details-summary::-webkit-details-marker { display: none; }
+.vb-details-summary::marker { display: none; content: ''; }
+.vb-details-accordion[open] > .vb-details-summary {
+    border-bottom: 1px solid var(--vb-border-subtle);
+}
+.vb-details-chevron {
+    transition: transform var(--vb-duration-fast) var(--vb-ease-out);
+}
+.vb-details-accordion[open] > .vb-details-summary .vb-details-chevron {
+    transform: rotate(90deg);
+}
 
 /* Full-width button (block style) */
 .vb-btn-block {
@@ -4632,59 +4675,6 @@
 .vb-pre-wrap { white-space: pre-wrap; }
 
 
-/* ── Breadcrumb ─────────────────────────────────────────────── */
-
-.vb-breadcrumb {
-    margin-bottom: var(--space-4);
-}
-
-.vb-breadcrumb-link {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--vb-text-secondary);
-    text-decoration: none;
-    transition: color 0.15s ease;
-}
-
-.vb-breadcrumb-link:hover {
-    color: var(--vb-accent);
-}
-
-/* ── Search Input ───────────────────────────────────────────── */
-
-.vb-search-input-wrapper {
-    position: relative;
-    flex: 1;
-    min-width: 200px;
-}
-
-.vb-search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 14px;
-    height: 14px;
-    color: var(--vb-text-secondary);
-    pointer-events: none;
-}
-
-.vb-search-input {
-    padding-left: 36px !important;
-}
-
-/* ── Filter Form ────────────────────────────────────────────── */
-
-.vb-filter-form {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-}
-
 /* ── Clickable Table Rows ───────────────────────────────────── */
 
 .vb-clickable-row {
@@ -4971,146 +4961,186 @@
     background: var(--vb-error-bg);
 }
 
-/* ── Availability Grid ── */
+/* ── Availability Row Layout ── */
+/* Row-based availability editor: toggle | day-label | time-windows | add-btn.
+   Replaces the retired card-grid approach.
+   Template: templates/admin/tenants/availability/index.php */
 
-.vb-availability-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 0.625rem;
-}
-@media (max-width: 1400px) {
-    .vb-availability-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-@media (max-width: 1100px) {
-    .vb-availability-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-@media (max-width: 768px) {
-    .vb-availability-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.5rem;
-    }
-}
-@media (max-width: 480px) {
-    .vb-availability-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.vb-availability-day {
-    background: var(--vb-bg-surface);
-    border: 1px solid var(--vb-border-subtle);
-    border-radius: var(--vb-radius-lg);
-    padding: 0.75rem;
-    min-height: 110px;
+.vb-avail-list {
     display: flex;
     flex-direction: column;
-    transition:
-        border-color var(--vb-duration-fast) var(--vb-ease-out),
-        opacity var(--vb-duration-fast) var(--vb-ease-out),
-        box-shadow var(--vb-duration-fast) var(--vb-ease-out);
-}
-.vb-availability-day:hover {
-    border-color: var(--vb-border-default);
-    box-shadow: var(--vb-shadow-xs);
-}
-.vb-availability-day.is-closed {
-    opacity: 0.5;
-}
-.vb-availability-day.is-closed:hover {
-    opacity: 0.75;
-    border-color: var(--vb-border-default);
 }
 
-.vb-availability-day-header {
+.vb-avail-day-row {
     display: flex;
+    flex-direction: row;
     align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.5rem;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
     border-bottom: 1px solid var(--vb-border-subtle);
+    transition: background var(--vb-duration-fast) var(--vb-ease-out);
+}
+.vb-avail-day-row:last-child { border-bottom: 0; }
+.vb-avail-day-row:hover { background: var(--vb-bg-hover); }
+.vb-avail-day-row.is-closed { opacity: 0.6; }
+
+@media (max-width: 640px) {
+    .vb-avail-day-row {
+        flex-direction: column;
+        padding: 1rem;
+    }
 }
 
-.vb-availability-day-label-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.0625rem;
-}
-.vb-availability-day-label {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--vb-text-primary);
-    margin: 0;
-    letter-spacing: -0.01em;
-}
-.vb-availability-day-count {
-    font-size: 0.625rem;
-    font-weight: 500;
-    color: var(--vb-text-ghost);
-    text-transform: lowercase;
-}
-
-.vb-availability-windows {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.vb-availability-closed {
-    font-size: 0.6875rem;
-    color: var(--vb-text-ghost);
-    text-align: center;
-    padding: 1rem 0;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    font-weight: 500;
-    margin: 0;
-    flex: 1;
+.vb-avail-label {
     display: flex;
     align-items: center;
-    justify-content: center;
-}
-
-.vb-availability-window {
-    display: flex;
-    align-items: center;
-    gap: 0.1875rem;
-    margin-bottom: 0.375rem;
-    animation: vb-fade-in var(--vb-duration-fast) var(--vb-ease-out);
-}
-.vb-availability-window:last-of-type {
-    margin-bottom: 0;
-}
-
-.vb-availability-inputs {
-    display: flex;
-    align-items: center;
-    gap: 0.1875rem;
-    flex: 1;
-    min-width: 0;
-}
-.vb-availability-inputs .vb-input {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.6875rem;
-    font-variant-numeric: tabular-nums;
-    padding: 0.25rem 0.3125rem;
-    text-align: center;
-    border-radius: var(--vb-radius-md);
-}
-.vb-availability-inputs .vb-input:focus {
-    border-color: var(--vb-accent);
-    box-shadow: 0 0 0 2px var(--vb-accent-subtle);
-}
-
-.vb-availability-separator {
-    color: var(--vb-text-ghost);
-    font-size: 0.5625rem;
+    gap: 1rem;
+    width: 14rem;
+    height: 36px;
     flex-shrink: 0;
-    opacity: 0.6;
+}
+@media (max-width: 640px) {
+    .vb-avail-label { width: 100%; justify-content: space-between; }
+}
+
+.vb-avail-day-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--vb-text-primary);
+}
+
+.vb-avail-windows {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.vb-avail-closed {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--vb-text-tertiary);
+    display: flex;
+    align-items: center;
+    height: 36px;
+}
+
+.vb-avail-window {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.vb-avail-window .vb-input {
+    width: auto;
+    max-width: 140px;
+    height: 36px;
+    padding: 0.375rem 0.75rem;
+    font-size: var(--vb-text-sm);
+    font-variant-numeric: tabular-nums;
+}
+@media (min-width: 768px) {
+    .vb-avail-window .vb-input { width: 9rem; }
+}
+
+.vb-avail-separator {
+    color: var(--vb-text-tertiary);
+    font-size: var(--vb-text-sm);
+    font-weight: 500;
+}
+
+.vb-avail-remove {
+    padding: 0.375rem;
+    border-radius: var(--vb-radius-md);
+    color: var(--vb-text-tertiary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--vb-duration-fast), color var(--vb-duration-fast);
+}
+.vb-avail-window:hover .vb-avail-remove,
+.vb-avail-remove:focus-visible {
+    opacity: 1;
+}
+.vb-avail-remove:hover {
+    color: var(--vb-error);
+}
+
+.vb-avail-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: 4rem;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+.vb-avail-add {
+    padding: 0.375rem;
+    border-radius: var(--vb-radius-md);
+    color: var(--vb-text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color var(--vb-duration-fast);
+}
+.vb-avail-add:hover { color: var(--vb-text-primary); }
+
+/* ── Toggle Switch ── */
+/* Reusable on/off toggle. Pure CSS via hidden checkbox + sibling. */
+.vb-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.vb-toggle-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+.vb-toggle-track {
+    width: 2.125rem;   /* 34px */
+    height: 1.125rem;  /* 18px */
+    border-radius: 9999px;
+    background: var(--vb-bg-well);
+    border: 1px solid var(--vb-border-subtle);
+    transition:
+        background var(--vb-duration-fast) var(--vb-ease-out),
+        border-color var(--vb-duration-fast) var(--vb-ease-out);
+    position: relative;
+}
+.vb-toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 0.875rem;   /* 14px */
+    height: 0.875rem;  /* 14px */
+    border-radius: 9999px;
+    background: white;
+    transition: transform var(--vb-duration-fast) var(--vb-ease-out);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+}
+.vb-toggle-input:checked + .vb-toggle-track {
+    background: var(--vb-accent);
+    border-color: var(--vb-accent);
+}
+.vb-toggle-input:checked + .vb-toggle-track::after {
+    transform: translateX(1rem); /* 16px travel: 32px inner − 14px knob − 2×1px inset */
+    border-color: transparent;
+}
+.vb-toggle-input:focus-visible + .vb-toggle-track {
+    outline: 2px solid var(--vb-accent);
+    outline-offset: 2px;
 }
 
 /* Badges */
@@ -5893,3 +5923,257 @@
 
 .vb-tooltip--above .vb-tooltip-arrow { bottom: -4px; }
 .vb-tooltip--below .vb-tooltip-arrow { top: -4px; }
+
+/* ══════════════════════════════════════════════════
+   Image Upload — Shared Container + Hidden Input
+   ══════════════════════════════════════════════════ */
+.vb-upload {
+    position: relative;
+}
+.vb-upload-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════
+   AVATAR variant — compact circular picker
+   ══════════════════════════════════════════════════ */
+.vb-avatar-field {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 0;
+    position: relative;
+}
+
+/* Clickable circle target */
+.vb-avatar-target {
+    display: block;
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* Empty state: solid neutral circle with user icon */
+.vb-avatar-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: var(--vb-bg-well);
+    border: 2px solid var(--vb-border-default);
+    border-radius: 50%;
+    transition: border-color var(--vb-duration-fast) var(--vb-ease-out),
+                background var(--vb-duration-fast) var(--vb-ease-out);
+}
+.vb-avatar-empty-icon {
+    width: 32px;
+    height: 32px;
+    color: var(--vb-text-tertiary);
+}
+.vb-avatar-target:hover .vb-avatar-empty {
+    border-color: var(--vb-accent);
+    background: var(--vb-accent-subtle);
+}
+
+/* Populated state: full circle image */
+.vb-avatar-filled {
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+.vb-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 50%;
+}
+/* Hover overlay with camera icon */
+.vb-avatar-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity var(--vb-duration-fast) var(--vb-ease-out);
+}
+.vb-avatar-target:hover .vb-avatar-overlay {
+    opacity: 1;
+}
+.vb-avatar-overlay-icon {
+    width: 22px;
+    height: 22px;
+    color: #fff;
+}
+
+/* Remove button: × badge at bottom-right of avatar */
+.vb-avatar-remove {
+    position: absolute;
+    bottom: -2px;
+    right: -6px;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--vb-bg-surface);
+    border: 1.5px solid var(--vb-border-strong);
+    color: var(--vb-text-primary);
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.04);
+    transition: all var(--vb-duration-fast) var(--vb-ease-out);
+}
+.vb-avatar-remove svg,
+.vb-avatar-remove [data-lucide] {
+    width: 12px;
+    height: 12px;
+}
+.vb-avatar-remove:hover {
+    color: #fff;
+    background: var(--vb-error);
+    border-color: var(--vb-error);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* ══════════════════════════════════════════════════
+   COVER variant — 16:9 media panel
+   ══════════════════════════════════════════════════ */
+.vb-cover-surface {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: 220px;
+    overflow: hidden;
+    border: 2px solid var(--vb-border-default);
+    border-radius: var(--vb-radius-lg, var(--vb-radius));
+    background: var(--vb-bg-well);
+    transition: border-color var(--vb-duration-fast) var(--vb-ease-out);
+}
+.vb-cover-surface:hover {
+    border-color: var(--vb-border-strong);
+}
+.vb-upload--cover.is-dragover .vb-cover-surface {
+    border-color: var(--vb-accent);
+    background: var(--vb-accent-subtle);
+}
+
+/* Cover image */
+.vb-cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Click zone — fills entire surface */
+.vb-cover-zone {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    border-radius: inherit;
+    transition: all var(--vb-duration-fast) var(--vb-ease-out);
+}
+.vb-cover-zone.is-empty {
+    border: 2px dashed var(--vb-border-default);
+    margin: 4px;
+    border-radius: calc(var(--vb-radius) - 2px);
+}
+.vb-cover-zone.is-empty:hover {
+    border-color: var(--vb-accent);
+    background: var(--vb-accent-subtle);
+}
+.vb-cover-zone.is-populated {
+    opacity: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+}
+.vb-cover-surface:hover .vb-cover-zone.is-populated {
+    opacity: 1;
+}
+
+/* Placeholder (empty state) */
+.vb-cover-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+    padding: 1rem;
+}
+.vb-cover-placeholder-icon {
+    width: 28px;
+    height: 28px;
+    color: var(--vb-text-tertiary);
+}
+.vb-cover-placeholder-text {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--vb-text-secondary);
+}
+.vb-cover-placeholder-hint {
+    font-size: 0.6875rem;
+    color: var(--vb-text-tertiary);
+    max-width: 200px;
+}
+
+/* Change label (overlay on hover) */
+.vb-cover-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #fff;
+    cursor: pointer;
+}
+
+/* Action bar below surface */
+.vb-cover-actions {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0 0;
+}
+.vb-cover-remove {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--vb-text-tertiary);
+    background: none;
+    border: 1px solid var(--vb-border-default);
+    border-radius: var(--vb-radius-sm);
+    cursor: pointer;
+    transition: all var(--vb-duration-fast) var(--vb-ease-out);
+}
+.vb-cover-remove svg,
+.vb-cover-remove [data-lucide] {
+    width: 12px;
+    height: 12px;
+}
+.vb-cover-remove:hover {
+    color: var(--vb-error);
+    border-color: var(--vb-error);
+    background: var(--vb-error-bg);
+}
+

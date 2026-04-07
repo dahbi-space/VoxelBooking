@@ -22,6 +22,7 @@ return [
         `price_label` VARCHAR(100) NULL DEFAULT NULL,
         `category` VARCHAR(100) NULL DEFAULT NULL,
         `color` VARCHAR(7) NULL DEFAULT NULL,
+        `cover_image_path` VARCHAR(500) NULL DEFAULT NULL,
         `max_per_day` INT NULL DEFAULT NULL,
         `requires_staff` TINYINT(1) NOT NULL DEFAULT 1,
         `staff_assignment_strategy` VARCHAR(20) NOT NULL DEFAULT 'first_available' COMMENT 'Valid: first_available, round_robin',

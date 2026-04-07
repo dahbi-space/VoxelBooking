@@ -17,7 +17,7 @@ import Alpine from '@alpinejs/csp';
 import { createIcons } from 'lucide';
 import {
     ChevronLeft, ChevronRight, ChevronDown, Clock, Globe, Check, X,
-    AlertCircle, Info, AlertTriangle, Calendar as CalendarIcon,
+    AlertCircle, Info, AlertTriangle, Calendar as CalendarIcon, CalendarCheck,
     User, Users, ExternalLink, Download, Plus, Minus, MapPin, Ticket,
     Sun, Moon, ArrowDown,
 } from 'lucide';
@@ -25,7 +25,7 @@ import { resolveInitialPartySize } from './party-size.js';
 
 const ICON_SET = {
     ChevronLeft, ChevronRight, ChevronDown, Clock, Globe, Check, X,
-    AlertCircle, Info, AlertTriangle, Calendar: CalendarIcon,
+    AlertCircle, Info, AlertTriangle, Calendar: CalendarIcon, CalendarCheck,
     User, Users, ExternalLink, Download, Plus, Minus, MapPin, Ticket,
     Sun, Moon, ArrowDown,
 };
@@ -292,9 +292,9 @@ Alpine.data('bookingWizard', () => ({
     },
 
     // ── Step transitions (spec: §6.4 Flow Orchestrator) ──
-    // Exit: opacity 0, translateY -8px, 150ms ease-in
-    // 50ms gap
-    // Enter: opacity 1, translateY 0, 200ms ease-out
+    // Exit:  .is-exiting → opacity 0, translateY(-10px), 180ms ease-in
+    // Swap:  after 200ms total (180ms exit + 20ms gap), step property changes
+    // Enter: @keyframes vb-step-enter → opacity 1, translateY(0), 250ms ease-out
     // Focus: move to first interactive element in new step
     goToStep(name) {
         // Flush any stale exit marks from prior transitions
@@ -335,7 +335,7 @@ Alpine.data('bookingWizard', () => ({
                     } catch (e) { /* cross-origin safety */ }
                 }
             });
-        }, 200); // 150ms exit + 50ms gap
+        }, 200); // 180ms exit animation + 20ms settle gap
     },
 
     // Remove .is-exiting from all step elements. Called before any
@@ -459,9 +459,9 @@ Alpine.data('bookingWizard', () => ({
             return;
         }
 
-        this.clearExitStates();
-        this.step = 'service';
-        this.$nextTick(() => createIcons({ icons: ICON_SET }));
+        // Use goToStep for proper exit animation when called from goBack().
+        // On init (step === 'loading'), goToStep still works correctly.
+        this.goToStep('service');
     },
 
     // Service card stagger index for animation-delay
@@ -660,7 +660,7 @@ Alpine.data('bookingWizard', () => ({
     },
 
     avatarUrl(member) {
-        return '/uploads/' + config.slug + '/' + member.avatar_path;
+        return member.avatar_path;
     },
 
     noAvatar(member) {
@@ -691,7 +691,11 @@ Alpine.data('bookingWizard', () => ({
 
     selectSlot(slot) {
         this.selectedSlot = slot;
-        setTimeout(() => this.goToStep('details'), 250);
+    },
+
+    confirmSlot() {
+        if (!this.selectedSlot) return;
+        this.goToStep('details');
     },
 
     isSlotSelected(slot) {
@@ -700,6 +704,16 @@ Alpine.data('bookingWizard', () => ({
 
     isSlotDimmed(slot) {
         return this.selectedSlot && this.selectedSlot.time !== slot.time;
+    },
+
+    get selectedSlotLabel() {
+        if (!this.selectedSlot || !this.selectedDate) return '';
+        const start = this.displaySlotTime(this.selectedSlot);
+        const end = this.selectedSlot.end_time
+            ? formatSlotDisplay(this.selectedSlot.end_time, this.selectedDate, this.tenantTz, this.customerTz)
+            : null;
+        const timeStr = end ? start + ' – ' + end : start;
+        return this.formatDateDisplay(this.selectedDate) + '  ·  ' + timeStr;
     },
 
     // ── Step 4: Details ──
@@ -1180,7 +1194,7 @@ Alpine.data('bookingWizard', () => ({
         this.rescheduleDates = [];
         this.rescheduleNewBooking = null;
 
-        this.step = 'reschedule-date';
+        this.goToStep('reschedule-date');
         await this.loadRescheduleDates();
     },
 
@@ -1193,7 +1207,7 @@ Alpine.data('bookingWizard', () => ({
         this.rescheduleSlots = [];
         this.rescheduleDates = [];
         this.rescheduleNewBooking = null;
-        this.step = 'manage';
+        this.goToStep('manage');
     },
 
     /**
@@ -1201,7 +1215,7 @@ Alpine.data('bookingWizard', () => ({
      */
     goBackToRescheduleDate() {
         this.rescheduleSlot = null;
-        this.step = 'reschedule-date';
+        this.goToStep('reschedule-date');
     },
 
     /**
@@ -1317,7 +1331,21 @@ Alpine.data('bookingWizard', () => ({
      */
     selectRescheduleSlot(slot) {
         this.rescheduleSlot = slot;
-        setTimeout(() => this.step = 'reschedule-review', 250);
+    },
+
+    confirmRescheduleSlot() {
+        if (!this.rescheduleSlot) return;
+        this.goToStep('reschedule-review');
+    },
+
+    get rescheduleSlotLabel() {
+        if (!this.rescheduleSlot || !this.rescheduleDate) return '';
+        const start = formatSlotDisplay(this.rescheduleSlot.time, this.rescheduleDate, this.tenantTz, this.customerTz);
+        const end = this.rescheduleSlot.end_time
+            ? formatSlotDisplay(this.rescheduleSlot.end_time, this.rescheduleDate, this.tenantTz, this.customerTz)
+            : null;
+        const timeStr = end ? start + ' – ' + end : start;
+        return this.formatDateDisplay(this.rescheduleDate) + '  ·  ' + timeStr;
     },
 
     /**
@@ -1370,7 +1398,7 @@ Alpine.data('bookingWizard', () => ({
 
             // Success
             this.rescheduleNewBooking = data.new_booking;
-            this.step = 'reschedule-confirmed';
+            this.goToStep('reschedule-confirmed');
         } catch {
             this.showToast(t('errors.connection'), 'error');
         } finally {
@@ -1494,7 +1522,7 @@ Alpine.data('bookingWizard', () => ({
         else if (target === 'guests') this.goToStep('guests');
         // Capacity pattern
         else if (target === 'party-size') this.goToStep('party-size');
-        else if (target === 'capacity-date') { this.loadCapacityDates(); }
+        else if (target === 'capacity-date') this.loadCapacityDates();
         else if (target === 'capacity-time') this.goToStep('capacity-time');
         // Event pattern
         else if (target === 'event-list') this.loadEvents();
@@ -1521,9 +1549,8 @@ Alpine.data('bookingWizard', () => ({
             return;
         }
 
-        this.clearExitStates();
-        this.step = 'resource';
-        this.$nextTick(() => createIcons({ icons: ICON_SET }));
+        // Use goToStep for proper exit animation when called from goBack().
+        this.goToStep('resource');
     },
 
     selectResource(resource) {
@@ -1828,7 +1855,9 @@ Alpine.data('bookingWizard', () => ({
     },
 
     async loadCapacityDates() {
-        this.step = 'loading';
+        // Transition to loading shimmer via orchestrator for proper exit animation.
+        // On init this is harmless (loading → loading is a no-op exit).
+        this.goToStep('loading');
         try {
             const year = this.capacityYear;
             const month = this.capacityMonth + 1;
@@ -1902,7 +1931,7 @@ Alpine.data('bookingWizard', () => ({
     },
 
     async loadCapacitySlots() {
-        this.step = 'loading';
+        this.goToStep('loading');
         try {
             const res = await this.api(`/capacity/slots?date=${this.selectedDate}&party_size=${this.partySize}`);
             this.capacitySlots = res.slots || [];
@@ -1916,7 +1945,18 @@ Alpine.data('bookingWizard', () => ({
 
     selectCapacitySlot(slot) {
         this.selectedCapacitySlot = slot;
+    },
+
+    confirmCapacitySlot() {
+        if (!this.selectedCapacitySlot) return;
         this.goToStep('details');
+    },
+
+    get capacitySlotLabel() {
+        if (!this.selectedCapacitySlot || !this.selectedDate) return '';
+        const slot = this.selectedCapacitySlot;
+        const time = this.formatCapacitySlotTime(slot.time) + ' – ' + this.formatCapacitySlotTime(slot.end_time);
+        return this.formatDateDisplay(this.selectedDate) + '  ·  ' + time;
     },
 
     formatCapacitySlotTime(time) {
@@ -2003,18 +2043,18 @@ Alpine.data('bookingWizard', () => ({
     // ── Event pattern methods ──
 
     async loadEvents() {
-        this.step = 'loading';
+        this.goToStep('loading');
         try {
             const data = await this.api('/events');
             this.eventList = data.events || [];
             if (this.eventList.length === 0) {
-                this.step = 'empty';
+                this.step = 'empty'; // Terminal state, no prior visible step
             } else {
                 this.goToStep('event-list');
             }
         } catch {
             this.showToast(t('errors.connection'), 'error');
-            this.step = 'empty';
+            this.step = 'empty'; // Terminal state
         }
     },
 

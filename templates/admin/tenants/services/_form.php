@@ -10,6 +10,13 @@
  *   $tenantId
  *   $csrfToken
  *   $old           — old input from validation failure
+ *
+ * Form hierarchy:
+ *   1. Identity — name, description
+ *   2. Pricing & scheduling — duration, price, price label, category
+ *   3. Appearance — color picker
+ *   4. Media — cover image (full-width section)
+ *   5. Staff — assignment checkboxes
  */
 $service = $service ?? null;
 $linkedStaffIds = $linkedStaffIds ?? [];
@@ -23,10 +30,12 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
 );
 ?>
 
-<form method="POST" action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') ?>" class="vb-animate-in">
+<form method="POST" action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') ?>" class="vb-animate-in" enctype="multipart/form-data">
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
     <div class="vb-card p-6">
+
+        <!-- ── 1. Identity ── -->
         <div class="vb-form-grid vb-form-grid-2">
             <div class="vb-form-group col-span-full">
                 <label class="vb-label" for="svc-name"><?= __('admin.services.field_name') ?> <span class="text-red-500">*</span></label>
@@ -40,6 +49,7 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
             </div>
         </div>
 
+        <!-- ── 2. Pricing & Scheduling ── -->
         <div class="vb-form-row pt-4">
             <div class="vb-form-group">
                 <label class="vb-label" for="svc-duration"><?= __('admin.services.field_duration') ?> *</label>
@@ -74,8 +84,8 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
             </div>
         </div>
 
+        <!-- ── 3. Appearance — compact controls only ── -->
         <div class="vb-form-row">
-            <!-- Calendar Color -->
             <div class="vb-form-group" x-data="colorSync">
                 <label class="vb-label vb-icon-label" for="svc-color-text">
                     <i data-lucide="palette"></i>
@@ -88,15 +98,22 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
                            maxlength="7" placeholder="#6366F1" @input="onTextChange">
                 </div>
             </div>
-
-            <div class="vb-form-group">
-                <label class="vb-label" for="svc-order"><?= __('admin.services.field_sort_order') ?></label>
-                <input type="number" class="vb-input" id="svc-order" name="sort_order"
-                       value="<?= $v('sort_order', '0') ?>" min="0" step="1">
-            </div>
         </div>
 
-        <!-- Staff assignment -->
+        <!-- ── 4. Media — cover image (own full-width surface) ── -->
+        <div class="vb-section-divider"></div>
+
+        <?php
+        $uploadFieldName   = 'cover_image';
+        $uploadFieldId     = 'service_cover';
+        $uploadLabel       = __('admin.services.label_cover_image');
+        $uploadHint        = __('admin.services.cover_image_hint');
+        $uploadCurrentPath = $service['cover_image_path'] ?? null;
+        $uploadShape       = 'rect';
+        include __DIR__ . '/../../../partials/upload-field.php';
+        ?>
+
+        <!-- ── 5. Staff assignment ── -->
         <?php if (!empty($staff)): ?>
         <div class="vb-section-divider"></div>
         <div class="vb-form-group">

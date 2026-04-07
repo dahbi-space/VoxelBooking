@@ -217,8 +217,8 @@ ob_start();
                     </a>
                     <?php if (!empty($b['customer_id'])): ?>
                     <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/customers/<?= htmlspecialchars($b['customer_id'], ENT_QUOTES, 'UTF-8') ?>"
-                       class="vb-crm-link" title="<?= __('admin.customers.view_customer') ?>">
-                        <i data-lucide="user" class="vb-icon-xs"></i>
+                       class="vb-upcoming-crm" title="<?= __('admin.customers.view_customer') ?>">
+                        <i data-lucide="user" class="vb-icon-sm"></i>
                     </a>
                     <?php endif; ?>
                 </div>

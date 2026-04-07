@@ -148,7 +148,7 @@
             </div>
 
             <!-- ═══ Resource Step 1: Room Selection ═══ -->
-            <div x-show="isResourceStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isResourceStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.resource_title')"></div>
                 </div>
@@ -162,6 +162,13 @@
                              x-bind:aria-checked="isResourceSelected(resource)"
                              @keydown.enter="selectResource(resource)"
                              @keydown.space.prevent="selectResource(resource)">
+                            <template x-if="resource.cover_image_path">
+                                <div class="vb-book-resource-cover">
+                                    <img x-bind:src="resource.cover_image_path"
+                                         x-bind:alt="resource.name"
+                                         loading="lazy">
+                                </div>
+                            </template>
                             <div class="vb-book-service-info">
                                 <div class="vb-book-service-name" x-text="resource.name"></div>
                                 <div class="vb-book-service-meta">
@@ -183,7 +190,7 @@
             </div>
 
             <!-- ═══ Resource Step 2: Date Range ═══ -->
-            <div x-show="isResourceDateStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isResourceDateStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.dates_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="checkInDate ? t('resource.select_check_out') : t('resource.select_check_in')"></div>
@@ -237,12 +244,12 @@
             </div>
 
             <!-- ═══ Resource Step 3: Guest Count ═══ -->
-            <div x-show="isGuestStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isGuestStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.guests_title')"></div>
                 </div>
 
-                <div class="vb-book-summary" style="margin-bottom: 1.5rem;">
+                <div class="vb-book-summary">
                     <div class="vb-book-summary-row">
                         <span class="vb-book-summary-label" x-text="t('resource.summary_resource')"></span>
                         <span class="vb-book-summary-value" x-text="selectedResource ? selectedResource.name : ''"></span>
@@ -277,12 +284,12 @@
                     </div>
                     <div class="vb-book-counter-label" x-text="guestCount === 1 ? t('capacity.guest') : t('capacity.guests')"></div>
                     <template x-if="guestCount >= guestMax && guestMax > 0">
-                        <div class="vb-book-counter-hint" style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.6;"
+                        <div class="vb-book-counter-hint"
                              x-text="t('resource.max_guests_reached').replace(':count', guestMax)"></div>
                     </template>
                 </div>
 
-                <div class="vb-book-form-actions" style="margin-top: 1rem;">
+                <div class="vb-book-form-actions">
                     <button type="button" class="vb-book-btn vb-book-btn-primary" @click="submitGuests"
                             x-text="t('buttons.continue')"></button>
                     <div class="vb-book-back-link">
@@ -292,7 +299,7 @@
             </div>
 
             <!-- ═══ Capacity: Step 1 — Party Size ═══ -->
-            <div x-show="isPartySizeStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isPartySizeStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('capacity.party_size_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('capacity.party_size_hint')"></div>
@@ -311,20 +318,20 @@
                     </div>
                     <div class="vb-book-counter-label" x-text="partySize === 1 ? t('capacity.guest') : t('capacity.guests')"></div>
                     <template x-if="minPartySize > 1">
-                        <div class="vb-book-counter-hint" x-text="t('capacity.min_guests_hint').replace(':count', minPartySize)" style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.6;"></div>
+                        <div class="vb-book-counter-hint" x-text="t('capacity.min_guests_hint').replace(':count', minPartySize)"></div>
                     </template>
                     <template x-if="partySize >= maxPartySize && maxPartySize > 0">
-                        <div class="vb-book-counter-hint" x-text="t('capacity.max_party_size_reached').replace(':count', maxPartySize)" style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.6;"></div>
+                        <div class="vb-book-counter-hint" x-text="t('capacity.max_party_size_reached').replace(':count', maxPartySize)"></div>
                     </template>
                 </div>
-                <div class="vb-book-form-actions" style="margin-top: 1.5rem;">
+                <div class="vb-book-form-actions">
                     <button type="button" class="vb-book-btn vb-book-btn-primary" @click="confirmPartySize"
                             x-text="t('buttons.continue')"></button>
                 </div>
             </div>
 
             <!-- ═══ Capacity: Step 2 — Date Selection ═══ -->
-            <div x-show="isCapacityDateStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isCapacityDateStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('capacity.date_title')"></div>
                 </div>
@@ -364,7 +371,7 @@
                         </template>
                     </div>
                 </div>
-                <div class="vb-book-form-actions" style="margin-top: 1rem;">
+                <div class="vb-book-form-actions">
                     <div class="vb-book-back-link">
                         <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('party-size')"
                                 x-text="t('back.change_party_size')"></button>
@@ -373,16 +380,33 @@
             </div>
 
             <!-- ═══ Capacity: Step 3 — Time Slot Selection ═══ -->
-            <div x-show="isCapacityTimeStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isCapacityTimeStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('capacity.time_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="formatDateDisplay(selectedDate)"></div>
                 </div>
+
+                <!-- Selection confirmation (sticky, above slot list) -->
+                <div class="vb-book-selection-confirm" x-show="selectedCapacitySlot" x-cloak>
+                    <div class="vb-book-selection-badge">
+                        <i data-lucide="calendar-check"></i>
+                        <div class="vb-book-selection-detail">
+                            <span class="vb-book-selection-label" x-text="t('buttons.selected_time')"></span>
+                            <span class="vb-book-selection-value" x-text="capacitySlotLabel"></span>
+                        </div>
+                    </div>
+                    <button type="button" class="vb-book-btn vb-book-btn-primary vb-book-btn-continue"
+                            @click="confirmCapacitySlot"
+                            x-text="t('buttons.continue')">
+                    </button>
+                </div>
+
                 <div class="vb-book-slot-list" role="radiogroup">
                     <template x-for="slot in capacitySlots" x-bind:key="slot.id">
                         <button type="button"
                                 class="vb-book-slot-card"
                                 role="radio"
+                                x-bind:class="{ 'is-dimmed': selectedCapacitySlot && selectedCapacitySlot.id !== slot.id }"
                                 x-bind:aria-checked="selectedCapacitySlot && selectedCapacitySlot.id === slot.id"
                                 @click="selectCapacitySlot(slot)">
                             <div class="vb-book-slot-time">
@@ -398,7 +422,8 @@
                 <div x-show="capacitySlots.length === 0" class="vb-book-empty">
                     <span x-text="t('empty.no_slots_date')"></span>
                 </div>
-                <div class="vb-book-form-actions" style="margin-top: 1rem;">
+
+                <div class="vb-book-form-actions">
                     <div class="vb-book-back-link">
                         <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('capacity-date')"
                                 x-text="t('back.change_date_cap')"></button>
@@ -407,7 +432,7 @@
             </div>
 
             <!-- ═══ Event Step 1: Event List ═══ -->
-            <div x-show="isEventListStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isEventListStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('event.events_title')"></div>
                 </div>
@@ -423,15 +448,15 @@
                             </div>
                             <div class="vb-book-event-card-meta">
                                 <span class="vb-book-event-date">
-                                    <i data-lucide="calendar" style="width:14px;height:14px;"></i>
+                                    <i data-lucide="calendar"></i>
                                     <span x-text="formatEventDate(event.start_datetime)"></span>
                                 </span>
                                 <span class="vb-book-event-time">
-                                    <i data-lucide="clock" style="width:14px;height:14px;"></i>
+                                    <i data-lucide="clock"></i>
                                     <span x-text="formatEventTime(event.start_datetime) + ' – ' + formatEventTime(event.end_datetime)"></span>
                                 </span>
                                 <span x-show="event.location" class="vb-book-event-location">
-                                    <i data-lucide="map-pin" style="width:14px;height:14px;"></i>
+                                    <i data-lucide="map-pin"></i>
                                     <span x-text="event.location"></span>
                                 </span>
                             </div>
@@ -455,7 +480,7 @@
             </div>
 
             <!-- ═══ Event Step 2: Event Detail ═══ -->
-            <div x-show="isEventDetailStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isEventDetailStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('event.event_detail_title')"></div>
                 </div>
@@ -486,7 +511,7 @@
                         </div>
                     </div>
 
-                    <div class="vb-book-form-actions" style="margin-top: 1.5rem;">
+                    <div class="vb-book-form-actions">
                         <button type="button" class="vb-book-btn vb-book-btn-primary" @click="confirmEventDetail"
                                 x-text="t('buttons.continue')"></button>
                         <div class="vb-book-back-link">
@@ -498,7 +523,7 @@
             </div>
 
             <!-- ═══ Event Step 3: Spot Count ═══ -->
-            <div x-show="isEventSpotsStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isEventSpotsStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('event.spots_title')"></div>
                 </div>
@@ -516,14 +541,14 @@
                     </div>
                     <div class="vb-book-counter-label" x-text="eventSpotCount === 1 ? t('event.spot') : t('event.spots')"></div>
                     <template x-if="eventSpotCount >= eventMaxSpots && selectedEvent && selectedEvent.remaining > 0">
-                        <div class="vb-book-counter-hint" style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.6;"
+                        <div class="vb-book-counter-hint"
                              x-text="selectedEvent.max_spot_count && eventSpotCount >= selectedEvent.max_spot_count
                                  ? t('event.max_spots_reached').replace(':count', selectedEvent.max_spot_count)
                                  : t('event.max_reached')">
                         </div>
                     </template>
                 </div>
-                <div class="vb-book-form-actions" style="margin-top: 1.5rem;">
+                <div class="vb-book-form-actions">
                     <button type="button" class="vb-book-btn vb-book-btn-primary" @click="confirmEventSpots"
                             x-text="t('buttons.continue')"></button>
                     <div class="vb-book-back-link">
@@ -534,7 +559,7 @@
             </div>
 
             <!-- ═══ Step 1: Service Selection ═══ -->
-            <div x-show="isServiceStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isServiceStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.service_title')"></div>
                 </div>
@@ -548,6 +573,13 @@
                              x-bind:aria-checked="isServiceSelected(service)"
                              @keydown.enter="selectService(service)"
                              @keydown.space.prevent="selectService(service)">
+                            <template x-if="service.cover_image_path">
+                                <div class="vb-book-service-cover">
+                                    <img x-bind:src="service.cover_image_path"
+                                         x-bind:alt="service.name"
+                                         loading="lazy">
+                                </div>
+                            </template>
                             <div class="vb-book-service-info">
                                 <div class="vb-book-service-name" x-text="service.name"></div>
                                 <div class="vb-book-service-meta">
@@ -566,7 +598,7 @@
             </div>
 
             <!-- ═══ Step 2: Staff Selection ═══ -->
-            <div x-show="isStaffStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isStaffStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.staff_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('steps.staff_subtitle')"></div>
@@ -614,9 +646,24 @@
             </div>
 
             <!-- ═══ Step 3: Date & Time ═══ -->
-            <div x-show="isDateStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isDateStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.date_title')"></div>
+                </div>
+
+                <!-- Selection confirmation (sticky, above calendar/grid) -->
+                <div class="vb-book-selection-confirm" x-show="selectedSlot" x-cloak>
+                    <div class="vb-book-selection-badge">
+                        <i data-lucide="calendar-check"></i>
+                        <div class="vb-book-selection-detail">
+                            <span class="vb-book-selection-label" x-text="t('buttons.selected_time')"></span>
+                            <span class="vb-book-selection-value" x-text="selectedSlotLabel"></span>
+                        </div>
+                    </div>
+                    <button type="button" class="vb-book-btn vb-book-btn-primary vb-book-btn-continue"
+                            @click="confirmSlot"
+                            x-text="t('buttons.continue')">
+                    </button>
                 </div>
 
                 <!-- Timezone mismatch notice -->
@@ -682,8 +729,9 @@
                                      @keydown.space.prevent="selectSlot(slot)"
                                      role="radio" tabindex="0"
                                      x-bind:aria-checked="isSlotSelected(slot)"
-                                     x-bind:style="slotAnimDelay(i)"
-                                     x-text="displaySlotTime(slot)">
+                                     x-bind:style="slotAnimDelay(i)">
+                                    <i data-lucide="check" class="vb-pill-check" x-show="isSlotSelected(slot)"></i>
+                                    <span x-text="displaySlotTime(slot)"></span>
                                 </div>
                             </template>
                         </div>
@@ -700,7 +748,7 @@
             </div>
 
             <!-- ═══ Step 4: Customer Details ═══ -->
-            <div x-show="isDetailsStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isDetailsStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.details_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('steps.details_subtitle')"></div>
@@ -796,7 +844,7 @@
             </div>
 
             <!-- ═══ Step 5: Review / Summary ═══ -->
-            <div x-show="isReviewStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isReviewStep" x-cloak class="vb-book-step">
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.confirm_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('steps.confirm_subtitle')"></div>
@@ -860,7 +908,7 @@
             </div>
 
             <!-- ═══ Step 6: Confirmation ═══ -->
-            <div x-show="isConfirmedStep" x-cloak class="vb-book-step" x-transition>
+            <div x-show="isConfirmedStep" x-cloak class="vb-book-step">
                 <div class="vb-book-confirmation">
                     <div class="vb-book-checkmark-wrap">
                         <svg class="vb-book-checkmark" viewBox="0 0 64 64">
@@ -930,7 +978,7 @@
             </div>
 
             <!-- ── Step: Manage Booking ── -->
-            <div class="vb-book-step" x-show="isManageStep" x-transition>
+            <div class="vb-book-step" x-show="isManageStep">
                 <div class="vb-book-manage-container">
                     <!-- Loading state -->
                     <template x-if="manageLoading">
@@ -951,8 +999,8 @@
                             </div>
                             <h2 class="vb-book-step-title" x-text="t('manage.cancelled_heading')"></h2>
                             <p class="vb-book-manage-message" x-text="t('manage.cancelled_message')"></p>
-                            <div class="vb-book-confirm-actions-secondary" style="margin-top: 1.5rem;">
-                                <a x-bind:href="bookingPageUrl" class="vb-book-btn vb-book-btn-brand"
+                            <div class="vb-book-confirm-actions-secondary">
+                                <a x-bind:href="bookingPageUrl" class="vb-book-btn vb-book-btn-primary"
                                    x-text="t('manage.book_again')"></a>
                             </div>
                         </div>
@@ -995,7 +1043,7 @@
                                 <!-- Reschedule button -->
                                 <template x-if="manageCanReschedule">
                                     <button type="button"
-                                            class="vb-book-btn vb-book-btn-brand"
+                                            class="vb-book-btn vb-book-btn-primary"
                                             @click="startReschedule"
                                             x-text="t('buttons.reschedule')">
                                     </button>
@@ -1061,10 +1109,25 @@
             </div>
 
             <!-- ═══ Reschedule Step 1: Date & Time Selection ═══ -->
-            <div class="vb-book-step" x-show="isRescheduleDateStep" x-cloak x-transition>
+            <div class="vb-book-step" x-show="isRescheduleDateStep" x-cloak>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('manage.reschedule_heading')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('manage.reschedule_pick_date')"></div>
+                </div>
+
+                <!-- Selection confirmation (sticky, above calendar/grid) -->
+                <div class="vb-book-selection-confirm" x-show="rescheduleSlot" x-cloak>
+                    <div class="vb-book-selection-badge">
+                        <i data-lucide="calendar-check"></i>
+                        <div class="vb-book-selection-detail">
+                            <span class="vb-book-selection-label" x-text="t('buttons.selected_time')"></span>
+                            <span class="vb-book-selection-value" x-text="rescheduleSlotLabel"></span>
+                        </div>
+                    </div>
+                    <button type="button" class="vb-book-btn vb-book-btn-primary vb-book-btn-continue"
+                            @click="confirmRescheduleSlot"
+                            x-text="t('buttons.continue')">
+                    </button>
                 </div>
 
                 <!-- Calendar -->
@@ -1113,14 +1176,18 @@
                         <div class="vb-book-time-grid" role="radiogroup">
                             <template x-for="(slot, i) in rescheduleSlots" x-bind:key="'rs-' + slot.time">
                                 <div class="vb-book-time-pill"
-                                     x-bind:class="{ 'is-selected': rescheduleSlot && rescheduleSlot.time === slot.time }"
+                                     x-bind:class="{
+                                         'is-selected': rescheduleSlot && rescheduleSlot.time === slot.time,
+                                         'is-dimmed': rescheduleSlot && rescheduleSlot.time !== slot.time
+                                     }"
                                      @click="selectRescheduleSlot(slot)"
                                      @keydown.enter="selectRescheduleSlot(slot)"
                                      @keydown.space.prevent="selectRescheduleSlot(slot)"
                                      role="radio" tabindex="0"
                                      x-bind:aria-checked="rescheduleSlot && rescheduleSlot.time === slot.time"
-                                     x-bind:style="slotAnimDelay(i)"
-                                     x-text="displaySlotTime(slot)">
+                                     x-bind:style="slotAnimDelay(i)">
+                                    <i data-lucide="check" class="vb-pill-check" x-show="rescheduleSlot && rescheduleSlot.time === slot.time"></i>
+                                    <span x-text="displaySlotTime(slot)"></span>
                                 </div>
                             </template>
                         </div>
@@ -1128,14 +1195,14 @@
                 </div>
 
                 <!-- Back link -->
-                <div class="vb-book-back-link" style="margin-top: 1rem;">
+                <div class="vb-book-back-link">
                     <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="cancelReschedule"
                             x-text="t('manage.reschedule_cancel')"></button>
                 </div>
             </div>
 
             <!-- ═══ Reschedule Step 2: Review ═══ -->
-            <div class="vb-book-step" x-show="isRescheduleReviewStep" x-cloak x-transition>
+            <div class="vb-book-step" x-show="isRescheduleReviewStep" x-cloak>
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('manage.reschedule_review_heading')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('manage.reschedule_review_subtitle')"></div>
@@ -1157,7 +1224,7 @@
                 </div>
 
                 <div class="vb-book-form-actions">
-                    <button class="vb-book-btn vb-book-btn-brand" @click="confirmReschedule"
+                    <button class="vb-book-btn vb-book-btn-primary" @click="confirmReschedule"
                             x-bind:disabled="rescheduleSubmitting"
                             x-bind:class="{ 'is-loading': rescheduleSubmitting }">
                         <span class="vb-book-btn-text" x-text="t('manage.reschedule_confirm_button')"></span>
@@ -1171,7 +1238,7 @@
             </div>
 
             <!-- ═══ Reschedule Step 3: Confirmed ═══ -->
-            <div class="vb-book-step" x-show="isRescheduleConfirmedStep" x-cloak x-transition>
+            <div class="vb-book-step" x-show="isRescheduleConfirmedStep" x-cloak>
                 <div class="vb-book-confirmation">
                     <div class="vb-book-checkmark-wrap">
                         <svg class="vb-book-checkmark" viewBox="0 0 64 64">
@@ -1195,9 +1262,9 @@
                         </div>
                     </div>
 
-                    <div class="vb-book-confirm-actions-secondary" style="margin-top: 1.5rem;">
+                    <div class="vb-book-confirm-actions-secondary">
                         <template x-if="rescheduleNewBooking">
-                            <a x-bind:href="manageUrl(rescheduleNewBooking.id)" class="vb-book-btn vb-book-btn-brand"
+                            <a x-bind:href="manageUrl(rescheduleNewBooking.id)" class="vb-book-btn vb-book-btn-primary"
                                x-text="t('manage.heading')"></a>
                         </template>
                         <a x-bind:href="bookingPageUrl" class="vb-book-btn vb-book-btn-ghost"

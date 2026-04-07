@@ -129,9 +129,8 @@ ob_start();
                     $endDt   = new DateTimeImmutable($b['end_datetime']);
                     $detailUrl = $baseUrl . '/bookings/' . htmlspecialchars($b['id'], ENT_QUOTES, 'UTF-8');
                     ?>
-                    <tr class="vb-fade-in-up vb-row-link stagger-<?= min($i + 1, 6) ?>"
-                        data-href="<?= $detailUrl ?>"
-                        onclick="window.location=this.dataset.href">
+                    <tr class="vb-fade-in-up vb-clickable-row stagger-<?= min($i + 1, 6) ?>"
+                        data-href="<?= $detailUrl ?>">
                         <td>
                             <?= htmlspecialchars(\App\Engine\Locale::dateLong($startDt), ENT_QUOTES, 'UTF-8') ?>
                         </td>

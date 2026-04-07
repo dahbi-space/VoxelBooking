@@ -7,6 +7,7 @@ namespace App\Controllers\Admin;
 use App\Engine\Auth;
 use App\Engine\AuditLog;
 use App\Engine\Database;
+use App\Engine\ImageUpload;
 use App\Engine\Request;
 use App\Engine\Response;
 use App\Engine\Ulid;
@@ -118,7 +119,6 @@ final class ResourceController
         $price       = trim($request->string('price_per_night'));
         $minStay     = max(1, (int) $request->string('min_stay_nights'));
         $maxStay     = max(1, (int) $request->string('max_stay_nights'));
-        $sortOrder   = max(0, (int) $request->string('sort_order'));
         $amenitiesRaw = trim($request->string('amenities'));
 
         // Validate
@@ -151,13 +151,37 @@ final class ResourceController
 
         $id = Ulid::generate();
 
-        Database::execute(
-            'INSERT INTO `resources`
-             (`id`, `tenant_id`, `name`, `description`, `capacity`, `price_per_night`,
-              `min_stay_nights`, `max_stay_nights`, `amenities`, `sort_order`)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [$id, $tenantId, $name, $description, $capacity, $priceValue, $minStay, $maxStay, json_encode($amenities), $sortOrder]
-        );
+        // Handle cover image upload
+        $coverPath = null;
+        if (!empty($_FILES['cover_image']['tmp_name'])) {
+            $upload = ImageUpload::store('cover', $_FILES['cover_image'], $tenant['slug']);
+            if ($upload['error']) {
+                $this->setFlash('error', $upload['error']);
+                $_SESSION['_old_input'] = $_POST;
+                return Response::redirect("/admin/tenants/{$tenantId}/resources/create");
+            }
+            $coverPath = $upload['path'];
+        }
+
+        try {
+            // Auto-assign sort_order = MAX + 1
+            $maxRows = Database::query('SELECT COALESCE(MAX(`sort_order`), -1) AS m FROM `resources` WHERE `tenant_id` = ?', [$tenantId]);
+            $nextOrder = ((int) $maxRows[0]['m']) + 1;
+
+            Database::execute(
+                'INSERT INTO `resources`
+                 (`id`, `tenant_id`, `name`, `description`, `capacity`, `price_per_night`,
+                  `min_stay_nights`, `max_stay_nights`, `amenities`, `sort_order`, `cover_image_path`)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [$id, $tenantId, $name, $description, $capacity, $priceValue, $minStay, $maxStay, json_encode($amenities), $nextOrder, $coverPath]
+            );
+        } catch (\Throwable $e) {
+            if ($coverPath) {
+                ImageUpload::delete($coverPath);
+            }
+            $this->setFlash('error', __('admin.common.error_generic'));
+            return Response::redirect("/admin/tenants/{$tenantId}/resources/create");
+        }
 
         AuditLog::log('resource.created', 'resource', $id, [
             'tenant_id' => $tenantId,
@@ -241,7 +265,6 @@ final class ResourceController
         $price       = trim($request->string('price_per_night'));
         $minStay     = max(1, (int) $request->string('min_stay_nights'));
         $maxStay     = max(1, (int) $request->string('max_stay_nights'));
-        $sortOrder   = max(0, (int) $request->string('sort_order'));
         $amenitiesRaw = trim($request->string('amenities'));
 
         $errors = [];
@@ -282,13 +305,31 @@ final class ResourceController
             return Response::redirect("/admin/tenants/{$tenantId}/resources/{$resourceId}/edit");
         }
 
+        // Handle cover image upload / removal
+        $coverPath = $resource['cover_image_path'] ?? null;
+        $removeCover = ($request->string('remove_cover_image') === '1');
+
+        if (!empty($_FILES['cover_image']['tmp_name'])) {
+            $upload = ImageUpload::store('cover', $_FILES['cover_image'], $tenant['slug'], $coverPath);
+            if ($upload['error']) {
+                $this->setFlash('error', $upload['error']);
+                $_SESSION['_old_input'] = $_POST;
+                return Response::redirect("/admin/tenants/{$tenantId}/resources/{$resourceId}/edit");
+            }
+            $coverPath = $upload['path'];
+        } elseif ($removeCover && $coverPath) {
+            ImageUpload::delete($coverPath);
+            $coverPath = null;
+        }
+
         Database::execute(
             'UPDATE `resources` SET
                 `name` = ?, `description` = ?, `capacity` = ?,
                 `price_per_night` = ?, `min_stay_nights` = ?,
-                `max_stay_nights` = ?, `amenities` = ?, `sort_order` = ?
+                `max_stay_nights` = ?, `amenities` = ?,
+                `cover_image_path` = ?
              WHERE `id` = ? AND `tenant_id` = ?',
-            [$name, $description, $capacity, $priceValue, $minStay, $maxStay, json_encode($amenities), $sortOrder, $resourceId, $tenantId]
+            [$name, $description, $capacity, $priceValue, $minStay, $maxStay, json_encode($amenities), $coverPath, $resourceId, $tenantId]
         );
 
         // Sync seasonal pricing: delete all, re-insert from form
@@ -369,6 +410,84 @@ final class ResourceController
         ]);
 
         $this->setFlash('success', __('admin.resources.deactivated'));
+        return Response::redirect("/admin/tenants/{$tenantId}/resources");
+    }
+
+    // ── Reorder (move up / move down) ──
+
+    public function reorder(Request $request): Response
+    {
+        $tenantId   = $request->getAttribute('tenant_id');
+        $resourceId = $request->getAttribute('id');
+
+        if (!$this->canAccess($tenantId)) {
+            return $this->forbidden($request);
+        }
+
+        $direction = $request->string('direction');
+        if (!in_array($direction, ['up', 'down'], true)) {
+            return Response::redirect("/admin/tenants/{$tenantId}/resources");
+        }
+
+        $resource = $this->loadResource($resourceId, $tenantId);
+        if ($resource === null) {
+            return Response::redirect("/admin/tenants/{$tenantId}/resources");
+        }
+
+        $currentActive = (int) $resource['is_active'];
+
+        Database::transaction(function () use ($resourceId, $tenantId, $currentActive, $direction) {
+            // Step 1: Normalize sort_order to sequential 0,1,2,… within the active group.
+            $siblings = Database::query(
+                'SELECT `id` FROM `resources`
+                 WHERE `tenant_id` = ? AND `is_active` = ?
+                 ORDER BY `sort_order` ASC, `name` ASC',
+                [$tenantId, $currentActive]
+            );
+            foreach ($siblings as $i => $row) {
+                Database::execute(
+                    'UPDATE `resources` SET `sort_order` = ? WHERE `id` = ? AND `tenant_id` = ?',
+                    [$i, $row['id'], $tenantId]
+                );
+            }
+
+            // Step 2: Re-read normalized sort_order
+            $fresh = Database::query(
+                'SELECT `sort_order` FROM `resources` WHERE `id` = ? AND `tenant_id` = ? LIMIT 1',
+                [$resourceId, $tenantId]
+            );
+            $currentOrder = (int) $fresh[0]['sort_order'];
+
+            // Step 3: Find adjacent sibling and swap
+            if ($direction === 'up') {
+                $rows = Database::query(
+                    'SELECT `id`, `sort_order` FROM `resources`
+                     WHERE `tenant_id` = ? AND `is_active` = ? AND `sort_order` < ?
+                     ORDER BY `sort_order` DESC LIMIT 1',
+                    [$tenantId, $currentActive, $currentOrder]
+                );
+            } else {
+                $rows = Database::query(
+                    'SELECT `id`, `sort_order` FROM `resources`
+                     WHERE `tenant_id` = ? AND `is_active` = ? AND `sort_order` > ?
+                     ORDER BY `sort_order` ASC LIMIT 1',
+                    [$tenantId, $currentActive, $currentOrder]
+                );
+            }
+
+            if (!empty($rows)) {
+                $sibling = $rows[0];
+                Database::execute(
+                    'UPDATE `resources` SET `sort_order` = ? WHERE `id` = ? AND `tenant_id` = ?',
+                    [(int) $sibling['sort_order'], $resourceId, $tenantId]
+                );
+                Database::execute(
+                    'UPDATE `resources` SET `sort_order` = ? WHERE `id` = ? AND `tenant_id` = ?',
+                    [$currentOrder, $sibling['id'], $tenantId]
+                );
+            }
+        });
+
         return Response::redirect("/admin/tenants/{$tenantId}/resources");
     }
 

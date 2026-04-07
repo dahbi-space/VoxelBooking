@@ -2,7 +2,7 @@
 /**
  * Staff list — tenant-scoped.
  *
- * Columns: Name/Title, Email, Services (count), Status, Actions.
+ * Columns: Order, Name/Title, Email, Services (count), Status, Actions.
  * Active staff first, inactive grayed out.
  *
  * Variables: $tenant, $staff, $tenantId, $csrfToken, $flash
@@ -51,6 +51,7 @@ ob_start();
             <table class="vb-table" id="staff-table">
                 <thead>
                     <tr>
+                        <th class="vb-text-center"><?= __('admin.common.col_order') ?></th>
                         <th><?= __('admin.staff.col_name') ?></th>
                         <th><?= __('admin.staff.col_email') ?></th>
                         <th class="vb-text-center"><?= __('admin.staff.col_services') ?></th>
@@ -59,8 +60,37 @@ ob_start();
                     </tr>
                 </thead>
                 <tbody>
+                    <?php
+                    // Pre-compute group boundaries for chevron disabled state.
+                    // Table sorts: is_active DESC, sort_order ASC — active rows first.
+                    $groupFirst = $groupLast = [];
+                    foreach ($staff as $idx => $s) {
+                        $g = (int) $s['is_active'];
+                        if (!isset($groupFirst[$g])) $groupFirst[$g] = $idx;
+                        $groupLast[$g] = $idx;
+                    }
+                    ?>
                     <?php foreach ($staff as $i => $m): ?>
+                    <?php $grp = (int) $m['is_active']; ?>
                     <tr class="vb-fade-in-up stagger-<?= min($i + 1, 6) ?> <?= !$m['is_active'] ? 'vb-row-inactive' : '' ?>">
+                        <td class="vb-text-center">
+                            <div class="vb-reorder-group">
+                                <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/staff/<?= htmlspecialchars($m['id'], ENT_QUOTES, 'UTF-8') ?>/reorder" class="vb-form-flush">
+                                    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="direction" value="up">
+                                    <button type="submit" class="vb-reorder-btn" title="<?= __('admin.common.move_up') ?>" <?= $i === $groupFirst[$grp] ? 'disabled' : '' ?>>
+                                        <i data-lucide="chevron-up"></i>
+                                    </button>
+                                </form>
+                                <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/staff/<?= htmlspecialchars($m['id'], ENT_QUOTES, 'UTF-8') ?>/reorder" class="vb-form-flush">
+                                    <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                                    <input type="hidden" name="direction" value="down">
+                                    <button type="submit" class="vb-reorder-btn" title="<?= __('admin.common.move_down') ?>" <?= $i === $groupLast[$grp] ? 'disabled' : '' ?>>
+                                        <i data-lucide="chevron-down"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
                         <td>
                             <div class="vb-user-cell">
                                 <span class="vb-avatar vb-avatar-xs"><?= mb_strtoupper(mb_substr($m['name'], 0, 1)) ?></span>

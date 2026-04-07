@@ -22,7 +22,7 @@ ob_start();
 </div>
 
 <?php if ($flash): ?>
-    <?php include __DIR__ . '/../../partials/alert.php'; ?>
+    <?php include __DIR__ . '/../partials/alert.php'; ?>
 <?php endif; ?>
 
 <div class="vb-grid vb-grid-2">
@@ -48,7 +48,7 @@ ob_start();
                        value="<?= htmlspecialchars($currentUser['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                        required autocomplete="email">
             </div>
-            <div class="vb-info-row" style="margin-top: 4px;">
+            <div class="vb-info-row">
                 <span class="vb-info-label"><?= __('admin.account.role_label') ?></span>
                 <span class="vb-info-value">
                     <span class="vb-badge vb-badge-primary vb-capitalize">
@@ -122,4 +122,4 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
-include dirname(__DIR__, 2) . '/admin/layout.php';
+include __DIR__ . '/layout.php';

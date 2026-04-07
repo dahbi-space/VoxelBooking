@@ -2,7 +2,7 @@
 /**
  * Create Staff Member — tenant-scoped.
  *
- * Fields: name*, email*, phone, title, bio, sort_order, service assignments.
+ * Fields: name*, email*, phone, title, bio, avatar, service assignments.
  *
  * Variables: $tenant, $services, $old, $tenantId, $csrfToken, $flash
  */
@@ -31,7 +31,7 @@ ob_start();
 
 <div class="vb-card p-6 vb-fade-in-up">
     <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/staff/create"
-          id="create-staff-form">
+          id="create-staff-form" enctype="multipart/form-data">
         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
         <div class="vb-form-row">
@@ -66,15 +66,19 @@ ob_start();
 
         <div class="vb-form-group col-span-full">
             <label for="staff_bio" class="vb-label"><?= __('admin.staff.label_bio') ?></label>
-            <textarea id="staff_bio" name="bio" class="vb-input resize-y" rows="3"
+            <textarea id="staff_bio" name="bio" class="vb-textarea" rows="2"
                       placeholder="<?= __('admin.staff.placeholder_bio') ?>"><?= htmlspecialchars($old['bio'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
         </div>
 
-        <div class="vb-form-group">
-            <label for="staff_sort_order" class="vb-label"><?= __('admin.staff.label_sort_order') ?></label>
-            <input type="number" id="staff_sort_order" name="sort_order" class="vb-input max-w-[100px]" min="0"
-                   value="<?= htmlspecialchars((string) ($old['sort_order'] ?? '0'), ENT_QUOTES, 'UTF-8') ?>">
-        </div>
+        <?php
+        $uploadFieldName   = 'avatar';
+        $uploadFieldId     = 'staff_avatar';
+        $uploadLabel       = __('admin.staff.label_avatar');
+        $uploadHint        = __('admin.staff.avatar_hint');
+        $uploadCurrentPath = null;
+        $uploadShape       = 'circle';
+        include __DIR__ . '/../../../partials/upload-field.php';
+        ?>
 
         <div class="vb-section-divider"></div>
 

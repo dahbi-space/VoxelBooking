@@ -36,6 +36,7 @@ import {
     Settings,
     LogOut,
     ChevronDown,
+    ChevronUp,
     ChevronRight,
     ChevronLeft,
     Plus,
@@ -105,12 +106,15 @@ import {
     Grid3X3,
     LayoutGrid,
     Play,
+    ImagePlus,
+    UserRound,
+    Camera,
 } from 'lucide';
 
 const ICON_SET = {
     LayoutDashboard, Calendar, CalendarDays, CalendarCheck,
     User, Users, Settings, LogOut,
-    ChevronDown, ChevronRight, ChevronLeft, Plus, Search,
+    ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Plus, Search,
     Bell, Menu, X, Edit, Pencil, Trash2, Eye, EyeOff,
     Check, AlertCircle, AlertTriangle, Info, Shield, Key, Mail, Clock,
     Building2, UserPlus, FileText, Download, Upload,
@@ -121,6 +125,7 @@ const ICON_SET = {
     CalendarX, Contact, StickyNote, ArrowLeft, ArrowRight, List, Save,
     CalendarOff, PlusCircle, UserCheck, UserMinus,
     Ticket, Bed, Grid3X3, LayoutGrid, Play,
+    ImagePlus, UserRound, Camera,
 };
 
 // ── Alpine: CSP-safe component registration ──
@@ -549,6 +554,84 @@ Alpine.data('bookingCreate', () => ({
 }));
 
 
+// ── Alpine: Image Upload (reusable upload primitive) ──
+// CSP-safe component. Template sets data-preview and data-has-file attributes.
+// Drag/drop uses native listeners registered in init() since CSP Alpine
+// cannot pass $event to handler methods.
+// Referenced as: x-data="imageUpload"
+Alpine.data('imageUpload', () => ({
+    preview: '',
+    hasFile: false,
+    removeExisting: false,
+    dragover: false,
+
+    init() {
+        this.preview = this.$el.dataset.preview || '';
+        this.hasFile = this.$el.dataset.hasFile === '1';
+
+        // Native drag/drop listeners (CSP-safe — no inline $event needed)
+        this.$el.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            this.dragover = true;
+        });
+        this.$el.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            this.dragover = false;
+        });
+        this.$el.addEventListener('drop', (e) => {
+            e.preventDefault();
+            this.dragover = false;
+            const file = e.dataTransfer?.files?.[0];
+            if (file && file.type.startsWith('image/')) {
+                if (this.$refs.fileInput) {
+                    this.$refs.fileInput.files = e.dataTransfer.files;
+                }
+                this._readFile(file);
+            }
+        });
+    },
+
+    _readFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.preview = e.target.result;
+            this.hasFile = true;
+            this.removeExisting = false;
+            // Re-render Lucide icons after Alpine x-if swaps in new nodes
+            this.$nextTick(() => { if (window.refreshIcons) window.refreshIcons(); });
+        };
+        reader.readAsDataURL(file);
+    },
+
+    // CSP-safe: referenced as @change="onFileChange"
+    onFileChange() {
+        const file = this.$refs.fileInput?.files?.[0];
+        this._readFile(file);
+    },
+
+    // CSP-safe: referenced as @click="remove"
+    remove() {
+        this.preview = '';
+        this.hasFile = false;
+        this.removeExisting = true;
+        if (this.$refs.fileInput) {
+            this.$refs.fileInput.value = '';
+        }
+        // Re-render Lucide icons after Alpine x-if swaps in empty-state nodes
+        this.$nextTick(() => { if (window.refreshIcons) window.refreshIcons(); });
+    },
+
+    // CSP-safe getters: referenced as :src="previewSrc", :value="removeValue"
+    get previewSrc() {
+        return this.preview;
+    },
+
+    get removeValue() {
+        return this.removeExisting ? '1' : '';
+    },
+}));
+
 // ── Alpine: start ──
 window.Alpine = Alpine;
 Alpine.start();
@@ -708,6 +791,19 @@ document.addEventListener('click', (e) => {
     window.location = row.getAttribute('data-href');
 });
 
+// ── Select Navigation (CSP-safe) ──
+// <select data-navigate-select data-navigate-base="/admin/tenants/{id}/foo"
+//         data-navigate-default="/admin/tenants/{id}/bar">
+// On change, navigates to base + "/" + value, or to default when value is empty.
+document.addEventListener('change', (e) => {
+    const sel = e.target.closest('[data-navigate-select]');
+    if (!sel) return;
+    const value = sel.value;
+    const base = sel.getAttribute('data-navigate-base') || '';
+    const defaultUrl = sel.getAttribute('data-navigate-default') || base;
+    window.location.href = value ? (base + '/' + value) : defaultUrl;
+});
+
 // ── Textarea Autosize (.vb-textarea) ──
 // Textareas with .vb-textarea automatically grow to fit content.
 // overflow: hidden is set in CSS to prevent scrollbar flash.
@@ -746,3 +842,4 @@ document.querySelectorAll('.vb-textarea').forEach((ta) => {
         }
     });
 })();
+

@@ -68,12 +68,20 @@ final class BookingApiController
         }
 
         $services = Database::query(
-            'SELECT `id`, `name`, `description`, `duration_minutes`, `price`, `price_label`, `category`, `preparation_text`
+            'SELECT `id`, `name`, `description`, `duration_minutes`, `price`, `price_label`, `category`, `preparation_text`, `cover_image_path`
              FROM `services`
              WHERE `tenant_id` = ? AND `is_active` = 1
              ORDER BY `sort_order` ASC, `name` ASC',
             [$tenant['id']]
         );
+
+        // Normalize cover image paths to absolute (consistent with resource/staff pattern)
+        foreach ($services as &$svc) {
+            if (!empty($svc['cover_image_path'])) {
+                $svc['cover_image_path'] = '/' . ltrim($svc['cover_image_path'], '/');
+            }
+        }
+        unset($svc);
 
         return Response::json(['services' => $services]);
     }
@@ -110,6 +118,13 @@ final class BookingApiController
                 [$tenant['id']]
             );
         }
+        // Normalize avatar paths to absolute
+        foreach ($staff as &$s) {
+            if (!empty($s['avatar_path'])) {
+                $s['avatar_path'] = '/' . ltrim($s['avatar_path'], '/');
+            }
+        }
+        unset($s);
 
         return Response::json(['staff' => $staff]);
     }
@@ -205,6 +220,10 @@ final class BookingApiController
             $r['capacity'] = (int) $r['capacity'];
             $r['min_stay_nights'] = (int) $r['min_stay_nights'];
             $r['max_stay_nights'] = (int) $r['max_stay_nights'];
+            // Normalize cover image path to absolute
+            if (!empty($r['cover_image_path'])) {
+                $r['cover_image_path'] = '/' . ltrim($r['cover_image_path'], '/');
+            }
         }
         unset($r);
 

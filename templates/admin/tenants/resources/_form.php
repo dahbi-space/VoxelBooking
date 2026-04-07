@@ -15,7 +15,7 @@ $capacity    = htmlspecialchars((string) ($old['capacity'] ?? $resource['capacit
 $price       = htmlspecialchars((string) ($old['price_per_night'] ?? $resource['price_per_night'] ?? ''), ENT_QUOTES, 'UTF-8');
 $minStay     = htmlspecialchars((string) ($old['min_stay_nights'] ?? $resource['min_stay_nights'] ?? '1'), ENT_QUOTES, 'UTF-8');
 $maxStay     = htmlspecialchars((string) ($old['max_stay_nights'] ?? $resource['max_stay_nights'] ?? '30'), ENT_QUOTES, 'UTF-8');
-$sortOrder   = htmlspecialchars((string) ($old['sort_order'] ?? $resource['sort_order'] ?? '0'), ENT_QUOTES, 'UTF-8');
+
 $amenitiesStr = htmlspecialchars($old['amenities'] ?? (is_array($resource['amenities'] ?? null) ? implode(', ', $resource['amenities']) : ''), ENT_QUOTES, 'UTF-8');
 ?>
 
@@ -30,6 +30,17 @@ $amenitiesStr = htmlspecialchars($old['amenities'] ?? (is_array($resource['ameni
         <textarea name="description" id="resource-description" class="vb-input resize-y" rows="3"
                   placeholder="Describe the room or resource"><?= $description ?></textarea>
     </div>
+
+    <?php
+        // Cover image upload
+        $uploadFieldName   = 'cover_image';
+        $uploadFieldId     = 'resource_cover_image';
+        $uploadLabel       = __('admin.resources.label_cover_image');
+        $uploadHint        = __('admin.resources.cover_image_hint');
+        $uploadCurrentPath = $resource['cover_image_path'] ?? null;
+        $uploadShape       = 'rect';
+        include __DIR__ . '/../../../partials/upload-field.php';
+    ?>
 
     <div class="vb-form-row">
         <div class="vb-form-group">
@@ -62,12 +73,6 @@ $amenitiesStr = htmlspecialchars($old['amenities'] ?? (is_array($resource['ameni
         <input type="text" name="amenities" id="resource-amenities" value="<?= $amenitiesStr ?>"
                class="vb-input" placeholder="Wi-Fi, Pool, Air conditioning">
         <p class="vb-hint"><?= __('admin.resources.field_amenities_hint') ?></p>
-    </div>
-
-    <div class="vb-form-group">
-        <label for="resource-sort-order" class="vb-label"><?= __('admin.resources.field_sort_order') ?></label>
-        <input type="number" name="sort_order" id="resource-sort-order" value="<?= $sortOrder ?>"
-               class="vb-input max-w-[100px]" min="0">
     </div>
 
 <?php if ($isEdit): ?>

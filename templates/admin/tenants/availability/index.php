@@ -16,6 +16,7 @@
  * @var string $csrfToken
  * @var array|null $flash
  */
+$activePage = 'availability';
 $tenant = $tenant ?? [];
 $staff = $staff ?? [];
 $tenantId = $tenantId ?? '';
@@ -63,8 +64,10 @@ ob_start();
         </label>
         <select id="availability-staff-selector"
                 class="vb-input"
-                onchange="if(this.value==='defaults'){location.href='/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/availability'}else{location.href='/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/availability/staff/'+this.value}">
-            <option value="defaults" <?= !$currentStaffId ? 'selected' : '' ?>>
+                data-navigate-select
+                data-navigate-base="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/availability/staff"
+                data-navigate-default="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/availability">
+            <option value="" <?= !$currentStaffId ? 'selected' : '' ?>>
                 <?= __('admin.availability.tenant_defaults') ?>
             </option>
             <?php foreach ($staff as $s): ?>
@@ -86,7 +89,7 @@ ob_start();
         <?php if ($currentStaffId && ($hasOverride ?? false)): ?>
         <form method="POST"
               action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/availability/staff/<?= htmlspecialchars($currentStaffId, ENT_QUOTES, 'UTF-8') ?>/reset"
-              data-confirm="Reset this staff member's hours to tenant defaults?" data-confirm-text="Reset"
+              data-confirm="<?= __('admin.availability.reset_confirm') ?>" data-confirm-text="<?= __('admin.availability.reset_to_defaults') ?>"
               class="vb-ml-auto">
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
             <button type="submit" class="vb-btn vb-btn-ghost vb-btn-sm vb-btn-danger">
@@ -108,50 +111,48 @@ ob_start();
       class="vb-animate-in">
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
-    <div class="vb-card overflow-hidden">
-        <div class="flex flex-col">
+    <div class="vb-card vb-card-clip">
+        <div class="vb-avail-list">
             <template x-for="(daySlots, dayIndex) in days" :key="dayIndex">
-            <div class="flex flex-col md:flex-row md:items-start gap-4 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors border-b border-[var(--vb-border-subtle)] last:border-0 vb-avail-day-row"
-                 :class="daySlots.length === 0 ? 'opacity-60' : ''">
+            <div class="vb-avail-day-row"
+                 :class="daySlots.length === 0 ? 'is-closed' : ''">
                  
                 <!-- Day Label -->
-                <div class="w-full md:w-56 flex items-center justify-between h-[36px]">
-                    <div class="flex items-center gap-4">
-                        <label class="relative flex items-center cursor-pointer">
-                            <input type="checkbox" 
-                                   class="sr-only peer"
-                                   :checked="daySlots.length > 0"
-                                   @change="$el.checked ? addWindow(dayIndex) : daySlots.splice(0, daySlots.length)">
-                            <div class="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                        </label>
-                        <span class="font-medium text-[0.9rem] text-[var(--vb-text-primary)]" 
-                              x-text="dayLabels[dayIndex]"></span>
-                    </div>
+                <div class="vb-avail-label">
+                    <label class="vb-toggle">
+                        <input type="checkbox" 
+                               class="vb-toggle-input"
+                               :checked="daySlots.length > 0"
+                               @change="$el.checked ? addWindow(dayIndex) : daySlots.splice(0, daySlots.length)">
+                        <div class="vb-toggle-track"></div>
+                    </label>
+                    <span class="vb-avail-day-name" 
+                          x-text="dayLabels[dayIndex]"></span>
                 </div>
 
                 <!-- Time Windows -->
-                <div class="flex-1 flex flex-col gap-3">
+                <div class="vb-avail-windows">
                     <template x-if="daySlots.length === 0">
-                        <div class="text-[0.9rem] text-[var(--vb-text-tertiary)] flex items-center h-[36px] font-medium">
+                        <div class="vb-avail-closed">
                             <?= __('admin.availability.closed') ?>
                         </div>
                     </template>
 
                     <template x-for="(window, idx) in daySlots" :key="idx">
-                        <div class="flex items-center gap-3 group mb-3 last:mb-0">
+                        <div class="vb-avail-window">
                             <input type="time"
-                                   class="vb-input px-3 py-1.5 h-[36px] text-sm md:w-36 w-full max-w-[140px]"
+                                   class="vb-input"
                                    :name="'schedule[' + dayIndex + '][' + idx + '][start]'"
                                    x-model="window.start"
                                    required>
-                            <span class="text-[var(--vb-text-tertiary)] text-sm font-medium">to</span>
+                            <span class="vb-avail-separator"><?= __('admin.availability.separator') ?></span>
                             <input type="time"
-                                   class="vb-input px-3 py-1.5 h-[36px] text-sm md:w-36 w-full max-w-[140px]"
+                                   class="vb-input"
                                    :name="'schedule[' + dayIndex + '][' + idx + '][end]'"
                                    x-model="window.end"
                                    required>
                             <button type="button"
-                                    class="text-[var(--vb-text-tertiary)] hover:text-[var(--vb-error)] p-1.5 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                    class="vb-avail-remove"
                                     @click="removeWindow(dayIndex, idx)"
                                     title="<?= __('admin.availability.remove_window') ?>">
                                 <i data-lucide="x" class="vb-icon-md"></i>
@@ -161,9 +162,9 @@ ob_start();
                 </div>
 
                 <!-- Actions -->
-                <div class="md:w-16 flex justify-end h-[36px] items-center">
+                <div class="vb-avail-actions">
                     <button type="button"
-                            class="text-[var(--vb-text-secondary)] hover:text-[var(--vb-text-primary)] p-1.5 rounded-md transition-colors"
+                            class="vb-avail-add"
                             x-show="daySlots.length > 0"
                             @click="addWindow(dayIndex)"
                             title="<?= __('admin.availability.add_window') ?>">
@@ -176,7 +177,7 @@ ob_start();
         </div>
     </div>
 
-    <div class="vb-form-actions mt-6">
+    <div class="vb-form-actions">
         <button type="submit" class="vb-btn vb-btn-primary" id="save-availability-btn">
             <i data-lucide="save" class="vb-icon-md"></i>
             <?= __('admin.availability.save') ?>

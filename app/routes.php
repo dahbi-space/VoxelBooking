@@ -147,6 +147,7 @@ return function (Router $router): void {
             $router->post('/admin/tenants/{tenant_id}/services/{id}', \App\Controllers\Admin\ServiceController::class, 'update');
             $router->post('/admin/tenants/{tenant_id}/services/{id}/activate', \App\Controllers\Admin\ServiceController::class, 'activate');
             $router->post('/admin/tenants/{tenant_id}/services/{id}/deactivate', \App\Controllers\Admin\ServiceController::class, 'deactivate');
+            $router->post('/admin/tenants/{tenant_id}/services/{id}/reorder', \App\Controllers\Admin\ServiceController::class, 'reorder');
 
             // Staff management — operator + owner only (enforced in controller)
             $router->get('/admin/tenants/{tenant_id}/staff', \App\Controllers\Admin\StaffController::class, 'index');
@@ -156,6 +157,7 @@ return function (Router $router): void {
             $router->post('/admin/tenants/{tenant_id}/staff/{id}/edit', \App\Controllers\Admin\StaffController::class, 'update');
             $router->post('/admin/tenants/{tenant_id}/staff/{id}/activate', \App\Controllers\Admin\StaffController::class, 'activate');
             $router->post('/admin/tenants/{tenant_id}/staff/{id}/deactivate', \App\Controllers\Admin\StaffController::class, 'deactivate');
+            $router->post('/admin/tenants/{tenant_id}/staff/{id}/reorder', \App\Controllers\Admin\StaffController::class, 'reorder');
 
             // Availability management — operator + owner only (enforced in controller)
             $router->get('/admin/tenants/{tenant_id}/availability', \App\Controllers\Admin\AvailabilityController::class, 'index');
@@ -177,6 +179,7 @@ return function (Router $router): void {
             $router->post('/admin/tenants/{tenant_id}/resources/{id}', \App\Controllers\Admin\ResourceController::class, 'update');
             $router->post('/admin/tenants/{tenant_id}/resources/{id}/activate', \App\Controllers\Admin\ResourceController::class, 'activate');
             $router->post('/admin/tenants/{tenant_id}/resources/{id}/deactivate', \App\Controllers\Admin\ResourceController::class, 'deactivate');
+            $router->post('/admin/tenants/{tenant_id}/resources/{id}/reorder', \App\Controllers\Admin\ResourceController::class, 'reorder');
 
             // Capacity slot management — operator + owner only (enforced in controller)
             $router->get('/admin/tenants/{tenant_id}/capacity-slots', \App\Controllers\Admin\CapacitySlotsController::class, 'index');

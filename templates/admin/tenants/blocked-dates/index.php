@@ -14,6 +14,7 @@
  * @var string $csrfToken
  * @var array|null $flash
  */
+$activePage  = 'blocked-dates';
 $tenant = $tenant ?? [];
 $tenantId = $tenantId ?? '';
 $upcoming = $upcoming ?? [];
@@ -37,7 +38,7 @@ ob_start();
 <?php endif; ?>
 
 <!-- Add blocked date form -->
-<div class="vb-card overflow-hidden vb-animate-in vb-mb-xl">
+<div class="vb-card vb-card-clip vb-animate-in vb-mb-xl">
     <div class="vb-card-section-header">
         <h3 class="vb-card-section-title">
             <i data-lucide="calendar-plus" class="vb-icon-md"></i>
@@ -54,22 +55,22 @@ ob_start();
                 
                 <div class="vb-form-group vb-mb-0">
                     <label class="vb-label" for="bd-start"><?= __('admin.blocked_dates.start_date') ?></label>
-                    <input type="date" class="vb-input w-full" id="bd-start" name="start_date" required min="<?= date('Y-m-d') ?>">
+                    <input type="date" class="vb-input" id="bd-start" name="start_date" required min="<?= date('Y-m-d') ?>">
                 </div>
 
                 <div class="vb-form-group vb-mb-0">
                     <label class="vb-label" for="bd-end"><?= __('admin.blocked_dates.end_date') ?></label>
-                    <input type="date" class="vb-input w-full" id="bd-end" name="end_date" required min="<?= date('Y-m-d') ?>">
+                    <input type="date" class="vb-input" id="bd-end" name="end_date" required min="<?= date('Y-m-d') ?>">
                 </div>
 
                 <div class="vb-form-group vb-mb-0">
                     <label class="vb-label" for="bd-reason"><?= __('admin.blocked_dates.reason') ?></label>
-                    <input type="text" class="vb-input w-full" id="bd-reason" name="reason" placeholder="<?= __('admin.blocked_dates.reason_placeholder') ?>" maxlength="255">
+                    <input type="text" class="vb-input" id="bd-reason" name="reason" placeholder="<?= __('admin.blocked_dates.reason_placeholder') ?>" maxlength="255">
                 </div>
 
                 <div class="vb-form-group vb-mb-0">
                     <label class="vb-label" for="bd-scope"><?= __('admin.blocked_dates.scope') ?></label>
-                    <select class="vb-input w-full" id="bd-scope" x-model="selectedScope" @change="onScopeChange()">
+                    <select class="vb-input" id="bd-scope" x-model="selectedScope" @change="onScopeChange()">
                         <option value="tenant"><?= __('admin.blocked_dates.scope_tenant') ?></option>
                         
                         <?php if (!empty($staff)): ?>
@@ -103,7 +104,7 @@ ob_start();
         </div>
 
         <div class="vb-card-section-footer">
-            <button type="submit" class="vb-btn vb-btn-primary shadow-card" id="add-blocked-date-btn">
+            <button type="submit" class="vb-btn vb-btn-primary" id="add-blocked-date-btn">
                 <i data-lucide="plus" class="vb-icon-md"></i>
                 <?= __('admin.blocked_dates.add') ?>
             </button>
@@ -113,7 +114,7 @@ ob_start();
 
 <!-- Upcoming / Active -->
 <?php if (!empty($upcoming)): ?>
-<div class="vb-card overflow-hidden vb-animate-in vb-mb-xl">
+<div class="vb-card vb-card-clip vb-animate-in vb-mb-xl">
     <div class="vb-card-section-header">
         <h3 class="vb-card-section-title"><?= __('admin.blocked_dates.upcoming') ?></h3>
         <span class="vb-badge vb-badge-accent"><?= count($upcoming) ?></span>
@@ -184,10 +185,10 @@ ob_start();
 
 <!-- Past (collapsed by default) -->
 <?php if (!empty($past)): ?>
-<details class="vb-card overflow-hidden vb-animate-in group vb-mb-md">
-    <summary class="vb-card-section-header group-open:border-b border-[var(--vb-border-subtle)]" style="cursor: pointer; user-select: none;">
+<details class="vb-card vb-card-clip vb-animate-in vb-details-accordion vb-mb-md">
+    <summary class="vb-card-section-header vb-details-summary">
         <h3 class="vb-card-section-title vb-card-section-title--muted">
-            <i data-lucide="chevron-right" class="vb-icon-md transition-transform group-open:rotate-90"></i>
+            <i data-lucide="chevron-right" class="vb-icon-md vb-details-chevron"></i>
             <?= __('admin.blocked_dates.past') ?>
         </h3>
         <span class="vb-badge vb-badge-muted"><?= count($past) ?></span>

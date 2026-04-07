@@ -66,6 +66,17 @@ if ($isEdit && !$exceptionDates && $event['exception_dates']) {
               placeholder="<?= __('admin.events.description_placeholder') ?>"><?= $v('description', $isEdit ? ($event['description'] ?? '') : '') ?></textarea>
 </div>
 
+    <?php
+        // Cover image upload
+        $uploadFieldName   = 'cover_image';
+        $uploadFieldId     = 'event_cover_image';
+        $uploadLabel       = __('admin.events.label_cover_image');
+        $uploadHint        = __('admin.events.cover_image_hint');
+        $uploadCurrentPath = $event['cover_image_path'] ?? null;
+        $uploadShape       = 'rect';
+        include __DIR__ . '/../../../partials/upload-field.php';
+    ?>
+
 <!-- Location -->
 <div class="vb-form-group">
     <label for="event_location" class="vb-label"><?= __('admin.events.location_label') ?></label>

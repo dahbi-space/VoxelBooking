@@ -72,6 +72,7 @@ return [
         'cancel_booking'   => 'Cancel booking',
         'pick_another_time'=> 'Pick another time',
         'continue'         => 'Continue',
+        'selected_time'    => 'Selected',
     ],
 
     // ── Confirmation ──

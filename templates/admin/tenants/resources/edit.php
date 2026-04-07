@@ -32,7 +32,8 @@ ob_start();
 <div class="vb-card p-6 vb-animate-in">
     <form method="POST"
           action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/resources/<?= htmlspecialchars($resource['id'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-          id="resource-form">
+          id="resource-form"
+          enctype="multipart/form-data">
         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
         <?php include __DIR__ . '/_form.php'; ?>

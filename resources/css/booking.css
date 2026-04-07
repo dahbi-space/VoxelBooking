@@ -428,6 +428,44 @@ body {
   transform: none;
 }
 
+/* Cover image — sit above card content (resources + services) */
+.vb-book-service-card:has(.vb-book-resource-cover),
+.vb-book-service-card:has(.vb-book-service-cover) {
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.vb-book-service-card:has(.vb-book-resource-cover) .vb-book-service-info,
+.vb-book-service-card:has(.vb-book-service-cover) .vb-book-service-info {
+  padding: 16px 20px 16px;
+}
+
+.vb-book-service-card:has(.vb-book-resource-cover) .vb-book-service-price,
+.vb-book-service-card:has(.vb-book-service-cover) .vb-book-service-price {
+  padding: 0 20px 16px;
+}
+
+.vb-book-service-card.is-selected:has(.vb-book-resource-cover),
+.vb-book-service-card.is-selected:has(.vb-book-service-cover) {
+  padding: 0;
+}
+
+.vb-book-resource-cover,
+.vb-book-service-cover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.vb-book-resource-cover img,
+.vb-book-service-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .vb-book-service-info {
   flex: 1;
   min-width: 0;
@@ -747,18 +785,94 @@ body {
   background: var(--vb-brand);
   color: var(--vb-brand-text);
   border-color: var(--vb-brand);
-  font-weight: 500;
-  box-shadow: 0 2px 8px rgba(var(--vb-brand-rgb), 0.2);
-  animation: vb-pill-select 200ms var(--vb-ease-overshoot);
+  font-weight: 600;
+  box-shadow: 0 0 0 3px rgba(var(--vb-brand-rgb), 0.25),
+              0 4px 12px rgba(var(--vb-brand-rgb), 0.3);
+  animation: vb-pill-select 250ms var(--vb-ease-overshoot);
+  transform: scale(1.06);
+  z-index: 2;
+  position: relative;
+  gap: 4px;
+}
+
+.vb-pill-check {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 @keyframes vb-pill-select {
-  0% { transform: scale(0.92); }
-  100% { transform: scale(1); }
+  0% { transform: scale(0.88); }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1.06); }
 }
 
 .vb-book-time-pill.is-dimmed {
   opacity: 0.5;
+}
+
+/* ── Selection Confirmation Block ── */
+.vb-book-selection-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
+  margin-bottom: 8px;
+  border-radius: var(--vb-radius-xl);
+  background: var(--vb-brand-light);
+  border: 1px solid rgba(var(--vb-brand-rgb), 0.2);
+  animation: vb-confirm-slide 300ms var(--vb-ease-overshoot);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+@keyframes vb-confirm-slide {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.vb-book-selection-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.vb-book-selection-badge > i {
+  width: 20px;
+  height: 20px;
+  color: var(--vb-brand);
+  flex-shrink: 0;
+}
+
+.vb-book-selection-detail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.vb-book-selection-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vb-brand);
+}
+
+.vb-book-selection-value {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--vb-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vb-book-selection-confirm .vb-book-btn-continue {
+  flex-shrink: 0;
+  animation: none;
+  width: 100%;
 }
 
 @keyframes vb-pill-enter {
@@ -1272,7 +1386,7 @@ body {
 
 /* Secondary action links (reschedule, cancel, book another) */
 .vb-book-confirm-actions-secondary {
-  margin-top: 16px;
+  margin-top: 24px;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -1308,10 +1422,26 @@ body {
   gap: 12px;
 }
 
+/* Continue button */
+.vb-book-btn-continue {
+  width: 100%;
+  font-size: 1rem;
+  padding: 14px 24px;
+}
+
+
 .vb-book-back-link {
   text-align: center;
   margin-top: 20px;
   padding-top: 16px;
+}
+
+/* ── Counter Hint (max reached, min required, etc.) ── */
+.vb-book-counter-hint {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--vb-text-secondary);
+  opacity: 0.6;
 }
 
 /* ── Cancellation Policy Disclosure ── */
@@ -1606,6 +1736,12 @@ body {
   border-color: var(--vb-brand);
   background: var(--vb-brand-light);
   box-shadow: 0 0 0 2px var(--vb-brand);
+  animation: vb-pill-select 200ms var(--vb-ease-overshoot);
+}
+
+.vb-book-slot-card:not([aria-checked="true"]).is-dimmed {
+  opacity: 0.5;
+  transition: opacity 200ms ease;
 }
 
 .vb-book-slot-time {
@@ -1979,6 +2115,12 @@ body {
   gap: 4px;
 }
 
+.vb-book-event-card-meta svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
 .vb-book-event-card-footer {
   display: flex;
   justify-content: flex-end;
@@ -2224,32 +2366,6 @@ body {
   cursor: not-allowed;
 }
 
-/* ── Button: Brand ── */
-
-.vb-book-btn-brand {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 150ms ease, transform 100ms ease;
-  background: var(--vb-brand);
-  color: var(--vb-brand-text);
-}
-
-.vb-book-btn-brand:hover {
-  background: var(--vb-brand-hover);
-}
-
-.vb-book-btn-brand:active {
-  transform: scale(0.98);
-}
 
 /* ── Cancel Checkmark Animation ── */
 

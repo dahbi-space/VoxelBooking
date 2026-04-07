@@ -222,7 +222,6 @@ final class StaffManagementTest extends TestCase
             'phone'        => '+31612345678',
             'title'        => 'Test Stylist',
             'bio'          => 'Test bio text',
-            'sort_order'   => '5',
             'service_ids'  => [self::$serviceId1, self::$serviceId2],
         ], 'operator');
 
@@ -239,7 +238,7 @@ final class StaffManagementTest extends TestCase
         $this->assertSame('Integration Test Staff', $s['name']);
         $this->assertSame('Test Stylist', $s['title']);
         $this->assertSame('+31612345678', $s['phone']);
-        $this->assertSame(5, (int) $s['sort_order']);
+        $this->assertGreaterThanOrEqual(0, (int) $s['sort_order'], 'sort_order must be auto-assigned');
         $this->assertSame(1, (int) $s['is_active']);
 
         // Verify service pivot
@@ -336,7 +335,6 @@ final class StaffManagementTest extends TestCase
             'name'        => 'After Edit',
             'email'       => 'edit-test@test.test',
             'title'       => 'Senior',
-            'sort_order'  => '10',
             'service_ids' => [self::$serviceId2],
         ], 'operator');
 
@@ -347,7 +345,7 @@ final class StaffManagementTest extends TestCase
         $this->assertNotEmpty($updated);
         $this->assertSame('After Edit', $updated[0]['name']);
         $this->assertSame('Senior', $updated[0]['title']);
-        $this->assertSame(10, (int) $updated[0]['sort_order']);
+        $this->assertSame(1, (int) $updated[0]['sort_order'], 'sort_order must be preserved (managed by chevrons, not form)');
 
         // Verify pivot was synced (only service2 now)
         $pivots = Database::query(

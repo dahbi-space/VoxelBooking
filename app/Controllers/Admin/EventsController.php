@@ -7,6 +7,7 @@ namespace App\Controllers\Admin;
 use App\Engine\Auth;
 use App\Engine\AuditLog;
 use App\Engine\Database;
+use App\Engine\ImageUpload;
 use App\Engine\Request;
 use App\Engine\Response;
 use App\Engine\Ulid;
@@ -190,20 +191,31 @@ final class EventsController
         $allowWaitlist = $request->string('allow_waitlist') === '1' ? 1 : 0;
         $waitlistMax = max(0, (int) $request->string('waitlist_max'));
 
+        // Cover image upload
+        $coverPath = null;
+        if (!empty($_FILES['cover_image']['tmp_name'])) {
+            $upload = ImageUpload::store('event', $_FILES['cover_image'], $tenant['slug']);
+            if ($upload['error']) {
+                $this->setFlash('error', $upload['error']);
+                return Response::redirect("/admin/tenants/{$tenantId}/events/create");
+            }
+            $coverPath = $upload['path'];
+        }
+
         $eventId = Ulid::generate();
 
         Database::execute(
             'INSERT INTO `events` (`id`, `tenant_id`, `name`, `description`, `location`, `price`,
              `max_participants`, `min_spot_count`, `max_spot_count`, `start_datetime`, `end_datetime`, `is_recurring`, `rrule`,
-             `exception_dates`, `allow_waitlist`, `waitlist_max`, `is_active`)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
+             `exception_dates`, `allow_waitlist`, `waitlist_max`, `cover_image_path`, `is_active`)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
             [
                 $eventId, $tenantId, $name,
                 trim($request->string('description')) ?: null,
                 trim($request->string('location')) ?: null,
                 $price, $maxParticipants, $minSpotCount, $maxSpotCount, $startDt, $endDt,
                 $isRecurring ? 1 : 0, $rrule, $exceptionDates,
-                $allowWaitlist, $waitlistMax,
+                $allowWaitlist, $waitlistMax, $coverPath,
             ]
         );
 
@@ -321,12 +333,29 @@ final class EventsController
         $allowWaitlist = $request->string('allow_waitlist') === '1' ? 1 : 0;
         $waitlistMax = max(0, (int) $request->string('waitlist_max'));
 
+        // Cover image handling
+        $events = Database::query('SELECT `cover_image_path` FROM `events` WHERE `id` = ? AND `tenant_id` = ?', [$eventId, $tenantId]);
+        $coverPath = $events[0]['cover_image_path'] ?? null;
+        $removeCover = ($request->string('remove_cover_image') === '1');
+
+        if (!empty($_FILES['cover_image']['tmp_name'])) {
+            $upload = ImageUpload::store('event', $_FILES['cover_image'], $tenant['slug'], $coverPath);
+            if ($upload['error']) {
+                $this->setFlash('error', $upload['error']);
+                return Response::redirect("/admin/tenants/{$tenantId}/events/{$eventId}/edit");
+            }
+            $coverPath = $upload['path'];
+        } elseif ($removeCover && $coverPath) {
+            ImageUpload::delete($coverPath);
+            $coverPath = null;
+        }
+
         Database::execute(
             'UPDATE `events` SET `name` = ?, `description` = ?, `location` = ?, `price` = ?,
              `max_participants` = ?, `min_spot_count` = ?, `max_spot_count` = ?,
              `start_datetime` = ?, `end_datetime` = ?,
              `is_recurring` = ?, `rrule` = ?, `exception_dates` = ?,
-             `allow_waitlist` = ?, `waitlist_max` = ?
+             `allow_waitlist` = ?, `waitlist_max` = ?, `cover_image_path` = ?
              WHERE `id` = ? AND `tenant_id` = ?',
             [
                 $name,
@@ -334,7 +363,7 @@ final class EventsController
                 trim($request->string('location')) ?: null,
                 $price, $maxParticipants, $minSpotCount, $maxSpotCount, $startDt, $endDt,
                 $isRecurring ? 1 : 0, $rrule, $exceptionDates,
-                $allowWaitlist, $waitlistMax,
+                $allowWaitlist, $waitlistMax, $coverPath,
                 $eventId, $tenantId,
             ]
         );

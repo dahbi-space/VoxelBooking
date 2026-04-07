@@ -311,6 +311,9 @@ return [
         'url_copied'       => 'Copied!',
         'forbidden'        => 'Owner or operator access required.',
         'dismiss'          => 'Dismiss',
+        'move_up'          => 'Move up',
+        'move_down'        => 'Move down',
+        'col_order'        => 'Order',
     ],
 
     // ── Flash messages ──
@@ -675,7 +678,6 @@ return [
         'label_phone'             => 'Phone',
         'label_title'             => 'Title / Role',
         'label_bio'               => 'Bio',
-        'label_sort_order'        => 'Sort Order',
         'label_services'          => 'Can perform these services',
         'placeholder_name'        => 'e.g. Sarah Johnson',
         'placeholder_email'       => 'e.g. sarah@example.com',
@@ -704,6 +706,8 @@ return [
         'error_email_taken'       => 'This email is already used by another staff member.',
         'error_not_found'         => 'Staff member not found.',
         'no_services_available'   => 'No services configured yet.',
+        'label_avatar'            => 'Photo',
+        'avatar_hint'             => 'JPG, PNG, or WebP. Max 2 MB.',
     ],
 
     // ── Availability Management ──
@@ -721,11 +725,13 @@ return [
         'closed'                => 'Closed',
         'add_window'            => 'Add hours',
         'remove_window'         => 'Remove',
+        'separator'             => 'to',
         'start_time'            => 'Start',
         'end_time'              => 'End',
         'using_defaults'        => 'Using tenant defaults',
         'using_custom'          => 'Custom hours',
         'reset_to_defaults'     => 'Reset to Defaults',
+        'reset_confirm'         => 'Reset this staff member\'s hours to tenant defaults?',
         'saved'                 => 'Availability updated.',
         'staff_saved'           => 'Staff availability updated.',
         'staff_reset'           => 'Staff availability reset to defaults.',
@@ -806,7 +812,8 @@ return [
         'field_category'        => 'Category',
         'field_category_hint'   => 'e.g. Haircuts, Massages',
         'field_color'           => 'Calendar color',
-        'field_sort_order'      => 'Sort order',
+        'label_cover_image'     => 'Cover Image',
+        'cover_image_hint'      => 'JPG, PNG, or WebP. Max 2 MB.',
         'field_staff'           => 'Staff members',
         'field_staff_hint'      => 'Select which staff members can perform this service.',
         'error_name_required'   => 'Service name is required.',
@@ -847,7 +854,6 @@ return [
         'field_max_stay'        => 'Maximum stay (nights)',
         'field_amenities'       => 'Amenities',
         'field_amenities_hint'  => 'Comma-separated tags, e.g. Wi-Fi, Pool, Air conditioning',
-        'field_sort_order'      => 'Sort order',
         'seasonal_title'        => 'Seasonal Pricing',
         'seasonal_empty'        => 'No seasonal pricing configured.',
         'seasonal_add'          => 'Add seasonal rate',
@@ -862,6 +868,8 @@ return [
         'error_price_invalid'   => 'Price must be a positive number.',
         'error_stay_range'      => 'Maximum stay must be equal to or greater than minimum stay.',
         'error_seasonal_overlap'=> 'Seasonal pricing ranges must not overlap. Check your date ranges and try again.',
+        'label_cover_image'     => 'Cover Image',
+        'cover_image_hint'      => 'JPG, PNG, or WebP. Max 2 MB.',
     ],
 
     // ── Tenant Settings ──
@@ -1119,5 +1127,22 @@ return [
         'location_placeholder'   => 'Studio A, Room 202, etc.',
         'price_placeholder'      => '0.00',
         'exception_dates_placeholder' => "2026-01-15\n2026-02-01",
+        'label_cover_image'          => 'Cover Image',
+        'cover_image_hint'           => 'JPG, PNG, or WebP. Max 2 MB.',
+    ],
+
+    // ── Image Upload (shared primitive) ──
+    'upload' => [
+        'choose_file'          => 'Choose file',
+        'change'               => 'Change',
+        'remove'               => 'Remove',
+        'drag_or_click'        => 'Drag & drop or click to upload',
+        'formats_hint'         => 'JPG, PNG, WebP · Max 2 MB',
+        'error_too_large'      => 'File is too large. Maximum size is 2 MB.',
+        'error_invalid_type'   => 'Invalid file type. Please upload a JPG, PNG, or WebP image.',
+        'error_partial'        => 'Upload was only partially completed. Please try again.',
+        'error_server'         => 'Server error during upload. Please try again.',
+        'error_generic'        => 'Upload failed. Please try again.',
+        'error_move_failed'    => 'Could not save the uploaded file. Check directory permissions.',
     ],
 ];

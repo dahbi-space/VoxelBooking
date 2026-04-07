@@ -7,6 +7,7 @@ namespace App\Controllers\Admin;
 use App\Engine\Auth;
 use App\Engine\AuditLog;
 use App\Engine\Database;
+use App\Engine\ImageUpload;
 use App\Engine\Request;
 use App\Engine\Response;
 use App\Engine\Ulid;
@@ -27,6 +28,7 @@ use App\Middleware\CsrfMiddleware;
  * POST /admin/tenants/{tenant_id}/staff/{id}/edit      → update
  * POST /admin/tenants/{tenant_id}/staff/{id}/activate  → activate
  * POST /admin/tenants/{tenant_id}/staff/{id}/deactivate→ deactivate
+ * POST /admin/tenants/{tenant_id}/staff/{id}/reorder    → reorder (chevron swap)
  */
 final class StaffController
 {
@@ -121,7 +123,6 @@ final class StaffController
         $phone     = trim($request->string('phone')) ?: null;
         $title     = trim($request->string('title')) ?: null;
         $bio       = trim($request->string('bio')) ?: null;
-        $sortOrder = max(0, (int) $request->string('sort_order'));
         $serviceIds = (array) ($_POST['service_ids'] ?? []);
 
         // Validate
@@ -150,7 +151,7 @@ final class StaffController
             $this->setFlash('error', implode(' ', $errors));
             $_SESSION['_old_input'] = [
                 'name' => $name, 'email' => $email, 'phone' => $phone,
-                'title' => $title, 'bio' => $bio, 'sort_order' => $sortOrder,
+                'title' => $title, 'bio' => $bio,
                 'service_ids' => $serviceIds,
             ];
             return Response::redirect("/admin/tenants/{$tenantId}/staff/create");
@@ -158,12 +159,32 @@ final class StaffController
 
         $staffId = Ulid::generate();
 
+        // Handle avatar upload
+        $avatarPath = null;
+        if (!empty($_FILES['avatar']['tmp_name'])) {
+            $upload = ImageUpload::store('avatar', $_FILES['avatar'], $tenant['slug']);
+            if ($upload['error']) {
+                $this->setFlash('error', $upload['error']);
+                $_SESSION['_old_input'] = [
+                    'name' => $name, 'email' => $email, 'phone' => $phone,
+                    'title' => $title, 'bio' => $bio,
+                    'service_ids' => $serviceIds,
+                ];
+                return Response::redirect("/admin/tenants/{$tenantId}/staff/create");
+            }
+            $avatarPath = $upload['path'];
+        }
+
         try {
-            Database::transaction(function () use ($staffId, $tenantId, $name, $email, $phone, $title, $bio, $sortOrder, $serviceIds) {
+            Database::transaction(function () use ($staffId, $tenantId, $name, $email, $phone, $title, $bio, $serviceIds, $avatarPath) {
+                // Auto-assign sort_order = MAX + 1
+                $maxRows = Database::query('SELECT COALESCE(MAX(`sort_order`), -1) AS m FROM `staff` WHERE `tenant_id` = ?', [$tenantId]);
+                $nextOrder = ((int) $maxRows[0]['m']) + 1;
+
                 Database::execute(
-                    "INSERT INTO `staff` (`id`, `tenant_id`, `name`, `email`, `phone`, `title`, `bio`, `sort_order`, `is_active`)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)",
-                    [$staffId, $tenantId, $name, $email, $phone, $title, $bio, $sortOrder]
+                    "INSERT INTO `staff` (`id`, `tenant_id`, `name`, `email`, `phone`, `title`, `bio`, `sort_order`, `avatar_path`, `is_active`)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)",
+                    [$staffId, $tenantId, $name, $email, $phone, $title, $bio, $nextOrder, $avatarPath]
                 );
 
                 if (!empty($serviceIds)) {
@@ -171,6 +192,10 @@ final class StaffController
                 }
             });
         } catch (\Throwable $e) {
+            // Clean up uploaded file on failure
+            if ($avatarPath) {
+                ImageUpload::delete($avatarPath);
+            }
             $this->setFlash('error', __('admin.common.error_generic'));
             return Response::redirect("/admin/tenants/{$tenantId}/staff/create");
         }
@@ -254,7 +279,6 @@ final class StaffController
         $phone     = trim($request->string('phone')) ?: null;
         $title     = trim($request->string('title')) ?: null;
         $bio       = trim($request->string('bio')) ?: null;
-        $sortOrder = max(0, (int) $request->string('sort_order'));
         $serviceIds = (array) ($_POST['service_ids'] ?? []);
 
         // Validate
@@ -283,7 +307,7 @@ final class StaffController
             $this->setFlash('error', implode(' ', $errors));
             $_SESSION['_old_input'] = [
                 'name' => $name, 'email' => $email, 'phone' => $phone,
-                'title' => $title, 'bio' => $bio, 'sort_order' => $sortOrder,
+                'title' => $title, 'bio' => $bio,
                 'service_ids' => $serviceIds,
             ];
             return Response::redirect("/admin/tenants/{$tenantId}/staff/{$staffId}/edit");
@@ -295,13 +319,36 @@ final class StaffController
         if ($member['email'] !== $email) $changes['email'] = AuditLog::hashEmail($email);
         if (($member['title'] ?? '') !== ($title ?? '')) $changes['title'] = $title;
 
+        // Handle avatar upload / removal
+        $avatarPath = $member['avatar_path'] ?? null; // preserve existing by default
+        $removeAvatar = ($request->string('remove_avatar') === '1');
+
+        if (!empty($_FILES['avatar']['tmp_name'])) {
+            $upload = ImageUpload::store('avatar', $_FILES['avatar'], $tenant['slug'], $avatarPath);
+            if ($upload['error']) {
+                $this->setFlash('error', $upload['error']);
+                $_SESSION['_old_input'] = [
+                    'name' => $name, 'email' => $email, 'phone' => $phone,
+                    'title' => $title, 'bio' => $bio,
+                    'service_ids' => $serviceIds,
+                ];
+                return Response::redirect("/admin/tenants/{$tenantId}/staff/{$staffId}/edit");
+            }
+            $avatarPath = $upload['path'];
+            $changes['avatar'] = 'uploaded';
+        } elseif ($removeAvatar && $avatarPath) {
+            ImageUpload::delete($avatarPath);
+            $avatarPath = null;
+            $changes['avatar'] = 'removed';
+        }
+
         try {
-            Database::transaction(function () use ($staffId, $tenantId, $name, $email, $phone, $title, $bio, $sortOrder, $serviceIds) {
+            Database::transaction(function () use ($staffId, $tenantId, $name, $email, $phone, $title, $bio, $serviceIds, $avatarPath) {
                 Database::execute(
                     'UPDATE `staff`
-                     SET `name` = ?, `email` = ?, `phone` = ?, `title` = ?, `bio` = ?, `sort_order` = ?
+                     SET `name` = ?, `email` = ?, `phone` = ?, `title` = ?, `bio` = ?, `avatar_path` = ?
                      WHERE `id` = ? AND `tenant_id` = ?',
-                    [$name, $email, $phone, $title, $bio, $sortOrder, $staffId, $tenantId]
+                    [$name, $email, $phone, $title, $bio, $avatarPath, $staffId, $tenantId]
                 );
 
                 // Sync service pivot (delete + re-insert)
@@ -392,6 +439,84 @@ final class StaffController
         ]);
 
         $this->setFlash('success', __('admin.staff.deactivated'));
+        return Response::redirect("/admin/tenants/{$tenantId}/staff");
+    }
+
+    // ── Reorder (move up / move down) ──
+
+    public function reorder(Request $request): Response
+    {
+        $tenantId = $request->getAttribute('tenant_id');
+        $staffId  = $request->getAttribute('id');
+
+        if (!$this->canAccess($tenantId)) {
+            return $this->forbidden($request);
+        }
+
+        $direction = $request->string('direction');
+        if (!in_array($direction, ['up', 'down'], true)) {
+            return Response::redirect("/admin/tenants/{$tenantId}/staff");
+        }
+
+        $member = $this->loadStaff($staffId, $tenantId);
+        if ($member === null) {
+            return Response::redirect("/admin/tenants/{$tenantId}/staff");
+        }
+
+        $currentActive = (int) $member['is_active'];
+
+        Database::transaction(function () use ($staffId, $tenantId, $currentActive, $direction) {
+            // Step 1: Normalize sort_order to sequential 0,1,2,… within the active group.
+            $siblings = Database::query(
+                'SELECT `id` FROM `staff`
+                 WHERE `tenant_id` = ? AND `is_active` = ?
+                 ORDER BY `sort_order` ASC, `name` ASC',
+                [$tenantId, $currentActive]
+            );
+            foreach ($siblings as $i => $row) {
+                Database::execute(
+                    'UPDATE `staff` SET `sort_order` = ? WHERE `id` = ? AND `tenant_id` = ?',
+                    [$i, $row['id'], $tenantId]
+                );
+            }
+
+            // Step 2: Re-read normalized sort_order
+            $fresh = Database::query(
+                'SELECT `sort_order` FROM `staff` WHERE `id` = ? AND `tenant_id` = ? LIMIT 1',
+                [$staffId, $tenantId]
+            );
+            $currentOrder = (int) $fresh[0]['sort_order'];
+
+            // Step 3: Find adjacent sibling and swap
+            if ($direction === 'up') {
+                $rows = Database::query(
+                    'SELECT `id`, `sort_order` FROM `staff`
+                     WHERE `tenant_id` = ? AND `is_active` = ? AND `sort_order` < ?
+                     ORDER BY `sort_order` DESC LIMIT 1',
+                    [$tenantId, $currentActive, $currentOrder]
+                );
+            } else {
+                $rows = Database::query(
+                    'SELECT `id`, `sort_order` FROM `staff`
+                     WHERE `tenant_id` = ? AND `is_active` = ? AND `sort_order` > ?
+                     ORDER BY `sort_order` ASC LIMIT 1',
+                    [$tenantId, $currentActive, $currentOrder]
+                );
+            }
+
+            if (!empty($rows)) {
+                $sibling = $rows[0];
+                Database::execute(
+                    'UPDATE `staff` SET `sort_order` = ? WHERE `id` = ? AND `tenant_id` = ?',
+                    [(int) $sibling['sort_order'], $staffId, $tenantId]
+                );
+                Database::execute(
+                    'UPDATE `staff` SET `sort_order` = ? WHERE `id` = ? AND `tenant_id` = ?',
+                    [$currentOrder, $sibling['id'], $tenantId]
+                );
+            }
+        });
+
         return Response::redirect("/admin/tenants/{$tenantId}/staff");
     }
 
