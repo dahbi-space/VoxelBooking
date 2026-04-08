@@ -11,6 +11,7 @@ use App\Engine\Response;
 use App\Engine\Version;
 use App\Engine\View;
 use App\Models\Booking;
+use App\Models\Customer;
 use App\Models\Tenant;
 
 /**
@@ -108,10 +109,13 @@ final class DashboardController
 
         $today = date('Y-m-d');
         $weekStart = date('Y-m-d', strtotime('-6 days'));
+        $monthStart = date('Y-m-01');
         $now = date('Y-m-d H:i:s');
 
         $todayBookings = Booking::countForTenant($tenantId, null, $today, $today);
         $weekBookings = Booking::countForTenant($tenantId, null, $weekStart, $today);
+        $monthBookings = Booking::countForTenant($tenantId, null, $monthStart, $today);
+        $totalCustomers = Customer::countForTenant($tenantId, null);
 
         // Deltas: same-day-last-week for daily, previous-7-day-window for weekly
         $prevDay = date('Y-m-d', strtotime('-7 days'));
@@ -136,7 +140,8 @@ final class DashboardController
             'tenant'         => $tenant,
             'todayBookings'  => $todayBookings,
             'weekBookings'   => $weekBookings,
-            'statusCounts'   => Booking::statusCounts($tenantId),
+            'monthBookings'  => $monthBookings,
+            'totalCustomers' => $totalCustomers,
             'upcoming'       => Booking::forTenantUpcoming($tenantId, $now, 5),
             'deltaToday'     => $deltaToday,
             'deltaWeek'      => $deltaWeek,

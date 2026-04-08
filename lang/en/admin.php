@@ -57,6 +57,8 @@ return [
         'active_tenants'      => 'Active Tenants',
         'bookings_today'      => 'Bookings Today',
         'this_week'           => 'This Week',
+        'this_month'          => 'This Month',
+        'total_customers'     => 'Total Customers',
         'upcoming_24h'        => 'Upcoming (24h)',
         'no_change'           => 'No change',
         'awaiting_first'      => 'Awaiting first booking',

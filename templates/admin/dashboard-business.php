@@ -9,7 +9,7 @@
  *   4. Next Up + Quick Actions (two-column grid)
  *
  * Variables: $user, $version, $csrfToken, $tenant, $todayBookings, $weekBookings,
- *            $statusCounts, $upcoming, $pageTitle, $activePage,
+ *            $monthBookings, $totalCustomers, $upcoming, $pageTitle, $activePage,
  *            $deltaToday, $deltaWeek, $todaySchedule
  */
 $activePage = 'dashboard';
@@ -98,21 +98,21 @@ ob_start();
     </div>
     <div class="vb-metric vb-fade-in-up stagger-3">
         <div class="vb-metric-header">
-            <i data-lucide="check-circle" class="vb-metric-icon"></i>
-            <span class="vb-metric-label"><?= __('admin.dashboard.confirmed') ?></span>
+            <i data-lucide="calendar-range" class="vb-metric-icon"></i>
+            <span class="vb-metric-label"><?= __('admin.dashboard.this_month') ?></span>
         </div>
         <div class="vb-metric-value-row">
-            <span class="vb-metric-value"><?= (int) ($statusCounts['confirmed'] ?? 0) ?></span>
+            <span class="vb-metric-value"><?= (int) ($monthBookings ?? 0) ?></span>
         </div>
         <div class="vb-metric-accent"></div>
     </div>
     <div class="vb-metric vb-fade-in-up stagger-4">
         <div class="vb-metric-header">
-            <i data-lucide="award" class="vb-metric-icon"></i>
-            <span class="vb-metric-label"><?= __('admin.dashboard.completed') ?></span>
+            <i data-lucide="users" class="vb-metric-icon"></i>
+            <span class="vb-metric-label"><?= __('admin.dashboard.total_customers') ?></span>
         </div>
         <div class="vb-metric-value-row">
-            <span class="vb-metric-value"><?= (int) ($statusCounts['completed'] ?? 0) ?></span>
+            <span class="vb-metric-value"><?= (int) ($totalCustomers ?? 0) ?></span>
         </div>
         <div class="vb-metric-accent"></div>
     </div>
