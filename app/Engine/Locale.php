@@ -146,35 +146,23 @@ final class Locale
     /**
      * Get locale options for admin select fields.
      *
-     * Discovers available locales by scanning the lang/ directory, then
-     * enriches each with human-readable labels from the locale registry.
-     * A locale must exist in both the registry AND have a lang/ directory
-     * to appear as a selectable option.
+     * Returns all registered locales from config/locales.php. A locale
+     * does not need a lang/ translation directory to be selectable —
+     * formatting rules (date, time, currency, direction) work from the
+     * registry alone, and untranslated UI strings gracefully fall back
+     * to the English base.
      *
      * @return array<string, string> Locale code => display label
      */
     public static function localeOptions(): array
     {
         $options = [];
-        $langDir = self::$basePath . '/lang';
 
-        if (!is_dir($langDir)) {
-            return ['en' => 'English (English)'];
-        }
-
-        foreach (scandir($langDir) as $entry) {
-            if ($entry === '.' || $entry === '..' || !is_dir($langDir . '/' . $entry)) {
-                continue;
-            }
-            if (!isset(self::$registry[$entry])) {
-                continue;
-            }
-
-            $meta = self::$registry[$entry];
-            $name = $meta['name'] ?? $entry;
+        foreach (self::$registry as $code => $meta) {
+            $name = $meta['name'] ?? $code;
             $native = $meta['native_name'] ?? $name;
             $label = $name === $native ? $name : "{$name} ({$native})";
-            $options[$entry] = $label;
+            $options[$code] = $label;
         }
 
         // Sort alphabetically by label, but keep 'en' first

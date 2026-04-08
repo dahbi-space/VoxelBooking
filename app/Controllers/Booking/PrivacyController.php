@@ -8,6 +8,7 @@ use App\Engine\AuditLog;
 use App\Engine\CustomerAnonymizer;
 use App\Engine\Database;
 use App\Engine\DataExporter;
+use App\Engine\Locale;
 use App\Engine\Logger;
 use App\Engine\Mailer;
 use App\Engine\Request;
@@ -46,6 +47,9 @@ final class PrivacyController
         if ($tenant === null) {
             return Response::html(__('booking.privacy.not_found'), 404);
         }
+
+        // Resolve locale for this tenant context (sets direction for RTL templates + emails)
+        Locale::resolveForBooking($tenant, $request->header('Accept-Language'));
 
         $customer = $this->loadCustomer($customerId, $tenant['id']);
         if ($customer === null) {
@@ -99,6 +103,9 @@ final class PrivacyController
         if ($tenant === null) {
             return Response::html(__('booking.privacy.not_found'), 404);
         }
+
+        // Resolve locale for this tenant context (sets direction for RTL templates + emails)
+        Locale::resolveForBooking($tenant, $request->header('Accept-Language'));
 
         $customer = $this->loadCustomer($customerId, $tenant['id']);
         if ($customer === null) {
