@@ -135,9 +135,11 @@ final class BlockedDatesController
 
         $redirectUrl = "/admin/tenants/{$tenantId}/blocked-dates";
         $oldInput = [
-            'start_date' => $startDate,
-            'end_date'   => $endDate,
-            'reason'     => $reason ?? '',
+            'start_date'  => $startDate,
+            'end_date'    => $endDate,
+            'reason'      => $reason ?? '',
+            'staff_id'    => $staffId ?? '',
+            'resource_id' => $resourceId ?? '',
         ];
 
         // Validate dates

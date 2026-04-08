@@ -434,7 +434,14 @@ Alpine.data('availabilityGrid', () => ({
 
 // ── Alpine: Blocked Date Scope (scope toggle for tenant vs staff) ──
 Alpine.data('blockedDateScope', () => ({
-    scope: 'tenant',
+    selectedScope: 'tenant',
+
+    init() {
+        const initial = this.$el.dataset.initialScope;
+        if (initial) {
+            this.selectedScope = initial;
+        }
+    },
 
     onScopeChange() {
         // Clear both entity selectors when switching scope

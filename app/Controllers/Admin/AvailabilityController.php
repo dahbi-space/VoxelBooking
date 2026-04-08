@@ -115,6 +115,7 @@ final class AvailabilityController
         $parsed = $this->parseScheduleInput($scheduleData);
 
         if ($parsed === null) {
+            FormState::flash([], ['schedule' => __('admin.availability.error_invalid_time')]);
             FormState::toast('error', __('admin.availability.error_invalid_time'));
             return Response::redirect("/admin/tenants/{$tenantId}/availability");
         }
@@ -254,6 +255,7 @@ final class AvailabilityController
         $parsed = $this->parseScheduleInput($scheduleData);
 
         if ($parsed === null) {
+            FormState::flash([], ['schedule' => __('admin.availability.error_invalid_time')]);
             FormState::toast('error', __('admin.availability.error_invalid_time'));
             return Response::redirect("/admin/tenants/{$tenantId}/availability/staff/{$staffId}");
         }

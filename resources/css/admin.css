@@ -431,6 +431,12 @@
     }
     .vb-form-error svg,
     .vb-form-error [data-lucide] { width: 12px; height: 12px; flex-shrink: 0; }
+    .vb-form-error-banner {
+        margin: 0; padding: 0.625rem 1rem;
+        background: var(--vb-error-bg);
+        border-bottom: 1px solid var(--vb-border-subtle);
+        font-size: var(--vb-text-sm);
+    }
     .vb-required { color: var(--vb-error); font-weight: 400; }
 
     /* ══════════════════════════════════════════════════════════════

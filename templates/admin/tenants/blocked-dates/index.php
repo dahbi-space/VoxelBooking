@@ -45,9 +45,21 @@ ob_start();
             <?= __('admin.blocked_dates.add_title') ?>
         </h3>
     </div>
+<?php
+// Compute composite scope value for Alpine hydration
+$initialScope = 'tenant';
+$oldStaffId = old('staff_id');
+$oldResourceId = old('resource_id');
+if ($oldStaffId !== '' && $oldStaffId !== null) {
+    $initialScope = 'staff:' . $oldStaffId;
+} elseif ($oldResourceId !== '' && $oldResourceId !== null) {
+    $initialScope = 'resource:' . $oldResourceId;
+}
+?>
     <form method="POST"
           action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/blocked-dates"
           x-data="blockedDateScope"
+          data-initial-scope="<?= e($initialScope) ?>"
           novalidate>
         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 

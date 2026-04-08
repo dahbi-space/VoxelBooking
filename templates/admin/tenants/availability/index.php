@@ -108,10 +108,17 @@ ob_start();
       x-data="availabilityGrid"
       data-schedule="<?= htmlspecialchars(json_encode($schedule, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
       data-day-labels="<?= htmlspecialchars(json_encode($dayLabels, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
-      class="vb-animate-in">
+      class="vb-animate-in"
+      novalidate>
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
     <div class="vb-card vb-card-clip">
+        <?php if (has_error('schedule')): ?>
+            <div class="vb-form-error vb-form-error-banner" role="alert">
+                <i data-lucide="alert-circle" class="vb-icon-sm"></i>
+                <?= field_error('schedule') ?>
+            </div>
+        <?php endif; ?>
         <div class="vb-avail-list">
             <template x-for="(daySlots, dayIndex) in days" :key="dayIndex">
             <div class="vb-avail-day-row"
