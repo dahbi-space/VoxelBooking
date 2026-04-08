@@ -47,12 +47,6 @@ final class App
         // Initialize locale engine
         Locale::init($this->basePath);
 
-        // Set default locale from environment (default: en)
-        $appLocale = $this->env('APP_LOCALE', 'en');
-        if (Locale::isSupported($appLocale) && Locale::hasTranslations($appLocale)) {
-            Locale::setLocale($appLocale);
-        }
-
         // Initialize demo mode engine
         DemoMode::init($this->basePath);
 

@@ -10,17 +10,24 @@ namespace App\Engine;
  * Manages the active locale, loads translation files, and provides
  * formatting functions for dates, times, numbers, and currencies.
  *
- * Resolution order (booking page):
+ * v1 ships with English only. The locale registry (config/locales.php)
+ * includes formatting rules for nl, de, fr, es — but no translation
+ * files exist for those locales yet. Adding a locale requires only
+ * a lang/{locale}/ directory + a registry entry.
+ *
+ * Resolution order (booking page — implemented via resolveForBooking()):
  *   1. Tenant locale_override (explicit lock, if set)
  *   2. Browser Accept-Language (best supported match)
  *   3. Tenant default locale
  *   4. Fallback: 'en'
  *
- * Resolution order (admin panel):
- *   1. Session preference
- *   2. Browser Accept-Language (first supported match)
- *   3. System default
- *   4. Fallback: 'en'
+ * Resolution order (admin panel — v1: English-only):
+ *   v1 uses the process-wide default ('en').
+ *   Future: session → Accept-Language → system default → 'en'.
+ *
+ * Resolution order (emails — v1):
+ *   Customer emails inherit the request-scoped locale at send time.
+ *   Operator emails use the process-wide default ('en').
  *
  * Timezone policy:
  *   - Storage/availability: Tenant timezone (authoritative, never negotiated)
