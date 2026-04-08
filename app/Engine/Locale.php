@@ -512,9 +512,10 @@ final class Locale
             }
         }
 
-        // 3. Tenant default (only if translations exist)
+        // 3. Tenant default locale (always honored for direction + formatting;
+        //    translations fall back to English when no lang/{locale}/ exists)
         $tenantLocale = $tenant['locale'] ?? '';
-        if ($tenantLocale !== '' && self::isSupported($tenantLocale) && self::hasTranslations($tenantLocale)) {
+        if ($tenantLocale !== '' && self::isSupported($tenantLocale)) {
             self::setLocale($tenantLocale);
             return self::$locale;
         }
@@ -522,6 +523,39 @@ final class Locale
         // 4. Fallback
         self::setLocale(self::$fallback);
         return self::$locale;
+    }
+
+    /**
+     * Resolve and set locale for admin pages.
+     *
+     * When in a tenant context, adopts the tenant's configured locale
+     * for direction and formatting (dates, numbers, currency). Translation
+     * strings fall back to English when no lang/{locale}/ exists.
+     *
+     * When no tenant is active (operator-level pages), uses APP_LOCALE
+     * from .env or falls back to English.
+     *
+     * @param array|null $tenant Tenant row, or null for operator-level pages
+     */
+    public static function resolveForAdmin(?array $tenant): void
+    {
+        // Tenant context: use the tenant's configured locale
+        if ($tenant !== null) {
+            $locale = $tenant['locale'] ?? '';
+            if ($locale !== '' && self::isSupported($locale)) {
+                self::setLocale($locale);
+                return;
+            }
+        }
+
+        // Operator-level / no tenant: use APP_LOCALE or fallback
+        $appLocale = $_ENV['APP_LOCALE'] ?? $_SERVER['APP_LOCALE'] ?? '';
+        if ($appLocale !== '' && self::isSupported($appLocale)) {
+            self::setLocale($appLocale);
+            return;
+        }
+
+        self::setLocale(self::$fallback);
     }
 
     // ════════════════════════════════════════════════════════════════

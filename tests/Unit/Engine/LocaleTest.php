@@ -450,12 +450,13 @@ final class LocaleTest extends TestCase
         $this->assertSame('en', Locale::getLocale());
     }
 
-    public function testResolveForBookingSkipsTenantDefaultWithoutTranslations(): void
+    public function testResolveForBookingHonorsTenantDefaultWithoutTranslations(): void
     {
-        // Tenant default is de, but no lang/de/ exists
+        // Tenant default is de — must be honored for formatting/direction
+        // even though no lang/de/ exists (strings fall back to English)
         $tenant = ['locale' => 'de'];
         $result = Locale::resolveForBooking($tenant, 'xx-YY');
-        $this->assertSame('en', $result);
+        $this->assertSame('de', $result);
     }
 
     public function testResolveForBookingFallsToEnglishWhenNothingMatches(): void
@@ -465,20 +466,20 @@ final class LocaleTest extends TestCase
         $this->assertSame('en', $result);
     }
 
-    public function testResolveForBookingWithNoAcceptLanguageFallsToEnglish(): void
+    public function testResolveForBookingWithNoAcceptLanguageHonorsTenantDefault(): void
     {
-        // Tenant default is fr but no translations exist for fr
+        // Tenant default is fr — honored even without translations
         $tenant = ['locale' => 'fr'];
         $result = Locale::resolveForBooking($tenant, null);
-        $this->assertSame('en', $result);
+        $this->assertSame('fr', $result);
     }
 
-    public function testResolveForBookingWithEmptyAcceptLanguageFallsToEnglish(): void
+    public function testResolveForBookingWithEmptyAcceptLanguageHonorsTenantDefault(): void
     {
-        // Tenant default is es but no translations exist for es
+        // Tenant default is es — honored even without translations
         $tenant = ['locale' => 'es'];
         $result = Locale::resolveForBooking($tenant, '');
-        $this->assertSame('en', $result);
+        $this->assertSame('es', $result);
     }
 
     public function testResolveForBookingEmptyOverrideStringIsIgnored(): void
@@ -656,20 +657,15 @@ final class LocaleTest extends TestCase
 
     public function testResolveForBookingSetsRtlDirectionForArabicTenant(): void
     {
-        // Simulate an Arabic tenant — even without translation files,
-        // the direction must resolve to RTL for the template dir attribute
+        // An Arabic tenant locale must activate RTL direction even without
+        // translation files — formatting and direction work from the registry,
+        // translation strings fall back to English.
         $tenant = ['locale' => 'ar'];
         Locale::resolveForBooking($tenant, null);
 
-        // Since ar has no translations, it falls back to en for translation strings,
-        // but the locale must still be set so direction() works
-        $this->assertSame('ltr', Locale::direction());
-
-        // Now simulate with an override that forces ar regardless
-        $tenant = ['locale' => 'ar', 'locale_override' => 'ar'];
-        Locale::resolveForBooking($tenant, null);
         $this->assertSame('ar', Locale::getLocale());
         $this->assertSame('rtl', Locale::direction());
+        $this->assertTrue(Locale::isRtl());
     }
 
     public function testResolveForBookingWithOverrideSetsCorrectDirection(): void
@@ -680,5 +676,55 @@ final class LocaleTest extends TestCase
         $this->assertSame('ar', Locale::getLocale());
         $this->assertSame('rtl', Locale::direction());
         $this->assertTrue(Locale::isRtl());
+    }
+
+    public function testResolveForBookingTenantDefaultHonoredWithoutTranslations(): void
+    {
+        // German tenant without German translations still gets German formatting
+        $tenant = ['locale' => 'de'];
+        Locale::resolveForBooking($tenant, null);
+        $this->assertSame('de', Locale::getLocale());
+        $this->assertSame('ltr', Locale::direction());
+    }
+
+    public function testResolveForBookingBrowserPreferenceNeedsTranslations(): void
+    {
+        // Browser prefers Arabic, but browser negotiation still requires translations
+        // to avoid raw translation keys in the UI. Falls back to tenant default.
+        $tenant = ['locale' => 'en'];
+        Locale::resolveForBooking($tenant, 'ar,en;q=0.5');
+        // Browser ar has no translations, so negotiator returns en, not ar
+        $this->assertSame('en', Locale::getLocale());
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Admin Locale Resolution
+    // ════════════════════════════════════════════════════════════════
+
+    public function testResolveForAdminWithArabicTenantSetsRtl(): void
+    {
+        Locale::resolveForAdmin(['locale' => 'ar']);
+        $this->assertSame('ar', Locale::getLocale());
+        $this->assertSame('rtl', Locale::direction());
+    }
+
+    public function testResolveForAdminWithNoTenantFallsBackToEnglish(): void
+    {
+        Locale::resolveForAdmin(null);
+        $this->assertSame('en', Locale::getLocale());
+        $this->assertSame('ltr', Locale::direction());
+    }
+
+    public function testResolveForAdminWithGermanTenantSetsGerman(): void
+    {
+        Locale::resolveForAdmin(['locale' => 'de']);
+        $this->assertSame('de', Locale::getLocale());
+        $this->assertSame('ltr', Locale::direction());
+    }
+
+    public function testResolveForAdminWithUnsupportedTenantLocaleFallsBack(): void
+    {
+        Locale::resolveForAdmin(['locale' => 'zz']);
+        $this->assertSame('en', Locale::getLocale());
     }
 }

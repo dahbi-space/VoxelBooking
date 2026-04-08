@@ -25,6 +25,9 @@ $impersonatedTenantName = $isImpersonating ? \App\Engine\Auth::impersonatedTenan
 
 $operatorName = htmlspecialchars($user['name'] ?? __('admin.layout.operator'), ENT_QUOTES, 'UTF-8');
 $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
+
+// Resolve admin locale from tenant context for correct dir/formatting
+\App\Engine\Locale::resolveForAdmin($tenant ?? null);
 ?>
 <!DOCTYPE html>
 <html lang="<?= \App\Engine\Locale::getLocale() ?>" dir="<?= \App\Engine\Locale::direction() ?>">
