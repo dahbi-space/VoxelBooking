@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 
 use App\Engine\Database;
+use App\Engine\FormState;
 use App\Engine\Locale;
 use App\Engine\View;
 
@@ -48,6 +49,46 @@ function app_url(string $path = ''): string
 function asset(string $path): string
 {
     return app_url('assets/' . ltrim($path, '/'));
+}
+
+// ════════════════════════════════════════════════════════════════
+// Form State Helpers
+// ════════════════════════════════════════════════════════════════
+
+/**
+ * Get an old input value from the previous request's form submission.
+ *
+ * Use in templates: value="<?= e(old('name', $entity['name'] ?? '')) ?>"
+ */
+function old(string $key, mixed $default = ''): mixed
+{
+    return FormState::oldValue($key, $default);
+}
+
+/**
+ * Check if a form field has a validation error.
+ */
+function has_error(string $key): bool
+{
+    return FormState::hasError($key);
+}
+
+/**
+ * Get the validation error message for a form field.
+ */
+function field_error(string $key): string
+{
+    return FormState::fieldError($key);
+}
+
+/**
+ * Return the error CSS class if a field has an error, empty string otherwise.
+ *
+ * Use in templates: class="vb-input <?= error_class('email') ?>"
+ */
+function error_class(string $key): string
+{
+    return FormState::hasError($key) ? 'vb-input-error' : '';
 }
 
 // ════════════════════════════════════════════════════════════════

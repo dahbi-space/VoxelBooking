@@ -1,0 +1,223 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Unit\Engine;
+
+use App\Engine\FormState;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * Unit tests for the FormState engine.
+ *
+ * Tests the unified form state API that replaces ad-hoc
+ * $_SESSION handling across 14 admin controllers.
+ */
+class FormStateTest extends TestCase
+{
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Ensure session is available (PHPUnit runs in CLI)
+        if (session_status() === PHP_SESSION_NONE) {
+            @session_start();
+        }
+        // Clear any leftover state
+        FormState::clear();
+    }
+
+    protected function tearDown(): void
+    {
+        FormState::clear();
+        parent::tearDown();
+    }
+
+    // ── flashInput / old ──
+
+    public function testFlashInputAndRetrieve(): void
+    {
+        FormState::flashInput(['name' => 'John', 'email' => 'john@example.com']);
+
+        $old = FormState::old();
+        $this->assertSame('John', $old['name']);
+        $this->assertSame('john@example.com', $old['email']);
+    }
+
+    public function testOldIsOneShot(): void
+    {
+        FormState::flashInput(['name' => 'John']);
+
+        $first = FormState::old();
+        $this->assertSame('John', $first['name']);
+
+        // Second call returns empty — one-shot
+        $second = FormState::old();
+        $this->assertEmpty($second);
+    }
+
+    public function testOldReturnsEmptyArrayWhenNothingFlashed(): void
+    {
+        $this->assertSame([], FormState::old());
+    }
+
+    public function testOldValueWithFallback(): void
+    {
+        FormState::flashInput(['name' => 'John']);
+
+        $this->assertSame('John', FormState::oldValue('name', 'default'));
+        $this->assertSame('default', FormState::oldValue('nonexistent', 'default'));
+    }
+
+    // ── flashErrors / errors ──
+
+    public function testFlashErrorsAndRetrieve(): void
+    {
+        FormState::flashErrors(['email' => 'Email is required', 'name' => 'Name is required']);
+
+        $errors = FormState::errors();
+        $this->assertSame('Email is required', $errors['email']);
+        $this->assertSame('Name is required', $errors['name']);
+    }
+
+    public function testErrorsIsOneShot(): void
+    {
+        FormState::flashErrors(['email' => 'Required']);
+
+        $first = FormState::errors();
+        $this->assertNotEmpty($first);
+
+        $second = FormState::errors();
+        $this->assertEmpty($second);
+    }
+
+    public function testHasError(): void
+    {
+        FormState::flashErrors(['email' => 'Invalid email']);
+
+        $this->assertTrue(FormState::hasError('email'));
+        $this->assertFalse(FormState::hasError('name'));
+    }
+
+    public function testFieldError(): void
+    {
+        FormState::flashErrors(['email' => 'Invalid email']);
+
+        $this->assertSame('Invalid email', FormState::fieldError('email'));
+        $this->assertSame('', FormState::fieldError('name'));
+    }
+
+    // ── flash (combined) ──
+
+    public function testFlashCombinesInputAndErrors(): void
+    {
+        FormState::flash(
+            ['name' => 'John', 'email' => 'bad'],
+            ['email' => 'Invalid email format']
+        );
+
+        $old = FormState::old();
+        $this->assertSame('John', $old['name']);
+        $this->assertSame('bad', $old['email']);
+
+        // Errors should still be available (peek methods)
+        $this->assertTrue(FormState::hasError('email'));
+        $this->assertFalse(FormState::hasError('name'));
+
+        $errors = FormState::errors();
+        $this->assertSame('Invalid email format', $errors['email']);
+    }
+
+    public function testFlashWithEmptyErrorsDoesNotSetErrors(): void
+    {
+        FormState::flash(['name' => 'John']);
+
+        $this->assertFalse(FormState::hasError('name'));
+        $this->assertEmpty(FormState::errors());
+    }
+
+    // ── toast ──
+
+    public function testToastAndRetrieve(): void
+    {
+        FormState::toast('success', 'Settings saved.');
+
+        $toast = FormState::getToast();
+        $this->assertSame('success', $toast['type']);
+        $this->assertSame('Settings saved.', $toast['message']);
+    }
+
+    public function testToastIsOneShot(): void
+    {
+        FormState::toast('error', 'Validation failed.');
+
+        $first = FormState::getToast();
+        $this->assertNotNull($first);
+
+        $second = FormState::getToast();
+        $this->assertNull($second);
+    }
+
+    public function testGetToastReturnsNullWhenNothingFlashed(): void
+    {
+        $this->assertNull(FormState::getToast());
+    }
+
+    // ── clear ──
+
+    public function testClearRemovesAllState(): void
+    {
+        FormState::flashInput(['name' => 'John']);
+        FormState::flashErrors(['email' => 'Required']);
+        FormState::toast('error', 'Failed');
+
+        FormState::clear();
+
+        $this->assertEmpty(FormState::old());
+        $this->assertEmpty(FormState::errors());
+        $this->assertNull(FormState::getToast());
+    }
+
+    // ── Edge cases ──
+
+    public function testFlashInputOverwritesPreviousInput(): void
+    {
+        FormState::flashInput(['name' => 'First']);
+        FormState::flashInput(['name' => 'Second']);
+
+        $old = FormState::old();
+        $this->assertSame('Second', $old['name']);
+    }
+
+    public function testFlashErrorsOverwritesPreviousErrors(): void
+    {
+        FormState::flashErrors(['email' => 'First error']);
+        FormState::flashErrors(['email' => 'Second error']);
+
+        $this->assertSame('Second error', FormState::fieldError('email'));
+    }
+
+    public function testToastOverwritesPreviousToast(): void
+    {
+        FormState::toast('success', 'First');
+        FormState::toast('error', 'Second');
+
+        $toast = FormState::getToast();
+        $this->assertSame('error', $toast['type']);
+        $this->assertSame('Second', $toast['message']);
+    }
+
+    public function testInputAndErrorsAreIndependent(): void
+    {
+        FormState::flashInput(['name' => 'John']);
+        FormState::flashErrors(['email' => 'Required']);
+
+        // Consuming old input doesn't affect errors
+        $old = FormState::old();
+        $this->assertSame('John', $old['name']);
+        $this->assertTrue(FormState::hasError('email'));
+
+        // Consuming errors doesn't affect (already consumed) input
+        $errors = FormState::errors();
+        $this->assertSame('Required', $errors['email']);
+    }
+}
