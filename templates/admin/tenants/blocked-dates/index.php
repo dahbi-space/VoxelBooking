@@ -47,7 +47,8 @@ ob_start();
     </div>
     <form method="POST"
           action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/blocked-dates"
-          x-data="blockedDateScope">
+          x-data="blockedDateScope"
+          novalidate>
         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
         <div class="vb-card-body">
@@ -55,17 +56,27 @@ ob_start();
                 
                 <div class="vb-form-group vb-mb-0">
                     <label class="vb-label" for="bd-start"><?= __('admin.blocked_dates.start_date') ?></label>
-                    <input type="date" class="vb-input" id="bd-start" name="start_date" required min="<?= date('Y-m-d') ?>">
+                    <input type="date" class="vb-input<?= error_class('start_date') ?>" id="bd-start" name="start_date"
+                           required min="<?= date('Y-m-d') ?>" value="<?= e(old('start_date')) ?>">
+                    <?php if (has_error('start_date')): ?>
+                        <div class="vb-form-error" role="alert"><?= field_error('start_date') ?></div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="vb-form-group vb-mb-0">
                     <label class="vb-label" for="bd-end"><?= __('admin.blocked_dates.end_date') ?></label>
-                    <input type="date" class="vb-input" id="bd-end" name="end_date" required min="<?= date('Y-m-d') ?>">
+                    <input type="date" class="vb-input<?= error_class('end_date') ?>" id="bd-end" name="end_date"
+                           required min="<?= date('Y-m-d') ?>" value="<?= e(old('end_date')) ?>">
+                    <?php if (has_error('end_date')): ?>
+                        <div class="vb-form-error" role="alert"><?= field_error('end_date') ?></div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="vb-form-group vb-mb-0">
                     <label class="vb-label" for="bd-reason"><?= __('admin.blocked_dates.reason') ?></label>
-                    <input type="text" class="vb-input" id="bd-reason" name="reason" placeholder="<?= __('admin.blocked_dates.reason_placeholder') ?>" maxlength="255">
+                    <input type="text" class="vb-input" id="bd-reason" name="reason"
+                           placeholder="<?= __('admin.blocked_dates.reason_placeholder') ?>" maxlength="255"
+                           value="<?= e(old('reason')) ?>">
                 </div>
 
                 <div class="vb-form-group vb-mb-0">

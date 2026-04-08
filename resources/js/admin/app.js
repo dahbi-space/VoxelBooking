@@ -355,6 +355,10 @@ Alpine.data('inviteUser', () => ({
     sendEmail: false,
 
     init() {
+        const initialRole = this.$el.dataset.initialRole;
+        if (initialRole === 'owner' || initialRole === 'manager') {
+            this.role = initialRole;
+        }
         this.smtpConfigured = this.$el.dataset.smtpConfigured === '1';
         this.sendEmail = this.smtpConfigured;
         this.$nextTick(() => this.generatePassword());

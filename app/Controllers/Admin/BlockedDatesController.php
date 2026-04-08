@@ -133,84 +133,96 @@ final class BlockedDatesController
         $staffId    = $isResourcePattern ? null : (trim($request->string('staff_id')) ?: null);
         $resourceId = $isResourcePattern ? (trim($request->string('resource_id')) ?: null) : null;
 
+        $redirectUrl = "/admin/tenants/{$tenantId}/blocked-dates";
+        $oldInput = [
+            'start_date' => $startDate,
+            'end_date'   => $endDate,
+            'reason'     => $reason ?? '',
+        ];
+
         // Validate dates
-        if (!$this->isValidDate($startDate) || !$this->isValidDate($endDate)) {
-            FormState::toast('error', __('admin.blocked_dates.error_invalid_date'));
-            return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
+        $errors = [];
+        if (!$this->isValidDate($startDate)) {
+            $errors['start_date'] = __('admin.blocked_dates.error_invalid_date');
+        }
+        if (!$this->isValidDate($endDate)) {
+            $errors['end_date'] = __('admin.blocked_dates.error_invalid_date');
         }
 
-        if ($endDate < $startDate) {
-            FormState::toast('error', __('admin.blocked_dates.error_end_before_start'));
-            return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
+        if (empty($errors) && $endDate < $startDate) {
+            $errors['end_date'] = __('admin.blocked_dates.error_end_before_start');
         }
 
-        // Start date must be today or later
-        if ($startDate < date('Y-m-d')) {
-            FormState::toast('error', __('admin.blocked_dates.error_past_date'));
-            return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
+        if (empty($errors['start_date']) && $startDate < date('Y-m-d')) {
+            $errors['start_date'] = __('admin.blocked_dates.error_past_date');
         }
 
         // Validate staff belongs to this tenant (timeslot pattern)
-        if ($staffId !== null) {
+        if ($staffId !== null && empty($errors)) {
             $staffRow = Database::query(
                 'SELECT `id` FROM `staff` WHERE `id` = ? AND `tenant_id` = ? LIMIT 1',
                 [$staffId, $tenantId]
             );
             if (empty($staffRow)) {
-                FormState::toast('error', __('admin.blocked_dates.error_invalid_staff'));
-                return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
+                $errors['start_date'] = __('admin.blocked_dates.error_invalid_staff');
             }
         }
 
         // Validate resource belongs to this tenant (resource pattern)
-        if ($resourceId !== null) {
+        if ($resourceId !== null && empty($errors)) {
             $resRow = Database::query(
                 'SELECT `id` FROM `resources` WHERE `id` = ? AND `tenant_id` = ? LIMIT 1',
                 [$resourceId, $tenantId]
             );
             if (empty($resRow)) {
-                FormState::toast('error', __('admin.blocked_dates.error_invalid_resource'));
-                return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
+                $errors['start_date'] = __('admin.blocked_dates.error_invalid_resource');
             }
         }
 
-        // Build scope clause for overlap check
-        // Scope is determined by whichever entity ID is set (staff or resource), or tenant-level if neither
-        $scopeClauses = [];
-        $overlapParams = [$tenantId];
+        // Check for overlapping dates in same scope
+        if (empty($errors)) {
+            $scopeClauses = [];
+            $overlapParams = [$tenantId];
 
-        if ($staffId !== null) {
-            $scopeClauses[] = '`staff_id` = ?';
-            $overlapParams[] = $staffId;
-        } else {
-            $scopeClauses[] = '`staff_id` IS NULL';
+            if ($staffId !== null) {
+                $scopeClauses[] = '`staff_id` = ?';
+                $overlapParams[] = $staffId;
+            } else {
+                $scopeClauses[] = '`staff_id` IS NULL';
+            }
+
+            if ($resourceId !== null) {
+                $scopeClauses[] = '`resource_id` = ?';
+                $overlapParams[] = $resourceId;
+            } else {
+                $scopeClauses[] = '`resource_id` IS NULL';
+            }
+
+            $scopeWhere = implode(' AND ', $scopeClauses);
+            $overlapParams = array_merge($overlapParams, [$endDate, $startDate, $endDate, $startDate, $startDate, $endDate]);
+
+            $existing = Database::query(
+                "SELECT `id` FROM `blocked_dates`
+                 WHERE `tenant_id` = ? AND {$scopeWhere}
+                   AND (
+                       (`start_date` <= ? AND `end_date` >= ?)
+                       OR (`start_date` <= ? AND `end_date` >= ?)
+                       OR (`start_date` >= ? AND `end_date` <= ?)
+                   )
+                 LIMIT 1",
+                $overlapParams
+            );
+
+            if (!empty($existing)) {
+                $errors['start_date'] = __('admin.blocked_dates.error_overlap');
+            }
         }
 
-        if ($resourceId !== null) {
-            $scopeClauses[] = '`resource_id` = ?';
-            $overlapParams[] = $resourceId;
-        } else {
-            $scopeClauses[] = '`resource_id` IS NULL';
-        }
-
-        $scopeWhere = implode(' AND ', $scopeClauses);
-        $overlapParams = array_merge($overlapParams, [$endDate, $startDate, $endDate, $startDate, $startDate, $endDate]);
-
-        $existing = Database::query(
-            "SELECT `id` FROM `blocked_dates`
-             WHERE `tenant_id` = ? AND {$scopeWhere}
-               AND (
-                   (`start_date` <= ? AND `end_date` >= ?)
-                   OR (`start_date` <= ? AND `end_date` >= ?)
-                   OR (`start_date` >= ? AND `end_date` <= ?)
-               )
-             LIMIT 1",
-            $overlapParams
-        );
-
-        if (!empty($existing)) {
-            FormState::toast('error', __('admin.blocked_dates.error_overlap'));
-            return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
+        if (!empty($errors)) {
+            FormState::flash($oldInput, $errors);
+            $firstError = reset($errors);
+            FormState::toast('error', $firstError);
+            return Response::redirect($redirectUrl);
         }
 
         $id = Ulid::generate();

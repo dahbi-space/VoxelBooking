@@ -23,7 +23,7 @@ ob_start();
     <?php include __DIR__ . '/../../../partials/alert.php'; ?>
 <?php endif; ?>
 
-<div class="vb-card" x-data="inviteUser" data-smtp-configured="<?= \App\Engine\Mailer::isConfigured() ? '1' : '0' ?>">
+<div class="vb-card" x-data="inviteUser" data-smtp-configured="<?= \App\Engine\Mailer::isConfigured() ? '1' : '0' ?>" data-initial-role="<?= e(old('role', 'owner')) ?>">
     <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/users/invite" novalidate>
         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken ?? '', ENT_QUOTES, 'UTF-8') ?>">
 
@@ -64,6 +64,9 @@ ob_start();
                     <span class="vb-role-card-desc"><?= __('admin.users.invite_role_manager_desc') ?></span>
                 </label>
             </div>
+            <?php if (has_error('role')): ?>
+                <div class="vb-form-error" role="alert"><?= field_error('role') ?></div>
+            <?php endif; ?>
         </div>
 
         <!-- Password -->
