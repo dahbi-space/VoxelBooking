@@ -31,6 +31,7 @@ return [
         PRIMARY KEY (`id`),
         INDEX `idx_capacity_slots_tenant` (`tenant_id`),
         INDEX `idx_capacity_slots_day` (`tenant_id`, `day_of_week`, `is_active`),
+        UNIQUE INDEX `uq_capacity_slots_window` (`tenant_id`, `day_of_week`, `start_time`, `end_time`),
         CONSTRAINT `fk_capacity_slots_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
 ];
