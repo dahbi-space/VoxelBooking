@@ -62,7 +62,7 @@ $csrfToken = $csrfToken ?? '';
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" action="/admin/reset-password" novalidate>
+                <form method="POST" action="/admin/reset-password">
                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8') ?>">
 

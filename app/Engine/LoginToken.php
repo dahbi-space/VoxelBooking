@@ -161,9 +161,11 @@ final class LoginToken
     /**
      * Create a password-reset token for the given email.
      *
-     * Invalidates all previous unused reset tokens for the same email.
+     * Does NOT invalidate previous tokens — the caller is responsible
+     * for calling invalidatePasswordResets() after confirming the email
+     * was sent, so a failed send never burns a user's working link.
      *
-     * @return array{success: bool, token?: string, error?: string}
+     * @return array{success: bool, token?: string, id?: string, error?: string}
      */
     public static function createPasswordReset(string $email, string $ip): array
     {
@@ -171,13 +173,6 @@ final class LoginToken
         if ($floodCheck !== null) {
             return $floodCheck;
         }
-
-        // Invalidate previous unused reset tokens
-        Database::execute(
-            "UPDATE `login_tokens` SET `used_at` = NOW()
-             WHERE `email` = ? AND `type` = 'password_reset' AND `used_at` IS NULL",
-            [$email]
-        );
 
         $rawToken = bin2hex(random_bytes(32));
         $hash = hash('sha256', $rawToken);
@@ -189,7 +184,34 @@ final class LoginToken
             [$id, $email, $hash, self::RESET_EXPIRY_MINUTES, $ip]
         );
 
-        return ['success' => true, 'token' => $rawToken];
+        return ['success' => true, 'token' => $rawToken, 'id' => $id];
+    }
+
+    /**
+     * Invalidate all unused password-reset tokens for an email except
+     * the one just issued.
+     *
+     * Call this after the reset email has been successfully dispatched.
+     */
+    public static function invalidatePasswordResets(string $email, string $keepId): void
+    {
+        Database::execute(
+            "UPDATE `login_tokens` SET `used_at` = NOW()
+             WHERE `email` = ? AND `type` = 'password_reset'
+               AND `used_at` IS NULL AND `id` != ?",
+            [$email, $keepId]
+        );
+    }
+
+    /**
+     * Delete a specific token by ID (rollback path when email send fails).
+     */
+    public static function deleteToken(string $id): void
+    {
+        Database::execute(
+            "DELETE FROM `login_tokens` WHERE `id` = ?",
+            [$id]
+        );
     }
 
     /**

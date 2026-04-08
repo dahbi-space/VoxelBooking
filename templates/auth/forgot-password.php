@@ -69,7 +69,7 @@ $csrfToken = $csrfToken ?? '';
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" action="/admin/forgot-password" novalidate>
+                <form method="POST" action="/admin/forgot-password">
                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
                     <div class="vb-form-group login-field-1">

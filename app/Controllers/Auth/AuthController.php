@@ -301,6 +301,11 @@ final class AuthController
      * Timing-safe: always shows the same message regardless of whether
      * the email exists. Both operators and business users are served —
      * auth_emails resolves the user type transparently.
+     *
+     * Token lifecycle: a new token is created first. Old tokens are
+     * only invalidated after the email is confirmed sent. If the email
+     * fails (SMTP down), the new token is deleted so the user's
+     * previous working link survives.
      */
     public function forgotPassword(Request $request): Response
     {
@@ -324,7 +329,16 @@ final class AuthController
             $result = LoginToken::createPasswordReset($email, $ip);
             if ($result['success']) {
                 $link = rtrim($_ENV['APP_URL'] ?? '', '/') . '/admin/reset-password?token=' . $result['token'];
-                Mailer::sendPasswordReset($email, $link);
+                $sendResult = Mailer::sendPasswordReset($email, $link);
+
+                if ($sendResult['sent']) {
+                    // Email delivered — safe to invalidate old tokens
+                    LoginToken::invalidatePasswordResets($email, $result['id']);
+                } else {
+                    // Email failed — delete the new token so the user's
+                    // previous working link stays valid
+                    LoginToken::deleteToken($result['id']);
+                }
             }
         }
 

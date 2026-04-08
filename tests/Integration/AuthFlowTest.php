@@ -1013,6 +1013,57 @@ final class AuthFlowTest extends TestCase
         $this->assertStringContainsString('forgot-password', $page['location']);
     }
 
+    public function testSendFailurePreservesExistingResetToken(): void
+    {
+        try {
+            // Step 1: Create the first token (simulates a successful earlier request)
+            $first = \App\Engine\LoginToken::createPasswordReset(
+                TestFixtures::OPERATOR_EMAIL, '127.0.0.1'
+            );
+            $this->assertTrue($first['success']);
+            $this->assertTrue(\App\Engine\LoginToken::peekPasswordReset($first['token']),
+                'First token should be valid immediately after creation');
+
+            // Step 2: Create a second token (simulates a new request attempt)
+            $second = \App\Engine\LoginToken::createPasswordReset(
+                TestFixtures::OPERATOR_EMAIL, '127.0.0.1'
+            );
+            $this->assertTrue($second['success']);
+
+            // Step 3: Simulate send failure — delete the new token without
+            // invalidating old ones (this is the rollback path the controller uses)
+            \App\Engine\LoginToken::deleteToken($second['id']);
+
+            // Step 4: The original token must still be usable
+            $this->assertTrue(\App\Engine\LoginToken::peekPasswordReset($first['token']),
+                'First token must survive when second token is rolled back (send failure)');
+
+            // Step 5: Verify the rolled-back token is genuinely gone
+            $this->assertFalse(\App\Engine\LoginToken::peekPasswordReset($second['token']),
+                'Rolled-back token must not be usable');
+
+            // Step 6: Now simulate success — invalidate old tokens
+            $third = \App\Engine\LoginToken::createPasswordReset(
+                TestFixtures::OPERATOR_EMAIL, '127.0.0.1'
+            );
+            \App\Engine\LoginToken::invalidatePasswordResets(
+                TestFixtures::OPERATOR_EMAIL, $third['id']
+            );
+
+            // The first token should now be burned
+            $this->assertFalse(\App\Engine\LoginToken::peekPasswordReset($first['token']),
+                'First token must be invalidated after a successful send');
+            // The third (current) token should be alive
+            $this->assertTrue(\App\Engine\LoginToken::peekPasswordReset($third['token']),
+                'Current token must remain valid after invalidation');
+        } finally {
+            \App\Engine\Database::execute(
+                "DELETE FROM `login_tokens` WHERE `email` = ?",
+                [TestFixtures::OPERATOR_EMAIL]
+            );
+        }
+    }
+
     public function testResetPasswordRejectsMismatch(): void
     {
         try {
