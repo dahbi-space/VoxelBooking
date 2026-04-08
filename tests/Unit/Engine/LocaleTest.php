@@ -727,4 +727,38 @@ final class LocaleTest extends TestCase
         Locale::resolveForAdmin(['locale' => 'zz']);
         $this->assertSame('en', Locale::getLocale());
     }
+
+    public function testResolveForAdminSetsLocaleBeforeTranslationCalls(): void
+    {
+        // Simulate the middleware-level resolution: resolveForAdmin sets the
+        // locale, then a controller's __() call for a page title resolves
+        // under that locale. Since no Arabic translations exist, the string
+        // falls back to English — but the locale/direction ARE Arabic/RTL.
+        Locale::resolveForAdmin(['locale' => 'ar']);
+
+        // Locale is ar, direction is rtl
+        $this->assertSame('ar', Locale::getLocale());
+        $this->assertSame('rtl', Locale::direction());
+
+        // Translation falls back to English (no lang/ar/ exists)
+        $title = Locale::translate('admin.tenant_settings.title');
+        $this->assertIsString($title);
+        $this->assertNotEmpty($title);
+        // Must not be a raw key — English fallback must provide the string
+        $this->assertStringNotContainsString('.title', $title,
+            'Admin title must resolve from English fallback, not return raw key');
+    }
+
+    public function testResolveForAdminCalledTwiceOverridesPrevious(): void
+    {
+        // First tenant is Arabic
+        Locale::resolveForAdmin(['locale' => 'ar']);
+        $this->assertSame('ar', Locale::getLocale());
+        $this->assertTrue(Locale::isRtl());
+
+        // Navigate to a German tenant — must override
+        Locale::resolveForAdmin(['locale' => 'de']);
+        $this->assertSame('de', Locale::getLocale());
+        $this->assertFalse(Locale::isRtl());
+    }
 }

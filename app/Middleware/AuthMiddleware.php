@@ -18,6 +18,10 @@ use App\Engine\View;
  * - Business users accessing operator-level routes → 403
  * - Business users accessing other tenants → 403
  *
+ * Also resolves the active locale (Locale::resolveForAdmin) BEFORE
+ * dispatching to the controller, so all __() calls in controllers and
+ * templates resolve under the correct tenant locale/direction.
+ *
  * Applied to all /admin routes except /admin/login.
  */
 final class AuthMiddleware
@@ -40,6 +44,10 @@ final class AuthMiddleware
         if (!Auth::check()) {
             return Response::redirect('/admin/login');
         }
+
+        // Resolve admin locale BEFORE dispatching to the controller,
+        // so all __() calls in controllers and templates use the correct locale.
+        $this->resolveAdminLocale($request);
 
         // Operators have full access
         if (Auth::isOperator()) {
@@ -77,6 +85,31 @@ final class AuthMiddleware
         }
 
         return $next($request);
+    }
+
+    /**
+     * Resolve admin locale from the route's tenant context or APP_LOCALE.
+     *
+     * Must run before any controller or template __() calls so that
+     * page titles, flash messages, and UI labels resolve under the
+     * correct locale/direction.
+     */
+    private function resolveAdminLocale(Request $request): void
+    {
+        $tenantId = $request->getAttribute('tenant_id');
+        $tenant = null;
+
+        if ($tenantId !== null && $tenantId !== '') {
+            $rows = \App\Engine\Database::query(
+                'SELECT `locale` FROM `tenants` WHERE `id` = ? LIMIT 1',
+                [$tenantId]
+            );
+            if (!empty($rows)) {
+                $tenant = $rows[0];
+            }
+        }
+
+        \App\Engine\Locale::resolveForAdmin($tenant);
     }
 
     private function forbidden(Request $request): Response
