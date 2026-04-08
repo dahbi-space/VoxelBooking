@@ -66,6 +66,14 @@ function __(string $key, array $replace = []): string
 }
 
 /**
+ * Get the text direction for the active locale ('ltr' or 'rtl').
+ */
+function locale_dir(): string
+{
+    return Locale::direction();
+}
+
+/**
  * Pluralize a translation key based on count.
  */
 function __p(string $key, int $count, array $replace = []): string

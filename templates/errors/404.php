@@ -6,7 +6,7 @@
 $user = $user ?? null;
 ?>
 <!DOCTYPE html>
-<html lang="<?= \App\Engine\Locale::getLocale() ?>">
+<html lang="<?= \App\Engine\Locale::getLocale() ?>" dir="<?= \App\Engine\Locale::direction() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

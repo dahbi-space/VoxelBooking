@@ -83,6 +83,26 @@ final class Locale
     }
 
     /**
+     * Get the text direction for the active locale ('ltr' or 'rtl').
+     *
+     * Used by templates to set dir="..." on <html> and by the email
+     * renderer for inline RTL styling.
+     */
+    public static function direction(): string
+    {
+        $config = self::getConfig();
+        return $config['direction'] ?? 'ltr';
+    }
+
+    /**
+     * Check if the active locale is right-to-left.
+     */
+    public static function isRtl(): bool
+    {
+        return self::direction() === 'rtl';
+    }
+
+    /**
      * Set per-request tenant overrides for week_start and time_format.
      *
      * Call once per request after loading the tenant row.
@@ -557,6 +577,7 @@ final class Locale
 
         return [
             'locale'           => self::$locale,
+            'direction'        => self::direction(),
             'intl_locale'      => $config['intl_locale'] ?? 'en-US',
             'week_start'       => self::weekStart(),
             'time_format'      => $config['time_format'] ?? 'H:i',

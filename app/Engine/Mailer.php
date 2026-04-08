@@ -1324,6 +1324,9 @@ final class Mailer
     ): string {
         $h = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
         $font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        $dir = Locale::direction();
+        $lang = Locale::getLocale();
+        $textAlign = $dir === 'rtl' ? 'text-align: right;' : '';
 
         // Build detail rows
         $detailRows = '';
@@ -1338,9 +1341,9 @@ final class Mailer
         $poweredBy = __('email.common.powered_by', ['app_name' => $appName]);
 
         return <<<HTML
-        <html>
+        <html lang="{$lang}" dir="{$dir}">
         <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-        <body style="margin: 0; padding: 0; font-family: {$font}; background: #F3F4F6;">
+        <body style="margin: 0; padding: 0; font-family: {$font}; background: #F3F4F6; {$textAlign}">
             <table width="100%" cellpadding="0" cellspacing="0" style="padding: 32px 16px;">
                 <tr><td align="center">
                     <table width="560" cellpadding="0" cellspacing="0" style="background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
@@ -1432,10 +1435,13 @@ final class Mailer
     private static function renderPrivacyEmail(string $title, string $body, string $footer): string
     {
         $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
+        $dir = Locale::direction();
+        $lang = Locale::getLocale();
+        $textAlign = $dir === 'rtl' ? 'text-align: right;' : '';
 
         return <<<HTML
-        <html>
-        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f4f5;">
+        <html lang="{$lang}" dir="{$dir}">
+        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f4f5; {$textAlign}">
             <table width="100%" cellpadding="0" cellspacing="0" style="padding: 2rem 1rem;">
                 <tr><td align="center">
                     <table width="560" cellpadding="0" cellspacing="0" style="background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
@@ -1477,6 +1483,9 @@ final class Mailer
     ): string {
         $h = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
         $font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        $dir = Locale::direction();
+        $lang = Locale::getLocale();
+        $textAlign = $dir === 'rtl' ? 'text-align: right;' : '';
 
         // Build detail rows with strikethrough
         $detailRows = '';
@@ -1504,9 +1513,9 @@ final class Mailer
         }
 
         return <<<HTML
-        <html>
+        <html lang="{$lang}" dir="{$dir}">
         <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-        <body style="margin: 0; padding: 0; font-family: {$font}; background: #F3F4F6;">
+        <body style="margin: 0; padding: 0; font-family: {$font}; background: #F3F4F6; {$textAlign}">
             <table width="100%" cellpadding="0" cellspacing="0" style="padding: 32px 16px;">
                 <tr><td align="center">
                     <table width="560" cellpadding="0" cellspacing="0" style="background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">

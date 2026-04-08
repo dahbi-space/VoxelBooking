@@ -240,7 +240,7 @@ app/                    PHP application code
   Migrations/           Sequential SQL migrations (001–026)
   Models/               Data models (no ORM)
 config/                 Configuration files (locale registry)
-lang/                   Translation files (en shipped; nl, de, fr, es registry-ready)
+lang/                   Translation files (en shipped; nl, de, es, fr, id, it, ja, pt, pl, tr, ar registry-ready)
   en/                   English translations (booking, auth, admin, email, etc.)
 public/                 Web root (document root)
   assets/               Compiled CSS/JS (built by Vite)
@@ -259,13 +259,13 @@ tests/                  PHPUnit test suites
 ```
 ## Localization
 
-VoxelBooking is internationalization-ready from its foundation. English ships as the only complete translation; the architecture supports adding any locale without code changes.
+VoxelBooking is internationalization-ready from its foundation. English ships as the only complete translation; 12 locales are registered with formatting rules (en, nl, de, es, fr, id, it, ja, pt, pl, tr, ar). Arabic (ar) is RTL — the platform sets `dir="rtl"` on `<html>` and uses CSS logical properties for full right-to-left layout.
 
 ### Architecture
 
 - **`config/locales.php`** — locale registry with per-locale formatting rules (date, time, number, currency, week start)
 - **`app/Engine/Locale.php`** — centralized i18n engine: translation lookup, locale negotiation, formatting functions
-- **`app/helpers.php`** — global helpers: `__()`, `__p()`, `__n()`, `__c()`, `__d()`, `__dl()`, `__t()`
+- **`app/helpers.php`** — global helpers: `__()`, `__p()`, `__n()`, `__c()`, `__d()`, `__dl()`, `__t()`, `locale_dir()`
 - **`lang/en/`** — English translation files (booking, auth, admin, validation, email, privacy)
 
 ### Resolution rules

@@ -13,7 +13,7 @@ $allChecksPassed = empty(array_filter($checks, fn($c) => $c['required'] && !$c['
 $stepTitles = [1 => __('install.wizard.step_bar_1'), 2 => __('install.wizard.step_bar_2'), 3 => __('install.wizard.step_bar_3'), 4 => __('install.wizard.step_bar_4'), 5 => __('install.wizard.step_bar_5')];
 ?>
 <!DOCTYPE html>
-<html lang="<?= \App\Engine\Locale::getLocale() ?>" data-theme="light">
+<html lang="<?= \App\Engine\Locale::getLocale() ?>" dir="<?= \App\Engine\Locale::direction() ?>" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -290,7 +290,11 @@ $stepTitles = [1 => __('install.wizard.step_bar_1'), 2 => __('install.wizard.ste
             background-position: right 0.5rem center;
             background-repeat: no-repeat;
             background-size: 1.25rem;
-            padding-right: 2.5rem;
+            padding-inline-end: 2.5rem;
+        }
+
+        [dir="rtl"] select.form-input {
+            background-position: left 0.5rem center;
         }
 
         /* ── Buttons ── */
@@ -412,7 +416,7 @@ $stepTitles = [1 => __('install.wizard.step_bar_1'), 2 => __('install.wizard.ste
         .theme-toggle {
             position: fixed;
             top: 1rem;
-            right: 1rem;
+            inset-inline-end: 1rem;
             background: var(--vb-admin-bg-surface);
             border: 1px solid var(--vb-admin-border-subtle);
             border-radius: 50%;

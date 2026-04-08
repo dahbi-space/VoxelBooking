@@ -27,7 +27,7 @@ $operatorName = htmlspecialchars($user['name'] ?? __('admin.layout.operator'), E
 $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
 ?>
 <!DOCTYPE html>
-<html lang="<?= \App\Engine\Locale::getLocale() ?>">
+<html lang="<?= \App\Engine\Locale::getLocale() ?>" dir="<?= \App\Engine\Locale::direction() ?>">
 <head>
     <script>
     // Theme bootstrap: must run before CSS paints to prevent FOUC.

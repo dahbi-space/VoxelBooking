@@ -2723,3 +2723,48 @@ body {
 .vb-embed-mode .vb-book-tz-bar {
   margin-bottom: 0.5rem;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   RTL SUPPORT — dir="rtl"
+   ────────────────────────────────────────────────────────────────
+   Flips remaining directional properties for the booking page SPA.
+   Most booking layout uses flexbox/grid (inherently direction-aware).
+   ════════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] {
+  /* ── Event cards + modal: left-aligned text → start ── */
+  .vb-book-event-card { text-align: right; }
+  .vb-book-modal       { text-align: right; }
+
+  /* ── Calendar nav arrows: flip chevrons ── */
+  .vb-book-calendar-btn i[data-lucide="chevron-left"],
+  .vb-book-calendar-btn i[data-lucide="chevron-right"] {
+    transform: scaleX(-1);
+  }
+
+  /* ── Summary rows: swap label/value alignment ── */
+  .vb-book-summary-label { text-align: right; }
+  .vb-book-summary-value { text-align: left; }
+
+  /* ── Details context chip icon margin ── */
+  .vb-book-details-context svg { margin-left: 6px; margin-right: 0; }
+
+  /* ── Privacy: list indent ── */
+  .vb-book-privacy ul { padding-left: 0; padding-right: 20px; }
+
+  /* ── Confirmation badge accent ── */
+  .vb-book-slug-accent {
+    border-left: none;
+    border-right: 3px solid var(--vb-brand);
+  }
+
+  /* ── Timezone trigger: flip chevron ── */
+  .vb-book-tz-chevron { transform: scaleX(-1); }
+
+  /* ── Toast: snap to center (translateX logic is direction-neutral) ── */
+
+  /* ── Spacing that uses margin-left ── */
+  .vb-book-slot-info { margin-left: 0; margin-right: 16px; }
+
+  /* ── Mobile toast: remove both borders (already direction-neutral) ── */
+}

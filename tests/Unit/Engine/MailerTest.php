@@ -139,7 +139,7 @@ final class MailerTest extends TestCase
         $this->assertStringContainsString('Test footer note.', $html);
         // Powered-by line now uses app_name() — in test context this is the env fallback
         $this->assertStringContainsString('Powered by', $html);
-        $this->assertStringContainsString('<html>', $html);
+        $this->assertStringContainsString('<html lang="en" dir="ltr">', $html);
     }
 
     /**
