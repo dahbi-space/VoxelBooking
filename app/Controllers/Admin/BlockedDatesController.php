@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
+use App\Engine\FormState;
 use App\Engine\AuditLog;
 use App\Engine\Database;
 use App\Engine\Request;
@@ -101,7 +102,7 @@ final class BlockedDatesController
             'past'      => $past,
             'staff'     => $staff,
             'resources' => $resources,
-            'flash'     => $this->flash(),
+            'flash'     => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -134,18 +135,18 @@ final class BlockedDatesController
 
         // Validate dates
         if (!$this->isValidDate($startDate) || !$this->isValidDate($endDate)) {
-            $this->setFlash('error', __('admin.blocked_dates.error_invalid_date'));
+            FormState::toast('error', __('admin.blocked_dates.error_invalid_date'));
             return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
         }
 
         if ($endDate < $startDate) {
-            $this->setFlash('error', __('admin.blocked_dates.error_end_before_start'));
+            FormState::toast('error', __('admin.blocked_dates.error_end_before_start'));
             return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
         }
 
         // Start date must be today or later
         if ($startDate < date('Y-m-d')) {
-            $this->setFlash('error', __('admin.blocked_dates.error_past_date'));
+            FormState::toast('error', __('admin.blocked_dates.error_past_date'));
             return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
         }
 
@@ -156,7 +157,7 @@ final class BlockedDatesController
                 [$staffId, $tenantId]
             );
             if (empty($staffRow)) {
-                $this->setFlash('error', __('admin.blocked_dates.error_invalid_staff'));
+                FormState::toast('error', __('admin.blocked_dates.error_invalid_staff'));
                 return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
             }
         }
@@ -168,7 +169,7 @@ final class BlockedDatesController
                 [$resourceId, $tenantId]
             );
             if (empty($resRow)) {
-                $this->setFlash('error', __('admin.blocked_dates.error_invalid_resource'));
+                FormState::toast('error', __('admin.blocked_dates.error_invalid_resource'));
                 return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
             }
         }
@@ -208,7 +209,7 @@ final class BlockedDatesController
         );
 
         if (!empty($existing)) {
-            $this->setFlash('error', __('admin.blocked_dates.error_overlap'));
+            FormState::toast('error', __('admin.blocked_dates.error_overlap'));
             return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
         }
 
@@ -228,7 +229,7 @@ final class BlockedDatesController
             'reason'      => $reason,
         ]);
 
-        $this->setFlash('success', __('admin.blocked_dates.created'));
+        FormState::toast('success', __('admin.blocked_dates.created'));
         return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
     }
 
@@ -259,7 +260,7 @@ final class BlockedDatesController
         );
 
         if (empty($bd)) {
-            $this->setFlash('error', __('admin.blocked_dates.not_found'));
+            FormState::toast('error', __('admin.blocked_dates.not_found'));
             return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
         }
 
@@ -275,7 +276,7 @@ final class BlockedDatesController
             'reason'     => $bd[0]['reason'],
         ]);
 
-        $this->setFlash('success', __('admin.blocked_dates.deleted'));
+        FormState::toast('success', __('admin.blocked_dates.deleted'));
         return Response::redirect("/admin/tenants/{$tenantId}/blocked-dates");
     }
 
@@ -332,16 +333,5 @@ final class BlockedDatesController
         ], 403);
     }
 
-    private function setFlash(string $type, string $message): void
-    {
-        Auth::startSession();
-        $_SESSION['settings_flash'] = ['type' => $type, 'message' => $message];
-    }
 
-    private function flash(): ?array
-    {
-        $flash = $_SESSION['settings_flash'] ?? null;
-        unset($_SESSION['settings_flash']);
-        return $flash;
-    }
 }

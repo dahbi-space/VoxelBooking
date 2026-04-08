@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
+use App\Engine\FormState;
 use App\Engine\AuditLog;
 use App\Engine\Database;
 use App\Engine\Mailer;
@@ -56,7 +57,7 @@ final class BusinessUsersController
             'documentTitle' => __('admin.users.page_title') . ' — ' . $tenant['name'],
             'tenant'   => $tenant,
             'users'    => $users,
-            'flash'    => $this->flash(),
+            'flash'    => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -78,7 +79,7 @@ final class BusinessUsersController
         return $this->render('admin.tenants.users.invite', __('admin.users.invite_title'), [
             'documentTitle' => __('admin.users.invite_title') . ' — ' . $tenant['name'],
             'tenant' => $tenant,
-            'flash'  => $this->flash(),
+            'flash'  => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -132,7 +133,7 @@ final class BusinessUsersController
         }
 
         if (!empty($errors)) {
-            $this->setFlash('error', implode(' ', $errors));
+            FormState::toast('error', implode(' ', $errors));
             return Response::redirect("/admin/tenants/{$tenantId}/users/invite");
         }
 
@@ -172,12 +173,12 @@ final class BusinessUsersController
             );
 
             if ($emailResult['sent']) {
-                $this->setFlash('success', __('admin.users.flash_invited') . ' ' . __('admin.users.flash_email_sent'));
+                FormState::toast('success', __('admin.users.flash_invited') . ' ' . __('admin.users.flash_email_sent'));
                 return Response::redirect("/admin/tenants/{$tenantId}/users");
             }
 
             // Email failed — show credentials
-            $this->setFlash('warning', __('admin.users.flash_email_failed'));
+            FormState::toast('warning', __('admin.users.flash_email_failed'));
             $_SESSION['owner_credentials'] = [
                 'email'    => $email,
                 'password' => $password,
@@ -186,7 +187,7 @@ final class BusinessUsersController
         }
 
         // No email sent — show credentials
-        $this->setFlash('success', __('admin.users.flash_invited'));
+        FormState::toast('success', __('admin.users.flash_invited'));
         $_SESSION['owner_credentials'] = [
             'email'    => $email,
             'password' => $password,
@@ -214,7 +215,7 @@ final class BusinessUsersController
         // Cannot deactivate yourself
         $currentUser = Auth::user();
         if ($currentUser !== null && $currentUser['id'] === $userId) {
-            $this->setFlash('error', __('admin.users.error_self_deactivate'));
+            FormState::toast('error', __('admin.users.error_self_deactivate'));
             return Response::redirect("/admin/tenants/{$tenantId}/users");
         }
 
@@ -228,7 +229,7 @@ final class BusinessUsersController
             'email'     => AuditLog::hashEmail($user['email']),
         ]);
 
-        $this->setFlash('success', __('admin.users.flash_deactivated'));
+        FormState::toast('success', __('admin.users.flash_deactivated'));
         return Response::redirect("/admin/tenants/{$tenantId}/users");
     }
 
@@ -258,7 +259,7 @@ final class BusinessUsersController
             'email'     => AuditLog::hashEmail($user['email']),
         ]);
 
-        $this->setFlash('success', __('admin.users.flash_activated'));
+        FormState::toast('success', __('admin.users.flash_activated'));
         return Response::redirect("/admin/tenants/{$tenantId}/users");
     }
 
@@ -325,29 +326,5 @@ final class BusinessUsersController
         ], 403);
     }
 
-    private function setFlash(string $type, string $message): void
-    {
-        Auth::startSession();
-        $_SESSION['settings_flash'] = ['type' => $type, 'message' => $message];
-    }
 
-    private function flash(): ?array
-    {
-        $flash = $_SESSION['settings_flash'] ?? null;
-        unset($_SESSION['settings_flash']);
-
-        // Check for credentials to show
-        $credentials = $_SESSION['owner_credentials'] ?? null;
-        unset($_SESSION['owner_credentials']);
-
-        if ($credentials !== null) {
-            return [
-                'type'        => $flash['type'] ?? 'success',
-                'message'     => $flash['message'] ?? '',
-                'credentials' => $credentials,
-            ];
-        }
-
-        return $flash;
-    }
 }

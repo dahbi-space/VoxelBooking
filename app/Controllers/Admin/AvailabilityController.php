@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
+use App\Engine\FormState;
 use App\Engine\AuditLog;
 use App\Engine\Database;
 use App\Engine\Request;
@@ -89,7 +90,7 @@ final class AvailabilityController
             'staffOverrides' => $staffOverrides,
             'currentStaffId' => null,
             'currentStaff'   => null,
-            'flash'          => $this->flash(),
+            'flash'          => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -114,7 +115,7 @@ final class AvailabilityController
         $parsed = $this->parseScheduleInput($scheduleData);
 
         if ($parsed === null) {
-            $this->setFlash('error', __('admin.availability.error_invalid_time'));
+            FormState::toast('error', __('admin.availability.error_invalid_time'));
             return Response::redirect("/admin/tenants/{$tenantId}/availability");
         }
 
@@ -140,7 +141,7 @@ final class AvailabilityController
             'window_count' => count($parsed),
         ]);
 
-        $this->setFlash('success', __('admin.availability.saved'));
+        FormState::toast('success', __('admin.availability.saved'));
         return Response::redirect("/admin/tenants/{$tenantId}/availability");
     }
 
@@ -222,7 +223,7 @@ final class AvailabilityController
             'currentStaffId' => $staffId,
             'currentStaff'   => $staffMember,
             'hasOverride'    => $hasOverride,
-            'flash'          => $this->flash(),
+            'flash'          => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -253,7 +254,7 @@ final class AvailabilityController
         $parsed = $this->parseScheduleInput($scheduleData);
 
         if ($parsed === null) {
-            $this->setFlash('error', __('admin.availability.error_invalid_time'));
+            FormState::toast('error', __('admin.availability.error_invalid_time'));
             return Response::redirect("/admin/tenants/{$tenantId}/availability/staff/{$staffId}");
         }
 
@@ -277,7 +278,7 @@ final class AvailabilityController
             'window_count' => count($parsed),
         ]);
 
-        $this->setFlash('success', __('admin.availability.staff_saved'));
+        FormState::toast('success', __('admin.availability.staff_saved'));
         return Response::redirect("/admin/tenants/{$tenantId}/availability/staff/{$staffId}");
     }
 
@@ -313,7 +314,7 @@ final class AvailabilityController
             'staff_name' => $staffMember['name'],
         ]);
 
-        $this->setFlash('success', __('admin.availability.staff_reset'));
+        FormState::toast('success', __('admin.availability.staff_reset'));
         return Response::redirect("/admin/tenants/{$tenantId}/availability/staff/{$staffId}");
     }
 
@@ -457,16 +458,5 @@ final class AvailabilityController
         ], 403);
     }
 
-    private function setFlash(string $type, string $message): void
-    {
-        Auth::startSession();
-        $_SESSION['settings_flash'] = ['type' => $type, 'message' => $message];
-    }
 
-    private function flash(): ?array
-    {
-        $flash = $_SESSION['settings_flash'] ?? null;
-        unset($_SESSION['settings_flash']);
-        return $flash;
-    }
 }

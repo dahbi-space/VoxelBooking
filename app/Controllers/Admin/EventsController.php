@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
+use App\Engine\FormState;
 use App\Engine\AuditLog;
 use App\Engine\Database;
 use App\Engine\ImageUpload;
@@ -66,7 +67,7 @@ final class EventsController
             'tenant'        => $tenant,
             'tenantId'      => $tenantId,
             'events'        => $events,
-            'flash'         => $this->flash(),
+            'flash'         => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -91,8 +92,8 @@ final class EventsController
             'documentTitle' => __('admin.events.create_title'),
             'tenant'        => $tenant,
             'tenantId'      => $tenantId,
-            'flash'         => $this->flash(),
-            'old'           => $_SESSION['_old_input'] ?? [],
+            'flash'         => FormState::getToast(),
+            'old' => FormState::old(),
         ], $tenantId);
     }
 
@@ -111,7 +112,7 @@ final class EventsController
 
         // Store old input for re-display on validation failure
         Auth::startSession();
-        $_SESSION['_old_input'] = [
+        FormState::flashInput([
             'name'             => $request->string('name'),
             'description'      => $request->string('description'),
             'location'         => $request->string('location'),
@@ -129,12 +130,12 @@ final class EventsController
             'exception_dates'  => $request->string('exception_dates'),
             'allow_waitlist'   => $request->string('allow_waitlist'),
             'waitlist_max'     => $request->string('waitlist_max'),
-        ];
+        ]);
 
         // Validation
         $name = trim($request->string('name'));
         if ($name === '') {
-            $this->setFlash('error', __('admin.events.error_name_required'));
+            FormState::toast('error', __('admin.events.error_name_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/events/create");
         }
 
@@ -144,7 +145,7 @@ final class EventsController
         $endTime   = trim($request->string('end_time'));
 
         if (!$startDate || !$startTime || !$endDate || !$endTime) {
-            $this->setFlash('error', __('admin.events.error_date_required'));
+            FormState::toast('error', __('admin.events.error_date_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/events/create");
         }
 
@@ -152,7 +153,7 @@ final class EventsController
         $endDt   = $endDate . ' ' . $endTime . ':00';
 
         if ($endDt <= $startDt) {
-            $this->setFlash('error', __('admin.events.error_end_before_start'));
+            FormState::toast('error', __('admin.events.error_end_before_start'));
             return Response::redirect("/admin/tenants/{$tenantId}/events/create");
         }
 
@@ -196,7 +197,7 @@ final class EventsController
         if (!empty($_FILES['cover_image']['tmp_name'])) {
             $upload = ImageUpload::store('event', $_FILES['cover_image'], $tenant['slug']);
             if ($upload['error']) {
-                $this->setFlash('error', $upload['error']);
+                FormState::toast('error', $upload['error']);
                 return Response::redirect("/admin/tenants/{$tenantId}/events/create");
             }
             $coverPath = $upload['path'];
@@ -225,8 +226,8 @@ final class EventsController
             'is_recurring' => $isRecurring,
         ], $tenantId);
 
-        unset($_SESSION['_old_input']);
-        $this->setFlash('success', __('admin.events.flash_created'));
+        // Old input cleared by FormState::old()
+        FormState::toast('success', __('admin.events.flash_created'));
         return Response::redirect("/admin/tenants/{$tenantId}/events");
     }
 
@@ -257,8 +258,8 @@ final class EventsController
             'tenant'        => $tenant,
             'tenantId'      => $tenantId,
             'event'         => $events[0],
-            'flash'         => $this->flash(),
-            'old'           => $_SESSION['_old_input'] ?? [],
+            'flash'         => FormState::getToast(),
+            'old' => FormState::old(),
         ], $tenantId);
     }
 
@@ -279,7 +280,7 @@ final class EventsController
         // Validate
         $name = trim($request->string('name'));
         if ($name === '') {
-            $this->setFlash('error', __('admin.events.error_name_required'));
+            FormState::toast('error', __('admin.events.error_name_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/events/{$eventId}/edit");
         }
 
@@ -289,7 +290,7 @@ final class EventsController
         $endTime   = trim($request->string('end_time'));
 
         if (!$startDate || !$startTime || !$endDate || !$endTime) {
-            $this->setFlash('error', __('admin.events.error_date_required'));
+            FormState::toast('error', __('admin.events.error_date_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/events/{$eventId}/edit");
         }
 
@@ -297,7 +298,7 @@ final class EventsController
         $endDt   = $endDate . ' ' . $endTime . ':00';
 
         if ($endDt <= $startDt) {
-            $this->setFlash('error', __('admin.events.error_end_before_start'));
+            FormState::toast('error', __('admin.events.error_end_before_start'));
             return Response::redirect("/admin/tenants/{$tenantId}/events/{$eventId}/edit");
         }
 
@@ -341,7 +342,7 @@ final class EventsController
         if (!empty($_FILES['cover_image']['tmp_name'])) {
             $upload = ImageUpload::store('event', $_FILES['cover_image'], $tenant['slug'], $coverPath);
             if ($upload['error']) {
-                $this->setFlash('error', $upload['error']);
+                FormState::toast('error', $upload['error']);
                 return Response::redirect("/admin/tenants/{$tenantId}/events/{$eventId}/edit");
             }
             $coverPath = $upload['path'];
@@ -370,7 +371,7 @@ final class EventsController
 
         AuditLog::log('event.updated', 'event', $eventId, ['name' => $name], $tenantId);
 
-        $this->setFlash('success', __('admin.events.flash_updated'));
+        FormState::toast('success', __('admin.events.flash_updated'));
         return Response::redirect("/admin/tenants/{$tenantId}/events");
     }
 
@@ -405,7 +406,7 @@ final class EventsController
         );
 
         $msg = $newState === 1 ? __('admin.events.flash_activated') : __('admin.events.flash_deactivated');
-        $this->setFlash('success', $msg);
+        FormState::toast('success', $msg);
         return Response::redirect("/admin/tenants/{$tenantId}/events");
     }
 
@@ -425,7 +426,7 @@ final class EventsController
 
         AuditLog::log('event.deleted', 'event', $eventId, [], $tenantId);
 
-        $this->setFlash('success', __('admin.events.flash_deleted'));
+        FormState::toast('success', __('admin.events.flash_deleted'));
         return Response::redirect("/admin/tenants/{$tenantId}/events");
     }
 
@@ -466,16 +467,5 @@ final class EventsController
         ], 403);
     }
 
-    private function setFlash(string $type, string $message): void
-    {
-        Auth::startSession();
-        $_SESSION['settings_flash'] = ['type' => $type, 'message' => $message];
-    }
 
-    private function flash(): ?array
-    {
-        $flash = $_SESSION['settings_flash'] ?? null;
-        unset($_SESSION['settings_flash']);
-        return $flash;
-    }
 }

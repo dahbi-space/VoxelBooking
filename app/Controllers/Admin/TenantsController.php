@@ -7,6 +7,7 @@ namespace App\Controllers\Admin;
 use App\Engine\Auth;
 use App\Engine\AuditLog;
 use App\Engine\Database;
+use App\Engine\FormState;
 use App\Engine\Logger;
 use App\Engine\Mailer;
 use App\Engine\Request;
@@ -49,7 +50,7 @@ final class TenantsController
         return $this->render('admin.tenants.index', __('admin.tenants.title'), [
             'tenants' => $tenants,
             'counts'  => Tenant::counts(),
-            'flash'   => $this->flash(),
+            'flash'   => FormState::getToast(),
         ]);
     }
 
@@ -59,14 +60,13 @@ final class TenantsController
             return $this->forbidden($request);
         }
 
-        // Retrieve old input from session (populated on validation failure)
-        $old = $_SESSION['_old_input'] ?? [];
-        $fieldErrors = $_SESSION['_field_errors'] ?? [];
-        unset($_SESSION['_old_input'], $_SESSION['_field_errors']);
+        // Retrieve old input + field errors (populated on validation failure)
+        $old = FormState::old();
+        $fieldErrors = FormState::errors();
 
         return $this->render('admin.tenants.create', __('admin.tenants.title'), [
             'documentTitle' => __('admin.tenants.create'),
-            'flash'         => $this->flash(),
+            'flash'         => FormState::getToast(),
             'old'           => $old,
             'fieldErrors'   => $fieldErrors,
         ]);
@@ -123,8 +123,7 @@ final class TenantsController
         }
 
         if (!empty($errors)) {
-            // Preserve old input so the form repopulates on redirect
-            $_SESSION['_old_input'] = [
+            FormState::flash([
                 'name'            => $name,
                 'slug'            => $slug,
                 'email'           => $email,
@@ -135,12 +134,9 @@ final class TenantsController
                 'create_owner'    => $createOwner ? '1' : '0',
                 'owner_name'      => $ownerName,
                 'owner_email'     => $ownerEmail,
-            ];
+            ], $this->mapFieldErrors($errors));
 
-            // Track which fields failed so the template can mark them
-            $_SESSION['_field_errors'] = $this->mapFieldErrors($errors);
-
-            $this->setFlash('error', implode(' ', $errors));
+            FormState::toast('error', implode(' ', $errors));
             return Response::redirect('/admin/tenants/create');
         }
 
@@ -214,19 +210,16 @@ final class TenantsController
                 }
 
                 if ($emailResult !== null && $emailResult['sent']) {
-                    // Email sent successfully
-                    $this->setFlash('success', __('admin.tenants.flash_created_with_owner')
+                    FormState::toast('success', __('admin.tenants.flash_created_with_owner')
                         . ' ' . __('admin.tenants.flash_owner_email_sent'));
                 } else {
-                    // Email not sent (SMTP unconfigured, not requested, or failed)
-                    // Flash credentials so the operator can copy them
                     $reason = !$sendEmail
                         ? __('admin.tenants.flash_owner_email_skipped')
                         : ($emailResult !== null
                             ? __('admin.tenants.flash_owner_email_failed')
                             : __('admin.tenants.flash_owner_email_skipped'));
 
-                    $this->setFlash('owner_credentials', json_encode([
+                    FormState::toast('owner_credentials', json_encode([
                         'message'  => __('admin.tenants.flash_created_with_owner') . ' ' . $reason,
                         'email'    => $ownerEmail,
                         'password' => $ownerPass,
@@ -234,14 +227,13 @@ final class TenantsController
                     ]));
                 }
             } else {
-                $this->setFlash('success', __('admin.tenants.flash_created'));
+                FormState::toast('success', __('admin.tenants.flash_created'));
             }
 
             return Response::redirect('/admin/tenants');
         } catch (\RuntimeException $e) {
             if ($e->getMessage() === 'owner_email_taken') {
-                // Preserve old input on owner-email collision too
-                $_SESSION['_old_input'] = [
+                FormState::flash([
                     'name'            => $name,
                     'slug'            => $slug,
                     'email'           => $email,
@@ -252,15 +244,14 @@ final class TenantsController
                     'create_owner'    => '1',
                     'owner_name'      => $ownerName,
                     'owner_email'     => $ownerEmail,
-                ];
-                $_SESSION['_field_errors'] = ['owner_email' => __('admin.tenants.flash_owner_email_taken')];
-                $this->setFlash('error', __('admin.tenants.flash_owner_email_taken'));
+                ], ['owner_email' => __('admin.tenants.flash_owner_email_taken')]);
+                FormState::toast('error', __('admin.tenants.flash_owner_email_taken'));
                 return Response::redirect('/admin/tenants/create');
             }
             throw $e;
         } catch (\Throwable $e) {
             Logger::error('Tenant creation failed', ['error' => $e->getMessage()]);
-            $this->setFlash('error', __('admin.tenants.flash_create_failed'));
+            FormState::toast('error', __('admin.tenants.flash_create_failed'));
             return Response::redirect('/admin/tenants/create');
         }
     }
@@ -276,15 +267,13 @@ final class TenantsController
             return Response::redirect('/admin/tenants');
         }
 
-        // Retrieve old input from session (populated on validation failure)
-        $old = $_SESSION['_old_input'] ?? [];
-        $fieldErrors = $_SESSION['_field_errors'] ?? [];
-        unset($_SESSION['_old_input'], $_SESSION['_field_errors']);
+        $old = FormState::old();
+        $fieldErrors = FormState::errors();
 
         return $this->render('admin.tenants.edit', __('admin.tenants.title'), [
             'documentTitle' => __('admin.tenants.edit'),
             'tenant'        => $tenant,
-            'flash'         => $this->flash(),
+            'flash'         => FormState::getToast(),
             'old'           => $old,
             'fieldErrors'   => $fieldErrors,
         ]);
@@ -320,16 +309,15 @@ final class TenantsController
         }
 
         if (!empty($errors)) {
-            $_SESSION['_old_input'] = [
+            FormState::flash([
                 'name'        => $name,
                 'slug'        => $slug,
                 'email'       => $email,
                 'timezone'    => trim($request->string('timezone')) ?: null,
                 'currency'    => trim($request->string('currency')) ?: null,
                 'brand_color' => trim($request->string('brand_color')) ?: null,
-            ];
-            $_SESSION['_field_errors'] = $this->mapFieldErrors($errors);
-            $this->setFlash('error', implode(' ', $errors));
+            ], $this->mapFieldErrors($errors));
+            FormState::toast('error', implode(' ', $errors));
             return Response::redirect("/admin/tenants/{$id}/edit");
         }
 
@@ -354,10 +342,10 @@ final class TenantsController
             if (!empty($changes)) {
                 AuditLog::log('tenant.updated', 'tenant', $id, $changes);
             }
-            $this->setFlash('success', __('admin.tenants.flash_updated'));
+            FormState::toast('success', __('admin.tenants.flash_updated'));
         } catch (\Throwable $e) {
             Logger::error('Tenant update failed', ['error' => $e->getMessage()]);
-            $this->setFlash('error', __('admin.tenants.flash_update_failed'));
+            FormState::toast('error', __('admin.tenants.flash_update_failed'));
         }
 
         return Response::redirect("/admin/tenants/{$id}/edit");
@@ -375,7 +363,7 @@ final class TenantsController
         if ($tenant !== null && $tenant['status'] !== 'archived') {
             Tenant::update($id, ['status' => 'archived']);
             AuditLog::log('tenant.archived', 'tenant', $id, ['name' => $tenant['name']]);
-            $this->setFlash('success', __('admin.tenants.flash_archived'));
+            FormState::toast('success', __('admin.tenants.flash_archived'));
         }
 
         return Response::redirect('/admin/tenants');
@@ -393,7 +381,7 @@ final class TenantsController
         if ($tenant !== null && $tenant['status'] === 'archived') {
             Tenant::update($id, ['status' => 'active']);
             AuditLog::log('tenant.activated', 'tenant', $id, ['name' => $tenant['name']]);
-            $this->setFlash('success', __('admin.tenants.flash_activated'));
+            FormState::toast('success', __('admin.tenants.flash_activated'));
         }
 
         return Response::redirect('/admin/tenants');
@@ -462,16 +450,5 @@ final class TenantsController
         ], 403);
     }
 
-    private function setFlash(string $type, string $message): void
-    {
-        Auth::startSession();
-        $_SESSION['settings_flash'] = ['type' => $type, 'message' => $message];
-    }
 
-    private function flash(): ?array
-    {
-        $flash = $_SESSION['settings_flash'] ?? null;
-        unset($_SESSION['settings_flash']);
-        return $flash;
-    }
 }

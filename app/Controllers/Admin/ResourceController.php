@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
+use App\Engine\FormState;
 use App\Engine\AuditLog;
 use App\Engine\Database;
 use App\Engine\ImageUpload;
@@ -63,7 +64,7 @@ final class ResourceController
             'documentTitle' => __('admin.resources.title') . ' — ' . $tenant['name'],
             'tenant'    => $tenant,
             'resources' => $resources,
-            'flash'     => $this->flash(),
+            'flash'     => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -89,8 +90,8 @@ final class ResourceController
         return $this->render('admin.tenants.resources.create', __('admin.resources.new'), [
             'documentTitle' => __('admin.resources.new') . ' — ' . $tenant['name'],
             'tenant' => $tenant,
-            'old'    => $_SESSION['_old_input'] ?? [],
-            'flash'  => $this->flash(),
+            'old' => FormState::old(),
+            'flash'  => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -141,8 +142,8 @@ final class ResourceController
         }
 
         if (!empty($errors)) {
-            $this->setFlash('error', implode(' ', $errors));
-            $_SESSION['_old_input'] = $_POST;
+            FormState::toast('error', implode(' ', $errors));
+            FormState::flashInput($_POST);
             return Response::redirect("/admin/tenants/{$tenantId}/resources/create");
         }
 
@@ -156,8 +157,8 @@ final class ResourceController
         if (!empty($_FILES['cover_image']['tmp_name'])) {
             $upload = ImageUpload::store('cover', $_FILES['cover_image'], $tenant['slug']);
             if ($upload['error']) {
-                $this->setFlash('error', $upload['error']);
-                $_SESSION['_old_input'] = $_POST;
+                FormState::toast('error', $upload['error']);
+                FormState::flashInput($_POST);
                 return Response::redirect("/admin/tenants/{$tenantId}/resources/create");
             }
             $coverPath = $upload['path'];
@@ -179,7 +180,7 @@ final class ResourceController
             if ($coverPath) {
                 ImageUpload::delete($coverPath);
             }
-            $this->setFlash('error', __('admin.common.error_generic'));
+            FormState::toast('error', __('admin.common.error_generic'));
             return Response::redirect("/admin/tenants/{$tenantId}/resources/create");
         }
 
@@ -188,8 +189,8 @@ final class ResourceController
             'name'      => $name,
         ]);
 
-        unset($_SESSION['_old_input']);
-        $this->setFlash('success', __('admin.resources.created'));
+        // Old input cleared by FormState::old()
+        FormState::toast('success', __('admin.resources.created'));
         return Response::redirect("/admin/tenants/{$tenantId}/resources");
     }
 
@@ -233,8 +234,8 @@ final class ResourceController
             'tenant'          => $tenant,
             'resource'        => $resource,
             'seasonalPricing' => $seasonalPricing,
-            'old'             => $_SESSION['_old_input'] ?? [],
-            'flash'           => $this->flash(),
+            'old' => FormState::old(),
+            'flash'           => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -286,8 +287,8 @@ final class ResourceController
         }
 
         if (!empty($errors)) {
-            $this->setFlash('error', implode(' ', $errors));
-            $_SESSION['_old_input'] = $_POST;
+            FormState::toast('error', implode(' ', $errors));
+            FormState::flashInput($_POST);
             return Response::redirect("/admin/tenants/{$tenantId}/resources/{$resourceId}/edit");
         }
 
@@ -300,8 +301,8 @@ final class ResourceController
         }
 
         if (!empty($errors)) {
-            $this->setFlash('error', implode(' ', $errors));
-            $_SESSION['_old_input'] = $_POST;
+            FormState::toast('error', implode(' ', $errors));
+            FormState::flashInput($_POST);
             return Response::redirect("/admin/tenants/{$tenantId}/resources/{$resourceId}/edit");
         }
 
@@ -312,8 +313,8 @@ final class ResourceController
         if (!empty($_FILES['cover_image']['tmp_name'])) {
             $upload = ImageUpload::store('cover', $_FILES['cover_image'], $tenant['slug'], $coverPath);
             if ($upload['error']) {
-                $this->setFlash('error', $upload['error']);
-                $_SESSION['_old_input'] = $_POST;
+                FormState::toast('error', $upload['error']);
+                FormState::flashInput($_POST);
                 return Response::redirect("/admin/tenants/{$tenantId}/resources/{$resourceId}/edit");
             }
             $coverPath = $upload['path'];
@@ -340,8 +341,8 @@ final class ResourceController
             'name'      => $name,
         ]);
 
-        unset($_SESSION['_old_input']);
-        $this->setFlash('success', __('admin.resources.updated'));
+        // Old input cleared by FormState::old()
+        FormState::toast('success', __('admin.resources.updated'));
         return Response::redirect("/admin/tenants/{$tenantId}/resources");
     }
 
@@ -375,7 +376,7 @@ final class ResourceController
             'tenant_id' => $tenantId,
         ]);
 
-        $this->setFlash('success', __('admin.resources.activated'));
+        FormState::toast('success', __('admin.resources.activated'));
         return Response::redirect("/admin/tenants/{$tenantId}/resources");
     }
 
@@ -409,7 +410,7 @@ final class ResourceController
             'tenant_id' => $tenantId,
         ]);
 
-        $this->setFlash('success', __('admin.resources.deactivated'));
+        FormState::toast('success', __('admin.resources.deactivated'));
         return Response::redirect("/admin/tenants/{$tenantId}/resources");
     }
 
@@ -668,16 +669,5 @@ final class ResourceController
         ], 403);
     }
 
-    private function setFlash(string $type, string $message): void
-    {
-        Auth::startSession();
-        $_SESSION['settings_flash'] = ['type' => $type, 'message' => $message];
-    }
 
-    private function flash(): ?array
-    {
-        $flash = $_SESSION['settings_flash'] ?? null;
-        unset($_SESSION['settings_flash']);
-        return $flash;
-    }
 }

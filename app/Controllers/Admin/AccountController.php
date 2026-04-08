@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
+use App\Engine\FormState;
 use App\Engine\AuditLog;
 use App\Engine\Database;
 use App\Engine\Request;
@@ -29,7 +30,7 @@ final class AccountController
     public function show(Request $request): Response
     {
         return $this->render('admin.account', __('admin.account.page_title'), [
-            'flash' => $this->flash(),
+            'flash' => FormState::getToast(),
         ]);
     }
 
@@ -55,12 +56,12 @@ final class AccountController
         $email = trim(strtolower($request->string('email')));
 
         if ($name === '') {
-            $this->setFlash('error', __('admin.flash.profile_name_required'));
+            FormState::toast('error', __('admin.flash.profile_name_required'));
             return Response::redirect('/admin/account');
         }
 
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $this->setFlash('error', __('admin.flash.profile_email_invalid'));
+            FormState::toast('error', __('admin.flash.profile_email_invalid'));
             return Response::redirect('/admin/account');
         }
 
@@ -82,7 +83,7 @@ final class AccountController
                     [$email, $user['id']]
                 );
                 if (!empty($exists)) {
-                    $this->setFlash('error', __('admin.flash.profile_email_taken'));
+                    FormState::toast('error', __('admin.flash.profile_email_taken'));
                     return Response::redirect('/admin/account');
                 }
             }
@@ -114,9 +115,9 @@ final class AccountController
                 AuditLog::log('account.profile_updated', $user['type'], $user['id'], $changes);
             }
 
-            $this->setFlash('success', __('admin.flash.profile_updated'));
+            FormState::toast('success', __('admin.flash.profile_updated'));
         } catch (\Throwable $e) {
-            $this->setFlash('error', __('admin.flash.profile_failed'));
+            FormState::toast('error', __('admin.flash.profile_failed'));
         }
 
         return Response::redirect('/admin/account');
@@ -131,17 +132,17 @@ final class AccountController
         $confirmPassword = $request->string('confirm_password');
 
         if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
-            $this->setFlash('error', __('admin.flash.password_required'));
+            FormState::toast('error', __('admin.flash.password_required'));
             return Response::redirect('/admin/account');
         }
 
         if ($newPassword !== $confirmPassword) {
-            $this->setFlash('error', __('admin.flash.password_mismatch'));
+            FormState::toast('error', __('admin.flash.password_mismatch'));
             return Response::redirect('/admin/account');
         }
 
         if (strlen($newPassword) < 8) {
-            $this->setFlash('error', __('admin.flash.password_min_length'));
+            FormState::toast('error', __('admin.flash.password_min_length'));
             return Response::redirect('/admin/account');
         }
 
@@ -158,7 +159,7 @@ final class AccountController
             );
 
             if (empty($rows) || !password_verify($currentPassword, $rows[0]['password_hash'])) {
-                $this->setFlash('error', __('admin.flash.password_incorrect'));
+                FormState::toast('error', __('admin.flash.password_incorrect'));
                 return Response::redirect('/admin/account');
             }
 
@@ -170,9 +171,9 @@ final class AccountController
 
             AuditLog::log('auth.password_changed', $user['type'], $user['id']);
 
-            $this->setFlash('success', __('admin.flash.password_updated'));
+            FormState::toast('success', __('admin.flash.password_updated'));
         } catch (\Throwable $e) {
-            $this->setFlash('error', __('admin.flash.password_failed'));
+            FormState::toast('error', __('admin.flash.password_failed'));
         }
 
         return Response::redirect('/admin/account');
@@ -190,16 +191,5 @@ final class AccountController
         ], $extra));
     }
 
-    private function setFlash(string $type, string $message): void
-    {
-        Auth::startSession();
-        $_SESSION['settings_flash'] = ['type' => $type, 'message' => $message];
-    }
 
-    private function flash(): ?array
-    {
-        $flash = $_SESSION['settings_flash'] ?? null;
-        unset($_SESSION['settings_flash']);
-        return $flash;
-    }
 }

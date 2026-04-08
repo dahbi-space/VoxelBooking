@@ -7,6 +7,7 @@ namespace App\Controllers\Admin;
 use App\Engine\DemoMode;
 
 use App\Engine\Auth;
+use App\Engine\FormState;
 use App\Engine\AuditLog;
 use App\Engine\Database;
 use App\Engine\Logger;
@@ -41,7 +42,7 @@ final class SettingsController
 
         return $this->render('admin.settings.general', 'General', [
             'settings' => $settings,
-            'flash'    => $this->flash(),
+            'flash'    => FormState::getToast(),
         ]);
     }
 
@@ -65,7 +66,7 @@ final class SettingsController
         }
 
         if (!empty($errors)) {
-            $this->setFlash('error', implode(' ', $errors));
+            FormState::toast('error', implode(' ', $errors));
             return Response::redirect('/admin/settings');
         }
 
@@ -104,7 +105,7 @@ final class SettingsController
             }
         } catch (\Throwable $e) {
             Logger::error('Settings persistence failed', ['error' => $e->getMessage()]);
-            $this->setFlash('error', __('admin.flash.general_failed'));
+            FormState::toast('error', __('admin.flash.general_failed'));
             return Response::redirect('/admin/settings');
         }
 
@@ -112,7 +113,7 @@ final class SettingsController
             AuditLog::logSettingsChanged($changes);
         }
 
-        $this->setFlash('success', __('admin.flash.general_saved'));
+        FormState::toast('success', __('admin.flash.general_saved'));
         return Response::redirect('/admin/settings');
     }
 
@@ -127,7 +128,7 @@ final class SettingsController
 
         return $this->render('admin.settings.email', 'Email', [
             'settings' => $settings,
-            'flash'    => $this->flash(),
+            'flash'    => FormState::getToast(),
         ]);
     }
 
@@ -157,7 +158,7 @@ final class SettingsController
             }
         } catch (\Throwable $e) {
             Logger::error('Email settings persistence failed', ['error' => $e->getMessage()]);
-            $this->setFlash('error', __('admin.flash.email_failed'));
+            FormState::toast('error', __('admin.flash.email_failed'));
             return Response::redirect('/admin/settings/email');
         }
 
@@ -165,7 +166,7 @@ final class SettingsController
             AuditLog::logSettingsChanged($changes);
         }
 
-        $this->setFlash('success', __('admin.flash.email_saved'));
+        FormState::toast('success', __('admin.flash.email_saved'));
         return Response::redirect('/admin/settings/email');
     }
 
@@ -187,7 +188,7 @@ final class SettingsController
         return $this->render('admin.settings.cron', 'Cron', [
             'cronToken' => $cronToken,
             'lastRun'   => $lastRun,
-            'flash'     => $this->flash(),
+            'flash'     => FormState::getToast(),
         ]);
     }
 
@@ -261,9 +262,9 @@ final class SettingsController
                     'skipped' => $skipped,
                 ]);
             }
-            $this->setFlash('success', __('admin.cron.run_success') . ' ' . implode(' ', $taskSummary));
+            FormState::toast('success', __('admin.cron.run_success') . ' ' . implode(' ', $taskSummary));
         } else {
-            $this->setFlash('error', __('admin.cron.run_partial', ['errors' => count($errors)]));
+            FormState::toast('error', __('admin.cron.run_partial', ['errors' => count($errors)]));
         }
 
         return Response::redirect('/admin/settings/cron');
@@ -361,16 +362,5 @@ final class SettingsController
         Database::upsertSetting($key, $value);
     }
 
-    private function setFlash(string $type, string $message): void
-    {
-        Auth::startSession();
-        $_SESSION['settings_flash'] = ['type' => $type, 'message' => $message];
-    }
 
-    private function flash(): ?array
-    {
-        $flash = $_SESSION['settings_flash'] ?? null;
-        unset($_SESSION['settings_flash']);
-        return $flash;
-    }
 }

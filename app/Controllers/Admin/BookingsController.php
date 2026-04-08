@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
+use App\Engine\FormState;
 use App\Engine\AuditLog;
 use App\Engine\BookingService;
 use App\Engine\CustomerService;
@@ -70,7 +71,7 @@ final class BookingsController
             'filters'          => compact('status', 'from', 'to', 'search', 'sort', 'direction'),
             'sort'             => $sort,
             'direction'        => $direction,
-            'flash'            => $this->flash(),
+            'flash'            => FormState::getToast(),
             'backUrl'          => '/admin/bookings',
         ]);
     }
@@ -92,7 +93,7 @@ final class BookingsController
             'documentTitle' => __('admin.bookings.detail_title'),
             'booking'   => $booking,
             'timeline'  => $timeline,
-            'flash'     => $this->flash(),
+            'flash'     => FormState::getToast(),
             'backUrl'   => '/admin/bookings',
         ]);
     }
@@ -134,7 +135,7 @@ final class BookingsController
             'filters'          => compact('status', 'from', 'to', 'sort', 'direction'),
             'sort'             => $sort,
             'direction'        => $direction,
-            'flash'            => $this->flash(),
+            'flash'            => FormState::getToast(),
             'backUrl'          => "/admin/tenants/{$tenantId}/bookings",
         ]);
     }
@@ -154,7 +155,7 @@ final class BookingsController
             'documentTitle' => __('admin.bookings.detail_title'),
             'booking'   => $booking,
             'timeline'  => $timeline,
-            'flash'     => $this->flash(),
+            'flash'     => FormState::getToast(),
             'backUrl'   => "/admin/tenants/{$tenantId}/bookings",
         ]);
     }
@@ -167,7 +168,7 @@ final class BookingsController
         // Guard: verify the booking belongs to this tenant before allowing mutation
         $booking = Booking::find($id);
         if ($booking === null || $booking['tenant_id'] !== $tenantId) {
-            $this->setFlash('error', __('admin.bookings.flash_status_failed'));
+            FormState::toast('error', __('admin.bookings.flash_status_failed'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings");
         }
 
@@ -192,7 +193,7 @@ final class BookingsController
 
         $booking = Booking::find($id);
         if ($booking === null || $booking['tenant_id'] !== $tenantId) {
-            $this->setFlash('error', __('admin.bookings.flash_reschedule_failed'));
+            FormState::toast('error', __('admin.bookings.flash_reschedule_failed'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings");
         }
 
@@ -220,20 +221,20 @@ final class BookingsController
         $booking = Booking::find($id);
 
         if ($booking === null) {
-            $this->setFlash('error', __('admin.bookings.flash_reschedule_failed'));
+            FormState::toast('error', __('admin.bookings.flash_reschedule_failed'));
             return Response::redirect($redirectBase);
         }
 
         // Only confirmed bookings can be rescheduled
         if ($booking['status'] !== 'confirmed') {
-            $this->setFlash('error', __('admin.bookings.error_reschedule_not_allowed'));
+            FormState::toast('error', __('admin.bookings.error_reschedule_not_allowed'));
             return Response::redirect("{$redirectBase}/{$id}");
         }
 
         // Only timeslot pattern is supported for reschedule in this slice
         $pattern = $booking['booking_pattern'] ?? 'timeslot';
         if ($pattern !== 'timeslot') {
-            $this->setFlash('error', __('admin.bookings.error_reschedule_not_allowed'));
+            FormState::toast('error', __('admin.bookings.error_reschedule_not_allowed'));
             return Response::redirect("{$redirectBase}/{$id}");
         }
 
@@ -241,19 +242,19 @@ final class BookingsController
         $newTime = trim($request->string('new_time'));
 
         if ($newDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate)) {
-            $this->setFlash('error', __('admin.bookings.error_date_required'));
+            FormState::toast('error', __('admin.bookings.error_date_required'));
             return Response::redirect("{$redirectBase}/{$id}");
         }
 
         if ($newTime === '' || !preg_match('/^\d{2}:\d{2}$/', $newTime)) {
-            $this->setFlash('error', __('admin.bookings.error_time_required'));
+            FormState::toast('error', __('admin.bookings.error_time_required'));
             return Response::redirect("{$redirectBase}/{$id}");
         }
 
         $tenantId = $booking['tenant_id'];
         $tenant = $this->loadTenant($tenantId);
         if ($tenant === null) {
-            $this->setFlash('error', __('admin.bookings.flash_reschedule_failed'));
+            FormState::toast('error', __('admin.bookings.flash_reschedule_failed'));
             return Response::redirect($redirectBase);
         }
 
@@ -268,7 +269,7 @@ final class BookingsController
 
         // Same-slot check
         if ($newStartDt->format('Y-m-d H:i') === $origStart->format('Y-m-d H:i')) {
-            $this->setFlash('error', __('admin.bookings.error_same_slot'));
+            FormState::toast('error', __('admin.bookings.error_same_slot'));
             return Response::redirect("{$redirectBase}/{$id}");
         }
 
@@ -304,7 +305,7 @@ final class BookingsController
 
             if (!$stillAvailable) {
                 $pdo->rollBack();
-                $this->setFlash('error', __('admin.bookings.flash_slot_taken'));
+                FormState::toast('error', __('admin.bookings.flash_slot_taken'));
                 return Response::redirect("{$redirectBase}/{$id}");
             }
 
@@ -404,7 +405,7 @@ final class BookingsController
                 }
             }
 
-            $this->setFlash('success', __('admin.bookings.flash_rescheduled'));
+            FormState::toast('success', __('admin.bookings.flash_rescheduled'));
             return Response::redirect("{$redirectBase}/{$result['id']}");
 
         } catch (\Throwable $e) {
@@ -417,7 +418,7 @@ final class BookingsController
                 'error'   => $e->getMessage(),
             ]);
 
-            $this->setFlash('error', __('admin.bookings.flash_reschedule_failed'));
+            FormState::toast('error', __('admin.bookings.flash_reschedule_failed'));
             return Response::redirect("{$redirectBase}/{$id}");
         }
     }
@@ -450,14 +451,14 @@ final class BookingsController
                 [$tenantId]
             );
 
-            $old = $_SESSION['_old_input'] ?? [];
+            $old = FormState::old();
 
             return $this->render('admin.tenants.bookings.create-resource', __('admin.bookings.create_title'), [
                 'documentTitle' => __('admin.bookings.create_title'),
                 'tenant'        => $tenant,
                 'tenantId'      => $tenantId,
                 'resources'     => $resources,
-                'flash'         => $this->flash(),
+                'flash'         => FormState::getToast(),
                 'old'           => $old,
             ]);
         }
@@ -472,14 +473,14 @@ final class BookingsController
                 [$tenantId]
             );
 
-            $old = $_SESSION['_old_input'] ?? [];
+            $old = FormState::old();
 
             return $this->render('admin.tenants.bookings.create-capacity', __('admin.bookings.create_title'), [
                 'documentTitle' => __('admin.bookings.create_title'),
                 'tenant'        => $tenant,
                 'tenantId'      => $tenantId,
                 'slots'         => $slots,
-                'flash'         => $this->flash(),
+                'flash'         => FormState::getToast(),
                 'old'           => $old,
             ]);
         }
@@ -495,14 +496,14 @@ final class BookingsController
                 [$tenantId]
             );
 
-            $old = $_SESSION['_old_input'] ?? [];
+            $old = FormState::old();
 
             return $this->render('admin.tenants.bookings.create-event', __('admin.bookings.create_title'), [
                 'documentTitle' => __('admin.bookings.create_title'),
                 'tenant'        => $tenant,
                 'tenantId'      => $tenantId,
                 'events'        => $events,
-                'flash'         => $this->flash(),
+                'flash'         => FormState::getToast(),
                 'old'           => $old,
             ]);
         }
@@ -543,7 +544,7 @@ final class BookingsController
         }
 
         // Merge query params (calendar deep link) with old input for prefill
-        $old = $_SESSION['_old_input'] ?? [];
+        $old = FormState::old();
         $queryDate = $request->string('date');
         if ($queryDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $queryDate) && !isset($old['date'])) {
             $old['date'] = $queryDate;
@@ -560,7 +561,7 @@ final class BookingsController
             'services'        => $services,
             'staff'           => $staff,
             'serviceStaffMap' => $serviceStaffMap,
-            'flash'           => $this->flash(),
+            'flash'           => FormState::getToast(),
             'old'             => $old,
         ]);
     }
@@ -605,37 +606,37 @@ final class BookingsController
 
         // ── Validation ──
         if (!$serviceId) {
-            $this->setFlash('error', __('admin.bookings.error_service_required'));
+            FormState::toast('error', __('admin.bookings.error_service_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ($dateStr === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
-            $this->setFlash('error', __('admin.bookings.error_date_required'));
+            FormState::toast('error', __('admin.bookings.error_date_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ($timeStr === '' || !preg_match('/^\d{2}:\d{2}$/', $timeStr)) {
-            $this->setFlash('error', __('admin.bookings.error_time_required'));
+            FormState::toast('error', __('admin.bookings.error_time_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ($customerName === '') {
-            $this->setFlash('error', __('admin.bookings.error_name_required'));
+            FormState::toast('error', __('admin.bookings.error_name_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ($customerEmail === '') {
-            $this->setFlash('error', __('admin.bookings.error_email_required'));
+            FormState::toast('error', __('admin.bookings.error_email_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if (!filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
-            $this->setFlash('error', __('admin.bookings.error_email_invalid'));
+            FormState::toast('error', __('admin.bookings.error_email_invalid'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ((int) ($tenant['require_phone'] ?? 0) === 1 && $customerPhone === '') {
-            $this->setFlash('error', __('admin.bookings.error_phone_required'));
+            FormState::toast('error', __('admin.bookings.error_phone_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
@@ -650,7 +651,7 @@ final class BookingsController
             );
 
             if (empty($pivot)) {
-                $this->setFlash('error', __('admin.bookings.error_staff_invalid'));
+                FormState::toast('error', __('admin.bookings.error_staff_invalid'));
                 return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
             }
         }
@@ -707,7 +708,7 @@ final class BookingsController
 
             if (!$stillAvailable) {
                 $pdo->rollBack();
-                $this->setFlash('error', __('admin.bookings.flash_slot_taken'));
+                FormState::toast('error', __('admin.bookings.flash_slot_taken'));
                 return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
             }
 
@@ -750,9 +751,9 @@ final class BookingsController
             );
 
             // Clear old input on success
-            unset($_SESSION['_old_input']);
+            // Old input cleared by FormState::old()
 
-            $this->setFlash('success', __('admin.bookings.flash_created'));
+            FormState::toast('success', __('admin.bookings.flash_created'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/{$result['id']}");
 
         } catch (\Throwable $e) {
@@ -765,7 +766,7 @@ final class BookingsController
                 'error'  => $e->getMessage(),
             ]);
 
-            $this->setFlash('error', __('admin.bookings.flash_create_failed'));
+            FormState::toast('error', __('admin.bookings.flash_create_failed'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
     }
@@ -787,32 +788,32 @@ final class BookingsController
 
         // Validation
         if (!$resourceId) {
-            $this->setFlash('error', __('admin.bookings.error_resource_required'));
+            FormState::toast('error', __('admin.bookings.error_resource_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ($checkIn === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkIn)) {
-            $this->setFlash('error', __('admin.bookings.error_check_in_required'));
+            FormState::toast('error', __('admin.bookings.error_check_in_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ($checkOut === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkOut)) {
-            $this->setFlash('error', __('admin.bookings.error_check_out_required'));
+            FormState::toast('error', __('admin.bookings.error_check_out_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ($customerName === '') {
-            $this->setFlash('error', __('admin.bookings.error_name_required'));
+            FormState::toast('error', __('admin.bookings.error_name_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ($customerEmail === '' || !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
-            $this->setFlash('error', __('admin.bookings.error_email_invalid'));
+            FormState::toast('error', __('admin.bookings.error_email_invalid'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ((int) ($tenant['require_phone'] ?? 0) === 1 && $customerPhone === '') {
-            $this->setFlash('error', __('admin.bookings.error_phone_required'));
+            FormState::toast('error', __('admin.bookings.error_phone_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
@@ -826,7 +827,7 @@ final class BookingsController
         );
 
         if (!$availability['available']) {
-            $this->setFlash('error', __('admin.bookings.flash_resource_unavailable'));
+            FormState::toast('error', __('admin.bookings.flash_resource_unavailable'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
@@ -849,7 +850,7 @@ final class BookingsController
             $recheck = ResourceCalculator::checkAvailability($tenant, $resourceId, $checkIn, $checkOut, $guestCount);
             if (!$recheck['available']) {
                 $pdo->rollBack();
-                $this->setFlash('error', __('admin.bookings.flash_resource_unavailable'));
+                FormState::toast('error', __('admin.bookings.flash_resource_unavailable'));
                 return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
             }
 
@@ -888,8 +889,8 @@ final class BookingsController
                 [$customerId]
             );
 
-            unset($_SESSION['_old_input']);
-            $this->setFlash('success', __('admin.bookings.flash_created'));
+            // Old input cleared by FormState::old()
+            FormState::toast('success', __('admin.bookings.flash_created'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/{$result['id']}");
 
         } catch (\Throwable $e) {
@@ -902,7 +903,7 @@ final class BookingsController
                 'error'  => $e->getMessage(),
             ]);
 
-            $this->setFlash('error', __('admin.bookings.flash_create_failed'));
+            FormState::toast('error', __('admin.bookings.flash_create_failed'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
     }
@@ -923,34 +924,34 @@ final class BookingsController
 
         // Validation
         if (!$slotId) {
-            $this->setFlash('error', __('admin.bookings.error_slot_required'));
+            FormState::toast('error', __('admin.bookings.error_slot_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ($dateStr === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
-            $this->setFlash('error', __('admin.bookings.error_date_required'));
+            FormState::toast('error', __('admin.bookings.error_date_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ($customerName === '') {
-            $this->setFlash('error', __('admin.bookings.error_name_required'));
+            FormState::toast('error', __('admin.bookings.error_name_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ($customerEmail === '' || !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
-            $this->setFlash('error', __('admin.bookings.error_email_invalid'));
+            FormState::toast('error', __('admin.bookings.error_email_invalid'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         if ((int) ($tenant['require_phone'] ?? 0) === 1 && $customerPhone === '') {
-            $this->setFlash('error', __('admin.bookings.error_phone_required'));
+            FormState::toast('error', __('admin.bookings.error_phone_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
         // Pre-lock availability check
         $availability = CapacityCalculator::checkSlotAvailability($tenant, $slotId, $dateStr, $partySize);
         if (!$availability['available']) {
-            $this->setFlash('error', __('admin.bookings.flash_capacity_exceeded'));
+            FormState::toast('error', __('admin.bookings.flash_capacity_exceeded'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
@@ -960,7 +961,7 @@ final class BookingsController
             [$slotId, $tenantId]
         );
         if (empty($slotRows)) {
-            $this->setFlash('error', __('admin.bookings.error_slot_required'));
+            FormState::toast('error', __('admin.bookings.error_slot_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
         $slot = $slotRows[0];
@@ -986,7 +987,7 @@ final class BookingsController
             $recheck = CapacityCalculator::checkSlotAvailability($tenant, $slotId, $dateStr, $partySize);
             if (!$recheck['available']) {
                 $pdo->rollBack();
-                $this->setFlash('error', __('admin.bookings.flash_capacity_exceeded'));
+                FormState::toast('error', __('admin.bookings.flash_capacity_exceeded'));
                 return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
             }
 
@@ -1020,8 +1021,8 @@ final class BookingsController
                 [$customerId]
             );
 
-            unset($_SESSION['_old_input']);
-            $this->setFlash('success', __('admin.bookings.flash_created'));
+            // Old input cleared by FormState::old()
+            FormState::toast('success', __('admin.bookings.flash_created'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/{$result['id']}");
 
         } catch (\Throwable $e) {
@@ -1034,7 +1035,7 @@ final class BookingsController
                 'error'  => $e->getMessage(),
             ]);
 
-            $this->setFlash('error', __('admin.bookings.flash_create_failed'));
+            FormState::toast('error', __('admin.bookings.flash_create_failed'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
     }
@@ -1056,11 +1057,11 @@ final class BookingsController
 
         // Validation
         if (!$eventId) {
-            $this->setFlash('error', __('admin.events.error_name_required'));
+            FormState::toast('error', __('admin.events.error_name_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
         if (!$customerName || !$customerEmail) {
-            $this->setFlash('error', __('admin.bookings.flash_create_failed'));
+            FormState::toast('error', __('admin.bookings.flash_create_failed'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
@@ -1070,7 +1071,7 @@ final class BookingsController
             [$eventId, $tenantId]
         );
         if (empty($events)) {
-            $this->setFlash('error', __('admin.events.error_name_required'));
+            FormState::toast('error', __('admin.events.error_name_required'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
         $event = $events[0];
@@ -1083,7 +1084,7 @@ final class BookingsController
         // Check availability
         $availability = EventCalculator::checkAvailability($tenant, $eventId, $date, $spotCount);
         if (!$availability['available']) {
-            $this->setFlash('error', __('booking.api.event_full'));
+            FormState::toast('error', __('booking.api.event_full'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
 
@@ -1126,8 +1127,8 @@ final class BookingsController
                 [$customerId]
             );
 
-            unset($_SESSION['_old_input']);
-            $this->setFlash('success', __('admin.bookings.flash_created'));
+            // Old input cleared by FormState::old()
+            FormState::toast('success', __('admin.bookings.flash_created'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/{$result['id']}");
 
         } catch (\Throwable $e) {
@@ -1140,7 +1141,7 @@ final class BookingsController
                 'error'  => $e->getMessage(),
             ]);
 
-            $this->setFlash('error', __('admin.bookings.flash_create_failed'));
+            FormState::toast('error', __('admin.bookings.flash_create_failed'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/create");
         }
     }
@@ -1154,7 +1155,7 @@ final class BookingsController
         $booking = Booking::find($id);
 
         if ($booking === null) {
-            $this->setFlash('error', __('admin.bookings.flash_status_failed'));
+            FormState::toast('error', __('admin.bookings.flash_status_failed'));
             return Response::redirect($redirectBase);
         }
 
@@ -1181,7 +1182,7 @@ final class BookingsController
         $allowed = $transitions[$oldStatus] ?? [];
 
         if (!in_array($newStatus, $allowed, true)) {
-            $this->setFlash('error', __('admin.bookings.flash_status_failed'));
+            FormState::toast('error', __('admin.bookings.flash_status_failed'));
             return Response::redirect("{$redirectBase}/{$id}");
         }
 
@@ -1207,9 +1208,9 @@ final class BookingsController
             // Reschedule confirmation emails should only be sent from a dedicated
             // reschedule flow that updates booking timestamps first.
 
-            $this->setFlash('success', __('admin.bookings.flash_status_updated'));
+            FormState::toast('success', __('admin.bookings.flash_status_updated'));
         } else {
-            $this->setFlash('error', __('admin.bookings.flash_status_failed'));
+            FormState::toast('error', __('admin.bookings.flash_status_failed'));
         }
 
         return Response::redirect("{$redirectBase}/{$id}");
@@ -1436,10 +1437,9 @@ final class BookingsController
      */
     private function storeOldInput(Request $request): void
     {
-        Auth::startSession();
         $old = $_POST;
         unset($old['_csrf_token']);
-        $_SESSION['_old_input'] = $old;
+        FormState::flashInput($old);
     }
 
     private function forbidden(Request $request): Response
@@ -1459,16 +1459,5 @@ final class BookingsController
         ], 403);
     }
 
-    private function setFlash(string $type, string $message): void
-    {
-        Auth::startSession();
-        $_SESSION['settings_flash'] = ['type' => $type, 'message' => $message];
-    }
 
-    private function flash(): ?array
-    {
-        $flash = $_SESSION['settings_flash'] ?? null;
-        unset($_SESSION['settings_flash']);
-        return $flash;
-    }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
+use App\Engine\FormState;
 use App\Engine\AuditLog;
 use App\Engine\Database;
 use App\Engine\Request;
@@ -52,7 +53,7 @@ final class CapacitySlotsController
             'tenant'        => $tenant,
             'tenantId'      => $tenantId,
             'slots'         => $slots,
-            'flash'         => $this->flash(),
+            'flash'         => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -83,17 +84,17 @@ final class CapacitySlotsController
         }
 
         if ($dayOfWeek < 0 || $dayOfWeek > 6) {
-            $this->setFlash('error', __('admin.capacity_slots.error_invalid_day'));
+            FormState::toast('error', __('admin.capacity_slots.error_invalid_day'));
             return Response::redirect("/admin/tenants/{$tenantId}/capacity-slots");
         }
 
         if (!preg_match('/^\d{2}:\d{2}$/', $startTime) || !preg_match('/^\d{2}:\d{2}$/', $endTime)) {
-            $this->setFlash('error', __('admin.capacity_slots.error_invalid_time'));
+            FormState::toast('error', __('admin.capacity_slots.error_invalid_time'));
             return Response::redirect("/admin/tenants/{$tenantId}/capacity-slots");
         }
 
         if ($startTime >= $endTime) {
-            $this->setFlash('error', __('admin.capacity_slots.error_end_before_start'));
+            FormState::toast('error', __('admin.capacity_slots.error_end_before_start'));
             return Response::redirect("/admin/tenants/{$tenantId}/capacity-slots");
         }
 
@@ -112,7 +113,7 @@ final class CapacitySlotsController
             'label'       => $label,
         ], $tenantId);
 
-        $this->setFlash('success', __('admin.capacity_slots.flash_created'));
+        FormState::toast('success', __('admin.capacity_slots.flash_created'));
         return Response::redirect("/admin/tenants/{$tenantId}/capacity-slots");
     }
 
@@ -148,7 +149,7 @@ final class CapacitySlotsController
             $tenantId,
         );
 
-        $this->setFlash('success', $newState ? __('admin.capacity_slots.flash_activated') : __('admin.capacity_slots.flash_deactivated'));
+        FormState::toast('success', $newState ? __('admin.capacity_slots.flash_activated') : __('admin.capacity_slots.flash_deactivated'));
         return Response::redirect("/admin/tenants/{$tenantId}/capacity-slots");
     }
 
@@ -168,7 +169,7 @@ final class CapacitySlotsController
 
         AuditLog::log('capacity_slot.deleted', 'capacity_slot', $slotId, [], $tenantId);
 
-        $this->setFlash('success', __('admin.capacity_slots.flash_deleted'));
+        FormState::toast('success', __('admin.capacity_slots.flash_deleted'));
         return Response::redirect("/admin/tenants/{$tenantId}/capacity-slots");
     }
 
@@ -209,16 +210,5 @@ final class CapacitySlotsController
         ], 403);
     }
 
-    private function setFlash(string $type, string $message): void
-    {
-        Auth::startSession();
-        $_SESSION['settings_flash'] = ['type' => $type, 'message' => $message];
-    }
 
-    private function flash(): ?array
-    {
-        $flash = $_SESSION['settings_flash'] ?? null;
-        unset($_SESSION['settings_flash']);
-        return $flash;
-    }
 }

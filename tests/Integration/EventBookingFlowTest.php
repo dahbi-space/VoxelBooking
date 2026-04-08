@@ -304,6 +304,12 @@ final class EventBookingFlowTest extends TestCase
 
     public function testAdminEventEditFormLoads(): void
     {
+        // Ensure the event name is in its original state
+        Database::execute(
+            "UPDATE `events` SET `name` = 'Integration Test Event' WHERE `id` = ?",
+            [self::$eventId]
+        );
+
         $res = self::httpGetWithCookie(
             '/admin/tenants/' . self::$tenantId . '/events/' . self::$eventId . '/edit',
             self::$operatorCookie

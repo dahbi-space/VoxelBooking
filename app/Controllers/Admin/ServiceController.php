@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
+use App\Engine\FormState;
 use App\Engine\AuditLog;
 use App\Engine\Database;
 use App\Engine\Request;
@@ -54,7 +55,7 @@ final class ServiceController
             'documentTitle' => __('admin.services.title') . ' — ' . $tenant['name'],
             'tenant'   => $tenant,
             'services' => $services,
-            'flash'    => $this->flash(),
+            'flash'    => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -83,8 +84,8 @@ final class ServiceController
             'documentTitle' => __('admin.services.new') . ' — ' . $tenant['name'],
             'tenant' => $tenant,
             'staff'  => $staff,
-            'old'    => $_SESSION['_old_input'] ?? [],
-            'flash'  => $this->flash(),
+            'old' => FormState::old(),
+            'flash'  => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -138,8 +139,8 @@ final class ServiceController
         }
 
         if (!empty($errors)) {
-            $this->setFlash('error', implode(' ', $errors));
-            $_SESSION['_old_input'] = $_POST;
+            FormState::toast('error', implode(' ', $errors));
+            FormState::flashInput($_POST);
             return Response::redirect("/admin/tenants/{$tenantId}/services/create");
         }
 
@@ -147,8 +148,8 @@ final class ServiceController
         if (!empty($staffIds)) {
             $validCount = $this->countValidStaff($staffIds, $tenantId);
             if ($validCount !== count($staffIds)) {
-                $this->setFlash('error', __('admin.services.error_invalid_staff'));
-                $_SESSION['_old_input'] = $_POST;
+                FormState::toast('error', __('admin.services.error_invalid_staff'));
+                FormState::flashInput($_POST);
                 return Response::redirect("/admin/tenants/{$tenantId}/services/create");
             }
         }
@@ -161,8 +162,8 @@ final class ServiceController
             $tenant = $this->loadTenant($tenantId);
             $upload = ImageUpload::store('service-cover', $_FILES['cover_image'], $tenant['slug'] ?? $tenantId);
             if ($upload['error']) {
-                $this->setFlash('error', $upload['error']);
-                $_SESSION['_old_input'] = $_POST;
+                FormState::toast('error', $upload['error']);
+                FormState::flashInput($_POST);
                 return Response::redirect("/admin/tenants/{$tenantId}/services/create");
             }
             $coverImagePath = $upload['path'];
@@ -193,8 +194,8 @@ final class ServiceController
             if ($coverImagePath) {
                 ImageUpload::delete($coverImagePath);
             }
-            $this->setFlash('error', __('admin.common.error_generic'));
-            $_SESSION['_old_input'] = $_POST;
+            FormState::toast('error', __('admin.common.error_generic'));
+            FormState::flashInput($_POST);
             return Response::redirect("/admin/tenants/{$tenantId}/services/create");
         }
 
@@ -203,8 +204,8 @@ final class ServiceController
             'name'      => $name,
         ]);
 
-        unset($_SESSION['_old_input']);
-        $this->setFlash('success', __('admin.services.created'));
+        // Old input cleared by FormState::old()
+        FormState::toast('success', __('admin.services.created'));
         return Response::redirect("/admin/tenants/{$tenantId}/services");
     }
 
@@ -248,8 +249,8 @@ final class ServiceController
             'service'        => $service,
             'staff'          => $staff,
             'linkedStaffIds' => $linkedStaffIds,
-            'old'            => $_SESSION['_old_input'] ?? [],
-            'flash'          => $this->flash(),
+            'old' => FormState::old(),
+            'flash'          => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -304,8 +305,8 @@ final class ServiceController
         }
 
         if (!empty($errors)) {
-            $this->setFlash('error', implode(' ', $errors));
-            $_SESSION['_old_input'] = $_POST;
+            FormState::toast('error', implode(' ', $errors));
+            FormState::flashInput($_POST);
             return Response::redirect("/admin/tenants/{$tenantId}/services/{$serviceId}/edit");
         }
 
@@ -313,8 +314,8 @@ final class ServiceController
         if (!empty($staffIds)) {
             $validCount = $this->countValidStaff($staffIds, $tenantId);
             if ($validCount !== count($staffIds)) {
-                $this->setFlash('error', __('admin.services.error_invalid_staff'));
-                $_SESSION['_old_input'] = $_POST;
+                FormState::toast('error', __('admin.services.error_invalid_staff'));
+                FormState::flashInput($_POST);
                 return Response::redirect("/admin/tenants/{$tenantId}/services/{$serviceId}/edit");
             }
         }
@@ -327,8 +328,8 @@ final class ServiceController
         if (!empty($_FILES['cover_image']['tmp_name'])) {
             $upload = ImageUpload::store('service-cover', $_FILES['cover_image'], $tenant['slug'] ?? $tenantId, $coverImagePath);
             if ($upload['error']) {
-                $this->setFlash('error', $upload['error']);
-                $_SESSION['_old_input'] = $_POST;
+                FormState::toast('error', $upload['error']);
+                FormState::flashInput($_POST);
                 return Response::redirect("/admin/tenants/{$tenantId}/services/{$serviceId}/edit");
             }
             $coverImagePath = $upload['path'];
@@ -362,8 +363,8 @@ final class ServiceController
             'name'      => $name,
         ]);
 
-        unset($_SESSION['_old_input']);
-        $this->setFlash('success', __('admin.services.updated'));
+        // Old input cleared by FormState::old()
+        FormState::toast('success', __('admin.services.updated'));
         return Response::redirect("/admin/tenants/{$tenantId}/services");
     }
 
@@ -397,7 +398,7 @@ final class ServiceController
             'tenant_id' => $tenantId,
         ]);
 
-        $this->setFlash('success', __('admin.services.activated'));
+        FormState::toast('success', __('admin.services.activated'));
         return Response::redirect("/admin/tenants/{$tenantId}/services");
     }
 
@@ -431,7 +432,7 @@ final class ServiceController
             'tenant_id' => $tenantId,
         ]);
 
-        $this->setFlash('success', __('admin.services.deactivated'));
+        FormState::toast('success', __('admin.services.deactivated'));
         return Response::redirect("/admin/tenants/{$tenantId}/services");
     }
 
@@ -601,16 +602,5 @@ final class ServiceController
         ], 403);
     }
 
-    private function setFlash(string $type, string $message): void
-    {
-        Auth::startSession();
-        $_SESSION['settings_flash'] = ['type' => $type, 'message' => $message];
-    }
 
-    private function flash(): ?array
-    {
-        $flash = $_SESSION['settings_flash'] ?? null;
-        unset($_SESSION['settings_flash']);
-        return $flash;
-    }
 }

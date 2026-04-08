@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
+use App\Engine\FormState;
 use App\Engine\AuditLog;
 use App\Engine\Database;
 use App\Engine\ImageUpload;
@@ -65,7 +66,7 @@ final class StaffController
             'documentTitle' => __('admin.staff.title') . ' — ' . $tenant['name'],
             'tenant' => $tenant,
             'staff'  => $staff,
-            'flash'  => $this->flash(),
+            'flash'  => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -94,8 +95,8 @@ final class StaffController
             'documentTitle' => __('admin.staff.new') . ' — ' . $tenant['name'],
             'tenant'   => $tenant,
             'services' => $services,
-            'old'      => $_SESSION['_old_input'] ?? [],
-            'flash'    => $this->flash(),
+            'old' => FormState::old(),
+            'flash'    => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -148,12 +149,12 @@ final class StaffController
         }
 
         if (!empty($errors)) {
-            $this->setFlash('error', implode(' ', $errors));
-            $_SESSION['_old_input'] = [
+            FormState::toast('error', implode(' ', $errors));
+            FormState::flashInput([
                 'name' => $name, 'email' => $email, 'phone' => $phone,
                 'title' => $title, 'bio' => $bio,
                 'service_ids' => $serviceIds,
-            ];
+            ]);
             return Response::redirect("/admin/tenants/{$tenantId}/staff/create");
         }
 
@@ -164,12 +165,12 @@ final class StaffController
         if (!empty($_FILES['avatar']['tmp_name'])) {
             $upload = ImageUpload::store('avatar', $_FILES['avatar'], $tenant['slug']);
             if ($upload['error']) {
-                $this->setFlash('error', $upload['error']);
-                $_SESSION['_old_input'] = [
+                FormState::toast('error', $upload['error']);
+                FormState::flashInput([
                     'name' => $name, 'email' => $email, 'phone' => $phone,
                     'title' => $title, 'bio' => $bio,
                     'service_ids' => $serviceIds,
-                ];
+                ]);
                 return Response::redirect("/admin/tenants/{$tenantId}/staff/create");
             }
             $avatarPath = $upload['path'];
@@ -196,7 +197,7 @@ final class StaffController
             if ($avatarPath) {
                 ImageUpload::delete($avatarPath);
             }
-            $this->setFlash('error', __('admin.common.error_generic'));
+            FormState::toast('error', __('admin.common.error_generic'));
             return Response::redirect("/admin/tenants/{$tenantId}/staff/create");
         }
 
@@ -206,8 +207,8 @@ final class StaffController
             'email'     => AuditLog::hashEmail($email),
         ]);
 
-        unset($_SESSION['_old_input']);
-        $this->setFlash('success', __('admin.staff.created'));
+        // Old input cleared by FormState::old()
+        FormState::toast('success', __('admin.staff.created'));
         return Response::redirect("/admin/tenants/{$tenantId}/staff");
     }
 
@@ -248,8 +249,8 @@ final class StaffController
             'member'           => $member,
             'services'         => $services,
             'linkedServiceIds' => $linkedServiceIds,
-            'old'              => $_SESSION['_old_input'] ?? [],
-            'flash'            => $this->flash(),
+            'old' => FormState::old(),
+            'flash'            => FormState::getToast(),
         ], $tenantId);
     }
 
@@ -304,12 +305,12 @@ final class StaffController
         }
 
         if (!empty($errors)) {
-            $this->setFlash('error', implode(' ', $errors));
-            $_SESSION['_old_input'] = [
+            FormState::toast('error', implode(' ', $errors));
+            FormState::flashInput([
                 'name' => $name, 'email' => $email, 'phone' => $phone,
                 'title' => $title, 'bio' => $bio,
                 'service_ids' => $serviceIds,
-            ];
+            ]);
             return Response::redirect("/admin/tenants/{$tenantId}/staff/{$staffId}/edit");
         }
 
@@ -326,12 +327,12 @@ final class StaffController
         if (!empty($_FILES['avatar']['tmp_name'])) {
             $upload = ImageUpload::store('avatar', $_FILES['avatar'], $tenant['slug'], $avatarPath);
             if ($upload['error']) {
-                $this->setFlash('error', $upload['error']);
-                $_SESSION['_old_input'] = [
+                FormState::toast('error', $upload['error']);
+                FormState::flashInput([
                     'name' => $name, 'email' => $email, 'phone' => $phone,
                     'title' => $title, 'bio' => $bio,
                     'service_ids' => $serviceIds,
-                ];
+                ]);
                 return Response::redirect("/admin/tenants/{$tenantId}/staff/{$staffId}/edit");
             }
             $avatarPath = $upload['path'];
@@ -358,7 +359,7 @@ final class StaffController
                 }
             });
         } catch (\Throwable $e) {
-            $this->setFlash('error', __('admin.common.error_generic'));
+            FormState::toast('error', __('admin.common.error_generic'));
             return Response::redirect("/admin/tenants/{$tenantId}/staff/{$staffId}/edit");
         }
 
@@ -367,8 +368,8 @@ final class StaffController
             !empty($changes) ? ['changed' => $changes] : []
         ));
 
-        unset($_SESSION['_old_input']);
-        $this->setFlash('success', __('admin.staff.updated'));
+        // Old input cleared by FormState::old()
+        FormState::toast('success', __('admin.staff.updated'));
         return Response::redirect("/admin/tenants/{$tenantId}/staff");
     }
 
@@ -403,7 +404,7 @@ final class StaffController
             'email'     => AuditLog::hashEmail($member['email']),
         ]);
 
-        $this->setFlash('success', __('admin.staff.activated'));
+        FormState::toast('success', __('admin.staff.activated'));
         return Response::redirect("/admin/tenants/{$tenantId}/staff");
     }
 
@@ -438,7 +439,7 @@ final class StaffController
             'email'     => AuditLog::hashEmail($member['email']),
         ]);
 
-        $this->setFlash('success', __('admin.staff.deactivated'));
+        FormState::toast('success', __('admin.staff.deactivated'));
         return Response::redirect("/admin/tenants/{$tenantId}/staff");
     }
 
@@ -618,16 +619,5 @@ final class StaffController
         ], 403);
     }
 
-    private function setFlash(string $type, string $message): void
-    {
-        Auth::startSession();
-        $_SESSION['settings_flash'] = ['type' => $type, 'message' => $message];
-    }
 
-    private function flash(): ?array
-    {
-        $flash = $_SESSION['settings_flash'] ?? null;
-        unset($_SESSION['settings_flash']);
-        return $flash;
-    }
 }

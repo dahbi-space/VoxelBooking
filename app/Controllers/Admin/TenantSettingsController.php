@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
+use App\Engine\FormState;
 use App\Engine\AuditLog;
 use App\Engine\BrandColorHelper;
 use App\Engine\Database;
@@ -88,7 +89,7 @@ final class TenantSettingsController
         }
 
         if (!empty($errors)) {
-            $this->setFlash('error', implode(' ', $errors));
+            FormState::toast('error', implode(' ', $errors));
             $this->setOldInput([
                 'name' => $name, 'email' => $email, 'phone' => $phone ?? '',
                 'slug' => $slug ?? '', 'timezone' => $timezone, 'locale' => $locale, 'currency' => $currency,
@@ -169,12 +170,12 @@ final class TenantSettingsController
             // Upload WITHOUT deleting the old file (pass null for $oldPath)
             $upload = ImageUpload::store('logo', $_FILES['logo'], $tenant['slug']);
             if ($upload['error']) {
-                $this->setFlash('error', $upload['error']);
-                $_SESSION['_old_input'] = [
+                FormState::toast('error', $upload['error']);
+                FormState::flashInput([
                     'brand_color'              => $brandColor,
                     'booking_page_heading'     => $heading,
                     'booking_page_description' => $description,
-                ];
+                ]);
                 return Response::redirect("/admin/tenants/{$tenantId}/settings/branding");
             }
             if ($upload['path']) {
@@ -195,12 +196,12 @@ final class TenantSettingsController
             if ($newLogoPath) {
                 ImageUpload::delete($newLogoPath);
             }
-            $_SESSION['_old_input'] = [
+            FormState::flashInput([
                 'brand_color'              => $brandColor,
                 'booking_page_heading'     => $heading,
                 'booking_page_description' => $description,
-            ];
-            $this->setFlash('error', __('admin.common.error_generic'));
+            ]);
+            FormState::toast('error', __('admin.common.error_generic'));
             return Response::redirect("/admin/tenants/{$tenantId}/settings/branding");
         }
 
@@ -384,7 +385,7 @@ final class TenantSettingsController
         }
 
         if (!empty($errors)) {
-            $this->setFlash('error', implode(' ', $errors));
+            FormState::toast('error', implode(' ', $errors));
             $this->setOldInput([
                 'notification_email'     => $notifEmail ?? '',
                 'notify_on_booking'      => $request->string('notify_on_booking'),
@@ -437,7 +438,7 @@ final class TenantSettingsController
         }
 
         if (empty($changes)) {
-            $this->setFlash('info', __('admin.tenant_settings.no_changes'));
+            FormState::toast('info', __('admin.tenant_settings.no_changes'));
             return;
         }
 
@@ -461,7 +462,7 @@ final class TenantSettingsController
             'changes' => $changes,
         ]);
 
-        $this->setFlash('success', __('admin.tenant_settings.saved'));
+        FormState::toast('success', __('admin.tenant_settings.saved'));
     }
 
     private function render(string $template, string $tenantId, array $tenant, string $activeTab, array $extraData = []): Response
@@ -477,7 +478,7 @@ final class TenantSettingsController
             'tenantId'      => $tenantId,
             'tenant'        => $tenant,
             'old'           => $this->getOldInput(),
-            'flash'         => $this->flash(),
+            'flash'         => FormState::getToast(),
         ], $extraData));
     }
 
@@ -498,30 +499,17 @@ final class TenantSettingsController
         ], 403);
     }
 
-    private function setFlash(string $type, string $message): void
-    {
-        Auth::startSession();
-        $_SESSION['settings_flash'] = ['type' => $type, 'message' => $message];
-    }
 
-    private function flash(): ?array
-    {
-        $flash = $_SESSION['settings_flash'] ?? null;
-        unset($_SESSION['settings_flash']);
-        return $flash;
-    }
 
     private function setOldInput(array $data): void
     {
-        Auth::startSession();
-        $_SESSION['settings_old_input'] = $data;
+        FormState::flashInput($data);
     }
 
     private function getOldInput(): ?array
     {
-        $old = $_SESSION['settings_old_input'] ?? null;
-        unset($_SESSION['settings_old_input']);
-        return $old;
+        $old = FormState::old();
+        return empty($old) ? null : $old;
     }
 
     // ── Email Templates ──
@@ -555,7 +543,7 @@ final class TenantSettingsController
             'tenant'        => $tenant,
             'templates'     => $templates,
             'old'           => $this->getOldInput(),
-            'flash'         => $this->flash(),
+            'flash'         => FormState::getToast(),
         ]);
     }
 
@@ -695,7 +683,7 @@ final class TenantSettingsController
 
         AuditLog::log('tenant.emails_updated', 'tenant', $tenantId, ['types' => $types], $tenantId);
 
-        $this->setFlash('success', __('admin.tenant_settings.emails_saved'));
+        FormState::toast('success', __('admin.tenant_settings.emails_saved'));
         return Response::redirect("/admin/tenants/{$tenantId}/settings/emails");
     }
 }
