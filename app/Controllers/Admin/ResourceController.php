@@ -143,7 +143,15 @@ final class ResourceController
 
         if (!empty($errors)) {
             FormState::toast('error', implode(' ', $errors));
-            FormState::flashInput($_POST);
+            FormState::flashInput([
+                'name'            => $request->string('name'),
+                'description'     => $request->string('description'),
+                'capacity'        => $request->string('capacity'),
+                'price_per_night' => $request->string('price_per_night'),
+                'min_stay_nights' => $request->string('min_stay_nights'),
+                'max_stay_nights' => $request->string('max_stay_nights'),
+                'amenities'       => $request->string('amenities'),
+            ]);
             return Response::redirect("/admin/tenants/{$tenantId}/resources/create");
         }
 
@@ -158,7 +166,15 @@ final class ResourceController
             $upload = ImageUpload::store('cover', $_FILES['cover_image'], $tenant['slug']);
             if ($upload['error']) {
                 FormState::toast('error', $upload['error']);
-                FormState::flashInput($_POST);
+                FormState::flashInput([
+                'name'            => $request->string('name'),
+                'description'     => $request->string('description'),
+                'capacity'        => $request->string('capacity'),
+                'price_per_night' => $request->string('price_per_night'),
+                'min_stay_nights' => $request->string('min_stay_nights'),
+                'max_stay_nights' => $request->string('max_stay_nights'),
+                'amenities'       => $request->string('amenities'),
+            ]);
                 return Response::redirect("/admin/tenants/{$tenantId}/resources/create");
             }
             $coverPath = $upload['path'];
@@ -189,7 +205,7 @@ final class ResourceController
             'name'      => $name,
         ]);
 
-        // Old input cleared by FormState::old()
+        FormState::clear();
         FormState::toast('success', __('admin.resources.created'));
         return Response::redirect("/admin/tenants/{$tenantId}/resources");
     }
@@ -288,7 +304,15 @@ final class ResourceController
 
         if (!empty($errors)) {
             FormState::toast('error', implode(' ', $errors));
-            FormState::flashInput($_POST);
+            FormState::flashInput([
+                'name'            => $request->string('name'),
+                'description'     => $request->string('description'),
+                'capacity'        => $request->string('capacity'),
+                'price_per_night' => $request->string('price_per_night'),
+                'min_stay_nights' => $request->string('min_stay_nights'),
+                'max_stay_nights' => $request->string('max_stay_nights'),
+                'amenities'       => $request->string('amenities'),
+            ]);
             return Response::redirect("/admin/tenants/{$tenantId}/resources/{$resourceId}/edit");
         }
 
@@ -302,7 +326,15 @@ final class ResourceController
 
         if (!empty($errors)) {
             FormState::toast('error', implode(' ', $errors));
-            FormState::flashInput($_POST);
+            FormState::flashInput([
+                'name'            => $request->string('name'),
+                'description'     => $request->string('description'),
+                'capacity'        => $request->string('capacity'),
+                'price_per_night' => $request->string('price_per_night'),
+                'min_stay_nights' => $request->string('min_stay_nights'),
+                'max_stay_nights' => $request->string('max_stay_nights'),
+                'amenities'       => $request->string('amenities'),
+            ]);
             return Response::redirect("/admin/tenants/{$tenantId}/resources/{$resourceId}/edit");
         }
 
@@ -314,7 +346,15 @@ final class ResourceController
             $upload = ImageUpload::store('cover', $_FILES['cover_image'], $tenant['slug'], $coverPath);
             if ($upload['error']) {
                 FormState::toast('error', $upload['error']);
-                FormState::flashInput($_POST);
+                FormState::flashInput([
+                'name'            => $request->string('name'),
+                'description'     => $request->string('description'),
+                'capacity'        => $request->string('capacity'),
+                'price_per_night' => $request->string('price_per_night'),
+                'min_stay_nights' => $request->string('min_stay_nights'),
+                'max_stay_nights' => $request->string('max_stay_nights'),
+                'amenities'       => $request->string('amenities'),
+            ]);
                 return Response::redirect("/admin/tenants/{$tenantId}/resources/{$resourceId}/edit");
             }
             $coverPath = $upload['path'];
@@ -341,7 +381,7 @@ final class ResourceController
             'name'      => $name,
         ]);
 
-        // Old input cleared by FormState::old()
+        FormState::clear();
         FormState::toast('success', __('admin.resources.updated'));
         return Response::redirect("/admin/tenants/{$tenantId}/resources");
     }

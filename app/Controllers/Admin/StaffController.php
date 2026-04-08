@@ -207,7 +207,7 @@ final class StaffController
             'email'     => AuditLog::hashEmail($email),
         ]);
 
-        // Old input cleared by FormState::old()
+        FormState::clear();
         FormState::toast('success', __('admin.staff.created'));
         return Response::redirect("/admin/tenants/{$tenantId}/staff");
     }
@@ -368,7 +368,7 @@ final class StaffController
             !empty($changes) ? ['changed' => $changes] : []
         ));
 
-        // Old input cleared by FormState::old()
+        FormState::clear();
         FormState::toast('success', __('admin.staff.updated'));
         return Response::redirect("/admin/tenants/{$tenantId}/staff");
     }

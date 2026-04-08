@@ -6,7 +6,7 @@ namespace App\Controllers\Install;
 
 use App\Engine\Database;
 use App\Engine\EnvWriter;
-use App\Engine\Flash;
+use App\Engine\FormState;
 use App\Engine\Migrator;
 use App\Engine\Request;
 use App\Engine\Response;
@@ -42,7 +42,7 @@ final class WizardController
                 'step' => 'complete',
                 'checks' => [],
                 'errors' => [],
-                'flash' => Flash::get(),
+                'flash' => (($_toast = FormState::getToast()) !== null) ? [$_toast] : [],
                 'session' => $_SESSION['install'] ?? [],
                 'csrfToken' => CsrfMiddleware::generateToken(),
             ]);
@@ -54,7 +54,7 @@ final class WizardController
             'step' => $step,
             'checks' => $this->runSystemChecks(),
             'errors' => [],
-            'flash' => Flash::get(),
+            'flash' => (($_toast = FormState::getToast()) !== null) ? [$_toast] : [],
             'session' => $_SESSION['install'] ?? [],
             'csrfToken' => CsrfMiddleware::generateToken(),
         ];
@@ -159,7 +159,7 @@ final class WizardController
             $_SESSION['install']['mysql_version'] = $version;
             $_SESSION['install']['migrations_run'] = $count;
 
-            Flash::set('success', str_replace([':version', ':count'], [$version, $count], __('install.flash.db_connected')));
+            FormState::toast('success', str_replace([':version', ':count'], [$version, $count], __('install.flash.db_connected')));
 
             return Response::redirect('/install?step=3');
         } catch (\Throwable $e) {
@@ -184,7 +184,7 @@ final class WizardController
 
         if ($skip === '1') {
             $_SESSION['install']['mail_configured'] = false;
-            Flash::set('info', __('install.flash.email_skipped'));
+            FormState::toast('info', __('install.flash.email_skipped'));
 
             return Response::redirect('/install?step=4');
         }
@@ -223,7 +223,7 @@ final class WizardController
         }
 
         $_SESSION['install']['mail_configured'] = true;
-        Flash::set('success', __('install.flash.email_saved'));
+        FormState::toast('success', __('install.flash.email_saved'));
 
         return Response::redirect('/install?step=4');
     }
@@ -288,7 +288,7 @@ final class WizardController
         $_SESSION['install']['operator_id'] = $operatorId;
         $_SESSION['install']['operator_email'] = $request->string('email');
 
-        Flash::set('success', __('install.flash.operator_created'));
+        FormState::toast('success', __('install.flash.operator_created'));
 
         return Response::redirect('/install?step=5');
     }
@@ -371,7 +371,7 @@ final class WizardController
 
         $this->setSetting('installed_at', date('Y-m-d H:i:s'));
 
-        Flash::set('success', __('install.flash.install_complete'));
+        FormState::toast('success', __('install.flash.install_complete'));
 
         return Response::redirect('/install?step=complete');
     }

@@ -8,7 +8,7 @@ use App\Engine\AuditLog;
 use App\Engine\Auth;
 use App\Engine\CustomerAnonymizer;
 use App\Engine\Database;
-use App\Engine\Flash;
+use App\Engine\FormState;
 use App\Engine\Logger;
 use App\Engine\Request;
 use App\Engine\Response;
@@ -55,6 +55,7 @@ final class DeletionQueueController
             'pendingRequests'   => $pendingRequests,
             'processedRequests' => $processedRequests,
             'pageTitle'         => __('admin.deletion.page_title'),
+            'flash'             => FormState::getToast(),
         ]);
     }
 
@@ -66,7 +67,7 @@ final class DeletionQueueController
         $customerId = $request->string('customer_id');
 
         if (empty($customerId)) {
-            Flash::set('error', __('admin.deletion.missing_customer_id'));
+            FormState::toast('error', __('admin.deletion.missing_customer_id'));
             return Response::redirect('/admin/deletion-queue');
         }
 
@@ -83,7 +84,7 @@ final class DeletionQueueController
         );
 
         if (empty($rows)) {
-            Flash::set('error', __('admin.deletion.not_found'));
+            FormState::toast('error', __('admin.deletion.not_found'));
             return Response::redirect('/admin/deletion-queue');
         }
 
@@ -94,7 +95,7 @@ final class DeletionQueueController
             $result = CustomerAnonymizer::anonymize($customerId);
 
             if (!$result['anonymized']) {
-                Flash::set('error', str_replace(':reason', $result['reason'] ?? 'unknown', __('admin.deletion.anonymize_failed')));
+                FormState::toast('error', str_replace(':reason', $result['reason'] ?? 'unknown', __('admin.deletion.anonymize_failed')));
                 return Response::redirect('/admin/deletion-queue');
             }
 
@@ -111,13 +112,13 @@ final class DeletionQueueController
                 $customer['tenant_id'],
             );
 
-            Flash::set('success', __('admin.deletion.anonymized_success'));
+            FormState::toast('success', __('admin.deletion.anonymized_success'));
         } catch (\Throwable $e) {
             Logger::error('Deletion confirmation failed', [
                 'customer_id' => $customerId,
                 'error'       => $e->getMessage(),
             ]);
-            Flash::set('error', str_replace(':error', $e->getMessage(), __('admin.deletion.confirm_failed')));
+            FormState::toast('error', str_replace(':error', $e->getMessage(), __('admin.deletion.confirm_failed')));
         }
 
         return Response::redirect('/admin/deletion-queue');
@@ -132,7 +133,7 @@ final class DeletionQueueController
         $reason = $request->string('reason');
 
         if (empty($customerId)) {
-            Flash::set('error', __('admin.deletion.missing_customer_id'));
+            FormState::toast('error', __('admin.deletion.missing_customer_id'));
             return Response::redirect('/admin/deletion-queue');
         }
 
@@ -149,7 +150,7 @@ final class DeletionQueueController
         );
 
         if (empty($rows)) {
-            Flash::set('error', __('admin.deletion.not_found'));
+            FormState::toast('error', __('admin.deletion.not_found'));
             return Response::redirect('/admin/deletion-queue');
         }
 
@@ -179,16 +180,16 @@ final class DeletionQueueController
                     $customer['tenant_id'],
                 );
 
-                Flash::set('success', __('admin.deletion.dismissed_success'));
+                FormState::toast('success', __('admin.deletion.dismissed_success'));
             } else {
-                Flash::set('error', __('admin.deletion.dismiss_race'));
+                FormState::toast('error', __('admin.deletion.dismiss_race'));
             }
         } catch (\Throwable $e) {
             Logger::error('Deletion dismissal failed', [
                 'customer_id' => $customerId,
                 'error'       => $e->getMessage(),
             ]);
-            Flash::set('error', __('admin.deletion.dismiss_failed'));
+            FormState::toast('error', __('admin.deletion.dismiss_failed'));
         }
 
         return Response::redirect('/admin/deletion-queue');

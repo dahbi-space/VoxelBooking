@@ -140,7 +140,16 @@ final class ServiceController
 
         if (!empty($errors)) {
             FormState::toast('error', implode(' ', $errors));
-            FormState::flashInput($_POST);
+            FormState::flashInput([
+                'name'             => $request->string('name'),
+                'description'      => $request->string('description'),
+                'duration_minutes' => $request->string('duration_minutes'),
+                'price'            => $request->string('price'),
+                'price_label'      => $request->string('price_label'),
+                'category'         => $request->string('category'),
+                'color'            => $request->string('color'),
+                'staff_ids'        => (array) ($_POST['staff_ids'] ?? []),
+            ]);
             return Response::redirect("/admin/tenants/{$tenantId}/services/create");
         }
 
@@ -149,7 +158,16 @@ final class ServiceController
             $validCount = $this->countValidStaff($staffIds, $tenantId);
             if ($validCount !== count($staffIds)) {
                 FormState::toast('error', __('admin.services.error_invalid_staff'));
-                FormState::flashInput($_POST);
+                FormState::flashInput([
+                'name'             => $request->string('name'),
+                'description'      => $request->string('description'),
+                'duration_minutes' => $request->string('duration_minutes'),
+                'price'            => $request->string('price'),
+                'price_label'      => $request->string('price_label'),
+                'category'         => $request->string('category'),
+                'color'            => $request->string('color'),
+                'staff_ids'        => (array) ($_POST['staff_ids'] ?? []),
+            ]);
                 return Response::redirect("/admin/tenants/{$tenantId}/services/create");
             }
         }
@@ -163,7 +181,16 @@ final class ServiceController
             $upload = ImageUpload::store('service-cover', $_FILES['cover_image'], $tenant['slug'] ?? $tenantId);
             if ($upload['error']) {
                 FormState::toast('error', $upload['error']);
-                FormState::flashInput($_POST);
+                FormState::flashInput([
+                'name'             => $request->string('name'),
+                'description'      => $request->string('description'),
+                'duration_minutes' => $request->string('duration_minutes'),
+                'price'            => $request->string('price'),
+                'price_label'      => $request->string('price_label'),
+                'category'         => $request->string('category'),
+                'color'            => $request->string('color'),
+                'staff_ids'        => (array) ($_POST['staff_ids'] ?? []),
+            ]);
                 return Response::redirect("/admin/tenants/{$tenantId}/services/create");
             }
             $coverImagePath = $upload['path'];
@@ -195,7 +222,16 @@ final class ServiceController
                 ImageUpload::delete($coverImagePath);
             }
             FormState::toast('error', __('admin.common.error_generic'));
-            FormState::flashInput($_POST);
+            FormState::flashInput([
+                'name'             => $request->string('name'),
+                'description'      => $request->string('description'),
+                'duration_minutes' => $request->string('duration_minutes'),
+                'price'            => $request->string('price'),
+                'price_label'      => $request->string('price_label'),
+                'category'         => $request->string('category'),
+                'color'            => $request->string('color'),
+                'staff_ids'        => (array) ($_POST['staff_ids'] ?? []),
+            ]);
             return Response::redirect("/admin/tenants/{$tenantId}/services/create");
         }
 
@@ -204,7 +240,7 @@ final class ServiceController
             'name'      => $name,
         ]);
 
-        // Old input cleared by FormState::old()
+        FormState::clear();
         FormState::toast('success', __('admin.services.created'));
         return Response::redirect("/admin/tenants/{$tenantId}/services");
     }
@@ -306,7 +342,16 @@ final class ServiceController
 
         if (!empty($errors)) {
             FormState::toast('error', implode(' ', $errors));
-            FormState::flashInput($_POST);
+            FormState::flashInput([
+                'name'             => $request->string('name'),
+                'description'      => $request->string('description'),
+                'duration_minutes' => $request->string('duration_minutes'),
+                'price'            => $request->string('price'),
+                'price_label'      => $request->string('price_label'),
+                'category'         => $request->string('category'),
+                'color'            => $request->string('color'),
+                'staff_ids'        => (array) ($_POST['staff_ids'] ?? []),
+            ]);
             return Response::redirect("/admin/tenants/{$tenantId}/services/{$serviceId}/edit");
         }
 
@@ -315,7 +360,16 @@ final class ServiceController
             $validCount = $this->countValidStaff($staffIds, $tenantId);
             if ($validCount !== count($staffIds)) {
                 FormState::toast('error', __('admin.services.error_invalid_staff'));
-                FormState::flashInput($_POST);
+                FormState::flashInput([
+                'name'             => $request->string('name'),
+                'description'      => $request->string('description'),
+                'duration_minutes' => $request->string('duration_minutes'),
+                'price'            => $request->string('price'),
+                'price_label'      => $request->string('price_label'),
+                'category'         => $request->string('category'),
+                'color'            => $request->string('color'),
+                'staff_ids'        => (array) ($_POST['staff_ids'] ?? []),
+            ]);
                 return Response::redirect("/admin/tenants/{$tenantId}/services/{$serviceId}/edit");
             }
         }
@@ -329,7 +383,16 @@ final class ServiceController
             $upload = ImageUpload::store('service-cover', $_FILES['cover_image'], $tenant['slug'] ?? $tenantId, $coverImagePath);
             if ($upload['error']) {
                 FormState::toast('error', $upload['error']);
-                FormState::flashInput($_POST);
+                FormState::flashInput([
+                'name'             => $request->string('name'),
+                'description'      => $request->string('description'),
+                'duration_minutes' => $request->string('duration_minutes'),
+                'price'            => $request->string('price'),
+                'price_label'      => $request->string('price_label'),
+                'category'         => $request->string('category'),
+                'color'            => $request->string('color'),
+                'staff_ids'        => (array) ($_POST['staff_ids'] ?? []),
+            ]);
                 return Response::redirect("/admin/tenants/{$tenantId}/services/{$serviceId}/edit");
             }
             $coverImagePath = $upload['path'];
@@ -363,7 +426,7 @@ final class ServiceController
             'name'      => $name,
         ]);
 
-        // Old input cleared by FormState::old()
+        FormState::clear();
         FormState::toast('success', __('admin.services.updated'));
         return Response::redirect("/admin/tenants/{$tenantId}/services");
     }

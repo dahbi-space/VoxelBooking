@@ -226,7 +226,7 @@ final class EventsController
             'is_recurring' => $isRecurring,
         ], $tenantId);
 
-        // Old input cleared by FormState::old()
+        FormState::clear();
         FormState::toast('success', __('admin.events.flash_created'));
         return Response::redirect("/admin/tenants/{$tenantId}/events");
     }

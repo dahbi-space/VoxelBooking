@@ -751,7 +751,7 @@ final class BookingsController
             );
 
             // Clear old input on success
-            // Old input cleared by FormState::old()
+            FormState::clear();
 
             FormState::toast('success', __('admin.bookings.flash_created'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/{$result['id']}");
@@ -889,7 +889,7 @@ final class BookingsController
                 [$customerId]
             );
 
-            // Old input cleared by FormState::old()
+            FormState::clear();
             FormState::toast('success', __('admin.bookings.flash_created'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/{$result['id']}");
 
@@ -1021,7 +1021,7 @@ final class BookingsController
                 [$customerId]
             );
 
-            // Old input cleared by FormState::old()
+            FormState::clear();
             FormState::toast('success', __('admin.bookings.flash_created'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/{$result['id']}");
 
@@ -1127,7 +1127,7 @@ final class BookingsController
                 [$customerId]
             );
 
-            // Old input cleared by FormState::old()
+            FormState::clear();
             FormState::toast('success', __('admin.bookings.flash_created'));
             return Response::redirect("/admin/tenants/{$tenantId}/bookings/{$result['id']}");
 

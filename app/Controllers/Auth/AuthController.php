@@ -6,6 +6,7 @@ namespace App\Controllers\Auth;
 
 use App\Engine\Auth;
 use App\Engine\Database;
+use App\Engine\FormState;
 use App\Engine\LoginToken;
 use App\Engine\Mailer;
 use App\Engine\Request;
@@ -42,14 +43,12 @@ final class AuthController
 
         $csrfToken = CsrfMiddleware::generateToken();
 
-        $error = $_SESSION['login_error'] ?? null;
-        unset($_SESSION['login_error']);
+        $toast = FormState::getToast();
+        $error = ($toast && $toast['type'] === 'error') ? $toast['message'] : null;
+        $success = ($toast && $toast['type'] === 'success') ? $toast['message'] : null;
 
-        $lastEmail = $_SESSION['login_email'] ?? '';
-        unset($_SESSION['login_email']);
-
-        $success = $_SESSION['login_success'] ?? null;
-        unset($_SESSION['login_success']);
+        $old = FormState::old();
+        $lastEmail = $old['email'] ?? '';
 
         return View::response('auth.login', [
             'csrfToken'  => $csrfToken,
@@ -80,8 +79,8 @@ final class AuthController
 
         // Store error and submitted email in session and redirect back to login
         Auth::startSession();
-        $_SESSION['login_error'] = $result['error'] ?? __('auth.invalid_credentials');
-        $_SESSION['login_email'] = $email;
+        FormState::toast('error', $result['error'] ?? __('auth.invalid_credentials'));
+        FormState::flashInput(['email' => $email]);
 
         return Response::redirect('/admin/login');
     }
@@ -103,7 +102,7 @@ final class AuthController
 
         // Gate: mail must be configured for passwordless login
         if (!Mailer::isConfigured()) {
-            $_SESSION['login_error'] = __('auth.passwordless_unavailable');
+            FormState::toast('error', __('auth.passwordless_unavailable'));
             return Response::redirect('/admin/login');
         }
 
@@ -140,26 +139,24 @@ final class AuthController
         // Magic link: always show "check your email" (timing-safe for unknown emails)
         if ($method === 'magic_link') {
             if ($issued && !$sendOk) {
-                $_SESSION['login_error'] = __('auth.send_failed');
+                FormState::toast('error', __('auth.send_failed'));
             } else {
-                $_SESSION['login_success'] = __('auth.check_email');
+                FormState::toast('success', __('auth.check_email'));
             }
             return Response::redirect('/admin/login');
         }
 
         // OTP: only redirect to verify-code if we actually issued and sent
         if ($issued && $sendOk) {
-            $_SESSION['login_success'] = __('auth.code_sent');
+            FormState::toast('success', __('auth.code_sent'));
             return Response::redirect('/admin/login/verify-code?email=' . urlencode($email));
         }
 
         // OTP failed: show error on the login page, not the verify page
         if ($issued && !$sendOk) {
-            $_SESSION['login_error'] = __('auth.send_failed');
+            FormState::toast('error', __('auth.send_failed'));
         } else {
-            // Token creation failed (rate limited, etc.) or email not found
-            // Show generic "check your email" to avoid leaking email existence
-            $_SESSION['login_success'] = __('auth.code_sent');
+            FormState::toast('success', __('auth.code_sent'));
         }
         return Response::redirect('/admin/login');
     }
@@ -179,11 +176,9 @@ final class AuthController
 
         $email = $request->query('email', '');
 
-        $error = $_SESSION['login_error'] ?? null;
-        unset($_SESSION['login_error']);
-
-        $success = $_SESSION['login_success'] ?? null;
-        unset($_SESSION['login_success']);
+        $toast = FormState::getToast();
+        $error = ($toast && $toast['type'] === 'error') ? $toast['message'] : null;
+        $success = ($toast && $toast['type'] === 'success') ? $toast['message'] : null;
 
         return View::response('auth.verify-code', [
             'csrfToken' => CsrfMiddleware::generateToken(),
@@ -208,7 +203,7 @@ final class AuthController
 
         if (!$result['success']) {
             Auth::startSession();
-            $_SESSION['login_error'] = __('auth.code_invalid');
+            FormState::toast('error', __('auth.code_invalid'));
             return Response::redirect('/admin/login/verify-code?email=' . urlencode($email));
         }
 
@@ -217,7 +212,7 @@ final class AuthController
 
         if (!$loginResult['success']) {
             Auth::startSession();
-            $_SESSION['login_error'] = $loginResult['error'] ?? __('auth.invalid_credentials');
+            FormState::toast('error', $loginResult['error'] ?? __('auth.invalid_credentials'));
             return Response::redirect('/admin/login');
         }
 
@@ -243,14 +238,14 @@ final class AuthController
         $tokenRaw = $request->query('token', '');
 
         if ($tokenRaw === '') {
-            $_SESSION['login_error'] = __('auth.link_invalid');
+            FormState::toast('error', __('auth.link_invalid'));
             return Response::redirect('/admin/login');
         }
 
         $result = LoginToken::verifyMagicLink($tokenRaw);
 
         if (!$result['success']) {
-            $_SESSION['login_error'] = __('auth.link_invalid');
+            FormState::toast('error', __('auth.link_invalid'));
             return Response::redirect('/admin/login');
         }
 
@@ -258,7 +253,7 @@ final class AuthController
         $loginResult = Auth::loginByEmail($result['email']);
 
         if (!$loginResult['success']) {
-            $_SESSION['login_error'] = $loginResult['error'] ?? __('auth.invalid_credentials');
+            FormState::toast('error', $loginResult['error'] ?? __('auth.invalid_credentials'));
             return Response::redirect('/admin/login');
         }
 

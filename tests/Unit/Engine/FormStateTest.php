@@ -220,4 +220,29 @@ class FormStateTest extends TestCase
         $errors = FormState::errors();
         $this->assertSame('Required', $errors['email']);
     }
+
+    // ── Helper function tests ──
+
+    public function testErrorClassReturnsIsInvalid(): void
+    {
+        FormState::flashErrors(['email' => 'Invalid email']);
+
+        $this->assertSame('is-invalid', error_class('email'));
+        $this->assertSame('', error_class('name'));
+    }
+
+    public function testClearOnSuccessPathPreventsStaleInput(): void
+    {
+        // Simulate: controller flashes input eagerly, then succeeds
+        FormState::flashInput(['name' => 'John']);
+        FormState::clear(); // success path clears
+        FormState::toast('success', 'Created.');
+
+        // Next GET: no stale old input, but toast is present
+        $old = FormState::old();
+        $this->assertEmpty($old, 'Old input must be cleared on success');
+
+        $toast = FormState::getToast();
+        $this->assertSame('success', $toast['type']);
+    }
 }
