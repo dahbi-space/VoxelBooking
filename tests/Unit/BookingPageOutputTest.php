@@ -107,4 +107,52 @@ final class BookingPageOutputTest extends TestCase
         require $this->templateDir . '/booking/page.php';
         return (string) ob_get_clean();
     }
+
+    /**
+     * Regression: a non-blue tenant brand_color produces matching --vb-brand
+     * tokens in the rendered booking page HTML, not the default blue.
+     */
+    public function test_nonblue_brand_emits_correct_tokens_in_html(): void
+    {
+        $hex = '#E11D48'; // rose-600 — distinctly non-blue
+        $brandStyle = \App\Engine\BrandColorHelper::inlineStyle($hex);
+
+        $html = $this->renderPage([
+            'brandStyle' => $brandStyle,
+        ]);
+
+        // The inline style tag must contain the exact brand color
+        $this->assertStringContainsString('--vb-brand: #E11D48', $html,
+            'Rendered HTML must emit --vb-brand matching the tenant brand_color');
+
+        // Must NOT contain the default blue
+        $this->assertStringNotContainsString('--vb-brand: #2563EB', $html,
+            'Rendered HTML must not fall back to default blue when a custom brand is set');
+
+        // brand-text should be white (rose-600 is dark enough)
+        $this->assertStringContainsString('--vb-brand-text: #FFFFFF', $html,
+            'Rendered HTML must emit auto-derived --vb-brand-text');
+    }
+
+    /**
+     * Regression: BrandColorHelper derives correct auto-text for a
+     * light brand color (high luminance → dark text).
+     */
+    public function test_light_brand_derives_dark_text(): void
+    {
+        $tokens = \App\Engine\BrandColorHelper::derive('#FACC15'); // yellow-400
+
+        $this->assertSame('#111827', $tokens['brand_text'],
+            'High-luminance brand must derive dark text for WCAG contrast');
+
+        // Verify inlineStyle includes all emitted tokens
+        // (brand-light is NOT emitted — it's CSS-derived from brand-rgb)
+        $style = \App\Engine\BrandColorHelper::inlineStyle('#FACC15');
+        $this->assertStringContainsString('--vb-brand: #FACC15', $style);
+        $this->assertStringContainsString('--vb-brand-text: #111827', $style);
+        $this->assertStringContainsString('--vb-brand-hover:', $style);
+        $this->assertStringNotContainsString('--vb-brand-light:', $style,
+            'brand-light must NOT be in inline style — it is CSS-derived from brand-rgb');
+        $this->assertStringContainsString('--vb-brand-rgb:', $style);
+    }
 }

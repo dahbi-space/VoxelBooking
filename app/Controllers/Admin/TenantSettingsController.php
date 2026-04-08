@@ -6,6 +6,7 @@ namespace App\Controllers\Admin;
 
 use App\Engine\Auth;
 use App\Engine\AuditLog;
+use App\Engine\BrandColorHelper;
 use App\Engine\Database;
 use App\Engine\Request;
 use App\Engine\Response;
@@ -13,6 +14,7 @@ use App\Engine\Ulid;
 use App\Engine\Version;
 use App\Engine\View;
 use App\Middleware\CsrfMiddleware;
+use App\Engine\ImageUpload;
 use App\Models\Tenant;
 
 /**
@@ -140,16 +142,15 @@ final class TenantSettingsController
         }
 
         $brandColor    = trim($request->string('brand_color')) ?: '#2563EB';
-        $brandColorTxt = trim($request->string('brand_color_text')) ?: '#FFFFFF';
         $heading       = trim($request->string('booking_page_heading')) ?: null;
         $description   = trim($request->string('booking_page_description')) ?: null;
 
         if (!preg_match('/^#[0-9a-fA-F]{6}$/', $brandColor)) {
             $brandColor = '#2563EB';
         }
-        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $brandColorTxt)) {
-            $brandColorTxt = '#FFFFFF';
-        }
+
+        // Auto-derive text color from brand color via WCAG luminance
+        $brandColorTxt = BrandColorHelper::derive($brandColor)['brand_text'];
 
         $data = [
             'brand_color'              => $brandColor,
@@ -158,7 +159,58 @@ final class TenantSettingsController
             'booking_page_description' => $description,
         ];
 
-        $this->saveTenant($tenantId, $data, $tenant, 'branding');
+        // Handle logo upload / removal
+        $oldLogoPath = $tenant['logo_path'] ?? null;
+        $logoPath    = $oldLogoPath;
+        $newLogoPath = null; // track newly uploaded file for rollback
+        $removeLogo  = ($request->string('remove_logo') === '1');
+
+        if (!empty($_FILES['logo']['tmp_name'])) {
+            // Upload WITHOUT deleting the old file (pass null for $oldPath)
+            $upload = ImageUpload::store('logo', $_FILES['logo'], $tenant['slug']);
+            if ($upload['error']) {
+                $this->setFlash('error', $upload['error']);
+                $_SESSION['_old_input'] = [
+                    'brand_color'              => $brandColor,
+                    'booking_page_heading'     => $heading,
+                    'booking_page_description' => $description,
+                ];
+                return Response::redirect("/admin/tenants/{$tenantId}/settings/branding");
+            }
+            if ($upload['path']) {
+                $newLogoPath = $upload['path'];
+                $logoPath    = $newLogoPath;
+            }
+        } elseif ($removeLogo && $logoPath) {
+            // Defer deletion — just set path to null for now
+            $logoPath = null;
+        }
+        $data['logo_path'] = $logoPath;
+
+        // Persist to DB, then clean up files
+        try {
+            $this->saveTenant($tenantId, $data, $tenant, 'branding');
+        } catch (\Throwable $e) {
+            // DB write failed — roll back the new file if we uploaded one
+            if ($newLogoPath) {
+                ImageUpload::delete($newLogoPath);
+            }
+            $_SESSION['_old_input'] = [
+                'brand_color'              => $brandColor,
+                'booking_page_heading'     => $heading,
+                'booking_page_description' => $description,
+            ];
+            $this->setFlash('error', __('admin.common.error_generic'));
+            return Response::redirect("/admin/tenants/{$tenantId}/settings/branding");
+        }
+
+        // DB write succeeded — now safely clean up the old file
+        if ($newLogoPath && $oldLogoPath && $oldLogoPath !== $newLogoPath) {
+            ImageUpload::delete($oldLogoPath);
+        } elseif ($removeLogo && $oldLogoPath && $logoPath === null) {
+            ImageUpload::delete($oldLogoPath);
+        }
+
         return Response::redirect("/admin/tenants/{$tenantId}/settings/branding");
     }
 

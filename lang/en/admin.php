@@ -960,13 +960,16 @@ return [
 
         // Branding — section headers
         'section_colors'           => 'Brand Colors',
-        'section_colors_desc'      => 'Primary color and text color for the booking page.',
+        'section_colors_desc'      => 'Primary color for the booking page and embed widget. Text contrast is derived automatically.',
         'section_page_content'     => 'Page Content',
         'section_page_content_desc'=> 'Heading and description shown on the public booking page.',
 
         // Branding — fields
         'field_brand_color'       => 'Brand color',
+        'field_brand_color_hint'  => 'Button and accent color. Text color is derived automatically for WCAG contrast.',
         'field_brand_color_text'  => 'Brand text color',
+        'field_logo'              => 'Business Logo',
+        'field_logo_hint'         => 'Shown on the booking page header. JPG, PNG, or WebP. Max 2 MB.',
         'field_heading'           => 'Booking page heading',
         'field_heading_hint'      => 'Shown at the top of the public booking page.',
         'field_description'       => 'Booking page description',

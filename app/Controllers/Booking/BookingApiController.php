@@ -68,7 +68,7 @@ final class BookingApiController
         }
 
         $services = Database::query(
-            'SELECT `id`, `name`, `description`, `duration_minutes`, `price`, `price_label`, `category`, `preparation_text`, `cover_image_path`
+            'SELECT `id`, `name`, `description`, `duration_minutes`, `price`, `price_label`, `category`, `preparation_text`, `cover_image_path`, `color`
              FROM `services`
              WHERE `tenant_id` = ? AND `is_active` = 1
              ORDER BY `sort_order` ASC, `name` ASC',

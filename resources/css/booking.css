@@ -60,7 +60,7 @@
   /* Brand (overridden per-tenant via inline style) */
   --vb-brand: #2563EB;
   --vb-brand-hover: #1D4FD7;
-  --vb-brand-light: #EFF6FF;
+  --vb-brand-light: rgba(var(--vb-brand-rgb), 0.08);
   --vb-brand-text: #FFFFFF;
   --vb-brand-rgb: 37, 99, 235;
 }
@@ -83,8 +83,8 @@
   --vb-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --vb-shadow-md: 0 4px 8px -1px rgba(0, 0, 0, 0.4);
 
-  /* Brand-light: translucent overlay instead of near-white tint */
-  --vb-brand-light: rgba(var(--vb-brand-rgb), 0.12);
+  /* Brand-light: higher opacity on dark surfaces for visibility */
+  --vb-brand-light: rgba(var(--vb-brand-rgb), 0.15);
 
   color-scheme: dark;
 }
@@ -121,7 +121,7 @@ body {
 
 /* ── Header ── */
 .vb-book-header {
-  padding: 48px 20px 32px;
+  padding: 32px 20px 20px;
   text-align: center;
 }
 
@@ -131,9 +131,10 @@ body {
 }
 
 .vb-book-logo {
+  display: block;
   height: 48px;
   width: auto;
-  margin-bottom: 16px;
+  margin: 0 auto 16px;
   object-fit: contain;
 }
 
@@ -390,14 +391,14 @@ body {
 .vb-book-service-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .vb-book-service-card {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 20px 24px;
   border: 1px solid var(--vb-border);
   border-radius: var(--vb-radius-xl);
   cursor: pointer;
@@ -407,12 +408,33 @@ body {
               transform var(--vb-duration-fast) var(--vb-ease-out);
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Color accent bar (left edge) — uses inline --svc-color */
+.vb-book-service-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--svc-color, var(--vb-brand));
+  border-radius: 4px 0 0 4px;
+  opacity: 0.6;
+  transition: opacity var(--vb-duration-fast) var(--vb-ease-out),
+              width var(--vb-duration-fast) var(--vb-ease-out);
+}
+
+.vb-book-service-card:hover::before {
+  opacity: 1;
 }
 
 .vb-book-service-card:hover {
   border-color: var(--vb-border-hover);
-  box-shadow: var(--vb-shadow-sm);
-  transform: translateY(-1px);
+  box-shadow: var(--vb-shadow-md);
+  transform: translateY(-2px);
 }
 
 .vb-book-service-card:active {
@@ -424,8 +446,14 @@ body {
 .vb-book-service-card.is-selected {
   border: 2px solid var(--vb-brand);
   background: var(--vb-brand-light);
-  padding: 15px 19px; /* Compensate 2px border */
+  padding: 19px 23px; /* Compensate 2px border */
   transform: none;
+}
+
+.vb-book-service-card.is-selected::before {
+  opacity: 1;
+  width: 4px;
+  background: var(--vb-brand);
 }
 
 /* Cover image — sit above card content (resources + services) */
@@ -434,6 +462,11 @@ body {
   flex-direction: column;
   padding: 0;
   overflow: hidden;
+}
+
+.vb-book-service-card:has(.vb-book-resource-cover)::before,
+.vb-book-service-card:has(.vb-book-service-cover)::before {
+  display: none;
 }
 
 .vb-book-service-card:has(.vb-book-resource-cover) .vb-book-service-info,
@@ -472,33 +505,49 @@ body {
 }
 
 .vb-book-service-name {
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 600;
   color: var(--vb-text);
+  letter-spacing: -0.015em;
 }
 
 .vb-book-service-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 12px;
+  margin-top: 6px;
   font-size: 0.8125rem;
   color: var(--vb-text-tertiary);
 }
 
+.vb-book-service-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vb-book-service-meta-item svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
 .vb-book-service-price {
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 600;
   color: var(--vb-text);
   white-space: nowrap;
   margin-left: 16px;
   flex-shrink: 0;
+  letter-spacing: -0.015em;
 }
 
 .vb-book-service-desc {
   font-size: 0.8125rem;
   color: var(--vb-text-secondary);
-  margin-top: 6px;
+  margin-top: 8px;
+  line-height: 1.55;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -552,8 +601,8 @@ body {
 }
 
 .vb-book-staff-avatar {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: var(--vb-radius-full);
   background: var(--vb-brand-light);
   color: var(--vb-brand);
@@ -561,9 +610,10 @@ body {
   align-items: center;
   justify-content: center;
   margin: 0 auto;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.9375rem;
+  font-weight: 600;
   overflow: hidden;
+  box-shadow: 0 0 0 3px var(--vb-bg), 0 0 0 4px rgba(var(--vb-brand-rgb), 0.15);
 }
 
 .vb-book-staff-avatar img {
@@ -572,17 +622,24 @@ body {
   object-fit: cover;
 }
 
+/* "Any available" icon inside avatar */
+.vb-book-staff-avatar > svg,
+.vb-book-staff-avatar > i {
+  width: 24px;
+  height: 24px;
+}
+
 .vb-book-staff-name {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--vb-text);
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .vb-book-staff-title {
   font-size: 0.75rem;
   color: var(--vb-text-tertiary);
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 /* ── Calendar ── */
@@ -672,11 +729,12 @@ body {
 }
 
 .vb-book-calendar-cell.is-today:not(.is-selected) {
-  box-shadow: inset 0 0 0 1px var(--vb-border);
+  box-shadow: inset 0 0 0 2px rgba(var(--vb-brand-rgb), 0.6);
+  font-weight: 600;
 }
 
 .vb-book-calendar-cell.is-disabled {
-  opacity: 0.25;
+  opacity: 0.35;
   cursor: default;
 }
 
@@ -684,32 +742,30 @@ body {
   background: var(--vb-brand);
   color: var(--vb-brand-text);
   font-weight: 500;
-  transform: scale(1.02);
   box-shadow: 0 2px 8px rgba(var(--vb-brand-rgb), 0.25);
-  animation: vb-cell-select 300ms var(--vb-ease-overshoot);
+  animation: vb-cell-select 250ms var(--vb-ease-overshoot);
 }
 
 @keyframes vb-cell-select {
-  0% { transform: scale(0.9); }
-  60% { transform: scale(1.06); }
-  100% { transform: scale(1.02); }
+  0% { transform: scale(0.92); }
+  100% { transform: scale(1); }
 }
 
 /* Availability dot beneath date */
 .vb-book-calendar-cell.has-slots::after {
   content: '';
   position: absolute;
-  bottom: 4px;
-  width: 4px;
-  height: 4px;
+  bottom: 14px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--vb-brand);
-  opacity: 0.5;
+  opacity: 0.65;
 }
 
 .vb-book-calendar-cell.is-selected.has-slots::after {
   background: var(--vb-brand-text);
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 /* Date range band (resource check-in / check-out) */
@@ -737,12 +793,57 @@ body {
   to   { opacity: 1; }
 }
 
+/* ── Time Slot Sections (grouped by period) ── */
+.vb-book-time-sections {
+  margin-top: 28px;
+}
+
+.vb-book-time-section + .vb-book-time-section {
+  margin-top: 20px;
+}
+
+.vb-book-time-section-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vb-text-tertiary);
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+
 /* ── Time Slot Grid ── */
 .vb-book-time-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   gap: 8px;
-  margin-top: 28px;
+}
+
+/* ── Details Context Summary ── */
+.vb-book-details-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-bottom: 24px;
+  background: var(--vb-bg-secondary);
+  border-radius: var(--vb-radius-lg);
+  font-size: 0.8125rem;
+  color: var(--vb-text-secondary);
+  animation: vb-context-enter 250ms var(--vb-ease-out);
+  border: 1px solid var(--vb-border);
+}
+
+.vb-book-details-context-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--vb-brand);
+}
+
+@keyframes vb-context-enter {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .vb-book-time-pill {
@@ -808,7 +909,7 @@ body {
 }
 
 .vb-book-time-pill.is-dimmed {
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 /* ── Selection Confirmation Block ── */
@@ -978,10 +1079,10 @@ body {
 }
 
 .vb-book-consent-checkbox {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 1px;
   accent-color: var(--vb-brand);
   cursor: pointer;
 }
@@ -1587,6 +1688,11 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+[data-theme="dark"] .vb-book-theme-toggle {
+  background: var(--vb-bg-tertiary);
+  border-color: var(--vb-border-hover);
+}
+
 .vb-book-theme-toggle:hover {
   border-color: var(--vb-border-hover);
   color: var(--vb-text);
@@ -1792,7 +1898,8 @@ body {
 }
 
 .vb-book-input:focus-visible,
-.vb-book-textarea:focus-visible {
+.vb-book-textarea:focus-visible,
+.vb-book-tz-search:focus-visible {
   outline: none;
 }
 
@@ -1922,7 +2029,7 @@ body {
 /* ── Mobile refinements ── */
 @media (max-width: 640px) {
   .vb-book-header {
-    padding: 32px 20px 24px;
+    padding: 24px 20px 16px;
   }
 
   .vb-book-business-name {
@@ -2294,8 +2401,8 @@ body {
 }
 
 .vb-book-manage-status-badge.is-completed {
-  background: #EFF6FF;
-  color: #2563EB;
+  background: #ECFDF5;
+  color: #059669;
 }
 
 .vb-book-manage-customer {
@@ -2498,8 +2605,8 @@ body {
 }
 
 [data-theme="dark"] .vb-book-manage-status-badge.is-completed {
-  background: rgba(37, 99, 235, 0.15);
-  color: #60A5FA;
+  background: rgba(5, 150, 105, 0.15);
+  color: #34D399;
 }
 
 [data-theme="dark"] .vb-book-modal {

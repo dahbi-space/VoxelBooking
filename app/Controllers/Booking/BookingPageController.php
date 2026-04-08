@@ -89,6 +89,9 @@ final class BookingPageController
         $translations = Locale::getTranslationsForDomain('booking');
         $formatting   = Locale::getFormattingConfig();
 
+        // Generate grouped timezones from canonical PHP source
+        $timezoneGroups = self::buildTimezoneGroups();
+
         // Detect embed mode (?embed=1) — renders chromeless booking UI in an iframe
         $isEmbed = ($request->string('embed') === '1');
 
@@ -197,6 +200,9 @@ final class BookingPageController
         $translations = Locale::getTranslationsForDomain('booking');
         $formatting   = Locale::getFormattingConfig();
 
+        // Generate grouped timezones from canonical PHP source
+        $timezoneGroups = self::buildTimezoneGroups();
+
         // Generate CSRF token
         $csrfToken = CsrfMiddleware::generateToken();
 
@@ -206,5 +212,70 @@ final class BookingPageController
         $html = ob_get_clean();
 
         return Response::html($html);
+    }
+
+    /**
+     * Build timezone groups from PHP's canonical timezone_identifiers_list().
+     *
+     * Groups IANA timezones by continent, adding UTC as its own group.
+     * Label keys match the booking JS translation convention.
+     *
+     * @return array<int, array{labelKey: string, zones: list<string>}>
+     */
+    private static function buildTimezoneGroups(): array
+    {
+        $continentMap = [
+            'Africa'     => 'timezone.group_africa',
+            'America'    => 'timezone.group_americas',
+            'Antarctica' => 'timezone.group_other',
+            'Arctic'     => 'timezone.group_other',
+            'Asia'       => 'timezone.group_asia',
+            'Atlantic'   => 'timezone.group_other',
+            'Australia'  => 'timezone.group_asia',
+            'Europe'     => 'timezone.group_europe',
+            'Indian'     => 'timezone.group_other',
+            'Pacific'    => 'timezone.group_asia',
+        ];
+
+        $grouped = [];
+        foreach (get_supported_timezones() as $tz) {
+            $parts = explode('/', $tz, 2);
+            $continent = $parts[0] ?? '';
+            $labelKey = $continentMap[$continent] ?? 'timezone.group_other';
+
+            if (!isset($grouped[$labelKey])) {
+                $grouped[$labelKey] = [];
+            }
+            $grouped[$labelKey][] = $tz;
+        }
+
+        // Ensure UTC is included
+        if (!in_array('UTC', $grouped['timezone.group_other'] ?? [], true)) {
+            $grouped['timezone.group_other'][] = 'UTC';
+        }
+
+        // Sort zones within each group
+        foreach ($grouped as &$zones) {
+            sort($zones);
+        }
+        unset($zones);
+
+        // Build ordered output — major continents first, "Other" last
+        $order = [
+            'timezone.group_americas',
+            'timezone.group_europe',
+            'timezone.group_asia',
+            'timezone.group_africa',
+            'timezone.group_other',
+        ];
+
+        $result = [];
+        foreach ($order as $key) {
+            if (!empty($grouped[$key])) {
+                $result[] = ['labelKey' => $key, 'zones' => $grouped[$key]];
+            }
+        }
+
+        return $result;
     }
 }

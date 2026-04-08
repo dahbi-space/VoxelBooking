@@ -9,9 +9,15 @@ namespace App\Engine;
  *
  * Derives dynamic brand tokens from a single hex brand_color:
  * - brand-hover: 8% darker for interactive states
- * - brand-light: 95% lightness tint for selected backgrounds
  * - brand-text: white or dark text per WCAG luminance contrast
  * - brand-rgb: comma-separated RGB for use in rgba()
+ *
+ * The "brand-light" token (selected-state backgrounds) is NOT emitted
+ * server-side. It is derived purely in CSS from --vb-brand-rgb:
+ *   Light mode: rgba(var(--vb-brand-rgb), 0.08)
+ *   Dark mode:  rgba(var(--vb-brand-rgb), 0.15)
+ * This avoids cascade conflicts where a solid inline hex would override
+ * the dark-mode translucent variant.
  *
  * Per .ai/11 §3 (Booking Page Aesthetics): these are the ONLY per-tenant
  * CSS variations. The compiled booking.css is identical for all tenants.
@@ -21,7 +27,7 @@ final class BrandColorHelper
     /**
      * Calculate all derived brand tokens from a hex color.
      *
-     * @return array{brand: string, brand_hover: string, brand_light: string, brand_text: string, brand_rgb: string}
+     * @return array{brand: string, brand_hover: string, brand_text: string, brand_rgb: string}
      */
     public static function derive(string $hex): array
     {
@@ -41,20 +47,15 @@ final class BrandColorHelper
         [$hr, $hg, $hb] = self::hslToRgb($h, $s, $hoverL);
         $brandHover = sprintf('#%02X%02X%02X', $hr, $hg, $hb);
 
-        // brand-light: lightness set to 95%
-        [$lr, $lg, $lb] = self::hslToRgb($h, $s, 0.95);
-        $brandLight = sprintf('#%02X%02X%02X', $lr, $lg, $lb);
-
         // brand-text: WCAG relative luminance > 0.5 → dark text, otherwise white
         $brandText = self::relativeLuminance($r, $g, $b) > 0.5 ? '#111827' : '#FFFFFF';
 
-        // brand-rgb: for use in rgba(var(--vb-brand-rgb), 0.15)
+        // brand-rgb: for use in CSS rgba(var(--vb-brand-rgb), opacity)
         $brandRgb = "{$r}, {$g}, {$b}";
 
         return [
             'brand'       => '#' . strtoupper($hex),
             'brand_hover' => $brandHover,
-            'brand_light' => $brandLight,
             'brand_text'  => $brandText,
             'brand_rgb'   => $brandRgb,
         ];
@@ -67,11 +68,13 @@ final class BrandColorHelper
     {
         $tokens = self::derive($hex);
 
+        // Note: --vb-brand-light is NOT emitted here. It's derived from
+        // --vb-brand-rgb in CSS using rgba() for both light (8% opacity)
+        // and dark (15% opacity) modes, avoiding cascade conflicts.
         return sprintf(
-            ':root { --vb-brand: %s; --vb-brand-hover: %s; --vb-brand-light: %s; --vb-brand-text: %s; --vb-brand-rgb: %s; }',
+            ':root { --vb-brand: %s; --vb-brand-hover: %s; --vb-brand-text: %s; --vb-brand-rgb: %s; }',
             $tokens['brand'],
             $tokens['brand_hover'],
-            $tokens['brand_light'],
             $tokens['brand_text'],
             $tokens['brand_rgb'],
         );

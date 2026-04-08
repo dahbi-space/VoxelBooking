@@ -240,13 +240,13 @@ final class SelfServiceRescheduleTest extends TestCase
         // Reset the fixture booking with custom data
         $origDate = date('Y-m-d', strtotime('+2 days'));
 
-        // Clean up any prior reschedule artifacts (including debug-run ghosts)
+        // Nuclear cleanup: remove ALL bookings for this tenant so no prior
+        // test (within this class or from another suite sharing this tenant)
+        // can leave a conflicting slot.
         Database::execute(
-            "DELETE FROM `bookings` WHERE `tenant_id` = ? AND `customer_id` = ? AND `id` != ?",
-            [self::TENANT_ID, self::CUSTOMER_ID, self::BOOKING_ID]
+            "DELETE FROM `bookings` WHERE `tenant_id` = ?",
+            [self::TENANT_ID]
         );
-
-        Database::execute("DELETE FROM `bookings` WHERE `id` = ?", [self::BOOKING_ID]);
         Database::execute(
             "INSERT INTO `bookings`
              (`id`, `tenant_id`, `booking_pattern`, `customer_id`, `service_id`,
@@ -424,8 +424,11 @@ final class SelfServiceRescheduleTest extends TestCase
     {
         $tenantId = self::TENANT_ID;
 
-        // Clean prior test data
-        Database::execute("DELETE FROM `bookings` WHERE `id` LIKE '01TESTSSRESCHED%'");
+        // Nuclear cleanup: delete ALL bookings for this tenant to eliminate
+        // cross-class contamination from other test suites (RescheduleEndpointTest,
+        // AdminRoutesTest, etc.) that share the same test-fixture tenant and may
+        // leave bookings at conflicting time slots.
+        Database::execute("DELETE FROM `bookings` WHERE `tenant_id` = ?", [$tenantId]);
         Database::execute("DELETE FROM `customers` WHERE `id` = ?", [self::CUSTOMER_ID]);
         Database::execute("DELETE FROM `services` WHERE `id` = ?", [self::SERVICE_ID]);
 

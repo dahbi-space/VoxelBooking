@@ -229,6 +229,7 @@ return [
         'group_europe'     => 'Europe',
         'group_asia'       => 'Asia & Pacific',
         'group_africa'     => 'Africa',
+        'group_other'      => 'Other',
     ],
 
     // ── Duration Formatting ──
@@ -237,6 +238,13 @@ return [
         'minutes'      => 'min',
         'hours_long'   => ':h h :m min',
         'minutes_only' => ':m min',
+    ],
+
+    // ── Time Period Labels (slot grouping) ──
+    'time_periods' => [
+        'morning'   => 'Morning',
+        'afternoon' => 'Afternoon',
+        'evening'   => 'Evening',
     ],
 
     // ── API Error Messages (server-side, returned as JSON) ──

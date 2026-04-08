@@ -6,8 +6,7 @@
     <meta name="description" content="Book an appointment with <?= htmlspecialchars($tenant['name']) ?>">
     <title>Book – <?= htmlspecialchars($tenant['name']) ?></title>
 
-    <!-- Brand tokens (per-tenant) -->
-    <style><?= $brandStyle ?></style>
+
 
     <!-- Self-hosted Inter (split WOFF2, same as admin shell) -->
     <style>
@@ -30,6 +29,9 @@
     </style>
 
     <link rel="stylesheet" href="/assets/css/booking-css.css">
+
+    <!-- Brand tokens (per-tenant) — must follow compiled CSS to override defaults -->
+    <style><?= $brandStyle ?></style>
 
     <!-- Anti-FOUC: hide until Alpine is ready -->
     <style>
@@ -56,7 +58,7 @@
             <div class="vb-book-header-inner">
                 <?php if (!empty($tenant['logo_path'])): ?>
                     <img
-                        src="/uploads/<?= htmlspecialchars($tenant['slug']) ?>/<?= htmlspecialchars($tenant['logo_path']) ?>"
+                        src="/<?= htmlspecialchars($tenant['logo_path']) ?>"
                         alt="<?= htmlspecialchars($tenant['name']) ?>"
                         class="vb-book-logo"
                     >
@@ -152,7 +154,7 @@
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.resource_title')"></div>
                 </div>
-                <div class="vb-book-service-list" role="radiogroup">
+                <div class="vb-book-service-list" role="radiogroup" @keydown="radiogroupKeydownFocusOnly">
                     <template x-for="(resource, ri) in resources" x-bind:key="resource.id">
                         <div class="vb-book-service-card"
                              x-bind:class="{ 'is-selected': isResourceSelected(resource) }"
@@ -197,7 +199,7 @@
                 </div>
 
                 <!-- Calendar (reused structure) -->
-                <div class="vb-book-calendar" role="grid">
+                <div class="vb-book-calendar" role="grid" @keydown="calendarGridKeydown">
                     <div class="vb-book-calendar-nav">
                         <button class="vb-book-calendar-btn" @click="prevResourceMonth" x-bind:disabled="!canPrevResourceMonth" aria-label="Previous month">
                             <i data-lucide="chevron-left"></i>
@@ -335,7 +337,7 @@
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('capacity.date_title')"></div>
                 </div>
-                <div class="vb-book-calendar" role="grid">
+                <div class="vb-book-calendar" role="grid" @keydown="calendarGridKeydown">
                     <div class="vb-book-calendar-nav">
                         <button type="button" class="vb-book-calendar-btn" @click="prevCapacityMonth" aria-label="<?= __('booking.calendar.prev_month') ?>">
                             <i data-lucide="chevron-left"></i>
@@ -401,7 +403,7 @@
                     </button>
                 </div>
 
-                <div class="vb-book-slot-list" role="radiogroup">
+                <div class="vb-book-slot-list" role="radiogroup" @keydown="radiogroupKeydown">
                     <template x-for="slot in capacitySlots" x-bind:key="slot.id">
                         <button type="button"
                                 class="vb-book-slot-card"
@@ -563,11 +565,11 @@
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('steps.service_title')"></div>
                 </div>
-                <div class="vb-book-service-list" role="radiogroup">
+                <div class="vb-book-service-list" role="radiogroup" @keydown="radiogroupKeydownFocusOnly">
                     <template x-for="(service, si) in services" x-bind:key="service.id">
                         <div class="vb-book-service-card"
                              x-bind:class="{ 'is-selected': isServiceSelected(service) }"
-                             x-bind:style="serviceAnimDelay(si)"
+                             x-bind:style="serviceAnimDelay(si) + (service.color ? '; --svc-color: ' + service.color : '')"
                              @click="selectService(service)"
                              role="radio" tabindex="0"
                              x-bind:aria-checked="isServiceSelected(service)"
@@ -583,7 +585,10 @@
                             <div class="vb-book-service-info">
                                 <div class="vb-book-service-name" x-text="service.name"></div>
                                 <div class="vb-book-service-meta">
-                                    <span x-text="formatDuration(service.duration_minutes)"></span>
+                                    <span class="vb-book-service-meta-item">
+                                        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3.5l2.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        <span x-text="formatDuration(service.duration_minutes)"></span>
+                                    </span>
                                 </div>
                                 <template x-if="service.description">
                                     <div class="vb-book-service-desc" x-text="service.description"></div>
@@ -603,11 +608,13 @@
                     <div class="vb-book-step-title" x-text="t('steps.staff_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('steps.staff_subtitle')"></div>
                 </div>
-                <div class="vb-book-staff-grid" role="radiogroup">
+                <div class="vb-book-staff-grid" role="radiogroup" @keydown="radiogroupKeydownFocusOnly">
                     <!-- Any available -->
                     <div class="vb-book-staff-card"
                          x-bind:class="{ 'is-selected': isAnyStaffSelected() }"
                          @click="selectAnyStaff"
+                         @keydown.enter="selectAnyStaff"
+                         @keydown.space.prevent="selectAnyStaff"
                          role="radio" tabindex="0"
                          x-bind:aria-checked="isAnyStaffSelected()">
                         <div class="vb-book-staff-avatar">
@@ -620,6 +627,8 @@
                         <div class="vb-book-staff-card"
                              x-bind:class="{ 'is-selected': isStaffSelected(member) }"
                              @click="selectStaff(member)"
+                             @keydown.enter="selectStaff(member)"
+                             @keydown.space.prevent="selectStaff(member)"
                              role="radio" tabindex="0"
                              x-bind:aria-checked="isStaffSelected(member)">
                             <div class="vb-book-staff-avatar">
@@ -673,7 +682,7 @@
                 </div>
 
                 <!-- Calendar -->
-                <div class="vb-book-calendar" role="grid">
+                <div class="vb-book-calendar" role="grid" @keydown="calendarGridKeydown">
                     <div class="vb-book-calendar-nav">
                         <button class="vb-book-calendar-btn" @click="prevMonth" x-bind:disabled="!canPrevMonth" aria-label="Previous month">
                             <i data-lucide="chevron-left"></i>
@@ -717,21 +726,30 @@
                         <div class="vb-book-empty" x-text="t('empty.no_times')"></div>
                     </template>
                     <template x-if="hasSlots">
-                        <div class="vb-book-time-grid" role="radiogroup">
-                            <template x-for="(slot, i) in availableSlots" x-bind:key="slot.time">
-                                <div class="vb-book-time-pill"
-                                     x-bind:class="{
-                                         'is-selected': isSlotSelected(slot),
-                                         'is-dimmed': isSlotDimmed(slot)
-                                     }"
-                                     @click="selectSlot(slot)"
-                                     @keydown.enter="selectSlot(slot)"
-                                     @keydown.space.prevent="selectSlot(slot)"
-                                     role="radio" tabindex="0"
-                                     x-bind:aria-checked="isSlotSelected(slot)"
-                                     x-bind:style="slotAnimDelay(i)">
-                                    <i data-lucide="check" class="vb-pill-check" x-show="isSlotSelected(slot)"></i>
-                                    <span x-text="displaySlotTime(slot)"></span>
+                        <div class="vb-book-time-sections" role="radiogroup" @keydown="radiogroupKeydown">
+                            <template x-for="(group, gi) in groupedSlots" x-bind:key="group.label">
+                                <div class="vb-book-time-section">
+                                    <template x-if="groupedSlots.length > 1">
+                                        <div class="vb-book-time-section-label" x-text="group.label"></div>
+                                    </template>
+                                    <div class="vb-book-time-grid">
+                                        <template x-for="(slot, i) in group.slots" x-bind:key="slot.time">
+                                            <div class="vb-book-time-pill"
+                                                 x-bind:class="{
+                                                     'is-selected': isSlotSelected(slot),
+                                                     'is-dimmed': isSlotDimmed(slot)
+                                                 }"
+                                                 @click="selectSlot(slot)"
+                                                 @keydown.enter="selectSlot(slot)"
+                                                 @keydown.space.prevent="selectSlot(slot)"
+                                                 role="radio" tabindex="0"
+                                                 x-bind:aria-checked="isSlotSelected(slot)"
+                                                 x-bind:style="slotAnimDelay(i)">
+                                                <i data-lucide="check" class="vb-pill-check" x-show="isSlotSelected(slot)"></i>
+                                                <span x-text="displaySlotTime(slot)"></span>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </div>
                             </template>
                         </div>
@@ -753,6 +771,14 @@
                     <div class="vb-book-step-title" x-text="t('steps.details_title')"></div>
                     <div class="vb-book-step-subtitle" x-text="t('steps.details_subtitle')"></div>
                 </div>
+
+                <!-- Context summary chip -->
+                <template x-if="detailsContextSummary">
+                    <div class="vb-book-details-context">
+                        <svg class="vb-book-details-context-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3.5l2.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span x-text="detailsContextSummary"></span>
+                    </div>
+                </template>
 
                 <form @submit.prevent="submitDetails" novalidate>
                     <div class="vb-book-form-group">
@@ -1131,7 +1157,7 @@
                 </div>
 
                 <!-- Calendar -->
-                <div class="vb-book-calendar" role="grid">
+                <div class="vb-book-calendar" role="grid" @keydown="calendarGridKeydown">
                     <div class="vb-book-calendar-nav">
                         <button class="vb-book-calendar-btn" @click="reschedulePrevMonth"
                                 aria-label="<?= __('booking.calendar.prev_month') ?>">
@@ -1173,7 +1199,7 @@
                         <div class="vb-book-empty" x-text="t('empty.no_times')"></div>
                     </template>
                     <template x-if="rescheduleSlots.length > 0">
-                        <div class="vb-book-time-grid" role="radiogroup">
+                        <div class="vb-book-time-grid" role="radiogroup" @keydown="radiogroupKeydown">
                             <template x-for="(slot, i) in rescheduleSlots" x-bind:key="'rs-' + slot.time">
                                 <div class="vb-book-time-pill"
                                      x-bind:class="{
@@ -1316,6 +1342,7 @@
         window.__VB_EMBED__ = <?= json_encode((bool) ($isEmbed ?? false)) ?>;
         window.__VB_I18N__ = <?= json_encode($translations, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
         window.__VB_FMT__ = <?= json_encode($formatting, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+        window.__VB_TZ_GROUPS__ = <?= json_encode($timezoneGroups ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
         <?php if (\App\Engine\DemoMode::isActive()): ?>
         window.VB_DEMO = true;
         window.__VB_DEMO_NOTICE__ = <?= json_encode(__('admin.demo.booking_notice')) ?>;

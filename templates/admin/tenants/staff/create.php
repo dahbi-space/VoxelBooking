@@ -36,13 +36,13 @@ ob_start();
 
         <div class="vb-form-row">
             <div class="vb-form-group">
-                <label for="staff_name" class="vb-label"><?= __('admin.staff.label_name') ?> <span class="text-red-500">*</span></label>
+                <label for="staff_name" class="vb-label"><?= __('admin.staff.label_name') ?> <span class="vb-required">*</span></label>
                 <input type="text" id="staff_name" name="name" class="vb-input" required
                        value="<?= htmlspecialchars($old['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                        placeholder="<?= __('admin.staff.placeholder_name') ?>">
             </div>
             <div class="vb-form-group">
-                <label for="staff_email" class="vb-label"><?= __('admin.staff.label_email') ?> <span class="text-red-500">*</span></label>
+                <label for="staff_email" class="vb-label"><?= __('admin.staff.label_email') ?> <span class="vb-required">*</span></label>
                 <input type="email" id="staff_email" name="email" class="vb-input" required
                        value="<?= htmlspecialchars($old['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                        placeholder="<?= __('admin.staff.placeholder_email') ?>">
@@ -66,7 +66,7 @@ ob_start();
 
         <div class="vb-form-group col-span-full">
             <label for="staff_bio" class="vb-label"><?= __('admin.staff.label_bio') ?></label>
-            <textarea id="staff_bio" name="bio" class="vb-textarea" rows="2"
+            <textarea id="staff_bio" name="bio" class="vb-input vb-textarea" rows="2"
                       placeholder="<?= __('admin.staff.placeholder_bio') ?>"><?= htmlspecialchars($old['bio'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
         </div>
 

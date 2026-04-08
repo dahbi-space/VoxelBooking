@@ -43,7 +43,7 @@ ob_start();
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
             <div class="vb-form-group">
-                <label for="tenant_name" class="vb-label"><?= __('admin.tenants.name') ?> *</label>
+                <label for="tenant_name" class="vb-label"><?= __('admin.tenants.name') ?> <span class="vb-required">*</span></label>
                 <input type="text" id="tenant_name" name="name" class="vb-input" required
                        value="<?= htmlspecialchars($tenant['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
             </div>
@@ -56,7 +56,7 @@ ob_start();
             </div>
 
             <div class="vb-form-group">
-                <label for="tenant_email" class="vb-label"><?= __('admin.tenants.email') ?> *</label>
+                <label for="tenant_email" class="vb-label"><?= __('admin.tenants.email') ?> <span class="vb-required">*</span></label>
                 <input type="email" id="tenant_email" name="email" class="vb-input" required
                        value="<?= htmlspecialchars($tenant['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
             </div>

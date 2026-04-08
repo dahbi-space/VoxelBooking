@@ -36,23 +36,21 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
     <div class="vb-card p-6">
 
         <!-- ── 1. Identity ── -->
-        <div class="vb-form-grid vb-form-grid-2">
-            <div class="vb-form-group col-span-full">
-                <label class="vb-label" for="svc-name"><?= __('admin.services.field_name') ?> <span class="text-red-500">*</span></label>
-                <input type="text" class="vb-input" id="svc-name" name="name"
-                       value="<?= $v('name') ?>" required maxlength="255" autofocus>
-            </div>
+        <div class="vb-form-group">
+            <label class="vb-label" for="svc-name"><?= __('admin.services.field_name') ?> <span class="vb-required">*</span></label>
+            <input type="text" class="vb-input" id="svc-name" name="name"
+                   value="<?= $v('name') ?>" required maxlength="255" autofocus>
+        </div>
 
-            <div class="vb-form-group col-span-full">
-                <label class="vb-label" for="svc-desc"><?= __('admin.services.field_description') ?></label>
-                <textarea class="vb-input resize-y" id="svc-desc" name="description" rows="3"><?= $v('description') ?></textarea>
-            </div>
+        <div class="vb-form-group">
+            <label class="vb-label" for="svc-desc"><?= __('admin.services.field_description') ?></label>
+            <textarea class="vb-input vb-textarea" id="svc-desc" name="description" rows="2"><?= $v('description') ?></textarea>
         </div>
 
         <!-- ── 2. Pricing & Scheduling ── -->
         <div class="vb-form-row pt-4">
             <div class="vb-form-group">
-                <label class="vb-label" for="svc-duration"><?= __('admin.services.field_duration') ?> *</label>
+                <label class="vb-label" for="svc-duration"><?= __('admin.services.field_duration') ?> <span class="vb-required">*</span></label>
                 <input type="number" class="vb-input" id="svc-duration" name="duration_minutes"
                        value="<?= $v('duration_minutes', '30') ?>" required min="1" step="1">
             </div>

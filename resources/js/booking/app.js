@@ -62,37 +62,19 @@ function esc(str) {
     return div.innerHTML;
 }
 
+// ── Motion preference helper ──
+function prefersReducedMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+function scrollBehavior() {
+    return prefersReducedMotion() ? 'auto' : 'smooth';
+}
+
 // ── Timezone conversion engine (extracted to timezone.js for testability) ──
 import { convertTime, getTimezoneOffsetMinutes, formatSlotDisplay } from './timezone.js';
 
-// ── Common timezone list (grouped by continent) ──
-const TIMEZONE_GROUPS = [
-    { labelKey: 'timezone.group_americas', zones: [
-        'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
-        'America/Anchorage', 'Pacific/Honolulu', 'America/Phoenix',
-        'America/Toronto', 'America/Vancouver', 'America/Mexico_City',
-        'America/Bogota', 'America/Lima', 'America/Sao_Paulo', 'America/Argentina/Buenos_Aires',
-    ]},
-    { labelKey: 'timezone.group_europe', zones: [
-        'Europe/London', 'Europe/Dublin', 'Europe/Paris', 'Europe/Berlin',
-        'Europe/Amsterdam', 'Europe/Brussels', 'Europe/Madrid', 'Europe/Rome',
-        'Europe/Zurich', 'Europe/Vienna', 'Europe/Stockholm', 'Europe/Oslo',
-        'Europe/Copenhagen', 'Europe/Helsinki', 'Europe/Warsaw', 'Europe/Prague',
-        'Europe/Lisbon', 'Europe/Athens', 'Europe/Bucharest', 'Europe/Moscow',
-        'Europe/Istanbul',
-    ]},
-    { labelKey: 'timezone.group_asia', zones: [
-        'Asia/Dubai', 'Asia/Kolkata', 'Asia/Bangkok', 'Asia/Singapore',
-        'Asia/Hong_Kong', 'Asia/Shanghai', 'Asia/Tokyo', 'Asia/Seoul',
-        'Asia/Jakarta', 'Asia/Karachi', 'Asia/Riyadh', 'Asia/Tehran',
-        'Australia/Sydney', 'Australia/Melbourne', 'Australia/Perth',
-        'Pacific/Auckland', 'Pacific/Fiji',
-    ]},
-    { labelKey: 'timezone.group_africa', zones: [
-        'Africa/Cairo', 'Africa/Lagos', 'Africa/Johannesburg', 'Africa/Nairobi',
-        'Africa/Casablanca', 'Africa/Accra',
-    ]},
-];
+// ── Timezone list (injected by server from PHP's canonical timezone_identifiers_list()) ──
+const TIMEZONE_GROUPS = window.__VB_TZ_GROUPS__ || [];
 
 // Human-readable timezone label
 function tzLabel(tz) {
@@ -108,6 +90,113 @@ function tzLabel(tz) {
     }
 }
 
+
+// ── Radiogroup keyboard navigation (WAI-ARIA) ──
+// Two variants for radiogroup keyboard navigation:
+//
+//  radiogroupKeydown        → focus + click (for time pills, capacity slots
+//                              that do NOT auto-advance on selection)
+//  radiogroupKeydownFocusOnly → focus only (for service/resource/staff groups
+//                               that auto-advance on click — selection stays
+//                               on Enter/Space via the per-card handlers)
+
+function radiogroupNav(event) {
+    const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+    if (!keys.includes(event.key)) return null;
+
+    const group = event.currentTarget;
+    const radios = Array.from(group.querySelectorAll('[role="radio"]:not([aria-disabled="true"])'));
+    if (radios.length === 0) return null;
+
+    const current = document.activeElement;
+    const idx = radios.indexOf(current);
+    if (idx === -1) return null;
+
+    event.preventDefault();
+    let next;
+
+    switch (event.key) {
+        case 'ArrowRight':
+        case 'ArrowDown':
+            next = radios[(idx + 1) % radios.length];
+            break;
+        case 'ArrowLeft':
+        case 'ArrowUp':
+            next = radios[(idx - 1 + radios.length) % radios.length];
+            break;
+        case 'Home':
+            next = radios[0];
+            break;
+        case 'End':
+            next = radios[radios.length - 1];
+            break;
+    }
+
+    return next || null;
+}
+
+function radiogroupKeydown(event) {
+    const next = radiogroupNav(event);
+    if (next) {
+        next.focus();
+        next.click();
+    }
+}
+
+function radiogroupKeydownFocusOnly(event) {
+    const next = radiogroupNav(event);
+    if (next) {
+        next.focus();
+    }
+}
+
+// Calendar grid keyboard navigation (WAI-ARIA grid pattern).
+// Arrow left/right = prev/next day, up/down = prev/next week, Home/End = first/last of month.
+function calendarGridKeydown(event) {
+    const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+    if (!keys.includes(event.key)) return;
+
+    const grid = event.currentTarget;
+    const cells = Array.from(grid.querySelectorAll('.vb-book-calendar-cell:not(.is-disabled)'));
+    if (cells.length === 0) return;
+
+    const current = document.activeElement;
+    const idx = cells.indexOf(current);
+    if (idx === -1) return;
+
+    event.preventDefault();
+    let next;
+
+    switch (event.key) {
+        case 'ArrowRight':
+            next = cells[Math.min(idx + 1, cells.length - 1)];
+            break;
+        case 'ArrowLeft':
+            next = cells[Math.max(idx - 1, 0)];
+            break;
+        case 'ArrowDown': {
+            // Find next cell ~7 positions ahead (same day next week)
+            const target = idx + 7;
+            next = target < cells.length ? cells[target] : cells[cells.length - 1];
+            break;
+        }
+        case 'ArrowUp': {
+            const target = idx - 7;
+            next = target >= 0 ? cells[target] : cells[0];
+            break;
+        }
+        case 'Home':
+            next = cells[0];
+            break;
+        case 'End':
+            next = cells[cells.length - 1];
+            break;
+    }
+
+    if (next && next !== current) {
+        next.focus();
+    }
+}
 
 // ── Alpine: Booking Wizard Component ──
 Alpine.data('bookingWizard', () => ({
@@ -682,6 +771,14 @@ Alpine.data('bookingWizard', () => ({
 
         const data = await this.api(`/availability?${params}`);
         this.availableSlots = data.slots || [];
+
+        // Scroll time slots into view after render (respects reduced-motion)
+        if (this.availableSlots.length > 0 && !prefersReducedMotion()) {
+            this.$nextTick(() => {
+                const el = document.getElementById('vb-time-container');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        }
     },
 
     // Display a slot time in the customer's timezone
@@ -879,7 +976,7 @@ Alpine.data('bookingWizard', () => ({
             this.booking = data.booking;
             this.bookingIsPending = (data.booking.status === 'pending');
             this.goToStep('confirmed');
-            this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+            this.$nextTick(() => window.scrollTo({ top: 0, behavior: scrollBehavior() }));
         } catch {
             this.submitting = false;
             this.showToast(t('errors.connection'), 'error');
@@ -1501,6 +1598,95 @@ Alpine.data('bookingWizard', () => ({
         return label.charAt(0).toUpperCase() + label.slice(1);
     },
 
+    // ── Details step: compact context summary (pattern-aware) ──
+    get detailsContextSummary() {
+        const shortDate = (dateStr) => {
+            if (!dateStr) return '';
+            const d = new Date(dateStr + 'T00:00:00');
+            return d.toLocaleDateString(fmt.intl_locale || config.locale || 'en', {
+                weekday: 'short', day: 'numeric', month: 'short',
+            });
+        };
+
+        // Resource pattern: resource + check-in/check-out
+        if (config.booking_pattern === 'resource') {
+            const parts = [];
+            if (this.selectedResource) parts.push(this.selectedResource.name);
+            if (this.checkInDate) parts.push(shortDate(this.checkInDate));
+            if (this.checkOutDate) parts.push('→ ' + shortDate(this.checkOutDate));
+            return parts.join('  ·  ');
+        }
+
+        // Capacity pattern: slot label + date + time range
+        if (config.booking_pattern === 'capacity') {
+            const parts = [];
+            if (this.selectedCapacitySlot?.label) parts.push(this.selectedCapacitySlot.label);
+            if (this.selectedDate) parts.push(shortDate(this.selectedDate));
+            if (this.selectedCapacitySlot) {
+                const start = formatSlotDisplay(this.selectedCapacitySlot.time, this.selectedDate, this.tenantTz, this.customerTz);
+                const end = this.selectedCapacitySlot.end_time
+                    ? formatSlotDisplay(this.selectedCapacitySlot.end_time, this.selectedDate, this.tenantTz, this.customerTz)
+                    : null;
+                parts.push(end ? `${start}–${end}` : start);
+            }
+            return parts.join('  ·  ');
+        }
+
+        // Event pattern: event name + date + time range
+        if (config.booking_pattern === 'event') {
+            const parts = [];
+            if (this.selectedEvent) {
+                parts.push(this.selectedEvent.name);
+                if (this.selectedEvent.start_datetime) {
+                    parts.push(this.formatEventDate(this.selectedEvent.start_datetime));
+                    parts.push(this.formatEventTime(this.selectedEvent.start_datetime)
+                        + '–' + this.formatEventTime(this.selectedEvent.end_datetime));
+                }
+            }
+            return parts.join('  ·  ');
+        }
+
+        // Timeslot pattern (default): service + date + time range
+        const parts = [];
+        if (this.selectedService) parts.push(this.selectedService.name);
+        if (this.selectedDate) parts.push(shortDate(this.selectedDate));
+        if (this.selectedSlot) {
+            const start = formatSlotDisplay(this.selectedSlot.time, this.selectedDate, this.tenantTz, this.customerTz);
+            const end = this.selectedSlot.end_time
+                ? formatSlotDisplay(this.selectedSlot.end_time, this.selectedDate, this.tenantTz, this.customerTz)
+                : null;
+            parts.push(end ? `${start}–${end}` : start);
+        }
+        return parts.join('  ·  ');
+    },
+
+    // ── Time slot grouping (Morning / Afternoon / Evening) ──
+    // Uses customer-displayed time, not raw tenant-timezone slot.time
+    get groupedSlots() {
+        if (!this.availableSlots || this.availableSlots.length === 0) return [];
+        const groups = [];
+        let currentGroup = null;
+
+        for (const slot of this.availableSlots) {
+            // Resolve the displayed time in the customer's timezone
+            const displayTime = this.selectedDate
+                ? formatSlotDisplay(slot.time, this.selectedDate, this.tenantTz, this.customerTz)
+                : slot.time;
+            const hour = parseInt(displayTime.split(':')[0], 10);
+            let period;
+            if (hour < 12) period = t('time_periods.morning') || 'Morning';
+            else if (hour < 17) period = t('time_periods.afternoon') || 'Afternoon';
+            else period = t('time_periods.evening') || 'Evening';
+
+            if (!currentGroup || currentGroup.label !== period) {
+                currentGroup = { label: period, slots: [] };
+                groups.push(currentGroup);
+            }
+            currentGroup.slots.push(slot);
+        }
+        return groups;
+    },
+
     // ── Navigation helpers ──
     get showStaffBackLink() {
         return this.services.length > 1;
@@ -1791,7 +1977,7 @@ Alpine.data('bookingWizard', () => ({
             this.booking = data.booking;
             this.bookingIsPending = (data.booking.status === 'pending');
             this.goToStep('confirmed');
-            this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+            this.$nextTick(() => window.scrollTo({ top: 0, behavior: scrollBehavior() }));
         } catch {
             this.submitting = false;
             this.showToast(t('errors.connection'), 'error');
@@ -2033,7 +2219,7 @@ Alpine.data('bookingWizard', () => ({
             this.booking = data.booking;
             this.bookingIsPending = (data.booking.status === 'pending');
             this.goToStep('confirmed');
-            this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+            this.$nextTick(() => window.scrollTo({ top: 0, behavior: scrollBehavior() }));
         } catch {
             this.submitting = false;
             this.showToast(t('errors.connection'), 'error');
@@ -2213,7 +2399,7 @@ Alpine.data('bookingWizard', () => ({
             this.eventIsWaitlisted = data.booking.waitlisted || false;
             this.bookingIsPending = (!data.booking.waitlisted && data.booking.status === 'pending');
             this.goToStep('confirmed');
-            this.$nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+            this.$nextTick(() => window.scrollTo({ top: 0, behavior: scrollBehavior() }));
         } catch {
             this.submitting = false;
             this.showToast(t('errors.connection'), 'error');
@@ -2223,6 +2409,11 @@ Alpine.data('bookingWizard', () => ({
     // ── Translation passthrough for templates ──
     t,
     esc,
+
+    // ── Keyboard navigation passthroughs ──
+    radiogroupKeydown,
+    radiogroupKeydownFocusOnly,
+    calendarGridKeydown,
 }));
 
 

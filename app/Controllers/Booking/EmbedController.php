@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Booking;
 
+use App\Engine\BrandColorHelper;
 use App\Engine\Database;
 use App\Engine\DemoMode;
 use App\Engine\Request;
@@ -32,7 +33,7 @@ final class EmbedController
         $slug = $request->getAttribute('slug');
 
         $tenant = Database::query(
-            'SELECT `slug`, `name`, `brand_color`, `brand_color_text`, `logo_path`,
+            'SELECT `slug`, `name`, `brand_color`, `logo_path`,
                     `booking_pattern`, `embed_button_position`, `embed_button_label`,
                     `allowed_embed_domains`, `requires_consent`, `consent_text`,
                     `privacy_policy_url`, `custom_fields`
@@ -52,11 +53,14 @@ final class EmbedController
             $allowedDomains = array_map('trim', explode(',', $t['allowed_embed_domains']));
         }
 
+        // Auto-derive brand text color via WCAG luminance
+        $brandTokens = BrandColorHelper::derive($t['brand_color'] ?? '#2563EB');
+
         $config = [
             'slug'              => $t['slug'],
             'name'              => $t['name'],
             'brand_color'       => $t['brand_color'],
-            'brand_color_text'  => $t['brand_color_text'],
+            'brand_color_text'  => $brandTokens['brand_text'],
             'logo_url'          => $t['logo_path'] ? '/' . ltrim($t['logo_path'], '/') : null,
             'booking_pattern'   => $t['booking_pattern'],
             'button_position'   => $t['embed_button_position'] ?: 'bottom-right',

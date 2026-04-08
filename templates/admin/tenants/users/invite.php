@@ -29,21 +29,21 @@ ob_start();
 
         <!-- Name -->
         <div class="vb-form-group">
-            <label for="invite_name" class="vb-label"><?= __('admin.users.invite_name') ?> *</label>
+            <label for="invite_name" class="vb-label"><?= __('admin.users.invite_name') ?> <span class="vb-required">*</span></label>
             <input type="text" id="invite_name" name="name" class="vb-input"
                    placeholder="Jane Doe" required>
         </div>
 
         <!-- Email -->
         <div class="vb-form-group">
-            <label for="invite_email" class="vb-label"><?= __('admin.users.invite_email') ?> *</label>
+            <label for="invite_email" class="vb-label"><?= __('admin.users.invite_email') ?> <span class="vb-required">*</span></label>
             <input type="email" id="invite_email" name="email" class="vb-input"
                    placeholder="owner@example.com" required>
         </div>
 
         <!-- Role -->
         <div class="vb-form-group">
-            <label class="vb-label"><?= __('admin.users.invite_role') ?> *</label>
+            <label class="vb-label"><?= __('admin.users.invite_role') ?> <span class="vb-required">*</span></label>
             <div class="vb-role-cards">
                 <label class="vb-role-card" :class="roleOwnerClass">
                     <input type="radio" name="role" value="owner" :checked="isOwner" @change="selectOwner" class="vb-sr-only">
@@ -62,7 +62,7 @@ ob_start();
 
         <!-- Password -->
         <div class="vb-form-group">
-            <label for="invite_password" class="vb-label"><?= __('admin.users.invite_password') ?> *</label>
+            <label for="invite_password" class="vb-label"><?= __('admin.users.invite_password') ?> <span class="vb-required">*</span></label>
             <div class="vb-password-field">
                 <input type="password" id="invite_password" name="password" class="vb-input"
                        x-ref="passwordField" autocomplete="new-password" required minlength="8">

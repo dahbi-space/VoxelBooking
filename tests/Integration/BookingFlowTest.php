@@ -182,6 +182,70 @@ final class BookingFlowTest extends TestCase
         $this->assertStringContainsString('not found', strtolower($res['body']));
     }
 
+    /**
+     * Regression: timezone picker is driven by canonical PHP timezone source,
+     * not a hardcoded JS subset. Must include UTC and non-curated zones.
+     */
+    public function testBookingPageTimezoneGroupsFromCanonicalSource(): void
+    {
+        $res = $this->httpGet('/book/' . self::$seed['slug']);
+        $this->assertSame(200, $res['code']);
+
+        // __VB_TZ_GROUPS__ must be injected
+        $this->assertStringContainsString('__VB_TZ_GROUPS__', $res['body'],
+            'Booking page must inject __VB_TZ_GROUPS__ from server');
+
+        // Must contain UTC (in "Other" group)
+        $this->assertStringContainsString('"UTC"', $res['body'],
+            'Timezone groups must include UTC');
+
+        // Must contain a non-curated zone that the old hardcoded list omitted
+        $this->assertStringContainsString('"America/Winnipeg"', $res['body'],
+            'Timezone groups must include non-curated zones from the canonical source');
+
+        // Must contain zones from multiple continents
+        $this->assertStringContainsString('"Europe/Amsterdam"', $res['body'],
+            'Timezone groups must include Europe/Amsterdam');
+        $this->assertStringContainsString('"Asia/Tokyo"', $res['body'],
+            'Timezone groups must include Asia/Tokyo');
+        $this->assertStringContainsString('"Africa/Nairobi"', $res['body'],
+            'Timezone groups must include Africa/Nairobi');
+    }
+
+    /**
+     * Regression: a non-blue brand_color tenant produces matching --vb-brand
+     * tokens in the rendered booking page HTML, not the default blue.
+     */
+    public function testBookingPageNonBlueBrandEmitsMatchingTokens(): void
+    {
+        // Temporarily set brand to rose
+        Database::execute(
+            'UPDATE `tenants` SET `brand_color` = ? WHERE `id` = ?',
+            ['#E11D48', self::$seed['tenant_id']]
+        );
+
+        try {
+            $res = $this->httpGet('/book/' . self::$seed['slug']);
+            $this->assertSame(200, $res['code']);
+
+            // Inline style must contain the rose brand, not the default blue
+            $this->assertStringContainsString('--vb-brand: #E11D48', $res['body'],
+                'Rendered page must emit tenant-specific --vb-brand token');
+            $this->assertStringNotContainsString('--vb-brand: #2563EB', $res['body'],
+                'Rendered page must not contain default blue when tenant uses non-blue brand');
+
+            // brand-rgb must match rose
+            $this->assertStringContainsString('--vb-brand-rgb: 225, 29, 72', $res['body'],
+                'Rendered page must emit matching --vb-brand-rgb for rose');
+        } finally {
+            // Restore original blue
+            Database::execute(
+                'UPDATE `tenants` SET `brand_color` = ? WHERE `id` = ?',
+                ['#3B82F6', self::$seed['tenant_id']]
+            );
+        }
+    }
+
     // ════════════════════════════════════════════════════════════════
     // Services API
     // ════════════════════════════════════════════════════════════════

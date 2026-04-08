@@ -61,7 +61,7 @@ ob_start();
         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
         <div class="vb-form-group">
-            <label for="tenant_name" class="vb-label"><?= __('admin.tenants.name') ?> *</label>
+            <label for="tenant_name" class="vb-label"><?= __('admin.tenants.name') ?> <span class="vb-required">*</span></label>
             <input type="text" id="tenant_name" name="name" class="vb-input" required
                    placeholder="Acme Hair Studio">
         </div>
@@ -74,7 +74,7 @@ ob_start();
         </div>
 
         <div class="vb-form-group">
-            <label for="tenant_email" class="vb-label"><?= __('admin.tenants.email') ?> *</label>
+            <label for="tenant_email" class="vb-label"><?= __('admin.tenants.email') ?> <span class="vb-required">*</span></label>
             <input type="email" id="tenant_email" name="email" class="vb-input" required
                    placeholder="hello@example.com">
         </div>
@@ -164,13 +164,13 @@ ob_start();
 
             <div x-show="enabled" x-transition.duration.200ms style="display: none;">
                 <div class="vb-form-group">
-                    <label for="owner_name" class="vb-label"><?= __('admin.tenants.owner_name') ?> *</label>
+                    <label for="owner_name" class="vb-label"><?= __('admin.tenants.owner_name') ?> <span class="vb-required">*</span></label>
                     <input type="text" id="owner_name" name="owner_name" class="vb-input"
                            placeholder="Jane Doe" :required="enabled">
                 </div>
 
                 <div class="vb-form-group">
-                    <label for="owner_email" class="vb-label"><?= __('admin.tenants.owner_email') ?> *</label>
+                    <label for="owner_email" class="vb-label"><?= __('admin.tenants.owner_email') ?> <span class="vb-required">*</span></label>
                     <input type="email" id="owner_email" name="owner_email" class="vb-input"
                            x-ref="ownerEmail" placeholder="owner@example.com" :required="enabled">
                 </div>

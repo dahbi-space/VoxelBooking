@@ -39,7 +39,7 @@ $origin = $proto . '://' . $host;
 $slug   = $tenant['slug'] ?? '';
 
 $brandColor     = $tenant['brand_color'] ?? '#4F46E5';
-$brandColorText = $tenant['brand_color_text'] ?? '#FFFFFF';
+$brandColorText = \App\Engine\BrandColorHelper::derive($brandColor)['brand_text'];
 $buttonLabel    = $tenant['embed_button_label'] ?? 'Book Now';
 $buttonPosition = $tenant['embed_button_position'] ?? 'bottom-right';
 

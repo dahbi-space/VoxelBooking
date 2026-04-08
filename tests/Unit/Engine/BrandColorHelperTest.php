@@ -20,9 +20,10 @@ class BrandColorHelperTest extends TestCase
 
         $this->assertArrayHasKey('brand', $tokens);
         $this->assertArrayHasKey('brand_hover', $tokens);
-        $this->assertArrayHasKey('brand_light', $tokens);
         $this->assertArrayHasKey('brand_text', $tokens);
         $this->assertArrayHasKey('brand_rgb', $tokens);
+        // brand_light is NOT in derive() — it's CSS-derived from brand-rgb
+        $this->assertArrayNotHasKey('brand_light', $tokens);
     }
 
     #[Test]
@@ -61,22 +62,7 @@ class BrandColorHelperTest extends TestCase
         $this->assertNotSame($tokens['brand'], $tokens['brand_hover']);
     }
 
-    #[Test]
-    public function brand_light_is_very_light(): void
-    {
-        $tokens = BrandColorHelper::derive('#2563EB');
 
-        // brand_light should be a very light tint (rgb values close to 255)
-        $hex = ltrim($tokens['brand_light'], '#');
-        $r = hexdec(substr($hex, 0, 2));
-        $g = hexdec(substr($hex, 2, 2));
-        $b = hexdec(substr($hex, 4, 2));
-
-        // All channels should be > 200 (light tint)
-        $this->assertGreaterThan(200, $r);
-        $this->assertGreaterThan(200, $g);
-        $this->assertGreaterThan(200, $b);
-    }
 
     #[Test]
     public function brand_text_white_for_dark_colors(): void
@@ -109,7 +95,8 @@ class BrandColorHelperTest extends TestCase
 
         $this->assertStringContainsString('--vb-brand:', $style);
         $this->assertStringContainsString('--vb-brand-hover:', $style);
-        $this->assertStringContainsString('--vb-brand-light:', $style);
+        // brand-light is CSS-derived from brand-rgb, not emitted in inline style
+        $this->assertStringNotContainsString('--vb-brand-light:', $style);
         $this->assertStringContainsString('--vb-brand-text:', $style);
         $this->assertStringContainsString('--vb-brand-rgb:', $style);
         $this->assertStringStartsWith(':root {', $style);
