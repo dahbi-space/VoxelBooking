@@ -272,9 +272,10 @@ VoxelBooking is internationalization-ready from its foundation. English ships as
 
 | Context | Locale source | Timezone source |
 |---------|--------------|----------------|
-| Booking page | Explicit tenant override → browser `Accept-Language` → tenant default → `en` | Storage: tenant timezone (authoritative). Display: browser timezone (JS-side) |
-| Admin panel | Session → Accept-Language → system default → `en` | Session (browser-detected) |
-| Emails | Tenant `locale` (customer) or session (operator) | Tenant `timezone` |
+| Booking page | Explicit tenant override → browser `Accept-Language` (if translations exist) → tenant default → `en` | Storage: tenant timezone (authoritative). Display: browser timezone (JS-side) |
+| Privacy pages | Same as booking page (resolved per tenant) | Tenant `timezone` |
+| Admin panel | Tenant locale (in tenant context) → `APP_LOCALE` (.env) → `en` | Session (browser-detected) |
+| Emails | Resolved active locale at send time | Tenant `timezone` |
 
 ### Adding a locale
 

@@ -9,25 +9,27 @@ namespace App\Engine;
  *
  * Manages the active locale, loads translation files, and provides
  * formatting functions for dates, times, numbers, and currencies.
+ * Supports 12 locales: en, nl, de, es, fr, id, it, ja, pt, pl, tr, ar.
+ * Arabic (ar) is RTL — direction() returns 'rtl', templates emit dir="rtl".
  *
- * v1 ships with English only. The locale registry (config/locales.php)
- * includes formatting rules for nl, de, fr, es — but no translation
- * files exist for those locales yet. Adding a locale requires only
- * a lang/{locale}/ directory + a registry entry.
+ * v1 ships with English translations only. All 12 locales have complete
+ * formatting rules in the registry (config/locales.php). Setting a tenant
+ * locale to any registered locale activates direction and formatting
+ * immediately; untranslated UI strings fall back to English.
  *
- * Resolution order (booking page — implemented via resolveForBooking()):
+ * Resolution order (booking + privacy pages — resolveForBooking()):
  *   1. Tenant locale_override (explicit lock, if set)
- *   2. Browser Accept-Language (best supported match)
- *   3. Tenant default locale
+ *   2. Browser Accept-Language (only if translations exist for that locale)
+ *   3. Tenant default locale (always honored for direction + formatting)
  *   4. Fallback: 'en'
  *
- * Resolution order (admin panel — v1: English-only):
- *   v1 uses the process-wide default ('en').
- *   Future: session → Accept-Language → system default → 'en'.
+ * Resolution order (admin panel — resolveForAdmin()):
+ *   1. Tenant locale (in tenant context)
+ *   2. APP_LOCALE env var (operator-level pages)
+ *   3. Fallback: 'en'
  *
- * Resolution order (emails — v1):
- *   Customer emails inherit the request-scoped locale at send time.
- *   Operator emails use the process-wide default ('en').
+ * Emails inherit the request-scoped locale at send time. All email
+ * renderers inject lang and dir attributes based on the active locale.
  *
  * Timezone policy:
  *   - Storage/availability: Tenant timezone (authoritative, never negotiated)
