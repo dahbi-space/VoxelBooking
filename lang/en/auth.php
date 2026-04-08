@@ -55,4 +55,28 @@ return [
     'magic_link_email_cta'     => 'Sign in to :app_name',
     'magic_link_email_expiry'  => 'This link expires in 15 minutes and can only be used once.',
     'magic_link_email_ignore'  => 'If you did not request this, you can safely ignore this email.',
+
+    // Password reset
+    'forgot_password_link'     => 'Forgot your password?',
+    'forgot_password_heading'  => 'Reset your password',
+    'forgot_password_sub'      => 'Enter your email and we\'ll send a reset link.',
+    'forgot_password_button'   => 'Send reset link',
+    'forgot_password_sent'     => 'If an account exists with that email, a reset link has been sent.',
+    'forgot_password_page'     => 'Forgot Password — :app_name',
+    'reset_password_heading'   => 'Set a new password',
+    'reset_password_button'    => 'Reset password',
+    'reset_password_success'   => 'Password reset successfully. You can now sign in.',
+    'reset_token_invalid'      => 'Invalid or expired reset link. Please request a new one.',
+    'reset_password_label'     => 'New password',
+    'reset_confirm_label'      => 'Confirm password',
+    'reset_password_mismatch'  => 'Passwords do not match.',
+    'reset_password_too_short' => 'Password must be at least 8 characters.',
+    'reset_password_page'      => 'Reset Password — :app_name',
+
+    // Password reset email
+    'reset_email_subject'      => 'Reset your password — :app_name',
+    'reset_email_body'         => 'Click below to reset your password:',
+    'reset_email_cta'          => 'Reset your password',
+    'reset_email_expiry'       => 'This link expires in 60 minutes and can only be used once.',
+    'reset_email_ignore'       => 'If you did not request this, you can safely ignore this email.',
 ];

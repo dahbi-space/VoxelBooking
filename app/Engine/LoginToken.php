@@ -154,6 +154,94 @@ final class LoginToken
         ];
     }
 
+    // ── Password reset ──
+
+    private const RESET_EXPIRY_MINUTES = 60;
+
+    /**
+     * Create a password-reset token for the given email.
+     *
+     * Invalidates all previous unused reset tokens for the same email.
+     *
+     * @return array{success: bool, token?: string, error?: string}
+     */
+    public static function createPasswordReset(string $email, string $ip): array
+    {
+        $floodCheck = self::checkFloodLimit($email);
+        if ($floodCheck !== null) {
+            return $floodCheck;
+        }
+
+        // Invalidate previous unused reset tokens
+        Database::execute(
+            "UPDATE `login_tokens` SET `used_at` = NOW()
+             WHERE `email` = ? AND `type` = 'password_reset' AND `used_at` IS NULL",
+            [$email]
+        );
+
+        $rawToken = bin2hex(random_bytes(32));
+        $hash = hash('sha256', $rawToken);
+        $id = Ulid::generate();
+
+        Database::execute(
+            "INSERT INTO `login_tokens` (`id`, `email`, `type`, `token_hash`, `remember_me`, `expires_at`, `ip_address`)
+             VALUES (?, ?, 'password_reset', ?, 0, DATE_ADD(NOW(), INTERVAL ? MINUTE), ?)",
+            [$id, $email, $hash, self::RESET_EXPIRY_MINUTES, $ip]
+        );
+
+        return ['success' => true, 'token' => $rawToken];
+    }
+
+    /**
+     * Verify a password-reset token.
+     *
+     * @return array{success: bool, email?: string, error?: string}
+     */
+    public static function verifyPasswordReset(string $tokenRaw): array
+    {
+        $hash = hash('sha256', $tokenRaw);
+
+        $rows = Database::query(
+            "SELECT `id`, `email` FROM `login_tokens`
+             WHERE `type` = 'password_reset' AND `token_hash` = ?
+               AND `expires_at` > NOW() AND `used_at` IS NULL
+             LIMIT 1",
+            [$hash]
+        );
+
+        if (empty($rows)) {
+            return ['success' => false, 'error' => 'invalid_token'];
+        }
+
+        Database::execute(
+            "UPDATE `login_tokens` SET `used_at` = NOW() WHERE `id` = ?",
+            [$rows[0]['id']]
+        );
+
+        return ['success' => true, 'email' => $rows[0]['email']];
+    }
+
+    /**
+     * Check whether a password-reset token is valid without consuming it.
+     *
+     * Used by the GET handler to reject expired/invalid links before
+     * rendering the password form.
+     */
+    public static function peekPasswordReset(string $tokenRaw): bool
+    {
+        $hash = hash('sha256', $tokenRaw);
+
+        $rows = Database::query(
+            "SELECT 1 FROM `login_tokens`
+             WHERE `type` = 'password_reset' AND `token_hash` = ?
+               AND `expires_at` > NOW() AND `used_at` IS NULL
+             LIMIT 1",
+            [$hash]
+        );
+
+        return !empty($rows);
+    }
+
     /**
      * Delete expired and used tokens.
      */

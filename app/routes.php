@@ -57,6 +57,12 @@ return function (Router $router): void {
         $router->post('/admin/login/verify-code', \App\Controllers\Auth\AuthController::class, 'verifyCode');
         $router->get('/admin/login/verify', \App\Controllers\Auth\AuthController::class, 'verifyMagicLink');
 
+        // ── Password reset (serves both operators and business users) ──
+        $router->get('/admin/forgot-password', \App\Controllers\Auth\AuthController::class, 'showForgotPassword');
+        $router->post('/admin/forgot-password', \App\Controllers\Auth\AuthController::class, 'forgotPassword');
+        $router->get('/admin/reset-password', \App\Controllers\Auth\AuthController::class, 'showResetPassword');
+        $router->post('/admin/reset-password', \App\Controllers\Auth\AuthController::class, 'resetPassword');
+
         // ── Admin (protected by AuthMiddleware) ──
         $router->group([
             AuthMiddleware::class,

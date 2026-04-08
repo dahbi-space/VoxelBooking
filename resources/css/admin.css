@@ -2811,6 +2811,18 @@
     animation: vb-fade-in var(--vb-duration-normal) var(--vb-ease-out) 600ms both;
 }
 
+.login-aux-links {
+    margin-top: 1rem; text-align: center;
+    animation: vb-fade-in var(--vb-duration-normal) var(--vb-ease-out) 500ms both;
+}
+.login-aux-link {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    font-size: var(--vb-text-sm); color: var(--vb-text-secondary);
+    text-decoration: none;
+    transition: color var(--vb-duration-fast);
+}
+.login-aux-link:hover { color: var(--vb-accent); }
+
 /* ── Login Demo Credentials ─────────────────────────────────── */
 .login-demo-credentials {
     margin-top: 1.5rem;

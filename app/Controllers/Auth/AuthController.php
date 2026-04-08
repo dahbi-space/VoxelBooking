@@ -23,6 +23,10 @@ use App\Middleware\CsrfMiddleware;
  * GET  /admin/login/verify-code  → OTP entry form
  * POST /admin/login/verify-code  → Validate OTP
  * GET  /admin/login/verify       → Handle magic link click
+ * GET  /admin/forgot-password    → Forgot-password form
+ * POST /admin/forgot-password    → Send password-reset email
+ * GET  /admin/reset-password     → Reset-password form (token in query)
+ * POST /admin/reset-password     → Validate token + update password
  * POST /auth/logout              → Log out
  */
 final class AuthController
@@ -262,6 +266,177 @@ final class AuthController
 
         return $this->redirectAfterLogin();
     }
+
+    // ── Password reset ──
+
+    /**
+     * Show the forgot-password form.
+     *
+     * GET /admin/forgot-password
+     */
+    public function showForgotPassword(Request $request): Response
+    {
+        Auth::startSession();
+
+        if (Auth::check()) {
+            return $this->redirectAfterLogin();
+        }
+
+        $toast = FormState::getToast();
+        $error = ($toast && $toast['type'] === 'error') ? $toast['message'] : null;
+        $success = ($toast && $toast['type'] === 'success') ? $toast['message'] : null;
+
+        return View::response('auth.forgot-password', [
+            'csrfToken' => CsrfMiddleware::generateToken(),
+            'error'     => $error,
+            'success'   => $success,
+        ]);
+    }
+
+    /**
+     * Process forgot-password submission: send reset email.
+     *
+     * POST /admin/forgot-password
+     *
+     * Timing-safe: always shows the same message regardless of whether
+     * the email exists. Both operators and business users are served —
+     * auth_emails resolves the user type transparently.
+     */
+    public function forgotPassword(Request $request): Response
+    {
+        Auth::startSession();
+
+        $email = trim($request->string('email'));
+        $ip    = $request->ip();
+
+        if (!Mailer::isConfigured()) {
+            FormState::toast('error', __('auth.passwordless_unavailable'));
+            return Response::redirect('/admin/forgot-password');
+        }
+
+        // Look up in auth_emails (covers both operators and business users)
+        $reg = Database::query(
+            'SELECT `email` FROM `auth_emails` WHERE `email` = ? LIMIT 1',
+            [$email]
+        );
+
+        if (!empty($reg)) {
+            $result = LoginToken::createPasswordReset($email, $ip);
+            if ($result['success']) {
+                $link = rtrim($_ENV['APP_URL'] ?? '', '/') . '/admin/reset-password?token=' . $result['token'];
+                Mailer::sendPasswordReset($email, $link);
+            }
+        }
+
+        // Timing-safe: always show the same message
+        FormState::toast('success', __('auth.forgot_password_sent'));
+        return Response::redirect('/admin/forgot-password');
+    }
+
+    /**
+     * Show the reset-password form.
+     *
+     * GET /admin/reset-password?token=...
+     *
+     * Validates the token without consuming it. Expired or invalid
+     * links redirect immediately — users never fill out a form for
+     * a dead token.
+     */
+    public function showResetPassword(Request $request): Response
+    {
+        Auth::startSession();
+
+        if (Auth::check()) {
+            return $this->redirectAfterLogin();
+        }
+
+        $token = $request->query('token', '');
+
+        if ($token === '' || !LoginToken::peekPasswordReset($token)) {
+            FormState::toast('error', __('auth.reset_token_invalid'));
+            return Response::redirect('/admin/forgot-password');
+        }
+
+        $toast = FormState::getToast();
+        $error = ($toast && $toast['type'] === 'error') ? $toast['message'] : null;
+
+        return View::response('auth.reset-password', [
+            'csrfToken' => CsrfMiddleware::generateToken(),
+            'token'     => $token,
+            'error'     => $error,
+        ]);
+    }
+
+    /**
+     * Process the password reset.
+     *
+     * POST /admin/reset-password
+     *
+     * Validates token, updates password in the correct table (operators or
+     * business_users) based on auth_emails lookup.
+     */
+    public function resetPassword(Request $request): Response
+    {
+        Auth::startSession();
+
+        $token    = $request->string('token');
+        $password = $request->string('password');
+        $confirm  = $request->string('password_confirmation');
+
+        // Validate inputs
+        if (mb_strlen($password) < 8) {
+            FormState::toast('error', __('auth.reset_password_too_short'));
+            return Response::redirect('/admin/reset-password?token=' . urlencode($token));
+        }
+
+        if ($password !== $confirm) {
+            FormState::toast('error', __('auth.reset_password_mismatch'));
+            return Response::redirect('/admin/reset-password?token=' . urlencode($token));
+        }
+
+        // Verify and consume the token
+        $result = LoginToken::verifyPasswordReset($token);
+
+        if (!$result['success']) {
+            FormState::toast('error', __('auth.reset_token_invalid'));
+            return Response::redirect('/admin/forgot-password');
+        }
+
+        $email = $result['email'];
+
+        // Resolve user type via auth_emails
+        $authRow = Database::query(
+            'SELECT `user_type`, `user_id` FROM `auth_emails` WHERE `email` = ? LIMIT 1',
+            [$email]
+        );
+
+        if (empty($authRow)) {
+            // Should not happen if token was valid, but guard anyway
+            FormState::toast('error', __('auth.reset_token_invalid'));
+            return Response::redirect('/admin/forgot-password');
+        }
+
+        $userType = $authRow[0]['user_type'];
+        $userId   = $authRow[0]['user_id'];
+        $hash     = password_hash($password, PASSWORD_DEFAULT);
+
+        if ($userType === 'operator') {
+            Database::execute(
+                'UPDATE `operators` SET `password_hash` = ? WHERE `id` = ?',
+                [$hash, $userId]
+            );
+        } else {
+            Database::execute(
+                'UPDATE `business_users` SET `password_hash` = ?, `force_password_change` = 0 WHERE `id` = ?',
+                [$hash, $userId]
+            );
+        }
+
+        FormState::toast('success', __('auth.reset_password_success'));
+        return Response::redirect('/admin/login');
+    }
+
+    // ── Logout ──
 
     /**
      * Log out — or exit impersonation.

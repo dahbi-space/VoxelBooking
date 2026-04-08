@@ -31,7 +31,7 @@ return [
     "CREATE TABLE IF NOT EXISTS `login_tokens` (
         `id` CHAR(26) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL,
         `email` VARCHAR(255) NOT NULL,
-        `type` VARCHAR(10) NOT NULL COMMENT 'otp or magic_link',
+        `type` VARCHAR(20) NOT NULL COMMENT 'otp, magic_link, or password_reset',
         `token_hash` VARCHAR(64) NOT NULL COMMENT 'SHA-256 of raw token/code',
         `remember_me` TINYINT(1) NOT NULL DEFAULT 0,
         `expires_at` DATETIME NOT NULL,

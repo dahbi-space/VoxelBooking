@@ -114,6 +114,10 @@ $csrfToken = $csrfToken ?? '';
                     <button type="submit" class="vb-btn vb-btn-primary login-submit"><?= __('auth.login_button') ?></button>
                 </form>
 
+                <div class="login-aux-links">
+                    <a href="/admin/forgot-password" class="login-aux-link"><?= __('auth.forgot_password_link') ?></a>
+                </div>
+
                 <!-- OTP form -->
                 <form method="POST" action="/admin/login/request-code" id="panel-otp" class="login-method-panel" role="tabpanel" aria-labelledby="tab-otp" style="display: none;">
                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">

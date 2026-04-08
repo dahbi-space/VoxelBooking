@@ -515,6 +515,33 @@ final class Mailer
         return self::send($to, $subject, $html, 'magic_link');
     }
 
+    /**
+     * Send a password-reset link.
+     *
+     * @return array{sent: bool, error: string|null, log_id: string}
+     */
+    public static function sendPasswordReset(string $to, string $link): array
+    {
+        $appName = app_name();
+        $subject = __('auth.reset_email_subject', ['app_name' => $appName]);
+
+        $body = __('auth.reset_email_body') . '<br><br>'
+            . '<div style="text-align: center; padding: 16px 0;">'
+            . '<a href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '" style="display: inline-block; padding: 12px 32px; background: #2563EB; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px;">'
+            . __('auth.reset_email_cta')
+            . '</a></div><br>'
+            . '<em>' . __('auth.reset_email_expiry') . '</em><br><br>'
+            . __('auth.reset_email_ignore');
+
+        $html = self::renderPrivacyEmail(
+            __('auth.reset_email_subject', ['app_name' => $appName]),
+            $body,
+            __('auth.footer', ['app_name' => $appName]),
+        );
+
+        return self::send($to, $subject, $html, 'password_reset');
+    }
+
     // ── Cancellation email ──
 
     /**

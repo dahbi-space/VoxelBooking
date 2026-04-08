@@ -30,6 +30,7 @@ final class Migrator
         $files = $this->getPendingMigrations($currentVersion);
 
         $count = 0;
+        $pdo = Database::pdo();
 
         foreach ($files as $file) {
             $sequence = $this->getSequenceNumber($file);
@@ -38,8 +39,6 @@ final class Migrator
             if (!is_array($statements)) {
                 throw new \RuntimeException("Migration {$file} must return an array of SQL statements");
             }
-
-            $pdo = Database::pdo();
 
             foreach ($statements as $sql) {
                 $pdo->exec($sql);

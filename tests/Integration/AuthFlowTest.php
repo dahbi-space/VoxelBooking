@@ -847,4 +847,334 @@ final class AuthFlowTest extends TestCase
             \App\Engine\Mailer::clearConfigCache();
         }
     }
+
+    // ══════════════════════════════════════════════════════════════
+    // Password reset flow
+    // ══════════════════════════════════════════════════════════════
+
+    public function testForgotPasswordShowsForm(): void
+    {
+        $response = $this->get('/admin/forgot-password');
+        $this->assertSame(200, $response['code']);
+        $this->assertStringContainsString('reset-email', $response['body'],
+            'Forgot-password page should contain email input');
+    }
+
+    public function testForgotPasswordSendsEmailAndIsTimingSafe(): void
+    {
+        $prior = $this->enableLogTransport();
+
+        try {
+            // Get CSRF
+            $page = $this->get('/admin/forgot-password');
+            preg_match('/name="_csrf_token" value="([^"]+)"/', $page['body'], $m);
+            $csrf = $m[1] ?? '';
+
+            // Submit with valid operator email
+            $result = $this->post('/admin/forgot-password', [
+                '_csrf_token' => $csrf,
+                'email'       => TestFixtures::OPERATOR_EMAIL,
+            ]);
+            $this->assertSame(302, $result['code']);
+            $this->assertStringContainsString('forgot-password', $result['location']);
+
+            // Assert token created
+            $tokens = \App\Engine\Database::query(
+                "SELECT `type` FROM `login_tokens`
+                 WHERE `email` = ? AND `type` = 'password_reset' ORDER BY `created_at` DESC LIMIT 1",
+                [TestFixtures::OPERATOR_EMAIL]
+            );
+            $this->assertNotEmpty($tokens, 'Password reset token should be created');
+
+            // Assert email logged
+            $log = \App\Engine\Database::query(
+                "SELECT `type`, `status` FROM `email_log`
+                 WHERE `to_email` = ? AND `type` = 'password_reset' ORDER BY `id` DESC LIMIT 1",
+                [TestFixtures::OPERATOR_EMAIL]
+            );
+            $this->assertNotEmpty($log, 'Email log entry should exist');
+            $this->assertSame('sent', $log[0]['status']);
+
+            // Timing-safe: submit with unknown email — must get same redirect
+            $page2 = $this->get('/admin/forgot-password');
+            preg_match('/name="_csrf_token" value="([^"]+)"/', $page2['body'], $m2);
+            $csrf2 = $m2[1] ?? '';
+
+            $result2 = $this->post('/admin/forgot-password', [
+                '_csrf_token' => $csrf2,
+                'email'       => 'nonexistent@example.test',
+            ]);
+            $this->assertSame(302, $result2['code'],
+                'Unknown email must get same 302 redirect (timing-safe)');
+        } finally {
+            $this->restoreTransport($prior);
+        }
+    }
+
+    public function testResetPasswordWithValidToken(): void
+    {
+        try {
+            // Create reset token directly via engine
+            $create = \App\Engine\LoginToken::createPasswordReset(
+                TestFixtures::OPERATOR_EMAIL, '127.0.0.1'
+            );
+            $this->assertTrue($create['success']);
+
+            // Load the reset form
+            $formPage = $this->get('/admin/reset-password?token=' . $create['token']);
+            $this->assertSame(200, $formPage['code']);
+            $this->assertStringContainsString('new-password', $formPage['body'],
+                'Reset page should contain password input');
+
+            // Extract CSRF
+            preg_match('/name="_csrf_token" value="([^"]+)"/', $formPage['body'], $m);
+            $csrf = $m[1] ?? '';
+
+            $newPassword = 'NewSecure99!';
+
+            // Submit reset
+            $result = $this->post('/admin/reset-password', [
+                '_csrf_token'           => $csrf,
+                'token'                 => $create['token'],
+                'password'              => $newPassword,
+                'password_confirmation' => $newPassword,
+            ]);
+            $this->assertSame(302, $result['code']);
+            $this->assertStringContainsString('/admin/login', $result['location'],
+                'Should redirect to login after successful reset');
+
+            // Verify the new password works
+            $loginPage = $this->get('/admin/login');
+            preg_match('/name="_csrf_token" value="([^"]+)"/', $loginPage['body'], $m2);
+            $csrf2 = $m2[1] ?? '';
+
+            $loginResult = $this->post('/admin/login', [
+                '_csrf_token' => $csrf2,
+                'email'       => TestFixtures::OPERATOR_EMAIL,
+                'password'    => $newPassword,
+            ]);
+            $this->assertSame(302, $loginResult['code']);
+            $this->assertStringNotContainsString('login', $loginResult['location'],
+                'Should be redirected to admin after login with new password');
+
+            // Verify authenticated
+            $dashboard = $this->get('/admin');
+            $this->assertSame(200, $dashboard['code']);
+        } finally {
+            // Restore original password
+            $hash = password_hash(TestFixtures::OPERATOR_PASSWORD, PASSWORD_DEFAULT);
+            \App\Engine\Database::execute(
+                'UPDATE `operators` SET `password_hash` = ? WHERE `email` = ?',
+                [$hash, TestFixtures::OPERATOR_EMAIL]
+            );
+            \App\Engine\Database::execute(
+                "DELETE FROM `login_tokens` WHERE `email` = ?",
+                [TestFixtures::OPERATOR_EMAIL]
+            );
+        }
+    }
+
+    public function testResetPasswordRejectsExpiredToken(): void
+    {
+        try {
+            // Create a token then manually expire it
+            $create = \App\Engine\LoginToken::createPasswordReset(
+                TestFixtures::OPERATOR_EMAIL, '127.0.0.1'
+            );
+            $this->assertTrue($create['success']);
+
+            // Expire the token
+            \App\Engine\Database::execute(
+                "UPDATE `login_tokens` SET `expires_at` = DATE_SUB(NOW(), INTERVAL 1 MINUTE)
+                 WHERE `email` = ? AND `type` = 'password_reset'",
+                [TestFixtures::OPERATOR_EMAIL]
+            );
+
+            // GET with expired token must redirect immediately — no form rendered
+            $page = $this->get('/admin/reset-password?token=' . $create['token']);
+            $this->assertSame(302, $page['code'],
+                'Expired token must redirect on GET, not render the form');
+            $this->assertStringContainsString('forgot-password', $page['location'],
+                'Expired token should redirect to forgot-password');
+        } finally {
+            \App\Engine\Database::execute(
+                "DELETE FROM `login_tokens` WHERE `email` = ?",
+                [TestFixtures::OPERATOR_EMAIL]
+            );
+        }
+    }
+
+    public function testResetPasswordRejectsInvalidTokenOnGet(): void
+    {
+        // A completely fabricated token must redirect on GET
+        $page = $this->get('/admin/reset-password?token=deadbeef1234567890abcdef');
+        $this->assertSame(302, $page['code'],
+            'Invalid token must redirect on GET, not render the form');
+        $this->assertStringContainsString('forgot-password', $page['location']);
+    }
+
+    public function testResetPasswordRejectsMismatch(): void
+    {
+        try {
+            $create = \App\Engine\LoginToken::createPasswordReset(
+                TestFixtures::OPERATOR_EMAIL, '127.0.0.1'
+            );
+            $this->assertTrue($create['success']);
+
+            $page = $this->get('/admin/reset-password?token=' . $create['token']);
+            preg_match('/name="_csrf_token" value="([^"]+)"/', $page['body'], $m);
+            $csrf = $m[1] ?? '';
+
+            $result = $this->post('/admin/reset-password', [
+                '_csrf_token'           => $csrf,
+                'token'                 => $create['token'],
+                'password'              => 'Password123!',
+                'password_confirmation' => 'Different456!',
+            ]);
+            $this->assertSame(302, $result['code']);
+            $this->assertStringContainsString('reset-password', $result['location'],
+                'Mismatched passwords should redirect back to reset form');
+            $this->assertStringContainsString('token=', $result['location'],
+                'Token should be preserved in redirect');
+        } finally {
+            \App\Engine\Database::execute(
+                "DELETE FROM `login_tokens` WHERE `email` = ?",
+                [TestFixtures::OPERATOR_EMAIL]
+            );
+        }
+    }
+
+    public function testResetPasswordRejectsTooShort(): void
+    {
+        try {
+            $create = \App\Engine\LoginToken::createPasswordReset(
+                TestFixtures::OPERATOR_EMAIL, '127.0.0.1'
+            );
+            $this->assertTrue($create['success']);
+
+            $page = $this->get('/admin/reset-password?token=' . $create['token']);
+            preg_match('/name="_csrf_token" value="([^"]+)"/', $page['body'], $m);
+            $csrf = $m[1] ?? '';
+
+            $result = $this->post('/admin/reset-password', [
+                '_csrf_token'           => $csrf,
+                'token'                 => $create['token'],
+                'password'              => 'short',
+                'password_confirmation' => 'short',
+            ]);
+            $this->assertSame(302, $result['code']);
+            $this->assertStringContainsString('reset-password', $result['location'],
+                'Short password should redirect back to reset form');
+        } finally {
+            \App\Engine\Database::execute(
+                "DELETE FROM `login_tokens` WHERE `email` = ?",
+                [TestFixtures::OPERATOR_EMAIL]
+            );
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // Business user password reset
+    // ══════════════════════════════════════════════════════════════
+
+    public function testBusinessUserResetPasswordFullFlow(): void
+    {
+        $prior = $this->enableLogTransport();
+
+        try {
+            // Set force_password_change so we can verify it gets cleared
+            \App\Engine\Database::execute(
+                'UPDATE `business_users` SET `force_password_change` = 1 WHERE `id` = ?',
+                [TestFixtures::BUSINESS_USER_ID]
+            );
+
+            // Step 1: Request reset via forgot-password form
+            $page = $this->get('/admin/forgot-password');
+            preg_match('/name="_csrf_token" value="([^"]+)"/', $page['body'], $m);
+            $csrf = $m[1] ?? '';
+
+            $result = $this->post('/admin/forgot-password', [
+                '_csrf_token' => $csrf,
+                'email'       => TestFixtures::BUSINESS_EMAIL,
+            ]);
+            $this->assertSame(302, $result['code']);
+
+            // Verify token was created for business user email
+            $tokens = \App\Engine\Database::query(
+                "SELECT `type` FROM `login_tokens`
+                 WHERE `email` = ? AND `type` = 'password_reset' LIMIT 1",
+                [TestFixtures::BUSINESS_EMAIL]
+            );
+            $this->assertNotEmpty($tokens, 'Reset token should be created for business user');
+
+            // Verify email logged
+            $log = \App\Engine\Database::query(
+                "SELECT `type`, `status` FROM `email_log`
+                 WHERE `to_email` = ? AND `type` = 'password_reset' ORDER BY `id` DESC LIMIT 1",
+                [TestFixtures::BUSINESS_EMAIL]
+            );
+            $this->assertNotEmpty($log, 'Reset email should be logged for business user');
+
+            // Step 2: Create a fresh token for controlled POST testing
+            $create = \App\Engine\LoginToken::createPasswordReset(
+                TestFixtures::BUSINESS_EMAIL, '127.0.0.1'
+            );
+            $this->assertTrue($create['success']);
+
+            // Step 3: Load and submit the reset form
+            $formPage = $this->get('/admin/reset-password?token=' . $create['token']);
+            $this->assertSame(200, $formPage['code']);
+            preg_match('/name="_csrf_token" value="([^"]+)"/', $formPage['body'], $m2);
+            $csrf2 = $m2[1] ?? '';
+
+            $newPassword = 'BusinessNew99!';
+
+            $resetResult = $this->post('/admin/reset-password', [
+                '_csrf_token'           => $csrf2,
+                'token'                 => $create['token'],
+                'password'              => $newPassword,
+                'password_confirmation' => $newPassword,
+            ]);
+            $this->assertSame(302, $resetResult['code']);
+            $this->assertStringContainsString('/admin/login', $resetResult['location']);
+
+            // Step 4: Verify force_password_change was cleared
+            $buRow = \App\Engine\Database::query(
+                'SELECT `force_password_change` FROM `business_users` WHERE `id` = ?',
+                [TestFixtures::BUSINESS_USER_ID]
+            );
+            $this->assertSame(0, (int) $buRow[0]['force_password_change'],
+                'force_password_change must be cleared after password reset');
+
+            // Step 5: Verify the new password works for login
+            $loginPage = $this->get('/admin/login');
+            preg_match('/name="_csrf_token" value="([^"]+)"/', $loginPage['body'], $m3);
+            $csrf3 = $m3[1] ?? '';
+
+            $loginResult = $this->post('/admin/login', [
+                '_csrf_token' => $csrf3,
+                'email'       => TestFixtures::BUSINESS_EMAIL,
+                'password'    => $newPassword,
+            ]);
+            $this->assertSame(302, $loginResult['code']);
+            $this->assertStringNotContainsString('login', $loginResult['location'],
+                'Business user should be redirected to tenant after login with new password');
+        } finally {
+            // Restore original password and force_password_change
+            $hash = password_hash(TestFixtures::BUSINESS_PASSWORD, PASSWORD_DEFAULT);
+            \App\Engine\Database::execute(
+                'UPDATE `business_users` SET `password_hash` = ?, `force_password_change` = 0 WHERE `id` = ?',
+                [$hash, TestFixtures::BUSINESS_USER_ID]
+            );
+            \App\Engine\Database::execute(
+                "DELETE FROM `login_tokens` WHERE `email` = ?",
+                [TestFixtures::BUSINESS_EMAIL]
+            );
+            \App\Engine\Database::execute(
+                "DELETE FROM `email_log` WHERE `to_email` = ?",
+                [TestFixtures::BUSINESS_EMAIL]
+            );
+            $this->restoreTransport($prior);
+        }
+    }
 }
