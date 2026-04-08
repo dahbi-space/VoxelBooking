@@ -395,6 +395,18 @@
     .vb-input::placeholder { color: var(--vb-text-ghost); }
     .vb-input[readonly] { background: var(--vb-bg-well); color: var(--vb-text-tertiary); cursor: default; }
 
+    /* Error state — applied via .is-invalid on the input/select */
+    .vb-input.is-invalid,
+    .vb-select.is-invalid {
+        border-color: var(--vb-error);
+        box-shadow: 0 0 0 3px var(--vb-error-bg), var(--vb-shadow-xs);
+    }
+    .vb-input.is-invalid:focus,
+    .vb-select.is-invalid:focus {
+        border-color: var(--vb-error);
+        box-shadow: 0 0 0 3px var(--vb-error-bg), var(--vb-shadow-xs);
+    }
+
     .vb-input-lg { height: 44px; padding: 0 1rem; font-size: var(--vb-text-md); border-radius: var(--vb-radius-lg); }
     .vb-input-icon { padding-left: 2.75rem; }
     .vb-input-mono { font-family: var(--vb-font-mono); font-size: var(--vb-text-sm); letter-spacing: 0.02em; }
@@ -412,6 +424,14 @@
     .vb-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     @media (max-width: 640px) { .vb-form-row { grid-template-columns: 1fr; } }
     .vb-form-actions { margin-top: 1.75rem; display: flex; align-items: center; gap: 0.75rem; }
+    .vb-form-error {
+        font-size: 0.75rem; color: var(--vb-error); margin-top: 0.25rem;
+        display: flex; align-items: center; gap: 0.25rem;
+        animation: vb-fade-in-down var(--vb-duration-fast) var(--vb-ease-out) both;
+    }
+    .vb-form-error svg,
+    .vb-form-error [data-lucide] { width: 12px; height: 12px; flex-shrink: 0; }
+    .vb-required { color: var(--vb-error); font-weight: 400; }
 
     /* ══════════════════════════════════════════════════════════════
        CARD SYSTEM — Luminous layered surfaces
@@ -520,7 +540,13 @@
     .vb-badge-error { background: var(--vb-error-bg); color: var(--vb-error); }
     .vb-badge-xs { font-size: 0.6rem; padding: 0.125rem 0.375rem; }
     .vb-text-accent { color: var(--vb-accent); }
-    .vb-toggle-label { cursor: pointer; }
+    .vb-toggle-label {
+        cursor: pointer;
+        display: flex; flex-direction: column; gap: 0.125rem;
+    }
+    .vb-toggle-label .vb-label {
+        display: inline-flex; align-items: center; gap: 0.375rem;
+    }
 
     /* Dot variant — subtle presence indicator */
     .vb-dot {

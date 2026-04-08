@@ -843,3 +843,104 @@ document.querySelectorAll('.vb-textarea').forEach((ta) => {
     });
 })();
 
+// ── Platform-wide Form Validation ──
+// On submit: validates all inputs via Constraint Validation API,
+// marks invalid fields with .is-invalid, shows .vb-form-error below,
+// and focuses the first error. Errors clear as soon as the field is edited.
+// Works on all admin forms with .vb-input / .vb-select elements.
+(function () {
+    /** Remove error state from a single input. */
+    function clearFieldError(input) {
+        input.classList.remove('is-invalid');
+        const group = input.closest('.vb-form-group') || input.parentElement;
+        if (!group) return;
+        const msg = group.querySelector('.vb-form-error');
+        if (msg) msg.remove();
+    }
+
+    /** Add error state to a single input. */
+    function markFieldError(input, message) {
+        input.classList.add('is-invalid');
+        const group = input.closest('.vb-form-group') || input.parentElement;
+        if (!group) return;
+        // Prevent duplicate error messages
+        if (group.querySelector('.vb-form-error')) return;
+        const err = document.createElement('div');
+        err.className = 'vb-form-error';
+        err.setAttribute('role', 'alert');
+        err.textContent = message;
+        // Insert after the input (or after its wrapper)
+        const anchor = input.closest('.vb-password-field') ||
+                       input.closest('.vb-color-field') || input;
+        anchor.parentNode.insertBefore(err, anchor.nextSibling);
+    }
+
+    /** Get a human-readable validation message for the field. */
+    function getErrorMessage(input) {
+        if (input.validity.valueMissing) {
+            return input.dataset.errorRequired || 'This field is required.';
+        }
+        if (input.validity.typeMismatch) {
+            return input.dataset.errorType || 'Please enter a valid value.';
+        }
+        if (input.validity.tooShort) {
+            return input.dataset.errorMinlength ||
+                   `At least ${input.minLength} characters required.`;
+        }
+        if (input.validity.patternMismatch) {
+            return input.dataset.errorPattern || 'Please match the expected format.';
+        }
+        return input.validationMessage || 'Invalid value.';
+    }
+
+    // Intercept form submit — validate before sending
+    document.addEventListener('submit', (e) => {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        // Skip non-admin forms (login, booking, etc.) — only forms inside .vb-card
+        if (!form.closest('.vb-card')) return;
+
+        // Collect all validatable inputs
+        const inputs = form.querySelectorAll(
+            '.vb-input[required], .vb-select[required], ' +
+            '.vb-input[type="email"], .vb-input[pattern], ' +
+            '.vb-input[minlength]'
+        );
+
+        let firstInvalid = null;
+
+        inputs.forEach((input) => {
+            clearFieldError(input);
+
+            // Skip disabled or hidden inputs (e.g. inside collapsed owner section)
+            if (input.disabled) return;
+            if (input.offsetParent === null && !input.closest('[style*="display: none"]')) return;
+
+            if (!input.checkValidity()) {
+                markFieldError(input, getErrorMessage(input));
+                if (!firstInvalid) firstInvalid = input;
+            }
+        });
+
+        if (firstInvalid) {
+            e.preventDefault();
+            e.stopPropagation();
+            firstInvalid.focus();
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, true);
+
+    // Clear error state on input/change (immediate feedback that the user is fixing it)
+    document.addEventListener('input', (e) => {
+        const el = e.target;
+        if (el.classList && el.classList.contains('is-invalid')) {
+            clearFieldError(el);
+        }
+    });
+    document.addEventListener('change', (e) => {
+        const el = e.target;
+        if (el.classList && el.classList.contains('is-invalid')) {
+            clearFieldError(el);
+        }
+    });
+})();
