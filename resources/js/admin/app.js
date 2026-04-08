@@ -917,9 +917,13 @@ document.querySelectorAll('.vb-textarea').forEach((ta) => {
         inputs.forEach((input) => {
             clearFieldError(input);
 
-            // Skip disabled or hidden inputs (e.g. inside collapsed owner section)
+            // Skip disabled or hidden inputs (e.g. inside collapsed Alpine x-show)
             if (input.disabled) return;
-            if (input.offsetParent === null && !input.closest('[style*="display: none"]')) return;
+            // offsetParent is null for inputs inside display:none ancestors.
+            // Also check for Alpine x-show style="display: none;" on parent.
+            const hiddenAncestor = input.closest('[style*="display: none"]');
+            if (hiddenAncestor) return;
+            if (input.offsetParent === null && input.type !== 'hidden') return;
 
             if (!input.checkValidity()) {
                 markFieldError(input, getErrorMessage(input));

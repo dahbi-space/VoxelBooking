@@ -442,6 +442,7 @@ return [
         'owner_credentials_login'   => 'Login URL',
         'flash_owner_email_invalid' => 'Owner email is not valid.',
         'flash_owner_email_taken'   => 'A user with this email already exists.',
+        'flash_owner_email_required'=> 'Owner email is required when creating an owner account.',
         'flash_owner_name_required' => 'Owner name is required when creating an owner account.',
     ],
 

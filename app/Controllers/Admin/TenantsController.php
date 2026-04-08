@@ -113,7 +113,7 @@ final class TenantsController
                 $errors[] = __('admin.tenants.flash_owner_name_required');
             }
             if ($ownerEmail === '') {
-                $errors[] = __('admin.tenants.flash_email_required');
+                $errors[] = __('admin.tenants.flash_owner_email_required');
             } elseif (!filter_var($ownerEmail, FILTER_VALIDATE_EMAIL)) {
                 $errors[] = __('admin.tenants.flash_owner_email_invalid');
             }
@@ -415,13 +415,14 @@ final class TenantsController
     private function mapFieldErrors(array $errors): array
     {
         $map = [
-            __('admin.tenants.flash_name_required')       => 'name',
-            __('admin.tenants.flash_email_required')       => 'email',
-            __('admin.tenants.flash_email_invalid')        => 'email',
-            __('admin.tenants.flash_slug_taken')           => 'slug',
-            __('admin.tenants.flash_owner_name_required')  => 'owner_name',
-            __('admin.tenants.flash_owner_email_invalid')  => 'owner_email',
-            __('admin.tenants.flash_owner_email_taken')    => 'owner_email',
+            __('admin.tenants.flash_name_required')        => 'name',
+            __('admin.tenants.flash_email_required')        => 'email',
+            __('admin.tenants.flash_email_invalid')         => 'email',
+            __('admin.tenants.flash_slug_taken')            => 'slug',
+            __('admin.tenants.flash_owner_name_required')   => 'owner_name',
+            __('admin.tenants.flash_owner_email_required')  => 'owner_email',
+            __('admin.tenants.flash_owner_email_invalid')   => 'owner_email',
+            __('admin.tenants.flash_owner_email_taken')     => 'owner_email',
         ];
 
         $result = [];
