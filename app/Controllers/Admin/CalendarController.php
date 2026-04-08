@@ -279,14 +279,18 @@ final class CalendarController
 
     /**
      * Check if any availability window exists for a given day of week.
+     * Checks both `availability` (timeslot) and `capacity_slots` (capacity) tables.
      */
     private function hasDayOfWeekAvailability(string $tenantId, int $dayOfWeek): bool
     {
         $rows = Database::query(
             'SELECT 1 FROM `availability`
              WHERE `tenant_id` = ? AND `staff_id` IS NULL AND `day_of_week` = ?
+             UNION ALL
+             SELECT 1 FROM `capacity_slots`
+             WHERE `tenant_id` = ? AND `day_of_week` = ? AND `is_active` = 1
              LIMIT 1',
-            [$tenantId, $dayOfWeek]
+            [$tenantId, $dayOfWeek, $tenantId, $dayOfWeek]
         );
 
         return !empty($rows);
@@ -294,14 +298,20 @@ final class CalendarController
 
     /**
      * Get all days-of-week that have at least one availability window.
-     * Returns array of integers (0=Sun..6=Sat).
+     * Checks both `availability` (timeslot) and `capacity_slots` (capacity) tables.
+     * Returns array of integers (0=Mon..6=Sun, matching ISO convention).
      */
     private function getAvailableDaysOfWeek(string $tenantId): array
     {
         $rows = Database::query(
-            'SELECT DISTINCT `day_of_week` FROM `availability`
-             WHERE `tenant_id` = ? AND `staff_id` IS NULL',
-            [$tenantId]
+            'SELECT DISTINCT `day_of_week` FROM (
+                SELECT `day_of_week` FROM `availability`
+                WHERE `tenant_id` = ? AND `staff_id` IS NULL
+                UNION ALL
+                SELECT `day_of_week` FROM `capacity_slots`
+                WHERE `tenant_id` = ? AND `is_active` = 1
+             ) AS combined',
+            [$tenantId, $tenantId]
         );
 
         return array_map(fn($r) => (int) $r['day_of_week'], $rows);
