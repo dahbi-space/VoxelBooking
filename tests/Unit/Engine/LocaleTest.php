@@ -506,4 +506,106 @@ final class LocaleTest extends TestCase
         $result = Locale::resolveForBooking($tenant, 'nl-NL,nl;q=0.9,en;q=0.8');
         $this->assertSame('en', $result);
     }
+
+    // ════════════════════════════════════════════════════════════════
+    // Direction (RTL Support)
+    // ════════════════════════════════════════════════════════════════
+
+    public function testDirectionDefaultsToLtr(): void
+    {
+        $this->assertSame('ltr', Locale::direction());
+    }
+
+    public function testDirectionArabicIsRtl(): void
+    {
+        Locale::setLocale('ar');
+        $this->assertSame('rtl', Locale::direction());
+    }
+
+    public function testIsRtlReturnsFalseForEnglish(): void
+    {
+        $this->assertFalse(Locale::isRtl());
+    }
+
+    public function testIsRtlReturnsTrueForArabic(): void
+    {
+        Locale::setLocale('ar');
+        $this->assertTrue(Locale::isRtl());
+    }
+
+    public function testDirectionIsLtrForAllNonArabicLocales(): void
+    {
+        $ltrLocales = ['en', 'nl', 'de', 'es', 'fr', 'id', 'it', 'ja', 'pt', 'pl', 'tr'];
+        foreach ($ltrLocales as $locale) {
+            Locale::setLocale($locale);
+            $this->assertSame('ltr', Locale::direction(), "Locale '{$locale}' should be LTR");
+        }
+    }
+
+    public function testFormattingConfigIncludesDirection(): void
+    {
+        $config = Locale::getFormattingConfig();
+        $this->assertArrayHasKey('direction', $config);
+        $this->assertSame('ltr', $config['direction']);
+    }
+
+    public function testFormattingConfigDirectionReflectsRtl(): void
+    {
+        Locale::setLocale('ar');
+        $config = Locale::getFormattingConfig();
+        $this->assertSame('rtl', $config['direction']);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Expanded Locale Registry (12 locales)
+    // ════════════════════════════════════════════════════════════════
+
+    public function testAllTwelveLocalesAreRegistered(): void
+    {
+        $expected = ['en', 'nl', 'de', 'es', 'fr', 'id', 'it', 'ja', 'pt', 'pl', 'tr', 'ar'];
+        $supported = Locale::supported();
+        foreach ($expected as $locale) {
+            $this->assertContains($locale, $supported, "Locale '{$locale}' must be registered");
+        }
+    }
+
+    public function testJapaneseWeekStartIsSunday(): void
+    {
+        Locale::setLocale('ja');
+        $this->assertSame(0, Locale::weekStart());
+    }
+
+    public function testArabicWeekStartIsSaturday(): void
+    {
+        Locale::setLocale('ar');
+        $this->assertSame(6, Locale::weekStart());
+    }
+
+    public function testArabicDateFormatting(): void
+    {
+        Locale::setLocale('ar');
+        $dt = new \DateTimeImmutable('2026-04-08');
+        $this->assertSame('08/04/2026', Locale::date($dt));
+    }
+
+    public function testJapaneseDateFormatting(): void
+    {
+        Locale::setLocale('ja');
+        $dt = new \DateTimeImmutable('2026-04-08');
+        $this->assertSame('2026/04/08', Locale::date($dt));
+    }
+
+    public function testGermanCurrencyAfterSymbol(): void
+    {
+        Locale::setLocale('de');
+        $result = Locale::currency(100.50, 'EUR');
+        $this->assertSame('100,50 €', $result);
+    }
+
+    public function testLocaleDirectionHelperFunction(): void
+    {
+        $this->assertSame('ltr', locale_dir());
+        Locale::setLocale('ar');
+        $this->assertSame('rtl', locale_dir());
+    }
 }
