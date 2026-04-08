@@ -240,6 +240,127 @@ final class TenantOwnerCreationTest extends TestCase
         $this->assertEmpty($rows, 'No tenant should be created when owner validation fails');
     }
 
+    /**
+     * Missing owner email with create_owner=1 targets the owner_email field,
+     * NOT the tenant email field. Old input must be preserved.
+     */
+    public function testMissingOwnerEmailTargetsOwnerField(): void
+    {
+        $slug = 'test-nomail-' . substr(bin2hex(random_bytes(4)), 0, 8);
+
+        $res = $this->postForm('/admin/tenants/create', [
+            'name'            => 'Owner No Email',
+            'slug'            => $slug,
+            'email'           => 'tenant-' . $slug . '@test.test',
+            'booking_pattern' => 'timeslot',
+            'timezone'        => 'UTC',
+            'currency'        => 'EUR',
+            'brand_color'     => '#2563EB',
+            'create_owner'    => '1',
+            'owner_name'      => 'Jane Doe',
+            'owner_email'     => '', // missing
+        ]);
+
+        // Should redirect back to create form
+        $this->assertRedirect($res, '/admin/tenants/create');
+
+        // Follow redirect to inspect the rendered form
+        $page = $this->request('GET', '/admin/tenants/create');
+        $body = $page['body'];
+
+        // Old input must be preserved
+        $this->assertStringContainsString('Owner No Email', $body,
+            'Old tenant name must be preserved on redirect');
+        $this->assertStringContainsString('tenant-' . $slug . '@test.test', $body,
+            'Old tenant email must be preserved on redirect');
+
+        // The tenant email input must NOT have is-invalid
+        $this->assertDoesNotMatchRegularExpression(
+            '/id="tenant_email"[^>]*class="[^"]*is-invalid/',
+            $body,
+            'Tenant email must NOT be marked invalid when owner email is missing'
+        );
+
+        // The owner email input MUST have is-invalid
+        $this->assertMatchesRegularExpression(
+            '/id="owner_email"[^>]*class="[^"]*is-invalid/',
+            $body,
+            'Owner email must be marked invalid when owner email is missing'
+        );
+
+        // The owner-specific error message must appear
+        $this->assertStringContainsString('Owner email is required', $body,
+            'Owner email required error message must appear on the page');
+
+        // Verify no tenant was created
+        $rows = Database::query('SELECT `id` FROM `tenants` WHERE `slug` = ?', [$slug]);
+        $this->assertEmpty($rows, 'No tenant should be created when owner email is missing');
+    }
+
+    /**
+     * Duplicate owner email targets the owner_email field and preserves old input.
+     */
+    public function testDuplicateOwnerEmailTargetsOwnerField(): void
+    {
+        // First, create a tenant with an owner so the email is taken
+        $slug1 = 'test-dup1-' . substr(bin2hex(random_bytes(4)), 0, 8);
+        $ownerEmail = 'dup-' . $slug1 . '@test.test';
+
+        $this->postForm('/admin/tenants/create', [
+            'name'            => 'First Tenant',
+            'slug'            => $slug1,
+            'email'           => 'tenant-' . $slug1 . '@test.test',
+            'booking_pattern' => 'timeslot',
+            'create_owner'    => '1',
+            'owner_name'      => 'First Owner',
+            'owner_email'     => $ownerEmail,
+            'owner_password'  => 'Pass1234!',
+        ]);
+
+        $tenants = Database::query('SELECT `id` FROM `tenants` WHERE `slug` = ?', [$slug1]);
+        $this->assertNotEmpty($tenants, 'First tenant must be created');
+        $this->cleanupIds[] = ['tenants', $tenants[0]['id']];
+        $users = Database::query('SELECT `id` FROM `business_users` WHERE `tenant_id` = ?', [$tenants[0]['id']]);
+        if (!empty($users)) {
+            $this->cleanupIds[] = ['business_users', $users[0]['id']];
+        }
+
+        // Now try to create a second tenant with the same owner email
+        $slug2 = 'test-dup2-' . substr(bin2hex(random_bytes(4)), 0, 8);
+        $res = $this->postForm('/admin/tenants/create', [
+            'name'            => 'Second Tenant',
+            'slug'            => $slug2,
+            'email'           => 'tenant-' . $slug2 . '@test.test',
+            'booking_pattern' => 'timeslot',
+            'create_owner'    => '1',
+            'owner_name'      => 'Dup Owner',
+            'owner_email'     => $ownerEmail, // duplicate
+            'owner_password'  => 'Pass5678!',
+        ]);
+
+        // Should redirect back to create form
+        $this->assertRedirect($res, '/admin/tenants/create');
+
+        // Follow redirect
+        $page = $this->request('GET', '/admin/tenants/create');
+        $body = $page['body'];
+
+        // Old input preserved
+        $this->assertStringContainsString('Second Tenant', $body,
+            'Old tenant name must be preserved on duplicate owner email redirect');
+
+        // Owner email field must be marked invalid (not tenant email)
+        $this->assertMatchesRegularExpression(
+            '/id="owner_email"[^>]*class="[^"]*is-invalid/',
+            $body,
+            'Owner email must be marked invalid on duplicate email'
+        );
+
+        // Verify no second tenant was created
+        $rows = Database::query('SELECT `id` FROM `tenants` WHERE `slug` = ?', [$slug2]);
+        $this->assertEmpty($rows, 'No tenant should be created when owner email is taken');
+    }
+
     // ════════════════════════════════════════════════════════════════
     // Helpers
     // ════════════════════════════════════════════════════════════════
