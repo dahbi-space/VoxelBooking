@@ -232,6 +232,25 @@ describe('markFieldError (production)', () => {
         expect(err.classList.contains('vb-form-error')).toBe(true);
         container.remove();
     });
+
+    it('works with .vb-settings-field container (settings forms)', () => {
+        const container = document.createElement('div');
+        container.innerHTML = `
+            <div class="vb-settings-field">
+                <input type="text" class="vb-input">
+            </div>
+        `;
+        document.body.appendChild(container);
+        const input = container.querySelector('input');
+
+        markFieldError(input, 'Name is required.');
+
+        expect(input.classList.contains('is-invalid')).toBe(true);
+        const err = container.querySelector('.vb-form-error');
+        expect(err).not.toBe(null);
+        expect(err.textContent).toBe('Name is required.');
+        container.remove();
+    });
 });
 
 describe('clearFieldError (production)', () => {
@@ -267,6 +286,24 @@ describe('clearFieldError (production)', () => {
         clearFieldError(input);
 
         expect(input.classList.contains('is-invalid')).toBe(false);
+        container.remove();
+    });
+
+    it('clears errors in .vb-settings-field containers', () => {
+        const container = document.createElement('div');
+        container.innerHTML = `
+            <div class="vb-settings-field">
+                <input type="text" class="vb-input is-invalid">
+                <div class="vb-form-error">Settings error</div>
+            </div>
+        `;
+        document.body.appendChild(container);
+        const input = container.querySelector('input');
+
+        clearFieldError(input);
+
+        expect(input.classList.contains('is-invalid')).toBe(false);
+        expect(container.querySelector('.vb-form-error')).toBe(null);
         container.remove();
     });
 });

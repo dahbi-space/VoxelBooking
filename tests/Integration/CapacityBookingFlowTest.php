@@ -325,6 +325,124 @@ final class CapacityBookingFlowTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════
+    // Tests: Admin — capacity slot validation
+    // ════════════════════════════════════════════════════════════════
+
+    public function testAdminRejectsOversizedCapacity(): void
+    {
+        $res = self::httpPost('/admin/tenants/' . self::$tenantId . '/capacity-slots', [
+            '_csrf_token'    => self::$operatorCsrf,
+            'day_of_week'    => '2',
+            'start_time'     => '12:00',
+            'end_time'       => '14:00',
+            'max_capacity'   => '2000000000000',
+            'min_party_size' => '1',
+            'max_party_size' => '8',
+            'label'          => 'Overflow Test',
+        ]);
+
+        $this->assertSame(302, $res['code'], 'Oversized capacity must redirect, not 500');
+
+        // Verify no slot was created
+        $slot = Database::query(
+            "SELECT * FROM `capacity_slots` WHERE `tenant_id` = ? AND `label` = 'Overflow Test'",
+            [self::$tenantId]
+        );
+        $this->assertEmpty($slot, 'Oversized capacity must not create a slot');
+    }
+
+    public function testAdminRejectsOversizedPartySize(): void
+    {
+        $res = self::httpPost('/admin/tenants/' . self::$tenantId . '/capacity-slots', [
+            '_csrf_token'    => self::$operatorCsrf,
+            'day_of_week'    => '2',
+            'start_time'     => '12:00',
+            'end_time'       => '14:00',
+            'max_capacity'   => '50',
+            'min_party_size' => '1',
+            'max_party_size' => '50000',
+            'label'          => 'Party Overflow',
+        ]);
+
+        $this->assertSame(302, $res['code'], 'Oversized party size must redirect, not 500');
+
+        $slot = Database::query(
+            "SELECT * FROM `capacity_slots` WHERE `tenant_id` = ? AND `label` = 'Party Overflow'",
+            [self::$tenantId]
+        );
+        $this->assertEmpty($slot, 'Oversized party size must not create a slot');
+    }
+
+    public function testAdminRejectsDuplicateSlot(): void
+    {
+        // The seed already has Monday 19:00-21:00. Try to create the exact same window.
+        $res = self::httpPost('/admin/tenants/' . self::$tenantId . '/capacity-slots', [
+            '_csrf_token'    => self::$operatorCsrf,
+            'day_of_week'    => '0',
+            'start_time'     => '19:00',
+            'end_time'       => '21:00',
+            'max_capacity'   => '30',
+            'min_party_size' => '1',
+            'max_party_size' => '6',
+            'label'          => 'Duplicate Test',
+        ]);
+
+        $this->assertSame(302, $res['code'], 'Duplicate slot must redirect, not 500');
+
+        // Verify the duplicate was not created (only the original should exist)
+        $slots = Database::query(
+            "SELECT * FROM `capacity_slots` WHERE `tenant_id` = ? AND `day_of_week` = 0 AND `start_time` = '19:00:00' AND `end_time` = '21:00:00'",
+            [self::$tenantId]
+        );
+        $this->assertCount(1, $slots, 'Only the original slot must exist, no duplicate');
+        $this->assertSame('Dinner Service', $slots[0]['label'], 'The original slot must be unchanged');
+    }
+
+    public function testAdminRejectsMinExceedsMaxPartySize(): void
+    {
+        $res = self::httpPost('/admin/tenants/' . self::$tenantId . '/capacity-slots', [
+            '_csrf_token'    => self::$operatorCsrf,
+            'day_of_week'    => '3',
+            'start_time'     => '10:00',
+            'end_time'       => '12:00',
+            'max_capacity'   => '50',
+            'min_party_size' => '10',
+            'max_party_size' => '5',
+            'label'          => 'Min Exceeds Max',
+        ]);
+
+        $this->assertSame(302, $res['code'], 'Min > max party size must redirect, not 500');
+
+        $slot = Database::query(
+            "SELECT * FROM `capacity_slots` WHERE `tenant_id` = ? AND `label` = 'Min Exceeds Max'",
+            [self::$tenantId]
+        );
+        $this->assertEmpty($slot, 'Invalid party size range must not create a slot');
+    }
+
+    public function testAdminRejectsPartyExceedsCapacity(): void
+    {
+        $res = self::httpPost('/admin/tenants/' . self::$tenantId . '/capacity-slots', [
+            '_csrf_token'    => self::$operatorCsrf,
+            'day_of_week'    => '3',
+            'start_time'     => '14:00',
+            'end_time'       => '16:00',
+            'max_capacity'   => '10',
+            'min_party_size' => '1',
+            'max_party_size' => '15',
+            'label'          => 'Party Exceeds Cap',
+        ]);
+
+        $this->assertSame(302, $res['code'], 'Party > capacity must redirect, not 500');
+
+        $slot = Database::query(
+            "SELECT * FROM `capacity_slots` WHERE `tenant_id` = ? AND `label` = 'Party Exceeds Cap'",
+            [self::$tenantId]
+        );
+        $this->assertEmpty($slot, 'Party size > capacity must not create a slot');
+    }
+
+    // ════════════════════════════════════════════════════════════════
     // Tests: Public page shell — translated controls
     // ════════════════════════════════════════════════════════════════
 

@@ -32,7 +32,7 @@ ob_start();
 
 <?php include __DIR__ . '/_tabs.php'; ?>
 
-<form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/settings" class="vb-animate-in">
+<form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/settings" class="vb-animate-in" novalidate>
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
     <!-- Section 1: Identity -->
@@ -45,14 +45,20 @@ ob_start();
             <div class="vb-form-grid vb-form-grid-2">
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-name"><?= __('admin.tenant_settings.field_name') ?> <span class="vb-required">*</span></label>
-                    <input type="text" class="vb-input" id="ts-name" name="name"
+                    <input type="text" class="vb-input<?= error_class('name') ?>" id="ts-name" name="name"
                            value="<?= e(old('name', $tenant['name'] ?? '')) ?>" required maxlength="255">
+                    <?php if (has_error('name')): ?>
+                        <div class="vb-form-error" role="alert"><?= field_error('name') ?></div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-email"><?= __('admin.tenant_settings.field_email') ?> <span class="vb-required">*</span></label>
-                    <input type="email" class="vb-input" id="ts-email" name="email"
+                    <input type="email" class="vb-input<?= error_class('email') ?>" id="ts-email" name="email"
                            value="<?= e(old('email', $tenant['email'] ?? '')) ?>" required>
+                    <?php if (has_error('email')): ?>
+                        <div class="vb-form-error" role="alert"><?= field_error('email') ?></div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="vb-settings-field">
@@ -86,13 +92,17 @@ ob_start();
                 <?php $effectiveSlugEsc = htmlspecialchars($effectiveSlug, ENT_QUOTES, 'UTF-8'); ?>
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-slug"><?= __('admin.tenant_settings.field_slug') ?></label>
-                    <input type="text" class="vb-input" id="ts-slug" name="slug"
+                    <input type="text" class="vb-input<?= error_class('slug') ?>" id="ts-slug" name="slug"
                            value="<?= $effectiveSlugEsc ?>"
                            x-model="slug"
                            @input="normalize()"
                            maxlength="100"
                            placeholder="my-business">
-                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_slug_hint') ?></span>
+                    <?php if (has_error('slug')): ?>
+                        <div class="vb-form-error" role="alert"><?= field_error('slug') ?></div>
+                    <?php else: ?>
+                        <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_slug_hint') ?></span>
+                    <?php endif; ?>
                 </div>
                 <div class="vb-public-url-inline">
                     <code class="vb-public-url-text" x-text="fullUrl"><?= htmlspecialchars($baseUrl . $effectiveSlug, ENT_QUOTES, 'UTF-8') ?></code>

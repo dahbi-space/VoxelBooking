@@ -55,14 +55,12 @@ final class AccountController
         $name  = trim($request->string('name'));
         $email = trim(strtolower($request->string('email')));
 
+        $errors = [];
         if ($name === '') {
-            FormState::toast('error', __('admin.flash.profile_name_required'));
-            return Response::redirect('/admin/account');
+            $errors['name'] = __('admin.flash.profile_name_required');
         }
-
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            FormState::toast('error', __('admin.flash.profile_email_invalid'));
-            return Response::redirect('/admin/account');
+            $errors['email'] = __('admin.flash.profile_email_invalid');
         }
 
         $user = Auth::user();
@@ -70,31 +68,36 @@ final class AccountController
             return Response::redirect('/admin/login');
         }
 
-        $table      = $user['type'] === 'operator' ? 'operators' : 'business_users';
-        $oldEmail   = $user['email'] ?? '';
-        $oldName    = $user['name'] ?? '';
+        $oldEmail = $user['email'] ?? '';
         $emailChanged = ($email !== strtolower($oldEmail));
 
-        try {
-            // If email is changing, check for uniqueness
-            if ($emailChanged) {
-                $exists = Database::query(
-                    "SELECT 1 FROM `auth_emails` WHERE `email` = ? AND `user_id` != ? LIMIT 1",
-                    [$email, $user['id']]
-                );
-                if (!empty($exists)) {
-                    FormState::toast('error', __('admin.flash.profile_email_taken'));
-                    return Response::redirect('/admin/account');
-                }
+        // Check email uniqueness if changing and no prior email error
+        if ($emailChanged && empty($errors['email'])) {
+            $exists = Database::query(
+                "SELECT 1 FROM `auth_emails` WHERE `email` = ? AND `user_id` != ? LIMIT 1",
+                [$email, $user['id']]
+            );
+            if (!empty($exists)) {
+                $errors['email'] = __('admin.flash.profile_email_taken');
             }
+        }
 
-            // Update profile
+        if (!empty($errors)) {
+            FormState::flash(['name' => $name, 'email' => $email], $errors);
+            $firstError = reset($errors);
+            FormState::toast('error', $firstError);
+            return Response::redirect('/admin/account');
+        }
+
+        $table   = $user['type'] === 'operator' ? 'operators' : 'business_users';
+        $oldName = $user['name'] ?? '';
+
+        try {
             Database::execute(
                 "UPDATE `{$table}` SET `name` = ?, `email` = ?, `updated_at` = NOW() WHERE `id` = ?",
                 [$name, $email, $user['id']]
             );
 
-            // Update auth_emails registry if email changed
             if ($emailChanged) {
                 Database::execute(
                     "UPDATE `auth_emails` SET `email` = ? WHERE `user_type` = ? AND `user_id` = ?",
@@ -131,18 +134,25 @@ final class AccountController
         $newPassword     = $request->string('new_password');
         $confirmPassword = $request->string('confirm_password');
 
-        if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
-            FormState::toast('error', __('admin.flash.password_required'));
-            return Response::redirect('/admin/account');
+        $errors = [];
+        if ($currentPassword === '') {
+            $errors['current_password'] = __('admin.flash.password_required');
+        }
+        if ($newPassword === '') {
+            $errors['new_password'] = __('admin.flash.password_required');
+        } elseif (strlen($newPassword) < 8) {
+            $errors['new_password'] = __('admin.flash.password_min_length');
+        }
+        if ($confirmPassword === '') {
+            $errors['confirm_password'] = __('admin.flash.password_required');
+        } elseif ($newPassword !== '' && $newPassword !== $confirmPassword) {
+            $errors['confirm_password'] = __('admin.flash.password_mismatch');
         }
 
-        if ($newPassword !== $confirmPassword) {
-            FormState::toast('error', __('admin.flash.password_mismatch'));
-            return Response::redirect('/admin/account');
-        }
-
-        if (strlen($newPassword) < 8) {
-            FormState::toast('error', __('admin.flash.password_min_length'));
+        if (!empty($errors)) {
+            FormState::flash([], $errors);
+            $firstError = reset($errors);
+            FormState::toast('error', $firstError);
             return Response::redirect('/admin/account');
         }
 
@@ -159,6 +169,7 @@ final class AccountController
             );
 
             if (empty($rows) || !password_verify($currentPassword, $rows[0]['password_hash'])) {
+                FormState::flash([], ['current_password' => __('admin.flash.password_incorrect')]);
                 FormState::toast('error', __('admin.flash.password_incorrect'));
                 return Response::redirect('/admin/account');
             }

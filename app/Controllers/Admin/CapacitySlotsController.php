@@ -161,11 +161,32 @@ final class CapacitySlotsController
 
         // ── Insert ──
         $id = Ulid::generate();
-        Database::execute(
-            'INSERT INTO `capacity_slots` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `min_party_size`, `max_party_size`, `label`)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [$id, $tenantId, $dayOfWeek, $startTime . ':00', $endTime . ':00', $maxCapacity, $minPartySize, $maxPartySize, $label]
-        );
+
+        try {
+            Database::execute(
+                'INSERT INTO `capacity_slots` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `min_party_size`, `max_party_size`, `label`)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [$id, $tenantId, $dayOfWeek, $startTime . ':00', $endTime . ':00', $maxCapacity, $minPartySize, $maxPartySize, $label]
+            );
+        } catch (\PDOException $e) {
+            // SQLSTATE 23000 = integrity constraint (duplicate key from uq_capacity_slots_window)
+            if (str_starts_with($e->getCode(), '23')) {
+                FormState::flash([
+                    'day_of_week'    => (string) $dayOfWeek,
+                    'start_time'     => $startTime,
+                    'end_time'       => $endTime,
+                    'max_capacity'   => $rawCapacity,
+                    'min_party_size' => $rawMinParty,
+                    'max_party_size' => $rawMaxParty,
+                    'label'          => $label ?? '',
+                ], ['start_time' => __('admin.capacity_slots.error_duplicate_slot')]);
+
+                FormState::toast('error', __('admin.capacity_slots.error_duplicate_slot'));
+                return Response::redirect($redirectUrl);
+            }
+
+            throw $e;
+        }
 
         AuditLog::log('capacity_slot.created', 'capacity_slot', $id, [
             'day_of_week' => $dayOfWeek,

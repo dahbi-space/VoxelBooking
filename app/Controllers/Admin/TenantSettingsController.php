@@ -76,24 +76,26 @@ final class TenantSettingsController
 
         $errors = [];
         if ($name === '') {
-            $errors[] = __('admin.tenant_settings.error_name_required');
+            $errors['name'] = __('admin.tenant_settings.error_name_required');
         }
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = __('admin.tenant_settings.error_email_invalid');
+            $errors['email'] = __('admin.tenant_settings.error_email_invalid');
         }
         if ($slug !== null && $slug !== '' && !preg_match('/^[a-z0-9\-]+$/', $slug)) {
-            $errors[] = __('admin.tenant_settings.error_slug_invalid');
+            $errors['slug'] = __('admin.tenant_settings.error_slug_invalid');
         }
-        if ($slug !== null && $slug !== '' && Tenant::slugExists($slug, excludeId: $tenantId)) {
-            $errors[] = __('admin.tenant_settings.error_slug_taken');
+        if ($slug !== null && $slug !== '' && empty($errors['slug']) && Tenant::slugExists($slug, excludeId: $tenantId)) {
+            $errors['slug'] = __('admin.tenant_settings.error_slug_taken');
         }
 
         if (!empty($errors)) {
-            FormState::toast('error', implode(' ', $errors));
-            $this->setOldInput([
+            FormState::flash([
                 'name' => $name, 'email' => $email, 'phone' => $phone ?? '',
                 'slug' => $slug ?? '', 'timezone' => $timezone, 'locale' => $locale, 'currency' => $currency,
-            ]);
+            ], $errors);
+
+            $firstError = reset($errors);
+            FormState::toast('error', $firstError);
             return Response::redirect("/admin/tenants/{$tenantId}/settings");
         }
 
@@ -381,18 +383,20 @@ final class TenantSettingsController
 
         $errors = [];
         if ($notifEmail !== null && !filter_var($notifEmail, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = __('admin.tenant_settings.error_notif_email_invalid');
+            $errors['notification_email'] = __('admin.tenant_settings.error_notif_email_invalid');
         }
 
         if (!empty($errors)) {
-            FormState::toast('error', implode(' ', $errors));
-            $this->setOldInput([
+            FormState::flash([
                 'notification_email'     => $notifEmail ?? '',
                 'notify_on_booking'      => $request->string('notify_on_booking'),
                 'notify_on_cancellation' => $request->string('notify_on_cancellation'),
                 'send_reminders'         => $request->string('send_reminders'),
                 'reminder_hours_before'  => $request->string('reminder_hours_before'),
-            ]);
+            ], $errors);
+
+            $firstError = reset($errors);
+            FormState::toast('error', $firstError);
             return Response::redirect("/admin/tenants/{$tenantId}/settings/notifications");
         }
 
@@ -496,13 +500,6 @@ final class TenantSettingsController
             'pageTitle' => '403',
             'csrfToken' => CsrfMiddleware::generateToken(),
         ], 403);
-    }
-
-
-
-    private function setOldInput(array $data): void
-    {
-        FormState::flashInput($data);
     }
 
 

@@ -30,15 +30,21 @@ ob_start();
         <!-- Name -->
         <div class="vb-form-group">
             <label for="invite_name" class="vb-label"><?= __('admin.users.invite_name') ?> <span class="vb-required">*</span></label>
-            <input type="text" id="invite_name" name="name" class="vb-input"
-                   placeholder="Jane Doe" required>
+            <input type="text" id="invite_name" name="name" class="vb-input<?= error_class('name') ?>"
+                   placeholder="Jane Doe" required value="<?= e(old('name')) ?>">
+            <?php if (has_error('name')): ?>
+                <div class="vb-form-error" role="alert"><?= field_error('name') ?></div>
+            <?php endif; ?>
         </div>
 
         <!-- Email -->
         <div class="vb-form-group">
             <label for="invite_email" class="vb-label"><?= __('admin.users.invite_email') ?> <span class="vb-required">*</span></label>
-            <input type="email" id="invite_email" name="email" class="vb-input"
-                   placeholder="owner@example.com" required>
+            <input type="email" id="invite_email" name="email" class="vb-input<?= error_class('email') ?>"
+                   placeholder="owner@example.com" required value="<?= e(old('email')) ?>">
+            <?php if (has_error('email')): ?>
+                <div class="vb-form-error" role="alert"><?= field_error('email') ?></div>
+            <?php endif; ?>
         </div>
 
         <!-- Role -->
@@ -64,7 +70,7 @@ ob_start();
         <div class="vb-form-group">
             <label for="invite_password" class="vb-label"><?= __('admin.users.invite_password') ?> <span class="vb-required">*</span></label>
             <div class="vb-password-field">
-                <input type="password" id="invite_password" name="password" class="vb-input"
+                <input type="password" id="invite_password" name="password" class="vb-input<?= error_class('password') ?>"
                        x-ref="passwordField" autocomplete="new-password" required minlength="8">
                 <button type="button" class="vb-btn vb-btn-ghost vb-btn-sm" @click="togglePasswordVisibility"
                         title="<?= __('admin.users.invite_toggle_visibility') ?>">
@@ -76,6 +82,9 @@ ob_start();
                     <i data-lucide="refresh-cw"></i>
                 </button>
             </div>
+            <?php if (has_error('password')): ?>
+                <div class="vb-form-error" role="alert"><?= field_error('password') ?></div>
+            <?php endif; ?>
         </div>
 
         <!-- Send email toggle -->

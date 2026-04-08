@@ -107,33 +107,40 @@ final class BusinessUsersController
         // Validate
         $errors = [];
         if ($name === '') {
-            $errors[] = __('admin.users.error_name_required');
+            $errors['name'] = __('admin.users.error_name_required');
         }
         if ($email === '') {
-            $errors[] = __('admin.users.error_email_required');
+            $errors['email'] = __('admin.users.error_email_required');
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = __('admin.users.error_email_invalid');
+            $errors['email'] = __('admin.users.error_email_invalid');
         }
         if (!in_array($role, ['owner', 'manager'], true)) {
-            $errors[] = __('admin.users.error_role_invalid');
+            $errors['role'] = __('admin.users.error_role_invalid');
         }
         if ($password === '' || strlen($password) < 8) {
-            $errors[] = __('admin.users.error_password_short');
+            $errors['password'] = __('admin.users.error_password_short');
         }
 
         // Check email uniqueness via auth_emails (PK enforces global uniqueness)
-        if ($email !== '' && empty($errors)) {
+        if ($email !== '' && empty($errors['email'])) {
             $existing = Database::query(
                 'SELECT `email` FROM `auth_emails` WHERE `email` = ? LIMIT 1',
                 [$email]
             );
             if (!empty($existing)) {
-                $errors[] = __('admin.users.error_email_taken');
+                $errors['email'] = __('admin.users.error_email_taken');
             }
         }
 
         if (!empty($errors)) {
-            FormState::toast('error', implode(' ', $errors));
+            FormState::flash([
+                'name'  => $name,
+                'email' => $email,
+                'role'  => $role,
+            ], $errors);
+
+            $firstError = reset($errors);
+            FormState::toast('error', $firstError);
             return Response::redirect("/admin/tenants/{$tenantId}/users/invite");
         }
 

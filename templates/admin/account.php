@@ -38,15 +38,21 @@ ob_start();
 
             <div class="vb-form-group">
                 <label for="account_name" class="vb-label"><?= __('admin.account.name_label') ?></label>
-                <input type="text" id="account_name" name="name" class="vb-input"
-                       value="<?= htmlspecialchars($currentUser['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                <input type="text" id="account_name" name="name" class="vb-input<?= error_class('name') ?>"
+                       value="<?= e(old('name', $currentUser['name'] ?? '')) ?>"
                        required autocomplete="name">
+                <?php if (has_error('name')): ?>
+                    <div class="vb-form-error" role="alert"><?= field_error('name') ?></div>
+                <?php endif; ?>
             </div>
             <div class="vb-form-group">
                 <label for="account_email" class="vb-label"><?= __('admin.account.email_label') ?></label>
-                <input type="email" id="account_email" name="email" class="vb-input"
-                       value="<?= htmlspecialchars($currentUser['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                <input type="email" id="account_email" name="email" class="vb-input<?= error_class('email') ?>"
+                       value="<?= e(old('email', $currentUser['email'] ?? '')) ?>"
                        required autocomplete="email">
+                <?php if (has_error('email')): ?>
+                    <div class="vb-form-error" role="alert"><?= field_error('email') ?></div>
+                <?php endif; ?>
             </div>
             <div class="vb-info-row">
                 <span class="vb-info-label"><?= __('admin.account.role_label') ?></span>
@@ -77,18 +83,27 @@ ob_start();
 
             <div class="vb-form-group">
                 <label for="current_password" class="vb-label"><?= __('admin.account.current_pw_label') ?></label>
-                <input type="password" id="current_password" name="current_password" class="vb-input" required autocomplete="current-password">
+                <input type="password" id="current_password" name="current_password" class="vb-input<?= error_class('current_password') ?>" required autocomplete="current-password">
+                <?php if (has_error('current_password')): ?>
+                    <div class="vb-form-error" role="alert"><?= field_error('current_password') ?></div>
+                <?php endif; ?>
             </div>
             <div class="vb-form-group">
                 <label for="new_password" class="vb-label"><?= __('admin.account.new_pw_label') ?></label>
-                <input type="password" id="new_password" name="new_password" class="vb-input" required autocomplete="new-password" minlength="8">
+                <input type="password" id="new_password" name="new_password" class="vb-input<?= error_class('new_password') ?>" required autocomplete="new-password" minlength="8">
+                <?php if (has_error('new_password')): ?>
+                    <div class="vb-form-error" role="alert"><?= field_error('new_password') ?></div>
+                <?php endif; ?>
                 <div class="vb-pw-track" id="pw-track">
                     <div class="vb-pw-fill" id="pw-fill"></div>
                 </div>
             </div>
             <div class="vb-form-group">
                 <label for="confirm_password" class="vb-label"><?= __('admin.account.confirm_pw_label') ?></label>
-                <input type="password" id="confirm_password" name="confirm_password" class="vb-input" required autocomplete="new-password">
+                <input type="password" id="confirm_password" name="confirm_password" class="vb-input<?= error_class('confirm_password') ?>" required autocomplete="new-password">
+                <?php if (has_error('confirm_password')): ?>
+                    <div class="vb-form-error" role="alert"><?= field_error('confirm_password') ?></div>
+                <?php endif; ?>
             </div>
             <div class="vb-form-actions">
                 <button type="submit" class="vb-btn vb-btn-primary">

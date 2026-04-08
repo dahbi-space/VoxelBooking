@@ -28,7 +28,7 @@ export function shouldSkipInput(input) {
  */
 export function clearFieldError(input) {
     input.classList.remove('is-invalid');
-    const group = input.closest('.vb-form-group');
+    const group = input.closest('.vb-form-group') || input.closest('.vb-settings-field');
     if (!group) return;
     const err = group.querySelector('.vb-form-error');
     if (err) err.remove();
@@ -40,7 +40,7 @@ export function clearFieldError(input) {
  */
 export function markFieldError(input, message) {
     input.classList.add('is-invalid');
-    const group = input.closest('.vb-form-group');
+    const group = input.closest('.vb-form-group') || input.closest('.vb-settings-field');
     if (!group) return;
     // Prevent duplicate error messages
     if (group.querySelector('.vb-form-error')) return;
