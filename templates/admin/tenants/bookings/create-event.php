@@ -30,7 +30,7 @@ ob_start();
 
 <form method="POST"
       action="<?= $baseUrl ?>/bookings/create"
-      class="vb-animate-in">
+      class="vb-animate-in" novalidate>
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
     <!-- Section 1: Event Details -->

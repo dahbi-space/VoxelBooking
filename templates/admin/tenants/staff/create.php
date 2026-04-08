@@ -30,7 +30,7 @@ ob_start();
 
 <div class="vb-card p-6 vb-fade-in-up">
     <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/staff/create"
-          id="create-staff-form" enctype="multipart/form-data">
+          id="create-staff-form" enctype="multipart/form-data" novalidate>
         <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
         <div class="vb-form-row">

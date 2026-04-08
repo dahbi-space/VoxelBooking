@@ -47,7 +47,8 @@ ob_start();
           'staff_id'   => old('staff_id'),
           'date'       => old('date'),
           'time'       => old('time'),
-      ], JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>">
+      ], JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
+      novalidate>
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
     <!-- Section 1: Appointment Details -->

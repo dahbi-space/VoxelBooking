@@ -32,7 +32,7 @@ ob_start();
             <div class="vb-card-title"><?= __('admin.account.profile_title') ?></div>
             <div class="vb-card-desc"><?= __('admin.account.profile_desc') ?></div>
         </div>
-        <form method="POST" action="/admin/account" autocomplete="off">
+        <form method="POST" action="/admin/account" autocomplete="off" novalidate>
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
             <input type="hidden" name="_action" value="profile">
 
@@ -71,7 +71,7 @@ ob_start();
             <div class="vb-card-title"><?= __('admin.account.change_pw_title') ?></div>
             <div class="vb-card-desc"><?= __('admin.account.change_pw_desc') ?></div>
         </div>
-        <form method="POST" action="/admin/account" autocomplete="off">
+        <form method="POST" action="/admin/account" autocomplete="off" novalidate>
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
             <input type="hidden" name="_action" value="password">
 

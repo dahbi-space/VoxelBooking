@@ -26,7 +26,7 @@ $currentStaffIds = old('staff_ids', $linkedStaffIds);
 
 ?>
 
-<form method="POST" action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') ?>" class="vb-animate-in" enctype="multipart/form-data">
+<form method="POST" action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') ?>" class="vb-animate-in" enctype="multipart/form-data" novalidate>
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
     <div class="vb-card p-6">
