@@ -9,7 +9,7 @@
  * No inline styles except dynamic brand color on the preview button
  * (allowed per design system: dynamic values only).
  *
- * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old
+ * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash
  */
 $tenant    = $tenant ?? [];
 $tenantId  = $tenantId ?? '';
@@ -102,16 +102,16 @@ ob_start();
                         <div class="vb-settings-field">
                             <label class="vb-label" for="ts-embed-label"><?= __('admin.tenant_settings.embed_label') ?></label>
                             <input type="text" class="vb-input" id="ts-embed-label" name="embed_button_label"
-                                   value="<?= e(old('embed_button_label')) ?>"
+                                   value="<?= e(old('embed_button_label', $tenant['embed_button_label'] ?? '')) ?>"
                                    placeholder="Book Now" maxlength="50">
                         </div>
                         <div class="vb-settings-field">
                             <label class="vb-label" for="ts-embed-position"><?= __('admin.tenant_settings.embed_position') ?></label>
                             <select class="vb-input" id="ts-embed-position" name="embed_button_position">
-                                <option value="bottom-right" <?= ($tenant['embed_button_position'] ?? 'bottom-right') === 'bottom-right' ? 'selected' : '' ?>>
+                                <option value="bottom-right" <?= old('embed_button_position', $tenant['embed_button_position'] ?? 'bottom-right') === 'bottom-right' ? 'selected' : '' ?>>
                                     <?= __('admin.tenant_settings.embed_pos_right') ?>
                                 </option>
-                                <option value="bottom-left" <?= ($tenant['embed_button_position'] ?? '') === 'bottom-left' ? 'selected' : '' ?>>
+                                <option value="bottom-left" <?= old('embed_button_position', $tenant['embed_button_position'] ?? 'bottom-right') === 'bottom-left' ? 'selected' : '' ?>>
                                     <?= __('admin.tenant_settings.embed_pos_left') ?>
                                 </option>
                             </select>

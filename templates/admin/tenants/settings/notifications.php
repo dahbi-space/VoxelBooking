@@ -5,7 +5,7 @@
  * Structure: card-header → toggle group + detail field.
  * No inline styles — all layout via design system classes.
  *
- * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old
+ * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash
  */
 $tenant   = $tenant ?? [];
 $tenantId = $tenantId ?? '';
@@ -46,7 +46,7 @@ ob_start();
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-notif-email"><?= __('admin.tenant_settings.field_notif_email') ?></label>
                     <input type="email" class="vb-input" id="ts-notif-email" name="notification_email"
-                           value="<?= e(old('notification_email')) ?>"
+                           value="<?= e(old('notification_email', $tenant['notification_email'] ?? '')) ?>"
                            placeholder="<?= e($tenant['email'] ?? '') ?>">
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_notif_email_hint') ?></span>
                 </div>
@@ -65,21 +65,21 @@ ob_start();
                 <div class="vb-settings-toggles">
                     <label class="vb-settings-toggle-item">
                         <input type="hidden" name="notify_on_booking" value="0">
-                        <input type="checkbox" name="notify_on_booking" value="1" <?= old('notify_on_booking') === '1' ?>>
+                        <input type="checkbox" name="notify_on_booking" value="1" <?= $isChecked('notify_on_booking') ?>>
                         <div>
                             <div class="vb-settings-toggle-label"><?= __('admin.tenant_settings.field_notify_booking') ?></div>
                         </div>
                     </label>
                     <label class="vb-settings-toggle-item">
                         <input type="hidden" name="notify_on_cancellation" value="0">
-                        <input type="checkbox" name="notify_on_cancellation" value="1" <?= old('notify_on_cancellation') === '1' ?>>
+                        <input type="checkbox" name="notify_on_cancellation" value="1" <?= $isChecked('notify_on_cancellation') ?>>
                         <div>
                             <div class="vb-settings-toggle-label"><?= __('admin.tenant_settings.field_notify_cancel') ?></div>
                         </div>
                     </label>
                     <label class="vb-settings-toggle-item">
                         <input type="hidden" name="send_reminders" value="0">
-                        <input type="checkbox" name="send_reminders" value="1" <?= old('send_reminders') === '1' ?>>
+                        <input type="checkbox" name="send_reminders" value="1" <?= $isChecked('send_reminders') ?>>
                         <div>
                             <div class="vb-settings-toggle-label"><?= __('admin.tenant_settings.field_send_reminders') ?></div>
                         </div>
@@ -89,7 +89,7 @@ ob_start();
                 <div class="vb-settings-toggle-detail">
                     <label class="vb-label" for="ts-reminder-hrs"><?= __('admin.tenant_settings.field_reminder_hours') ?></label>
                     <input type="number" class="vb-input vb-input-narrow" id="ts-reminder-hrs" name="reminder_hours_before"
-                           value="<?= e(old('reminder_hours_before', '24')) ?>"
+                           value="<?= e(old('reminder_hours_before', $tenant['reminder_hours_before'] ?? '24')) ?>"
                            min="1" step="1">
                 </div>
             </div>

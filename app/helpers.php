@@ -84,12 +84,12 @@ function field_error(string $key): string
 /**
  * Return the error CSS class if a field has an error, empty string otherwise.
  *
- * Use in templates: class="vb-input <?= error_class('email') ?>"
- * Returns 'is-invalid' — the class defined in admin.css and toggled by form-validator.js.
+ * Use in templates: class="vb-input<?= error_class('email') ?>"
+ * Returns ' is-invalid' (with leading space for concatenation).
  */
 function error_class(string $key): string
 {
-    return FormState::hasError($key) ? 'is-invalid' : '';
+    return FormState::hasError($key) ? ' is-invalid' : '';
 }
 
 // ════════════════════════════════════════════════════════════════

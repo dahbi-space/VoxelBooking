@@ -47,14 +47,10 @@ final class AuthController
         $error = ($toast && $toast['type'] === 'error') ? $toast['message'] : null;
         $success = ($toast && $toast['type'] === 'success') ? $toast['message'] : null;
 
-        $old = FormState::old();
-        $lastEmail = $old['email'] ?? '';
-
         return View::response('auth.login', [
             'csrfToken'  => $csrfToken,
             'error'      => $error,
             'success'    => $success,
-            'lastEmail'  => $lastEmail,
         ]);
     }
 

@@ -7,7 +7,7 @@
  * Slug is editable inside the booking URL card for contextual clarity.
  * No inline styles — all layout via design system classes.
  *
- * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old, $localeOptions
+ * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $localeOptions
  */
 $tenant        = $tenant ?? [];
 $tenantId      = $tenantId ?? '';
@@ -46,19 +46,19 @@ ob_start();
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-name"><?= __('admin.tenant_settings.field_name') ?> <span class="vb-required">*</span></label>
                     <input type="text" class="vb-input" id="ts-name" name="name"
-                           value="<?= e(old('name')) ?>" required maxlength="255">
+                           value="<?= e(old('name', $tenant['name'] ?? '')) ?>" required maxlength="255">
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-email"><?= __('admin.tenant_settings.field_email') ?> <span class="vb-required">*</span></label>
                     <input type="email" class="vb-input" id="ts-email" name="email"
-                           value="<?= e(old('email')) ?>" required>
+                           value="<?= e(old('email', $tenant['email'] ?? '')) ?>" required>
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-phone"><?= __('admin.tenant_settings.field_phone') ?></label>
                     <input type="tel" class="vb-input" id="ts-phone" name="phone"
-                           value="<?= e(old('phone')) ?>">
+                           value="<?= e(old('phone', $tenant['phone'] ?? '')) ?>">
                 </div>
             </div>
         </div>

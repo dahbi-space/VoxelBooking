@@ -286,7 +286,7 @@ class FormStateTest extends TestCase
     {
         FormState::flashErrors(['email' => 'Invalid email']);
 
-        $this->assertSame('is-invalid', error_class('email'));
+        $this->assertSame(' is-invalid', error_class('email'));
         $this->assertSame('', error_class('name'));
     }
 

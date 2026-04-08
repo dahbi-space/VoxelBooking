@@ -6,7 +6,7 @@
  * with `.vb-color-field` for bidirectional picker ↔ hex sync.
  * No inline styles — all layout via design system classes.
  *
- * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old
+ * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash
  */
 $tenant   = $tenant ?? [];
 $tenantId = $tenantId ?? '';
@@ -44,12 +44,12 @@ ob_start();
                     </label>
                     <div class="vb-color-field">
                         <input type="color" x-ref="colorPicker"
-                               value="<?= e(old('brand_color', '#2563EB')) ?>"
+                               value="<?= e(old('brand_color', $tenant['brand_color'] ?? '#2563EB')) ?>"
                                class="vb-color-input"
                                @input="onPickerChange">
                         <input type="text" x-ref="colorText" id="ts-brand-color-text"
                                name="brand_color"
-                               value="<?= e(old('brand_color', '#2563EB')) ?>"
+                               value="<?= e(old('brand_color', $tenant['brand_color'] ?? '#2563EB')) ?>"
                                class="vb-input"
                                maxlength="7" placeholder="#2563EB"
                                @input="onTextChange">
@@ -86,14 +86,14 @@ ob_start();
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-heading"><?= __('admin.tenant_settings.field_heading') ?></label>
                     <input type="text" class="vb-input" id="ts-heading" name="booking_page_heading"
-                           value="<?= e(old('booking_page_heading')) ?>" maxlength="255">
+                           value="<?= e(old('booking_page_heading', $tenant['booking_page_heading'] ?? '')) ?>" maxlength="255">
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_heading_hint') ?></span>
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-desc"><?= __('admin.tenant_settings.field_description') ?></label>
                     <textarea class="vb-input vb-textarea" id="ts-desc" name="booking_page_description"
-                              rows="2"><?= e(old('booking_page_description')) ?></textarea>
+                              rows="2"><?= e(old('booking_page_description', $tenant['booking_page_description'] ?? '')) ?></textarea>
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_description_hint') ?></span>
                 </div>
             </div>

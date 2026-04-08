@@ -12,7 +12,7 @@
  * Inline SVGs: voxel logo (brand mark), mail/lock field icons (Lucide
  * not available on login — no app.js loaded), sun/moon theme toggle.
  *
- * Variables: $csrfToken, $error, $success, $lastEmail
+ * Variables: $csrfToken, $error, $success
  */
 $error = $error ?? null;
 $success = $success ?? null;
@@ -92,7 +92,7 @@ $csrfToken = $csrfToken ?? '';
                         <label for="email" class="vb-label"><?= __('auth.email_label') ?></label>
                         <div class="vb-input-wrap">
                             <svg class="vb-icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                            <input type="email" id="email" name="email" class="vb-input vb-input-icon" placeholder="<?= __('auth.email_placeholder') ?>" required autocomplete="email" autofocus value="<?= htmlspecialchars($lastEmail ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                            <input type="email" id="email" name="email" class="vb-input vb-input-icon" placeholder="<?= __('auth.email_placeholder') ?>" required autocomplete="email" autofocus value="<?= e(old('email')) ?>">
                         </div>
                     </div>
 
@@ -123,7 +123,7 @@ $csrfToken = $csrfToken ?? '';
                         <label for="otp-email" class="vb-label"><?= __('auth.email_label') ?></label>
                         <div class="vb-input-wrap">
                             <svg class="vb-icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                            <input type="email" id="otp-email" name="email" class="vb-input vb-input-icon" placeholder="<?= __('auth.email_placeholder') ?>" required autocomplete="email" value="<?= htmlspecialchars($lastEmail ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                            <input type="email" id="otp-email" name="email" class="vb-input vb-input-icon" placeholder="<?= __('auth.email_placeholder') ?>" required autocomplete="email" value="<?= e(old('email')) ?>">
                         </div>
                     </div>
 
@@ -139,7 +139,7 @@ $csrfToken = $csrfToken ?? '';
                         <label for="ml-email" class="vb-label"><?= __('auth.email_label') ?></label>
                         <div class="vb-input-wrap">
                             <svg class="vb-icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                            <input type="email" id="ml-email" name="email" class="vb-input vb-input-icon" placeholder="<?= __('auth.email_placeholder') ?>" required autocomplete="email" value="<?= htmlspecialchars($lastEmail ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                            <input type="email" id="ml-email" name="email" class="vb-input vb-input-icon" placeholder="<?= __('auth.email_placeholder') ?>" required autocomplete="email" value="<?= e(old('email')) ?>">
                         </div>
                     </div>
 
