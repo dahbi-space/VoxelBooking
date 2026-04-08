@@ -1037,10 +1037,11 @@
     border-right: 1px solid var(--vb-border-subtle);
 }
 
-/* Subtle background for dark mode sidebar without aggressive gradients */
+/* Dark mode sidebar: sits one step above base for subtle spatial separation,
+   but stays in the same tonal family so it reads as "same surface, different plane" */
 [data-theme="dark"] .vb-sidebar {
-    background: #0f1115; /* very deep slate/zinc, purely solid for spatial depth */
-    box-shadow: 1px 0 0 rgba(255, 255, 255, 0.03);
+    background: #111118; /* between base #0c0c14 and surface #151520 */
+    border-right-color: rgba(255, 255, 255, 0.04);
 }
 
 .vb-sidebar-brand {
@@ -1124,18 +1125,22 @@
 .vb-sidebar-link:hover {
     background: var(--vb-bg-hover);
     color: var(--vb-text-primary);
-    transform: translateX(2px);
 }
 
 .vb-sidebar-link.active {
-    background: var(--vb-bg-hover);
+    background: var(--vb-accent-subtle);
     color: var(--vb-text-primary);
     font-weight: 600;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    box-shadow:
+        inset 3px 0 0 var(--vb-accent),
+        0 1px 2px rgba(0, 0, 0, 0.02);
 }
+
 [data-theme="dark"] .vb-sidebar-link.active {
-    background: rgba(255, 255, 255, 0.04);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    background: rgba(129, 140, 248, 0.08);
+    box-shadow:
+        inset 3px 0 0 var(--vb-accent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 /* Sidebar icons */
