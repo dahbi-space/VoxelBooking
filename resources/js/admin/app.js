@@ -288,6 +288,11 @@ Alpine.data('ownerSetup', () => ({
     init() {
         this.smtpConfigured = this.$el.dataset.smtpConfigured === '1';
         this.sendEmail = this.smtpConfigured;
+
+        // Auto-expand if the form was repopulated with owner data
+        if (this.$el.dataset.initiallyEnabled === '1') {
+            this.enabled = true;
+        }
     },
 
     // CSP-safe: referenced as @change="onToggleEnabled"

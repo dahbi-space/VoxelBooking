@@ -59,9 +59,16 @@ final class TenantsController
             return $this->forbidden($request);
         }
 
+        // Retrieve old input from session (populated on validation failure)
+        $old = $_SESSION['_old_input'] ?? [];
+        $fieldErrors = $_SESSION['_field_errors'] ?? [];
+        unset($_SESSION['_old_input'], $_SESSION['_field_errors']);
+
         return $this->render('admin.tenants.create', __('admin.tenants.title'), [
             'documentTitle' => __('admin.tenants.create'),
-            'flash' => $this->flash(),
+            'flash'         => $this->flash(),
+            'old'           => $old,
+            'fieldErrors'   => $fieldErrors,
         ]);
     }
 
@@ -116,6 +123,23 @@ final class TenantsController
         }
 
         if (!empty($errors)) {
+            // Preserve old input so the form repopulates on redirect
+            $_SESSION['_old_input'] = [
+                'name'            => $name,
+                'slug'            => $slug,
+                'email'           => $email,
+                'booking_pattern' => $pattern,
+                'timezone'        => trim($request->string('timezone')) ?: 'UTC',
+                'currency'        => trim($request->string('currency')) ?: 'EUR',
+                'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
+                'create_owner'    => $createOwner ? '1' : '0',
+                'owner_name'      => $ownerName,
+                'owner_email'     => $ownerEmail,
+            ];
+
+            // Track which fields failed so the template can mark them
+            $_SESSION['_field_errors'] = $this->mapFieldErrors($errors);
+
             $this->setFlash('error', implode(' ', $errors));
             return Response::redirect('/admin/tenants/create');
         }
@@ -216,6 +240,20 @@ final class TenantsController
             return Response::redirect('/admin/tenants');
         } catch (\RuntimeException $e) {
             if ($e->getMessage() === 'owner_email_taken') {
+                // Preserve old input on owner-email collision too
+                $_SESSION['_old_input'] = [
+                    'name'            => $name,
+                    'slug'            => $slug,
+                    'email'           => $email,
+                    'booking_pattern' => $pattern,
+                    'timezone'        => trim($request->string('timezone')) ?: 'UTC',
+                    'currency'        => trim($request->string('currency')) ?: 'EUR',
+                    'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
+                    'create_owner'    => '1',
+                    'owner_name'      => $ownerName,
+                    'owner_email'     => $ownerEmail,
+                ];
+                $_SESSION['_field_errors'] = ['owner_email' => __('admin.tenants.flash_owner_email_taken')];
                 $this->setFlash('error', __('admin.tenants.flash_owner_email_taken'));
                 return Response::redirect('/admin/tenants/create');
             }
@@ -350,6 +388,33 @@ final class TenantsController
     private function generateSlug(string $name): string
     {
         return trim(preg_replace('/[^a-z0-9]+/', '-', mb_strtolower($name)), '-') ?: 'tenant';
+    }
+
+    /**
+     * Map translated error messages back to field names for per-field marking.
+     *
+     * Returns ['field_name' => 'translated error message'] for each error that
+     * matches a known validation message.
+     */
+    private function mapFieldErrors(array $errors): array
+    {
+        $map = [
+            __('admin.tenants.flash_name_required')       => 'name',
+            __('admin.tenants.flash_email_required')       => 'email',
+            __('admin.tenants.flash_email_invalid')        => 'email',
+            __('admin.tenants.flash_slug_taken')           => 'slug',
+            __('admin.tenants.flash_owner_name_required')  => 'owner_name',
+            __('admin.tenants.flash_owner_email_invalid')  => 'owner_email',
+            __('admin.tenants.flash_owner_email_taken')    => 'owner_email',
+        ];
+
+        $result = [];
+        foreach ($errors as $msg) {
+            if (isset($map[$msg])) {
+                $result[$map[$msg]] = $msg;
+            }
+        }
+        return $result;
     }
 
     private function render(string $template, string $pageTitle, array $extra = []): Response
