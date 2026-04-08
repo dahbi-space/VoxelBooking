@@ -70,34 +70,96 @@ final class CapacitySlotsController
             return Response::redirect('/admin/tenants');
         }
 
+        $redirectUrl = "/admin/tenants/{$tenantId}/capacity-slots";
+
+        // ── Parse raw input ──
         $dayOfWeek    = (int) $request->string('day_of_week');
         $startTime    = trim($request->string('start_time'));
         $endTime      = trim($request->string('end_time'));
-        $maxCapacity  = max(1, (int) $request->string('max_capacity'));
-        $minPartySize = max(1, (int) ($request->string('min_party_size') ?: '1'));
-        $maxPartySize = max(1, (int) $request->string('max_party_size'));
+        $rawCapacity  = $request->string('max_capacity');
+        $rawMinParty  = $request->string('min_party_size') ?: '1';
+        $rawMaxParty  = $request->string('max_party_size');
         $label        = trim($request->string('label')) ?: null;
 
-        // Clamp min <= max
-        if ($minPartySize > $maxPartySize) {
-            $minPartySize = $maxPartySize;
-        }
+        // ── Validate ──
+        $errors = [];
 
+        // Day
         if ($dayOfWeek < 0 || $dayOfWeek > 6) {
-            FormState::toast('error', __('admin.capacity_slots.error_invalid_day'));
-            return Response::redirect("/admin/tenants/{$tenantId}/capacity-slots");
+            $errors['day_of_week'] = __('admin.capacity_slots.error_invalid_day');
         }
 
-        if (!preg_match('/^\d{2}:\d{2}$/', $startTime) || !preg_match('/^\d{2}:\d{2}$/', $endTime)) {
-            FormState::toast('error', __('admin.capacity_slots.error_invalid_time'));
-            return Response::redirect("/admin/tenants/{$tenantId}/capacity-slots");
+        // Time format
+        if (!preg_match('/^\d{2}:\d{2}$/', $startTime)) {
+            $errors['start_time'] = __('admin.capacity_slots.error_invalid_time');
+        }
+        if (!preg_match('/^\d{2}:\d{2}$/', $endTime)) {
+            $errors['end_time'] = __('admin.capacity_slots.error_invalid_time');
+        }
+        if (empty($errors['start_time']) && empty($errors['end_time']) && $startTime >= $endTime) {
+            $errors['end_time'] = __('admin.capacity_slots.error_end_before_start');
         }
 
-        if ($startTime >= $endTime) {
-            FormState::toast('error', __('admin.capacity_slots.error_end_before_start'));
-            return Response::redirect("/admin/tenants/{$tenantId}/capacity-slots");
+        // Numeric bounds — INT UNSIGNED max is 4294967295, but 10000 seats
+        // is already beyond any real venue. Reject absurd values early.
+        $maxCapacity  = (int) $rawCapacity;
+        $minPartySize = (int) $rawMinParty;
+        $maxPartySize = (int) $rawMaxParty;
+
+        if ($maxCapacity < 1 || $maxCapacity > 10000) {
+            $errors['max_capacity'] = __('admin.capacity_slots.error_capacity_range');
+        }
+        if ($minPartySize < 1 || $minPartySize > 1000) {
+            $errors['min_party_size'] = __('admin.capacity_slots.error_party_size_range');
+        }
+        if ($maxPartySize < 1 || $maxPartySize > 1000) {
+            $errors['max_party_size'] = __('admin.capacity_slots.error_party_size_range');
         }
 
+        // Party size consistency
+        if (empty($errors['min_party_size']) && empty($errors['max_party_size'])) {
+            if ($minPartySize > $maxPartySize) {
+                $errors['min_party_size'] = __('admin.capacity_slots.error_min_exceeds_max');
+            }
+        }
+        if (empty($errors['max_party_size']) && empty($errors['max_capacity'])) {
+            if ($maxPartySize > $maxCapacity) {
+                $errors['max_party_size'] = __('admin.capacity_slots.error_party_exceeds_capacity');
+            }
+        }
+
+        // Duplicate slot check (same tenant + day + start + end)
+        if (empty($errors)) {
+            $existing = Database::query(
+                'SELECT `id` FROM `capacity_slots`
+                 WHERE `tenant_id` = ? AND `day_of_week` = ?
+                   AND `start_time` = ? AND `end_time` = ?
+                 LIMIT 1',
+                [$tenantId, $dayOfWeek, $startTime . ':00', $endTime . ':00']
+            );
+            if (!empty($existing)) {
+                $errors['start_time'] = __('admin.capacity_slots.error_duplicate_slot');
+            }
+        }
+
+        // ── Bail on errors ──
+        if (!empty($errors)) {
+            FormState::flash([
+                'day_of_week'    => (string) $dayOfWeek,
+                'start_time'     => $startTime,
+                'end_time'       => $endTime,
+                'max_capacity'   => $rawCapacity,
+                'min_party_size' => $rawMinParty,
+                'max_party_size' => $rawMaxParty,
+                'label'          => $label ?? '',
+            ], $errors);
+
+            $firstError = reset($errors);
+            FormState::toast('error', $firstError);
+            return Response::redirect($redirectUrl);
+        }
+
+        // ── Insert ──
         $id = Ulid::generate();
         Database::execute(
             'INSERT INTO `capacity_slots` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `min_party_size`, `max_party_size`, `label`)
@@ -114,7 +176,7 @@ final class CapacitySlotsController
         ], $tenantId);
 
         FormState::toast('success', __('admin.capacity_slots.flash_created'));
-        return Response::redirect("/admin/tenants/{$tenantId}/capacity-slots");
+        return Response::redirect($redirectUrl);
     }
 
     public function toggleActive(Request $request): Response

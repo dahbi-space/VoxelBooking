@@ -29,45 +29,63 @@ ob_start();
 <?php endif; ?>
 
 <!-- Add Slot Form -->
-<div class="vb-table-container vb-mb-lg">
+<div class="vb-card vb-mb-lg">
     <div class="vb-card-header">
         <h3 class="vb-card-title"><?= __('admin.capacity_slots.add_slot') ?></h3>
     </div>
     <div class="vb-card-body">
-        <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/capacity-slots" id="add-slot-form">
+        <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/capacity-slots" id="add-slot-form" novalidate>
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
             <div class="vb-form-grid vb-form-grid-4">
                 <div class="vb-form-group">
                     <label class="vb-label" for="slot-day"><?= __('admin.capacity_slots.label_day') ?></label>
-                    <select name="day_of_week" id="slot-day" class="vb-select" required>
+                    <select name="day_of_week" id="slot-day" class="vb-select<?= error_class('day_of_week') ?>" required>
                         <?php for ($d = 0; $d < 7; $d++): ?>
-                            <option value="<?= $d ?>"><?= $dayNames[$d] ?></option>
+                            <option value="<?= $d ?>" <?= old('day_of_week', '0') === (string) $d ? 'selected' : '' ?>><?= $dayNames[$d] ?></option>
                         <?php endfor; ?>
                     </select>
+                    <?php if (has_error('day_of_week')): ?>
+                        <div class="vb-form-error" role="alert"><?= field_error('day_of_week') ?></div>
+                    <?php endif; ?>
                 </div>
                 <div class="vb-form-group">
                     <label class="vb-label" for="slot-start"><?= __('admin.capacity_slots.label_start_time') ?></label>
-                    <input type="time" name="start_time" id="slot-start" class="vb-input" required value="18:00">
+                    <input type="time" name="start_time" id="slot-start" class="vb-input<?= error_class('start_time') ?>" required value="<?= e(old('start_time', '18:00')) ?>">
+                    <?php if (has_error('start_time')): ?>
+                        <div class="vb-form-error" role="alert"><?= field_error('start_time') ?></div>
+                    <?php endif; ?>
                 </div>
                 <div class="vb-form-group">
                     <label class="vb-label" for="slot-end"><?= __('admin.capacity_slots.label_end_time') ?></label>
-                    <input type="time" name="end_time" id="slot-end" class="vb-input" required value="20:00">
+                    <input type="time" name="end_time" id="slot-end" class="vb-input<?= error_class('end_time') ?>" required value="<?= e(old('end_time', '20:00')) ?>">
+                    <?php if (has_error('end_time')): ?>
+                        <div class="vb-form-error" role="alert"><?= field_error('end_time') ?></div>
+                    <?php endif; ?>
                 </div>
                 <div class="vb-form-group">
                     <label class="vb-label" for="slot-capacity"><?= __('admin.capacity_slots.label_capacity') ?></label>
-                    <input type="number" name="max_capacity" id="slot-capacity" class="vb-input" required min="1" value="20">
+                    <input type="number" name="max_capacity" id="slot-capacity" class="vb-input<?= error_class('max_capacity') ?>" required min="1" max="10000" value="<?= e(old('max_capacity', '20')) ?>">
+                    <?php if (has_error('max_capacity')): ?>
+                        <div class="vb-form-error" role="alert"><?= field_error('max_capacity') ?></div>
+                    <?php endif; ?>
                 </div>
                 <div class="vb-form-group">
                     <label class="vb-label" for="slot-min-party"><?= __('admin.capacity_slots.label_min_party_size') ?></label>
-                    <input type="number" name="min_party_size" id="slot-min-party" class="vb-input" required min="1" value="1">
+                    <input type="number" name="min_party_size" id="slot-min-party" class="vb-input<?= error_class('min_party_size') ?>" required min="1" max="1000" value="<?= e(old('min_party_size', '1')) ?>">
+                    <?php if (has_error('min_party_size')): ?>
+                        <div class="vb-form-error" role="alert"><?= field_error('min_party_size') ?></div>
+                    <?php endif; ?>
                 </div>
                 <div class="vb-form-group">
                     <label class="vb-label" for="slot-party"><?= __('admin.capacity_slots.label_party_size') ?></label>
-                    <input type="number" name="max_party_size" id="slot-party" class="vb-input" required min="1" value="8">
+                    <input type="number" name="max_party_size" id="slot-party" class="vb-input<?= error_class('max_party_size') ?>" required min="1" max="1000" value="<?= e(old('max_party_size', '8')) ?>">
+                    <?php if (has_error('max_party_size')): ?>
+                        <div class="vb-form-error" role="alert"><?= field_error('max_party_size') ?></div>
+                    <?php endif; ?>
                 </div>
                 <div class="vb-form-group">
                     <label class="vb-label" for="slot-label"><?= __('admin.capacity_slots.label_label') ?></label>
-                    <input type="text" name="label" id="slot-label" class="vb-input" placeholder="<?= __('admin.capacity_slots.placeholder_label') ?>">
+                    <input type="text" name="label" id="slot-label" class="vb-input" placeholder="<?= __('admin.capacity_slots.placeholder_label') ?>" value="<?= e(old('label')) ?>">
                 </div>
                 <div class="vb-form-group">
                     <button type="submit" class="vb-btn vb-btn-primary" id="add-slot-btn">
