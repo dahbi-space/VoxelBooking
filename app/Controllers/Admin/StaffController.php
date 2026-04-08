@@ -95,7 +95,6 @@ final class StaffController
             'documentTitle' => __('admin.staff.new') . ' — ' . $tenant['name'],
             'tenant'   => $tenant,
             'services' => $services,
-            'old' => FormState::old(),
             'flash'    => FormState::getToast(),
         ], $tenantId);
     }
@@ -249,7 +248,6 @@ final class StaffController
             'member'           => $member,
             'services'         => $services,
             'linkedServiceIds' => $linkedServiceIds,
-            'old' => FormState::old(),
             'flash'            => FormState::getToast(),
         ], $tenantId);
     }

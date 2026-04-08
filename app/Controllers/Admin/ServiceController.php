@@ -84,7 +84,6 @@ final class ServiceController
             'documentTitle' => __('admin.services.new') . ' — ' . $tenant['name'],
             'tenant' => $tenant,
             'staff'  => $staff,
-            'old' => FormState::old(),
             'flash'  => FormState::getToast(),
         ], $tenantId);
     }
@@ -285,7 +284,6 @@ final class ServiceController
             'service'        => $service,
             'staff'          => $staff,
             'linkedStaffIds' => $linkedStaffIds,
-            'old' => FormState::old(),
             'flash'          => FormState::getToast(),
         ], $tenantId);
     }

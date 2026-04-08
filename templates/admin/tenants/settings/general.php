@@ -11,15 +11,7 @@
  */
 $tenant        = $tenant ?? [];
 $tenantId      = $tenantId ?? '';
-$old           = $old ?? null;
 $localeOptions = $localeOptions ?? ['en' => 'English'];
-
-$val = function (string $field, string $default = '') use ($tenant, $old): string {
-    if ($old !== null && array_key_exists($field, $old)) {
-        return htmlspecialchars((string) $old[$field], ENT_QUOTES, 'UTF-8');
-    }
-    return htmlspecialchars((string) ($tenant[$field] ?? $default), ENT_QUOTES, 'UTF-8');
-};
 
 $baseUrl = (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https')
     . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/book/';
@@ -54,19 +46,19 @@ ob_start();
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-name"><?= __('admin.tenant_settings.field_name') ?> <span class="vb-required">*</span></label>
                     <input type="text" class="vb-input" id="ts-name" name="name"
-                           value="<?= $val('name') ?>" required maxlength="255">
+                           value="<?= e(old('name')) ?>" required maxlength="255">
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-email"><?= __('admin.tenant_settings.field_email') ?> <span class="vb-required">*</span></label>
                     <input type="email" class="vb-input" id="ts-email" name="email"
-                           value="<?= $val('email') ?>" required>
+                           value="<?= e(old('email')) ?>" required>
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-phone"><?= __('admin.tenant_settings.field_phone') ?></label>
                     <input type="tel" class="vb-input" id="ts-phone" name="phone"
-                           value="<?= $val('phone') ?>">
+                           value="<?= e(old('phone')) ?>">
                 </div>
             </div>
         </div>
@@ -75,9 +67,7 @@ ob_start();
     <!-- Section 2: Booking URL (slug lives here for context) -->
     <?php
     // Effective slug: respects old input on validation failure, falls back to tenant row
-    $effectiveSlug = ($old !== null && array_key_exists('slug', $old))
-        ? ($old['slug'] ?? '')
-        : ($tenant['slug'] ?? '');
+    $effectiveSlug = old('slug', $tenant['slug'] ?? '');
     $baseUrlJs = htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8');
     ?>
     <div class="vb-settings-section"
@@ -137,22 +127,20 @@ ob_start();
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-timezone"><?= __('admin.tenant_settings.field_timezone') ?></label>
                     <input type="text" class="vb-input" id="ts-timezone" name="timezone"
-                           value="<?= $val('timezone', 'UTC') ?>" maxlength="100">
+                           value="<?= e(old('timezone', $tenant['timezone'] ?? 'UTC')) ?>" maxlength="100">
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-currency"><?= __('admin.tenant_settings.field_currency') ?></label>
                     <input type="text" class="vb-input vb-input-narrow" id="ts-currency" name="currency"
-                           value="<?= $val('currency', 'EUR') ?>" maxlength="3">
+                           value="<?= e(old('currency', $tenant['currency'] ?? 'EUR')) ?>" maxlength="3">
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-locale"><?= __('admin.tenant_settings.field_locale') ?></label>
                     <select class="vb-input" id="ts-locale" name="locale">
                         <?php
-                        $currentLocale = ($old !== null && array_key_exists('locale', $old))
-                            ? $old['locale']
-                            : ($tenant['locale'] ?? 'en');
+                        $currentLocale = old('locale', $tenant['locale'] ?? 'en');
                         $effectiveOptions = $localeOptions;
                         if ($currentLocale !== '' && !isset($effectiveOptions[$currentLocale])) {
                             $effectiveOptions[$currentLocale] = $currentLocale;
@@ -168,9 +156,7 @@ ob_start();
                     <label class="vb-label" for="ts-week-start"><?= __('admin.tenant_settings.field_week_start') ?></label>
                     <select class="vb-input" id="ts-week-start" name="week_start">
                         <?php
-                        $currentWeekStart = $old !== null && array_key_exists('week_start', $old)
-                            ? $old['week_start']
-                            : ($tenant['week_start'] ?? '');
+                        $currentWeekStart = old('week_start', $tenant['week_start'] ?? '');
                         $weekDays = [
                             '' => __('admin.tenant_settings.field_week_start_auto'),
                             '1' => __('booking.days.1'),
@@ -189,9 +175,7 @@ ob_start();
                     <label class="vb-label" for="ts-time-format"><?= __('admin.tenant_settings.field_time_format') ?></label>
                     <select class="vb-input" id="ts-time-format" name="time_format">
                         <?php
-                        $currentTimeFormat = $old !== null && array_key_exists('time_format', $old)
-                            ? $old['time_format']
-                            : ($tenant['time_format'] ?? '');
+                        $currentTimeFormat = old('time_format', $tenant['time_format'] ?? '');
                         $timeFormats = [
                             ''    => __('admin.tenant_settings.field_time_format_auto'),
                             '12h' => __('admin.tenant_settings.field_time_format_12h'),

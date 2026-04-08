@@ -451,7 +451,6 @@ final class BookingsController
                 [$tenantId]
             );
 
-            $old = FormState::old();
 
             return $this->render('admin.tenants.bookings.create-resource', __('admin.bookings.create_title'), [
                 'documentTitle' => __('admin.bookings.create_title'),
@@ -459,7 +458,6 @@ final class BookingsController
                 'tenantId'      => $tenantId,
                 'resources'     => $resources,
                 'flash'         => FormState::getToast(),
-                'old'           => $old,
             ]);
         }
 
@@ -473,7 +471,6 @@ final class BookingsController
                 [$tenantId]
             );
 
-            $old = FormState::old();
 
             return $this->render('admin.tenants.bookings.create-capacity', __('admin.bookings.create_title'), [
                 'documentTitle' => __('admin.bookings.create_title'),
@@ -481,7 +478,6 @@ final class BookingsController
                 'tenantId'      => $tenantId,
                 'slots'         => $slots,
                 'flash'         => FormState::getToast(),
-                'old'           => $old,
             ]);
         }
 
@@ -496,7 +492,6 @@ final class BookingsController
                 [$tenantId]
             );
 
-            $old = FormState::old();
 
             return $this->render('admin.tenants.bookings.create-event', __('admin.bookings.create_title'), [
                 'documentTitle' => __('admin.bookings.create_title'),
@@ -504,7 +499,6 @@ final class BookingsController
                 'tenantId'      => $tenantId,
                 'events'        => $events,
                 'flash'         => FormState::getToast(),
-                'old'           => $old,
             ]);
         }
 
@@ -543,15 +537,22 @@ final class BookingsController
             $serviceStaffMap[$row['service_id']][] = $row['staff_id'];
         }
 
-        // Merge query params (calendar deep link) with old input for prefill
-        $old = FormState::old();
+        // Merge calendar deep-link params (?date=...&time=...) into form state
+        // so old() picks them up in the template for prefill.
         $queryDate = $request->string('date');
-        if ($queryDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $queryDate) && !isset($old['date'])) {
-            $old['date'] = $queryDate;
-        }
         $queryTime = $request->string('time');
-        if ($queryTime && preg_match('/^\d{2}:\d{2}$/', $queryTime) && !isset($old['time'])) {
-            $old['time'] = $queryTime;
+        $needsFlash = false;
+        $prefill = FormState::old(); // consume existing old input
+        if ($queryDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $queryDate) && !isset($prefill['date'])) {
+            $prefill['date'] = $queryDate;
+            $needsFlash = true;
+        }
+        if ($queryTime && preg_match('/^\d{2}:\d{2}$/', $queryTime) && !isset($prefill['time'])) {
+            $prefill['time'] = $queryTime;
+            $needsFlash = true;
+        }
+        if ($needsFlash && !empty($prefill)) {
+            FormState::flashInput($prefill);
         }
 
         return $this->render('admin.tenants.bookings.create', __('admin.bookings.create_title'), [
@@ -562,7 +563,6 @@ final class BookingsController
             'staff'           => $staff,
             'serviceStaffMap' => $serviceStaffMap,
             'flash'           => FormState::getToast(),
-            'old'             => $old,
         ]);
     }
 

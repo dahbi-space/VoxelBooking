@@ -13,7 +13,11 @@ namespace App\Engine;
  * $_SESSION['settings_old_input'], and $_SESSION['settings_flash']
  * patterns that were duplicated across 14 controllers.
  *
- * All state is one-shot: retrieved once, then cleared from the session.
+ * All state is one-shot: consumed from the session on first access and
+ * cached in static memory for the duration of the request. Subsequent
+ * reads come from the static cache, ensuring both one-shot semantics
+ * (page refresh = clean form) and multi-read safety (templates may call
+ * old('name') multiple times without losing data).
  *
  * Usage (controller):
  *   FormState::flashInput(['name' => $name, ...]);
@@ -22,14 +26,23 @@ namespace App\Engine;
  *   return Response::redirect('/admin/...');
  *
  * Usage (template via helpers):
- *   value="<?= e(old('name', $default)) ?>"
+ *   value="<?= e(old('name', $entity['name'] ?? '')) ?>"
  *   class="vb-input <?= error_class('name') ?>"
+ *   <?php if (has_error('name')): ?><div class="vb-form-error"><?= e(field_error('name')) ?></div><?php endif; ?>
  */
 final class FormState
 {
     private const KEY_OLD    = '_form_old';
     private const KEY_ERRORS = '_form_errors';
     private const KEY_TOAST  = '_form_toast';
+
+    // ── Static caches (consume-on-first-access) ──
+
+    /** @var array<string, mixed>|null null = not yet consumed from session */
+    private static ?array $oldCache = null;
+
+    /** @var array<string, string>|null null = not yet consumed from session */
+    private static ?array $errorsCache = null;
 
     // ── Write (flash into session for next request) ──
 
@@ -77,55 +90,74 @@ final class FormState
         $_SESSION[self::KEY_TOAST] = ['type' => $type, 'message' => $message];
     }
 
-    // ── Read (retrieve and clear — one-shot) ──
+    // ── Read (consume-on-first-access, then serve from cache) ──
 
     /**
-     * Get flashed old input and clear it from the session.
+     * Get ALL flashed old input as an array.
+     *
+     * Consumes from session on first call, returns cached data thereafter.
+     * Use oldValue() for single-field access in templates.
      *
      * @return array<string, mixed>
      */
     public static function old(): array
     {
-        $old = $_SESSION[self::KEY_OLD] ?? [];
-        unset($_SESSION[self::KEY_OLD]);
-        return $old;
+        if (self::$oldCache === null) {
+            self::$oldCache = $_SESSION[self::KEY_OLD] ?? [];
+            unset($_SESSION[self::KEY_OLD]);
+        }
+        return self::$oldCache;
     }
 
     /**
      * Get a single old input value with a fallback.
+     *
+     * Safe to call multiple times per render — first call consumes from
+     * session, subsequent calls read from the static cache.
      */
     public static function oldValue(string $key, mixed $default = ''): mixed
     {
-        // Peek without clearing — clearing happens in old()
-        return $_SESSION[self::KEY_OLD][$key] ?? $default;
+        // Ensure consumed from session into cache
+        self::old();
+        return self::$oldCache[$key] ?? $default;
     }
 
     /**
-     * Get flashed per-field errors and clear them from the session.
+     * Get ALL flashed per-field errors as an array.
+     *
+     * Consumes from session on first call, returns cached data thereafter.
      *
      * @return array<string, string>
      */
     public static function errors(): array
     {
-        $errors = $_SESSION[self::KEY_ERRORS] ?? [];
-        unset($_SESSION[self::KEY_ERRORS]);
-        return $errors;
+        if (self::$errorsCache === null) {
+            self::$errorsCache = $_SESSION[self::KEY_ERRORS] ?? [];
+            unset($_SESSION[self::KEY_ERRORS]);
+        }
+        return self::$errorsCache;
     }
 
     /**
-     * Check if a specific field has an error (peek, does not clear).
+     * Check if a specific field has an error.
+     *
+     * Safe to call multiple times — same consume-on-first-access pattern.
      */
     public static function hasError(string $field): bool
     {
-        return isset($_SESSION[self::KEY_ERRORS][$field]);
+        self::errors();
+        return isset(self::$errorsCache[$field]);
     }
 
     /**
-     * Get the error message for a specific field (peek, does not clear).
+     * Get the error message for a specific field.
+     *
+     * Safe to call multiple times — same consume-on-first-access pattern.
      */
     public static function fieldError(string $field): string
     {
-        return $_SESSION[self::KEY_ERRORS][$field] ?? '';
+        self::errors();
+        return self::$errorsCache[$field] ?? '';
     }
 
     /**
@@ -143,7 +175,7 @@ final class FormState
     // ── Utilities ──
 
     /**
-     * Clear all form state from the session.
+     * Clear all form state from the session AND the static caches.
      */
     public static function clear(): void
     {
@@ -152,5 +184,7 @@ final class FormState
             $_SESSION[self::KEY_ERRORS],
             $_SESSION[self::KEY_TOAST]
         );
+        self::$oldCache = null;
+        self::$errorsCache = null;
     }
 }

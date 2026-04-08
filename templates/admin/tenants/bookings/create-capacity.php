@@ -7,7 +7,6 @@
 $tenant   = $tenant ?? [];
 $tenantId = $tenantId ?? '';
 $slots    = $slots ?? [];
-$old      = $old ?? [];
 $baseUrl  = "/admin/tenants/" . htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8');
 
 $dayNames = [];
@@ -54,7 +53,7 @@ ob_start();
                             <option value=""><?= __('admin.bookings.placeholder_select_slot') ?></option>
                             <?php foreach ($slots as $s): ?>
                                 <option value="<?= htmlspecialchars($s['id'], ENT_QUOTES, 'UTF-8') ?>"
-                                        <?= ($old['slot_id'] ?? '') === $s['id'] ? 'selected' : '' ?>>
+                                        <?= old('slot_id') === $s['id'] ? 'selected' : '' ?>>
                                     <?= $dayNames[(int) $s['day_of_week']] ?> <?= substr($s['start_time'], 0, 5) ?>–<?= substr($s['end_time'], 0, 5) ?>
                                     <?php if ($s['label']): ?>(<?= htmlspecialchars($s['label'], ENT_QUOTES, 'UTF-8') ?>)<?php endif; ?>
                                     · <?= str_replace(':count', (string) (int) $s['max_capacity'], __('admin.capacity_slots.capacity_max_seats')) ?>
@@ -66,7 +65,7 @@ ob_start();
                     <div class="vb-form-group">
                         <label for="create_party_size" class="vb-label"><?= __('admin.bookings.label_party_size') ?> <span class="vb-required">*</span></label>
                         <input type="number" id="create_party_size" name="party_size" class="vb-input" required
-                               min="1" value="<?= htmlspecialchars($old['party_size'] ?? '2', ENT_QUOTES, 'UTF-8') ?>">
+                               min="1" value="<?= e(old('party_size', '2')) ?>">
                     </div>
                 </div>
 
@@ -74,7 +73,7 @@ ob_start();
                     <div class="vb-form-group">
                         <label for="create_date" class="vb-label"><?= __('admin.bookings.label_date') ?> <span class="vb-required">*</span></label>
                         <input type="date" id="create_date" name="date" class="vb-input" required
-                               value="<?= htmlspecialchars($old['date'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                               value="<?= e(old('date', '')) ?>">
                     </div>
                     <div class="vb-form-group">
                         <!-- Intentional: reserved for future fields -->
@@ -96,13 +95,13 @@ ob_start();
                     <div class="vb-form-group">
                         <label for="create_customer_name" class="vb-label"><?= __('admin.bookings.label_customer_name') ?> <span class="vb-required">*</span></label>
                         <input type="text" id="create_customer_name" name="customer_name" class="vb-input" required
-                               value="<?= htmlspecialchars($old['customer_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                               value="<?= e(old('customer_name', '')) ?>"
                                autocomplete="off">
                     </div>
                     <div class="vb-form-group">
                         <label for="create_customer_email" class="vb-label"><?= __('admin.bookings.label_customer_email') ?> <span class="vb-required">*</span></label>
                         <input type="email" id="create_customer_email" name="customer_email" class="vb-input" required
-                               value="<?= htmlspecialchars($old['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                               value="<?= e(old('customer_email', '')) ?>"
                                autocomplete="off">
                     </div>
                 </div>
@@ -116,7 +115,7 @@ ob_start();
                             <?php endif; ?>
                         </label>
                         <input type="tel" id="create_customer_phone" name="customer_phone" class="vb-input"
-                               value="<?= htmlspecialchars($old['customer_phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                               value="<?= e(old('customer_phone', '')) ?>"
                                <?php if ((int) ($tenant['require_phone'] ?? 0) === 1): ?>required<?php endif; ?>
                                autocomplete="off">
                     </div>
@@ -137,7 +136,7 @@ ob_start();
             <div class="vb-form-grid">
                 <div class="vb-form-group">
                     <textarea id="create_notes" name="notes" class="vb-input" rows="3"
-                              placeholder="<?= __('admin.bookings.label_notes') ?>…"><?= htmlspecialchars($old['notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                              placeholder="<?= __('admin.bookings.label_notes') ?>…"><?= e(old('notes', '')) ?></textarea>
                 </div>
             </div>
         </div>

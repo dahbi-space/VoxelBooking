@@ -13,8 +13,6 @@
 $tenant    = $tenant ?? [];
 $tenantId  = $tenantId ?? '';
 $templates = $templates ?? [];
-$old       = $old ?? null;
-
 // Index templates by type for easy lookup
 $byType = [];
 foreach ($templates as $tpl) {
@@ -92,23 +90,16 @@ $emailTypes = [
     ],
 ];
 
-$getVal = function (string $type, string $field) use ($byType, $old): string {
+$getVal = function (string $type, string $field) use ($byType): string {
     $key = "{$type}_{$field}";
-    if ($old !== null && array_key_exists($key, $old)) {
-        return htmlspecialchars((string) $old[$key], ENT_QUOTES, 'UTF-8');
-    }
-    return htmlspecialchars((string) ($byType[$type][$field] ?? ''), ENT_QUOTES, 'UTF-8');
+    $fallback = (string) ($byType[$type][$field] ?? '');
+    return e(old($key, $fallback));
 };
 
-$isTypeEnabled = function (string $type) use ($byType, $old): bool {
+$isTypeEnabled = function (string $type) use ($byType): bool {
     $key = "{$type}_is_enabled";
-    if ($old !== null && array_key_exists($key, $old)) {
-        return $old[$key] === '1';
-    }
-    if (isset($byType[$type])) {
-        return (int) ($byType[$type]['is_enabled'] ?? 1) === 1;
-    }
-    return true; // default enabled
+    $fallback = isset($byType[$type]) ? ((int) ($byType[$type]['is_enabled'] ?? 1) === 1 ? '1' : '0') : '1';
+    return old($key, $fallback) === '1';
 };
 
 ob_start();

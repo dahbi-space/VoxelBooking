@@ -13,15 +13,6 @@
  */
 $tenant    = $tenant ?? [];
 $tenantId  = $tenantId ?? '';
-$old       = $old ?? null;
-
-$val = function (string $field) use ($tenant, $old): string {
-    if ($old !== null && array_key_exists($field, $old)) {
-        return htmlspecialchars((string) $old[$field], ENT_QUOTES, 'UTF-8');
-    }
-    return htmlspecialchars((string) ($tenant[$field] ?? ''), ENT_QUOTES, 'UTF-8');
-};
-
 // Format allowed domains for textarea (stored comma-separated, displayed one per line)
 $domainsForTextarea = '';
 $raw = $tenant['allowed_embed_domains'] ?? '';
@@ -111,7 +102,7 @@ ob_start();
                         <div class="vb-settings-field">
                             <label class="vb-label" for="ts-embed-label"><?= __('admin.tenant_settings.embed_label') ?></label>
                             <input type="text" class="vb-input" id="ts-embed-label" name="embed_button_label"
-                                   value="<?= $val('embed_button_label') ?>"
+                                   value="<?= e(old('embed_button_label')) ?>"
                                    placeholder="Book Now" maxlength="50">
                         </div>
                         <div class="vb-settings-field">

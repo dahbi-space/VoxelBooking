@@ -9,20 +9,11 @@
  */
 $tenant   = $tenant ?? [];
 $tenantId = $tenantId ?? '';
-$old      = $old ?? null;
 
-$val = function (string $field, string $default = '') use ($tenant, $old): string {
-    if ($old !== null && array_key_exists($field, $old)) {
-        return htmlspecialchars((string) $old[$field], ENT_QUOTES, 'UTF-8');
-    }
-    return htmlspecialchars((string) ($tenant[$field] ?? $default), ENT_QUOTES, 'UTF-8');
-};
-
-$isChecked = function (string $field) use ($tenant, $old): string {
-    if ($old !== null && array_key_exists($field, $old)) {
-        return $old[$field] === '1' ? 'checked' : '';
-    }
-    return ((int) ($tenant[$field] ?? 0)) === 1 ? 'checked' : '';
+/** Check a boolean setting: old input overrides tenant default. */
+$isChecked = function (string $field) use ($tenant): string {
+    $default = ((int) ($tenant[$field] ?? 0)) === 1 ? '1' : '0';
+    return old($field, $default) === '1' ? 'checked' : '';
 };
 
 ob_start();
@@ -55,7 +46,7 @@ ob_start();
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-notif-email"><?= __('admin.tenant_settings.field_notif_email') ?></label>
                     <input type="email" class="vb-input" id="ts-notif-email" name="notification_email"
-                           value="<?= $val('notification_email') ?>"
+                           value="<?= e(old('notification_email')) ?>"
                            placeholder="<?= e($tenant['email'] ?? '') ?>">
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_notif_email_hint') ?></span>
                 </div>
@@ -74,21 +65,21 @@ ob_start();
                 <div class="vb-settings-toggles">
                     <label class="vb-settings-toggle-item">
                         <input type="hidden" name="notify_on_booking" value="0">
-                        <input type="checkbox" name="notify_on_booking" value="1" <?= $isChecked('notify_on_booking') ?>>
+                        <input type="checkbox" name="notify_on_booking" value="1" <?= old('notify_on_booking') === '1' ?>>
                         <div>
                             <div class="vb-settings-toggle-label"><?= __('admin.tenant_settings.field_notify_booking') ?></div>
                         </div>
                     </label>
                     <label class="vb-settings-toggle-item">
                         <input type="hidden" name="notify_on_cancellation" value="0">
-                        <input type="checkbox" name="notify_on_cancellation" value="1" <?= $isChecked('notify_on_cancellation') ?>>
+                        <input type="checkbox" name="notify_on_cancellation" value="1" <?= old('notify_on_cancellation') === '1' ?>>
                         <div>
                             <div class="vb-settings-toggle-label"><?= __('admin.tenant_settings.field_notify_cancel') ?></div>
                         </div>
                     </label>
                     <label class="vb-settings-toggle-item">
                         <input type="hidden" name="send_reminders" value="0">
-                        <input type="checkbox" name="send_reminders" value="1" <?= $isChecked('send_reminders') ?>>
+                        <input type="checkbox" name="send_reminders" value="1" <?= old('send_reminders') === '1' ?>>
                         <div>
                             <div class="vb-settings-toggle-label"><?= __('admin.tenant_settings.field_send_reminders') ?></div>
                         </div>
@@ -98,7 +89,7 @@ ob_start();
                 <div class="vb-settings-toggle-detail">
                     <label class="vb-label" for="ts-reminder-hrs"><?= __('admin.tenant_settings.field_reminder_hours') ?></label>
                     <input type="number" class="vb-input vb-input-narrow" id="ts-reminder-hrs" name="reminder_hours_before"
-                           value="<?= $val('reminder_hours_before', '24') ?>"
+                           value="<?= e(old('reminder_hours_before', '24')) ?>"
                            min="1" step="1">
                 </div>
             </div>

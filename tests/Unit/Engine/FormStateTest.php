@@ -12,6 +12,12 @@ use PHPUnit\Framework\TestCase;
  *
  * Tests the unified form state API that replaces ad-hoc
  * $_SESSION handling across 14 admin controllers.
+ *
+ * The engine uses consume-on-first-access semantics: the first call
+ * to old() / errors() consumes from $_SESSION into a static cache.
+ * Within the same request, subsequent reads come from the cache.
+ * Across requests (i.e. after redirect), the session data is gone
+ * so the form renders clean.
  */
 class FormStateTest extends TestCase
 {
@@ -22,7 +28,7 @@ class FormStateTest extends TestCase
         if (session_status() === PHP_SESSION_NONE) {
             @session_start();
         }
-        // Clear any leftover state
+        // Clear any leftover state (session + static caches)
         FormState::clear();
     }
 
@@ -43,14 +49,30 @@ class FormStateTest extends TestCase
         $this->assertSame('john@example.com', $old['email']);
     }
 
-    public function testOldIsOneShot(): void
+    public function testOldIsIdempotentWithinRequest(): void
     {
         FormState::flashInput(['name' => 'John']);
 
         $first = FormState::old();
         $this->assertSame('John', $first['name']);
 
-        // Second call returns empty — one-shot
+        // Idempotent within request — cached data still available
+        $second = FormState::old();
+        $this->assertSame('John', $second['name']);
+    }
+
+    public function testOldIsOneShotAcrossRequests(): void
+    {
+        FormState::flashInput(['name' => 'John']);
+
+        // First "request" — consumes from session
+        $first = FormState::old();
+        $this->assertSame('John', $first['name']);
+
+        // Simulate new request by clearing caches (not session, which is already gone)
+        FormState::clear();
+
+        // Second "request" — session data was consumed, nothing left
         $second = FormState::old();
         $this->assertEmpty($second);
     }
@@ -68,6 +90,16 @@ class FormStateTest extends TestCase
         $this->assertSame('default', FormState::oldValue('nonexistent', 'default'));
     }
 
+    public function testOldValueMultipleCallsSafe(): void
+    {
+        FormState::flashInput(['name' => 'John']);
+
+        // Multiple reads of the same key — all return correct value
+        $this->assertSame('John', FormState::oldValue('name'));
+        $this->assertSame('John', FormState::oldValue('name'));
+        $this->assertSame('John', FormState::oldValue('name'));
+    }
+
     // ── flashErrors / errors ──
 
     public function testFlashErrorsAndRetrieve(): void
@@ -79,12 +111,26 @@ class FormStateTest extends TestCase
         $this->assertSame('Name is required', $errors['name']);
     }
 
-    public function testErrorsIsOneShot(): void
+    public function testErrorsIsIdempotentWithinRequest(): void
     {
         FormState::flashErrors(['email' => 'Required']);
 
         $first = FormState::errors();
         $this->assertNotEmpty($first);
+
+        $second = FormState::errors();
+        $this->assertNotEmpty($second, 'Errors must be available for multiple reads within request');
+    }
+
+    public function testErrorsIsOneShotAcrossRequests(): void
+    {
+        FormState::flashErrors(['email' => 'Required']);
+
+        $first = FormState::errors();
+        $this->assertNotEmpty($first);
+
+        // Simulate new request
+        FormState::clear();
 
         $second = FormState::errors();
         $this->assertEmpty($second);
@@ -106,6 +152,16 @@ class FormStateTest extends TestCase
         $this->assertSame('', FormState::fieldError('name'));
     }
 
+    public function testHasErrorMultipleCallsSafe(): void
+    {
+        FormState::flashErrors(['email' => 'Invalid']);
+
+        $this->assertTrue(FormState::hasError('email'));
+        $this->assertTrue(FormState::hasError('email'));
+        $this->assertSame('Invalid', FormState::fieldError('email'));
+        $this->assertSame('Invalid', FormState::fieldError('email'));
+    }
+
     // ── flash (combined) ──
 
     public function testFlashCombinesInputAndErrors(): void
@@ -119,7 +175,6 @@ class FormStateTest extends TestCase
         $this->assertSame('John', $old['name']);
         $this->assertSame('bad', $old['email']);
 
-        // Errors should still be available (peek methods)
         $this->assertTrue(FormState::hasError('email'));
         $this->assertFalse(FormState::hasError('name'));
 
@@ -216,9 +271,13 @@ class FormStateTest extends TestCase
         $this->assertSame('John', $old['name']);
         $this->assertTrue(FormState::hasError('email'));
 
-        // Consuming errors doesn't affect (already consumed) input
+        // Consuming errors doesn't affect input
         $errors = FormState::errors();
         $this->assertSame('Required', $errors['email']);
+
+        // Both still available within same request
+        $this->assertSame('John', FormState::oldValue('name'));
+        $this->assertTrue(FormState::hasError('email'));
     }
 
     // ── Helper function tests ──
@@ -229,6 +288,30 @@ class FormStateTest extends TestCase
 
         $this->assertSame('is-invalid', error_class('email'));
         $this->assertSame('', error_class('name'));
+    }
+
+    public function testOldHelperReturnsFlashedValue(): void
+    {
+        FormState::flashInput(['name' => 'John']);
+
+        $this->assertSame('John', old('name'));
+        $this->assertSame('default', old('missing', 'default'));
+    }
+
+    public function testHasErrorHelper(): void
+    {
+        FormState::flashErrors(['email' => 'Required']);
+
+        $this->assertTrue(has_error('email'));
+        $this->assertFalse(has_error('name'));
+    }
+
+    public function testFieldErrorHelper(): void
+    {
+        FormState::flashErrors(['email' => 'Invalid format']);
+
+        $this->assertSame('Invalid format', field_error('email'));
+        $this->assertSame('', field_error('name'));
     }
 
     public function testClearOnSuccessPathPreventsStaleInput(): void

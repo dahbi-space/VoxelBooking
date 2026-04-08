@@ -10,10 +10,9 @@ $tenant = $tenant ?? [];
 $member = $member ?? [];
 $services = $services ?? [];
 $linkedServiceIds = $linkedServiceIds ?? [];
-$old = $old ?? [];
 $tenantId = $tenantId ?? '';
 $staffId = $member['id'] ?? '';
-$currentServices = !empty($old) ? ($old['service_ids'] ?? []) : $linkedServiceIds;
+$currentServices = old('service_ids', $linkedServiceIds);
 
 ob_start();
 ?>
@@ -49,13 +48,13 @@ ob_start();
             <div class="vb-form-group">
                 <label for="staff_name" class="vb-label"><?= __('admin.staff.label_name') ?> <span class="vb-required">*</span></label>
                 <input type="text" id="staff_name" name="name" class="vb-input" required
-                       value="<?= htmlspecialchars($old['name'] ?? $member['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                       value="<?= e(old('name', $member['name'] ?? '')) ?>"
                        placeholder="<?= __('admin.staff.placeholder_name') ?>">
             </div>
             <div class="vb-form-group">
                 <label for="staff_email" class="vb-label"><?= __('admin.staff.label_email') ?> <span class="vb-required">*</span></label>
                 <input type="email" id="staff_email" name="email" class="vb-input" required
-                       value="<?= htmlspecialchars($old['email'] ?? $member['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                       value="<?= e(old('email', $member['email'] ?? '')) ?>"
                        placeholder="<?= __('admin.staff.placeholder_email') ?>">
             </div>
         </div>
@@ -64,13 +63,13 @@ ob_start();
             <div class="vb-form-group">
                 <label for="staff_phone" class="vb-label"><?= __('admin.staff.label_phone') ?></label>
                 <input type="tel" id="staff_phone" name="phone" class="vb-input"
-                       value="<?= htmlspecialchars($old['phone'] ?? $member['phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                       value="<?= e(old('phone', $member['phone'] ?? '')) ?>"
                        placeholder="<?= __('admin.staff.placeholder_phone') ?>">
             </div>
             <div class="vb-form-group">
                 <label for="staff_title" class="vb-label"><?= __('admin.staff.label_title') ?></label>
                 <input type="text" id="staff_title" name="title" class="vb-input"
-                       value="<?= htmlspecialchars($old['title'] ?? $member['title'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                       value="<?= e(old('title', $member['title'] ?? '')) ?>"
                        placeholder="<?= __('admin.staff.placeholder_title') ?>">
             </div>
         </div>
@@ -78,7 +77,7 @@ ob_start();
         <div class="vb-form-group col-span-full">
             <label for="staff_bio" class="vb-label"><?= __('admin.staff.label_bio') ?></label>
             <textarea id="staff_bio" name="bio" class="vb-input vb-textarea" rows="2"
-                      placeholder="<?= __('admin.staff.placeholder_bio') ?>"><?= htmlspecialchars($old['bio'] ?? $member['bio'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                      placeholder="<?= __('admin.staff.placeholder_bio') ?>"><?= e(old('bio', $member['bio'] ?? '')) ?></textarea>
         </div>
 
         <?php

@@ -2,34 +2,33 @@
 /**
  * Shared event form fields — used by both create and edit templates.
  *
- * Variables: $csrfToken, $tenantId, $old (array), $event (array|null — populated on edit)
+ * Variables: $csrfToken, $tenantId, $event (array|null — populated on edit)
+ *
+ * Old input and field errors are read from session via helpers:
+ *   old(), has_error(), field_error(), error_class()
  */
 $isEdit = isset($event) && $event !== null;
-$v = fn(string $key, $default = '') => htmlspecialchars(
-    $old[$key] ?? ($isEdit ? ($event[$key] ?? $default) : $default),
-    ENT_QUOTES, 'UTF-8'
-);
 
-// Parse event datetime fields for edit
+// Parse event datetime fields: prefer old input, fall back to entity
 $startDate = '';
 $startTime = '';
 $endDate = '';
 $endTime = '';
 if ($isEdit) {
-    $startDate = $old['start_date'] ?? date('Y-m-d', strtotime($event['start_datetime']));
-    $startTime = $old['start_time'] ?? date('H:i', strtotime($event['start_datetime']));
-    $endDate   = $old['end_date'] ?? date('Y-m-d', strtotime($event['end_datetime']));
-    $endTime   = $old['end_time'] ?? date('H:i', strtotime($event['end_datetime']));
+    $startDate = old('start_date', date('Y-m-d', strtotime($event['start_datetime'])));
+    $startTime = old('start_time', date('H:i', strtotime($event['start_datetime'])));
+    $endDate   = old('end_date', date('Y-m-d', strtotime($event['end_datetime'])));
+    $endTime   = old('end_time', date('H:i', strtotime($event['end_datetime'])));
 } else {
-    $startDate = $old['start_date'] ?? '';
-    $startTime = $old['start_time'] ?? '';
-    $endDate   = $old['end_date'] ?? '';
-    $endTime   = $old['end_time'] ?? '';
+    $startDate = old('start_date');
+    $startTime = old('start_time');
+    $endDate   = old('end_date');
+    $endTime   = old('end_time');
 }
 
-$isRecurring = (int) ($old['is_recurring'] ?? ($isEdit ? $event['is_recurring'] : 0));
-$frequency = $old['frequency'] ?? '';
-$count = $old['count'] ?? '';
+$isRecurring = (int) old('is_recurring', $isEdit ? $event['is_recurring'] : 0);
+$frequency = old('frequency', '');
+$count = old('count', '');
 if ($isEdit && (int) $event['is_recurring'] && $event['rrule'] && !$frequency) {
     // Parse RRULE for form fields
     if (preg_match('/FREQ=(\w+)/', $event['rrule'], $m)) {
@@ -40,7 +39,7 @@ if ($isEdit && (int) $event['is_recurring'] && $event['rrule'] && !$frequency) {
     }
 }
 
-$exceptionDates = $old['exception_dates'] ?? '';
+$exceptionDates = old('exception_dates', '');
 if ($isEdit && !$exceptionDates && $event['exception_dates']) {
     $decoded = json_decode($event['exception_dates'], true);
     if (is_array($decoded)) {
@@ -55,7 +54,7 @@ if ($isEdit && !$exceptionDates && $event['exception_dates']) {
 <div class="vb-form-group">
     <label for="event_name" class="vb-label"><?= __('admin.events.name_label') ?></label>
     <input type="text" id="event_name" name="name" class="vb-input" required
-           value="<?= $v('name', $isEdit ? $event['name'] : '') ?>"
+           value="<?= e(old('name', $isEdit ? $event['name'] : '')) ?>"
            placeholder="<?= __('admin.events.name_placeholder') ?>">
 </div>
 
@@ -63,7 +62,7 @@ if ($isEdit && !$exceptionDates && $event['exception_dates']) {
 <div class="vb-form-group">
     <label for="event_description" class="vb-label"><?= __('admin.events.description_label') ?></label>
     <textarea id="event_description" name="description" class="vb-input" rows="3"
-              placeholder="<?= __('admin.events.description_placeholder') ?>"><?= $v('description', $isEdit ? ($event['description'] ?? '') : '') ?></textarea>
+              placeholder="<?= __('admin.events.description_placeholder') ?>"><?= e(old('description', $isEdit ? ($event['description'] ?? '') : '')) ?></textarea>
 </div>
 
     <?php
@@ -81,7 +80,7 @@ if ($isEdit && !$exceptionDates && $event['exception_dates']) {
 <div class="vb-form-group">
     <label for="event_location" class="vb-label"><?= __('admin.events.location_label') ?></label>
     <input type="text" id="event_location" name="location" class="vb-input"
-           value="<?= $v('location', $isEdit ? ($event['location'] ?? '') : '') ?>"
+           value="<?= e(old('location', $isEdit ? ($event['location'] ?? '') : '')) ?>"
            placeholder="<?= __('admin.events.location_placeholder') ?>">
 </div>
 
@@ -90,7 +89,7 @@ if ($isEdit && !$exceptionDates && $event['exception_dates']) {
     <div class="vb-form-group">
         <label for="event_price" class="vb-label"><?= __('admin.events.price_label') ?></label>
         <input type="number" id="event_price" name="price" class="vb-input" step="0.01" min="0"
-               value="<?= $v('price', $isEdit ? ($event['price'] ?? '') : '') ?>"
+               value="<?= e(old('price', $isEdit ? ($event['price'] ?? '') : '')) ?>"
                placeholder="<?= __('admin.events.price_placeholder') ?>">
     </div>
 
@@ -98,7 +97,7 @@ if ($isEdit && !$exceptionDates && $event['exception_dates']) {
     <div class="vb-form-group">
         <label for="event_max" class="vb-label"><?= __('admin.events.max_participants_label') ?></label>
         <input type="number" id="event_max" name="max_participants" class="vb-input" min="1" required
-               value="<?= $v('max_participants', $isEdit ? $event['max_participants'] : '20') ?>">
+               value="<?= e(old('max_participants', $isEdit ? $event['max_participants'] : '20')) ?>">
     </div>
 </div>
 
@@ -107,14 +106,14 @@ if ($isEdit && !$exceptionDates && $event['exception_dates']) {
     <div class="vb-form-group">
         <label for="event_min_spots" class="vb-label"><?= __('admin.events.min_spot_count_label') ?></label>
         <input type="number" id="event_min_spots" name="min_spot_count" class="vb-input" min="1"
-               value="<?= $v('min_spot_count', $isEdit ? ($event['min_spot_count'] ?? '1') : '1') ?>">
+               value="<?= e(old('min_spot_count', $isEdit ? ($event['min_spot_count'] ?? '1') : '1')) ?>">
     </div>
 
     <!-- Max Spots Per Booking -->
     <div class="vb-form-group">
         <label for="event_max_spots" class="vb-label"><?= __('admin.events.max_spot_count_label') ?></label>
         <input type="number" id="event_max_spots" name="max_spot_count" class="vb-input" min="1"
-               value="<?= $v('max_spot_count', $isEdit ? ($event['max_spot_count'] ?? '') : '') ?>"
+               value="<?= e(old('max_spot_count', $isEdit ? ($event['max_spot_count'] ?? '') : '')) ?>"
                placeholder="<?= __('admin.events.max_spot_count_hint') ?>">
     </div>
 </div>
@@ -191,16 +190,16 @@ if ($isEdit && !$exceptionDates && $event['exception_dates']) {
 <div class="vb-form-group">
     <label class="vb-checkbox-label">
         <input type="checkbox" name="allow_waitlist" value="1" id="event_waitlist"
-               <?= (int) ($old['allow_waitlist'] ?? ($isEdit ? $event['allow_waitlist'] : 0)) ? 'checked' : '' ?>
+               <?= (int) old('allow_waitlist', $isEdit ? $event['allow_waitlist'] : 0) ? 'checked' : '' ?>
                onchange="document.getElementById('waitlist-config').style.display = this.checked ? 'block' : 'none';">
         <?= __('admin.events.allow_waitlist_label') ?>
     </label>
 </div>
 
-<div id="waitlist-config" style="display: <?= (int) ($old['allow_waitlist'] ?? ($isEdit ? $event['allow_waitlist'] : 0)) ? 'block' : 'none' ?>;">
+<div id="waitlist-config" style="display: <?= (int) old('allow_waitlist', $isEdit ? $event['allow_waitlist'] : 0) ? 'block' : 'none' ?>;">
     <div class="vb-form-group">
         <label for="event_waitlist_max" class="vb-label"><?= __('admin.events.waitlist_max_label') ?></label>
         <input type="number" id="event_waitlist_max" name="waitlist_max" class="vb-input" min="1"
-               value="<?= $v('waitlist_max', $isEdit ? $event['waitlist_max'] : '5') ?>">
+               value="<?= e(old('waitlist_max', $isEdit ? $event['waitlist_max'] : '5')) ?>">
     </div>
 </div>

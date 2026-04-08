@@ -93,7 +93,6 @@ final class EventsController
             'tenant'        => $tenant,
             'tenantId'      => $tenantId,
             'flash'         => FormState::getToast(),
-            'old' => FormState::old(),
         ], $tenantId);
     }
 
@@ -259,7 +258,6 @@ final class EventsController
             'tenantId'      => $tenantId,
             'event'         => $events[0],
             'flash'         => FormState::getToast(),
-            'old' => FormState::old(),
         ], $tenantId);
     }
 

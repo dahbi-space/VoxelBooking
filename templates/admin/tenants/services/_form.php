@@ -3,13 +3,15 @@
  * Service form partial — shared between create and edit.
  *
  * Variables expected:
- *   $service       — existing record (null for create)
- *   $staff         — active staff list
+ *   $service        — existing record (null for create)
+ *   $staff          — active staff list
  *   $linkedStaffIds — currently linked staff IDs (edit only)
- *   $formAction    — POST target URL
+ *   $formAction     — POST target URL
  *   $tenantId
  *   $csrfToken
- *   $old           — old input from validation failure
+ *
+ * Old input and field errors are read from session via helpers:
+ *   old(), has_error(), field_error(), error_class()
  *
  * Form hierarchy:
  *   1. Identity — name, description
@@ -20,14 +22,8 @@
  */
 $service = $service ?? null;
 $linkedStaffIds = $linkedStaffIds ?? [];
-$old = $old ?? [];
-$currentStaffIds = !empty($old) ? ($old['staff_ids'] ?? []) : $linkedStaffIds;
+$currentStaffIds = old('staff_ids', $linkedStaffIds);
 
-$v = fn(string $field, $default = '') => htmlspecialchars(
-    (string) ($old[$field] ?? ($service[$field] ?? $default)),
-    ENT_QUOTES,
-    'UTF-8'
-);
 ?>
 
 <form method="POST" action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') ?>" class="vb-animate-in" enctype="multipart/form-data">
@@ -39,12 +35,12 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
         <div class="vb-form-group">
             <label class="vb-label" for="svc-name"><?= __('admin.services.field_name') ?> <span class="vb-required">*</span></label>
             <input type="text" class="vb-input" id="svc-name" name="name"
-                   value="<?= $v('name') ?>" required maxlength="255" autofocus>
+                   value="<?= e(old('name')) ?>" required maxlength="255" autofocus>
         </div>
 
         <div class="vb-form-group">
             <label class="vb-label" for="svc-desc"><?= __('admin.services.field_description') ?></label>
-            <textarea class="vb-input vb-textarea" id="svc-desc" name="description" rows="2"><?= $v('description') ?></textarea>
+            <textarea class="vb-input vb-textarea" id="svc-desc" name="description" rows="2"><?= e(old('description')) ?></textarea>
         </div>
 
         <!-- ── 2. Pricing & Scheduling ── -->
@@ -52,13 +48,13 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
             <div class="vb-form-group">
                 <label class="vb-label" for="svc-duration"><?= __('admin.services.field_duration') ?> <span class="vb-required">*</span></label>
                 <input type="number" class="vb-input" id="svc-duration" name="duration_minutes"
-                       value="<?= $v('duration_minutes', '30') ?>" required min="1" step="1">
+                       value="<?= e(old('duration_minutes', '30')) ?>" required min="1" step="1">
             </div>
 
             <div class="vb-form-group">
                 <label class="vb-label" for="svc-price"><?= __('admin.services.field_price') ?></label>
                 <input type="number" class="vb-input" id="svc-price" name="price"
-                       value="<?= $v('price') ?>" min="0" step="0.01">
+                       value="<?= e(old('price')) ?>" min="0" step="0.01">
             </div>
         </div>
 
@@ -69,7 +65,7 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
                     <span class="vb-label-hint"><?= __('admin.services.field_price_label_hint') ?></span>
                 </label>
                 <input type="text" class="vb-input" id="svc-price-label" name="price_label"
-                       value="<?= $v('price_label') ?>" maxlength="100">
+                       value="<?= e(old('price_label')) ?>" maxlength="100">
             </div>
 
             <div class="vb-form-group">
@@ -78,7 +74,7 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
                     <span class="vb-label-hint"><?= __('admin.services.field_category_hint') ?></span>
                 </label>
                 <input type="text" class="vb-input" id="svc-category" name="category"
-                       value="<?= $v('category') ?>" maxlength="100">
+                       value="<?= e(old('category')) ?>" maxlength="100">
             </div>
         </div>
 
@@ -90,9 +86,9 @@ $v = fn(string $field, $default = '') => htmlspecialchars(
                     <?= __('admin.services.field_color') ?>
                 </label>
                 <div class="vb-color-field">
-                    <input type="color" x-ref="colorPicker" value="<?= $v('color', '#6366F1') ?>" class="vb-color-input"
+                    <input type="color" x-ref="colorPicker" value="<?= e(old('color', '#6366F1')) ?>" class="vb-color-input"
                            @input="onPickerChange">
-                    <input type="text" x-ref="colorText" id="svc-color-text" name="color" value="<?= $v('color', '#6366F1') ?>" class="vb-input"
+                    <input type="text" x-ref="colorText" id="svc-color-text" name="color" value="<?= e(old('color', '#6366F1')) ?>" class="vb-input"
                            maxlength="7" placeholder="#6366F1" @input="onTextChange">
                 </div>
             </div>

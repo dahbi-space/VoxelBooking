@@ -5,18 +5,17 @@
  * Variables: $tenant, $tenantId, $csrfToken, $resource (null for create), $old, $seasonalPricing
  */
 $resource = $resource ?? null;
-$old = $old ?? [];
 $seasonalPricing = $seasonalPricing ?? [];
 $isEdit = $resource !== null;
 
-$name        = htmlspecialchars($old['name'] ?? $resource['name'] ?? '', ENT_QUOTES, 'UTF-8');
-$description = htmlspecialchars($old['description'] ?? $resource['description'] ?? '', ENT_QUOTES, 'UTF-8');
-$capacity    = htmlspecialchars((string) ($old['capacity'] ?? $resource['capacity'] ?? '2'), ENT_QUOTES, 'UTF-8');
-$price       = htmlspecialchars((string) ($old['price_per_night'] ?? $resource['price_per_night'] ?? ''), ENT_QUOTES, 'UTF-8');
-$minStay     = htmlspecialchars((string) ($old['min_stay_nights'] ?? $resource['min_stay_nights'] ?? '1'), ENT_QUOTES, 'UTF-8');
-$maxStay     = htmlspecialchars((string) ($old['max_stay_nights'] ?? $resource['max_stay_nights'] ?? '30'), ENT_QUOTES, 'UTF-8');
+$name        = e(old('name', $resource['name'] ?? ''));
+$description = e(old('description', $resource['description'] ?? ''));
+$capacity    = e(old('capacity', $resource['capacity'] ?? '2'));
+$price       = e(old('price_per_night', $resource['price_per_night'] ?? ''));
+$minStay     = e(old('min_stay_nights', $resource['min_stay_nights'] ?? '1'));
+$maxStay     = e(old('max_stay_nights', $resource['max_stay_nights'] ?? '30'));
 
-$amenitiesStr = htmlspecialchars($old['amenities'] ?? (is_array($resource['amenities'] ?? null) ? implode(', ', $resource['amenities']) : ''), ENT_QUOTES, 'UTF-8');
+$amenitiesStr = e(old('amenities', is_array($resource['amenities'] ?? null) ? implode(', ', $resource['amenities']) : ''));
 ?>
 
     <div class="vb-form-group col-span-full">

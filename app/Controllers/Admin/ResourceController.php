@@ -90,7 +90,6 @@ final class ResourceController
         return $this->render('admin.tenants.resources.create', __('admin.resources.new'), [
             'documentTitle' => __('admin.resources.new') . ' — ' . $tenant['name'],
             'tenant' => $tenant,
-            'old' => FormState::old(),
             'flash'  => FormState::getToast(),
         ], $tenantId);
     }
@@ -250,7 +249,6 @@ final class ResourceController
             'tenant'          => $tenant,
             'resource'        => $resource,
             'seasonalPricing' => $seasonalPricing,
-            'old' => FormState::old(),
             'flash'           => FormState::getToast(),
         ], $tenantId);
     }

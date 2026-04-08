@@ -60,15 +60,9 @@ final class TenantsController
             return $this->forbidden($request);
         }
 
-        // Retrieve old input + field errors (populated on validation failure)
-        $old = FormState::old();
-        $fieldErrors = FormState::errors();
-
         return $this->render('admin.tenants.create', __('admin.tenants.title'), [
             'documentTitle' => __('admin.tenants.create'),
             'flash'         => FormState::getToast(),
-            'old'           => $old,
-            'fieldErrors'   => $fieldErrors,
         ]);
     }
 
@@ -267,15 +261,10 @@ final class TenantsController
             return Response::redirect('/admin/tenants');
         }
 
-        $old = FormState::old();
-        $fieldErrors = FormState::errors();
-
         return $this->render('admin.tenants.edit', __('admin.tenants.title'), [
             'documentTitle' => __('admin.tenants.edit'),
             'tenant'        => $tenant,
             'flash'         => FormState::getToast(),
-            'old'           => $old,
-            'fieldErrors'   => $fieldErrors,
         ]);
     }
 

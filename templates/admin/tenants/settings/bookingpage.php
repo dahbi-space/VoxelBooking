@@ -10,20 +10,11 @@
  */
 $tenant   = $tenant ?? [];
 $tenantId = $tenantId ?? '';
-$old      = $old ?? null;
 
-$val = function (string $field, string $default = '') use ($tenant, $old): string {
-    if ($old !== null && array_key_exists($field, $old)) {
-        return htmlspecialchars((string) $old[$field], ENT_QUOTES, 'UTF-8');
-    }
-    return htmlspecialchars((string) ($tenant[$field] ?? $default), ENT_QUOTES, 'UTF-8');
-};
-
-$isChecked = function (string $field) use ($tenant, $old): string {
-    if ($old !== null && array_key_exists($field, $old)) {
-        return $old[$field] === '1' ? 'checked' : '';
-    }
-    return ((int) ($tenant[$field] ?? 0)) === 1 ? 'checked' : '';
+/** Check a boolean setting: old input overrides tenant default. */
+$isChecked = function (string $field) use ($tenant): string {
+    $default = ((int) ($tenant[$field] ?? 0)) === 1 ? '1' : '0';
+    return old($field, $default) === '1' ? 'checked' : '';
 };
 
 ob_start();
@@ -56,14 +47,14 @@ ob_start();
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-confirmation-msg"><?= __('admin.tenant_settings.field_confirmation_message') ?></label>
                     <textarea class="vb-input vb-textarea" id="ts-confirmation-msg" name="confirmation_message"
-                              rows="2" placeholder="<?= __('admin.tenant_settings.field_confirmation_message_placeholder') ?>"><?= $val('confirmation_message') ?></textarea>
+                              rows="2" placeholder="<?= __('admin.tenant_settings.field_confirmation_message_placeholder') ?>"><?= e(old('confirmation_message')) ?></textarea>
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_confirmation_message_hint') ?></span>
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-cancel-policy"><?= __('admin.tenant_settings.field_cancellation_policy') ?></label>
                     <textarea class="vb-input vb-textarea" id="ts-cancel-policy" name="cancellation_policy"
-                              rows="2" placeholder="<?= __('admin.tenant_settings.field_cancellation_policy_placeholder') ?>"><?= $val('cancellation_policy') ?></textarea>
+                              rows="2" placeholder="<?= __('admin.tenant_settings.field_cancellation_policy_placeholder') ?>"><?= e(old('cancellation_policy')) ?></textarea>
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_cancellation_policy_hint') ?></span>
                 </div>
             </div>
@@ -82,7 +73,7 @@ ob_start();
                 <div class="vb-settings-toggles">
                     <label class="vb-settings-toggle-item">
                         <input type="hidden" name="require_phone" value="0">
-                        <input type="checkbox" name="require_phone" value="1" <?= $isChecked('require_phone') ?>>
+                        <input type="checkbox" name="require_phone" value="1" <?= old('require_phone') === '1' ?>>
                         <div>
                             <div class="vb-settings-toggle-label"><?= __('admin.tenant_settings.field_require_phone') ?></div>
                             <div class="vb-settings-toggle-hint"><?= __('admin.tenant_settings.field_require_phone_hint') ?></div>
@@ -90,7 +81,7 @@ ob_start();
                     </label>
                     <label class="vb-settings-toggle-item">
                         <input type="hidden" name="booking_requires_approval" value="0">
-                        <input type="checkbox" name="booking_requires_approval" value="1" <?= $isChecked('booking_requires_approval') ?>>
+                        <input type="checkbox" name="booking_requires_approval" value="1" <?= old('booking_requires_approval') === '1' ?>>
                         <div>
                             <div class="vb-settings-toggle-label"><?= __('admin.tenant_settings.field_booking_requires_approval') ?></div>
                             <div class="vb-settings-toggle-hint"><?= __('admin.tenant_settings.field_booking_requires_approval_hint') ?></div>
@@ -102,7 +93,7 @@ ob_start();
                 <div class="vb-settings-toggles">
                     <label class="vb-settings-toggle-item">
                         <input type="hidden" name="allow_cancellation" value="0">
-                        <input type="checkbox" name="allow_cancellation" value="1" <?= $isChecked('allow_cancellation') ?>>
+                        <input type="checkbox" name="allow_cancellation" value="1" <?= old('allow_cancellation') === '1' ?>>
                         <div>
                             <div class="vb-settings-toggle-label"><?= __('admin.tenant_settings.field_allow_cancellation') ?></div>
                             <div class="vb-settings-toggle-hint"><?= __('admin.tenant_settings.field_allow_cancellation_hint') ?></div>
@@ -112,7 +103,7 @@ ob_start();
                 <div class="vb-settings-toggle-detail">
                     <label class="vb-label" for="ts-cancel-hours"><?= __('admin.tenant_settings.field_cancellation_hours_before') ?></label>
                     <input type="number" class="vb-input vb-input-narrow" id="ts-cancel-hours" name="cancellation_hours_before"
-                           value="<?= $val('cancellation_hours_before', '24') ?>"
+                           value="<?= e(old('cancellation_hours_before', '24')) ?>"
                            min="0" step="1">
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_cancellation_hours_before_hint') ?></span>
                 </div>
@@ -121,7 +112,7 @@ ob_start();
                 <div class="vb-settings-toggles">
                     <label class="vb-settings-toggle-item">
                         <input type="hidden" name="allow_rescheduling" value="0">
-                        <input type="checkbox" name="allow_rescheduling" value="1" <?= $isChecked('allow_rescheduling') ?>>
+                        <input type="checkbox" name="allow_rescheduling" value="1" <?= old('allow_rescheduling') === '1' ?>>
                         <div>
                             <div class="vb-settings-toggle-label"><?= __('admin.tenant_settings.field_allow_rescheduling') ?></div>
                             <div class="vb-settings-toggle-hint"><?= __('admin.tenant_settings.field_allow_rescheduling_hint') ?></div>
@@ -131,7 +122,7 @@ ob_start();
                 <div class="vb-settings-toggle-detail">
                     <label class="vb-label" for="ts-reschedule-hours"><?= __('admin.tenant_settings.field_rescheduling_hours_before') ?></label>
                     <input type="number" class="vb-input vb-input-narrow" id="ts-reschedule-hours" name="rescheduling_hours_before"
-                           value="<?= $val('rescheduling_hours_before', '24') ?>"
+                           value="<?= e(old('rescheduling_hours_before', '24')) ?>"
                            min="0" step="1">
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_rescheduling_hours_before_hint') ?></span>
                 </div>

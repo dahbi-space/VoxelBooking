@@ -477,7 +477,6 @@ final class TenantSettingsController
             'csrfToken'     => CsrfMiddleware::generateToken(),
             'tenantId'      => $tenantId,
             'tenant'        => $tenant,
-            'old'           => $this->getOldInput(),
             'flash'         => FormState::getToast(),
         ], $extraData));
     }
@@ -506,11 +505,6 @@ final class TenantSettingsController
         FormState::flashInput($data);
     }
 
-    private function getOldInput(): ?array
-    {
-        $old = FormState::old();
-        return empty($old) ? null : $old;
-    }
 
     // ── Email Templates ──
 
@@ -542,7 +536,6 @@ final class TenantSettingsController
             'tenantId'      => $tenantId,
             'tenant'        => $tenant,
             'templates'     => $templates,
-            'old'           => $this->getOldInput(),
             'flash'         => FormState::getToast(),
         ]);
     }

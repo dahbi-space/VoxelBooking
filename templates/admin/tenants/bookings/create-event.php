@@ -7,7 +7,6 @@
 $tenant   = $tenant ?? [];
 $tenantId = $tenantId ?? '';
 $events   = $events ?? [];
-$old      = $old ?? [];
 $baseUrl  = "/admin/tenants/" . htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8');
 
 $activePage  = 'bookings';
@@ -49,7 +48,7 @@ ob_start();
                             <option value=""><?= __('booking.event.select_event') ?></option>
                             <?php foreach ($events as $event): ?>
                                 <option value="<?= htmlspecialchars($event['id'], ENT_QUOTES, 'UTF-8') ?>"
-                                        <?= ($old['event_id'] ?? '') === $event['id'] ? 'selected' : '' ?>>
+                                        <?= old('event_id') === $event['id'] ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($event['name'], ENT_QUOTES, 'UTF-8') ?>
                                     — <?= date('M j, Y H:i', strtotime($event['start_datetime'])) ?>
                                     (<?= (int) $event['max_participants'] ?> max)
@@ -61,7 +60,7 @@ ob_start();
                     <div class="vb-form-group">
                         <label for="create_spot_count" class="vb-label"><?= __('booking.event.spots_title') ?></label>
                         <input type="number" id="create_spot_count" name="spot_count" class="vb-input" min="1"
-                               value="<?= htmlspecialchars($old['spot_count'] ?? '1', ENT_QUOTES, 'UTF-8') ?>">
+                               value="<?= e(old('spot_count', '1')) ?>">
                     </div>
                 </div>
 
@@ -69,7 +68,7 @@ ob_start();
                     <div class="vb-form-group">
                         <label for="create_date" class="vb-label"><?= __('booking.event.date_label') ?></label>
                         <input type="date" id="create_date" name="date" class="vb-input"
-                               value="<?= htmlspecialchars($old['date'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                               value="<?= e(old('date', '')) ?>">
                         <span class="vb-settings-hint"><?= __('admin.events.exception_dates_help') ?></span>
                     </div>
                     <div class="vb-form-group">
@@ -92,13 +91,13 @@ ob_start();
                     <div class="vb-form-group">
                         <label for="create_name" class="vb-label"><?= __('admin.bookings.label_customer_name') ?> <span class="vb-required">*</span></label>
                         <input type="text" id="create_name" name="customer_name" class="vb-input" required
-                               value="<?= htmlspecialchars($old['customer_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                               value="<?= e(old('customer_name', '')) ?>"
                                autocomplete="off">
                     </div>
                     <div class="vb-form-group">
                         <label for="create_email" class="vb-label"><?= __('admin.bookings.label_customer_email') ?> <span class="vb-required">*</span></label>
                         <input type="email" id="create_email" name="customer_email" class="vb-input" required
-                               value="<?= htmlspecialchars($old['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                               value="<?= e(old('customer_email', '')) ?>"
                                autocomplete="off">
                     </div>
                 </div>
@@ -107,7 +106,7 @@ ob_start();
                     <div class="vb-form-group">
                         <label for="create_phone" class="vb-label"><?= __('admin.bookings.label_customer_phone') ?></label>
                         <input type="tel" id="create_phone" name="customer_phone" class="vb-input"
-                               value="<?= htmlspecialchars($old['customer_phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                               value="<?= e(old('customer_phone', '')) ?>"
                                autocomplete="off">
                     </div>
                     <div class="vb-form-group">
@@ -127,7 +126,7 @@ ob_start();
             <div class="vb-form-grid">
                 <div class="vb-form-group">
                     <textarea id="create_notes" name="notes" class="vb-input" rows="3"
-                              placeholder="<?= __('admin.bookings.label_notes') ?>…"><?= htmlspecialchars($old['notes'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                              placeholder="<?= __('admin.bookings.label_notes') ?>…"><?= e(old('notes', '')) ?></textarea>
                 </div>
             </div>
         </div>

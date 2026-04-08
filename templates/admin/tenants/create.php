@@ -9,17 +9,15 @@
  *
  * Alpine components: patternCards, colorSync (registered in admin/app.js)
  *
- * Variables: $user, $version, $csrfToken, $flash, $pageTitle, $activePage,
- *            $old (old input on validation failure), $fieldErrors (per-field errors)
+ * Variables: $user, $version, $csrfToken, $flash, $pageTitle, $activePage
+ *
+ * Old input and field errors are read from session via helpers:
+ *   old(), has_error(), field_error(), error_class()
  */
 $activePage = 'tenants';
 
 $timezones = get_supported_timezones();
 $currencies = get_supported_currencies();
-
-// Old input (repopulates form on validation failure)
-$old = $old ?? [];
-$fieldErrors = $fieldErrors ?? [];
 
 $patterns = [
     'timeslot' => [
@@ -44,16 +42,6 @@ $patterns = [
     ],
 ];
 
-/** Helper: escape old input value for HTML attribute. */
-function oldVal(array $old, string $key, string $default = ''): string {
-    return htmlspecialchars($old[$key] ?? $default, ENT_QUOTES, 'UTF-8');
-}
-
-/** Helper: return 'is-invalid' if field has server-side error. */
-function fieldClass(array $errors, string $field): string {
-    return isset($errors[$field]) ? ' is-invalid' : '';
-}
-
 ob_start();
 ?>
 
@@ -77,21 +65,21 @@ ob_start();
 
         <div class="vb-form-group">
             <label for="tenant_name" class="vb-label"><?= __('admin.tenants.name') ?> <span class="vb-required">*</span></label>
-            <input type="text" id="tenant_name" name="name" class="vb-input<?= fieldClass($fieldErrors, 'name') ?>" required
-                   value="<?= oldVal($old, 'name') ?>"
+            <input type="text" id="tenant_name" name="name" class="vb-input<?= error_class('name') ?>" required
+                   value="<?= e(old('name')) ?>"
                    placeholder="Acme Hair Studio">
-            <?php if (isset($fieldErrors['name'])): ?>
-                <div class="vb-form-error" role="alert"><?= htmlspecialchars($fieldErrors['name'], ENT_QUOTES, 'UTF-8') ?></div>
+            <?php if (has_error('name')): ?>
+                <div class="vb-form-error" role="alert"><?= e(field_error('name')) ?></div>
             <?php endif; ?>
         </div>
 
         <div class="vb-form-group">
             <label for="tenant_slug" class="vb-label"><?= __('admin.tenants.slug') ?></label>
-            <input type="text" id="tenant_slug" name="slug" class="vb-input<?= fieldClass($fieldErrors, 'slug') ?>"
-                   value="<?= oldVal($old, 'slug') ?>"
+            <input type="text" id="tenant_slug" name="slug" class="vb-input<?= error_class('slug') ?>"
+                   value="<?= e(old('slug')) ?>"
                    placeholder="acme-hair-studio">
-            <?php if (isset($fieldErrors['slug'])): ?>
-                <div class="vb-form-error" role="alert"><?= htmlspecialchars($fieldErrors['slug'], ENT_QUOTES, 'UTF-8') ?></div>
+            <?php if (has_error('slug')): ?>
+                <div class="vb-form-error" role="alert"><?= e(field_error('slug')) ?></div>
             <?php else: ?>
                 <span class="vb-hint"><?= __('admin.tenants.slug_help') ?></span>
             <?php endif; ?>
@@ -99,11 +87,11 @@ ob_start();
 
         <div class="vb-form-group">
             <label for="tenant_email" class="vb-label"><?= __('admin.tenants.email') ?> <span class="vb-required">*</span></label>
-            <input type="email" id="tenant_email" name="email" class="vb-input<?= fieldClass($fieldErrors, 'email') ?>" required
-                   value="<?= oldVal($old, 'email') ?>"
+            <input type="email" id="tenant_email" name="email" class="vb-input<?= error_class('email') ?>" required
+                   value="<?= e(old('email')) ?>"
                    placeholder="hello@example.com">
-            <?php if (isset($fieldErrors['email'])): ?>
-                <div class="vb-form-error" role="alert"><?= htmlspecialchars($fieldErrors['email'], ENT_QUOTES, 'UTF-8') ?></div>
+            <?php if (has_error('email')): ?>
+                <div class="vb-form-error" role="alert"><?= e(field_error('email')) ?></div>
             <?php endif; ?>
         </div>
 
@@ -114,9 +102,9 @@ ob_start();
                 <?= __('admin.tenants.brand_color') ?>
             </label>
             <div class="vb-color-field">
-                <input type="color" x-ref="colorPicker" value="<?= oldVal($old, 'brand_color', '#2563EB') ?>" class="vb-color-input"
+                <input type="color" x-ref="colorPicker" value="<?= e(old('brand_color', '#2563EB')) ?>" class="vb-color-input"
                        @input="onPickerChange">
-                <input type="text" x-ref="colorText" name="brand_color" value="<?= oldVal($old, 'brand_color', '#2563EB') ?>" class="vb-input"
+                <input type="text" x-ref="colorText" name="brand_color" value="<?= e(old('brand_color', '#2563EB')) ?>" class="vb-input"
                        maxlength="7" placeholder="#2563EB" @input="onTextChange">
             </div>
         </div>
@@ -124,7 +112,7 @@ ob_start();
         <div class="vb-section-divider"></div>
 
         <!-- Booking Pattern Cards -->
-        <?php $selectedPattern = $old['booking_pattern'] ?? 'timeslot'; ?>
+        <?php $selectedPattern = old('booking_pattern', 'timeslot'); ?>
         <div class="vb-form-group" x-data="patternCards">
             <label class="vb-label"><?= __('admin.tenants.pattern') ?></label>
             <div class="vb-pattern-cards">
@@ -143,8 +131,8 @@ ob_start();
         </div>
 
         <!-- Timezone & Currency -->
-        <?php $selectedTz = $old['timezone'] ?? 'UTC'; ?>
-        <?php $selectedCurrency = $old['currency'] ?? 'EUR'; ?>
+        <?php $selectedTz = old('timezone', 'UTC'); ?>
+        <?php $selectedCurrency = old('currency', 'EUR'); ?>
         <div class="vb-form-row">
             <div class="vb-form-group">
                 <label for="tenant_timezone" class="vb-label vb-icon-label">
@@ -175,7 +163,7 @@ ob_start();
 
 
         <!-- Owner Access (Optional) -->
-        <?php $ownerEnabled = ($old['create_owner'] ?? '0') === '1'; ?>
+        <?php $ownerEnabled = (old('create_owner', '0')) === '1'; ?>
         <div class="vb-owner-section" x-data="ownerSetup" data-smtp-configured="<?= \App\Engine\Mailer::isConfigured() ? '1' : '0' ?>"
              <?php if ($ownerEnabled): ?>data-initially-enabled="1"<?php endif; ?>>
             <div class="vb-section-divider"></div>
@@ -198,22 +186,22 @@ ob_start();
             <div x-show="enabled" x-transition.duration.200ms style="display: none;">
                 <div class="vb-form-group">
                     <label for="owner_name" class="vb-label"><?= __('admin.tenants.owner_name') ?> <span class="vb-required">*</span></label>
-                    <input type="text" id="owner_name" name="owner_name" class="vb-input<?= fieldClass($fieldErrors, 'owner_name') ?>"
-                           value="<?= oldVal($old, 'owner_name') ?>"
+                    <input type="text" id="owner_name" name="owner_name" class="vb-input<?= error_class('owner_name') ?>"
+                           value="<?= e(old('owner_name')) ?>"
                            placeholder="Jane Doe" :required="enabled">
-                    <?php if (isset($fieldErrors['owner_name'])): ?>
-                        <div class="vb-form-error" role="alert"><?= htmlspecialchars($fieldErrors['owner_name'], ENT_QUOTES, 'UTF-8') ?></div>
+                    <?php if (has_error('owner_name')): ?>
+                        <div class="vb-form-error" role="alert"><?= e(field_error('owner_name')) ?></div>
                     <?php endif; ?>
                 </div>
 
                 <div class="vb-form-group">
                     <label for="owner_email" class="vb-label"><?= __('admin.tenants.owner_email') ?> <span class="vb-required">*</span></label>
-                    <input type="email" id="owner_email" name="owner_email" class="vb-input<?= fieldClass($fieldErrors, 'owner_email') ?>"
+                    <input type="email" id="owner_email" name="owner_email" class="vb-input<?= error_class('owner_email') ?>"
                            x-ref="ownerEmail"
-                           value="<?= oldVal($old, 'owner_email') ?>"
+                           value="<?= e(old('owner_email')) ?>"
                            placeholder="owner@example.com" :required="enabled">
-                    <?php if (isset($fieldErrors['owner_email'])): ?>
-                        <div class="vb-form-error" role="alert"><?= htmlspecialchars($fieldErrors['owner_email'], ENT_QUOTES, 'UTF-8') ?></div>
+                    <?php if (has_error('owner_email')): ?>
+                        <div class="vb-form-error" role="alert"><?= e(field_error('owner_email')) ?></div>
                     <?php endif; ?>
                 </div>
 
