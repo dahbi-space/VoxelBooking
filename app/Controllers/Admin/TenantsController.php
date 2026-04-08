@@ -276,10 +276,17 @@ final class TenantsController
             return Response::redirect('/admin/tenants');
         }
 
+        // Retrieve old input from session (populated on validation failure)
+        $old = $_SESSION['_old_input'] ?? [];
+        $fieldErrors = $_SESSION['_field_errors'] ?? [];
+        unset($_SESSION['_old_input'], $_SESSION['_field_errors']);
+
         return $this->render('admin.tenants.edit', __('admin.tenants.title'), [
             'documentTitle' => __('admin.tenants.edit'),
-            'tenant' => $tenant,
-            'flash'  => $this->flash(),
+            'tenant'        => $tenant,
+            'flash'         => $this->flash(),
+            'old'           => $old,
+            'fieldErrors'   => $fieldErrors,
         ]);
     }
 
@@ -313,6 +320,15 @@ final class TenantsController
         }
 
         if (!empty($errors)) {
+            $_SESSION['_old_input'] = [
+                'name'        => $name,
+                'slug'        => $slug,
+                'email'       => $email,
+                'timezone'    => trim($request->string('timezone')) ?: null,
+                'currency'    => trim($request->string('currency')) ?: null,
+                'brand_color' => trim($request->string('brand_color')) ?: null,
+            ];
+            $_SESSION['_field_errors'] = $this->mapFieldErrors($errors);
             $this->setFlash('error', implode(' ', $errors));
             return Response::redirect("/admin/tenants/{$id}/edit");
         }

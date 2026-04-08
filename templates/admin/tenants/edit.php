@@ -8,16 +8,31 @@
  *
  * Alpine component: colorSync (registered in admin/app.js)
  *
- * Variables: $user, $version, $csrfToken, $tenant, $flash, $pageTitle, $activePage
+ * Variables: $user, $version, $csrfToken, $tenant, $flash, $pageTitle, $activePage,
+ *            $old (old input on validation failure), $fieldErrors (per-field errors)
  */
 $activePage = 'tenants';
 
 $timezones = get_supported_timezones();
 $currencies = get_supported_currencies();
 
-$tenantTimezone = $tenant['timezone'] ?? 'UTC';
-$tenantCurrency = $tenant['currency'] ?? 'EUR';
-$tenantColor = $tenant['brand_color'] ?? '#2563EB';
+// Old input takes priority over tenant data (preserves unsaved changes)
+$old = $old ?? [];
+$fieldErrors = $fieldErrors ?? [];
+
+$tenantTimezone = $old['timezone'] ?? $tenant['timezone'] ?? 'UTC';
+$tenantCurrency = $old['currency'] ?? $tenant['currency'] ?? 'EUR';
+$tenantColor = $old['brand_color'] ?? $tenant['brand_color'] ?? '#2563EB';
+
+/** Helper: escape old input value for HTML attribute, falling back to tenant data. */
+function editVal(array $old, array $tenant, string $key, string $default = ''): string {
+    return htmlspecialchars($old[$key] ?? $tenant[$key] ?? $default, ENT_QUOTES, 'UTF-8');
+}
+
+/** Helper: return 'is-invalid' if field has server-side error. */
+function editFieldClass(array $errors, string $field): string {
+    return isset($errors[$field]) ? ' is-invalid' : '';
+}
 
 ob_start();
 ?>
@@ -39,26 +54,36 @@ ob_start();
 <div class="vb-grid vb-grid-2 vb-fade-in-up">
     <!-- Edit Form -->
     <div class="vb-card">
-        <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/edit">
+        <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/edit" novalidate>
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
             <div class="vb-form-group">
                 <label for="tenant_name" class="vb-label"><?= __('admin.tenants.name') ?> <span class="vb-required">*</span></label>
-                <input type="text" id="tenant_name" name="name" class="vb-input" required
-                       value="<?= htmlspecialchars($tenant['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                <input type="text" id="tenant_name" name="name" class="vb-input<?= editFieldClass($fieldErrors, 'name') ?>" required
+                       value="<?= editVal($old, $tenant, 'name') ?>">
+                <?php if (isset($fieldErrors['name'])): ?>
+                    <div class="vb-form-error" role="alert"><?= htmlspecialchars($fieldErrors['name'], ENT_QUOTES, 'UTF-8') ?></div>
+                <?php endif; ?>
             </div>
 
             <div class="vb-form-group">
                 <label for="tenant_slug" class="vb-label"><?= __('admin.tenants.slug') ?></label>
-                <input type="text" id="tenant_slug" name="slug" class="vb-input"
-                       value="<?= htmlspecialchars($tenant['slug'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                <span class="vb-hint"><?= __('admin.tenants.slug_help') ?></span>
+                <input type="text" id="tenant_slug" name="slug" class="vb-input<?= editFieldClass($fieldErrors, 'slug') ?>"
+                       value="<?= editVal($old, $tenant, 'slug') ?>">
+                <?php if (isset($fieldErrors['slug'])): ?>
+                    <div class="vb-form-error" role="alert"><?= htmlspecialchars($fieldErrors['slug'], ENT_QUOTES, 'UTF-8') ?></div>
+                <?php else: ?>
+                    <span class="vb-hint"><?= __('admin.tenants.slug_help') ?></span>
+                <?php endif; ?>
             </div>
 
             <div class="vb-form-group">
                 <label for="tenant_email" class="vb-label"><?= __('admin.tenants.email') ?> <span class="vb-required">*</span></label>
-                <input type="email" id="tenant_email" name="email" class="vb-input" required
-                       value="<?= htmlspecialchars($tenant['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                <input type="email" id="tenant_email" name="email" class="vb-input<?= editFieldClass($fieldErrors, 'email') ?>" required
+                       value="<?= editVal($old, $tenant, 'email') ?>">
+                <?php if (isset($fieldErrors['email'])): ?>
+                    <div class="vb-form-error" role="alert"><?= htmlspecialchars($fieldErrors['email'], ENT_QUOTES, 'UTF-8') ?></div>
+                <?php endif; ?>
             </div>
 
             <div class="vb-form-row">
