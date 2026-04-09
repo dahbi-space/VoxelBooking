@@ -1013,52 +1013,94 @@ final class AuthFlowTest extends TestCase
         $this->assertStringContainsString('forgot-password', $page['location']);
     }
 
-    public function testSendFailurePreservesExistingResetToken(): void
+    public function testForgotPasswordSmtpFailurePreservesExistingToken(): void
     {
+        // This test guards the controller's call ordering in forgotPassword():
+        // create token → send email → if send fails, delete new token.
+        // If someone reorders those calls or stops checking $sendResult['sent'],
+        // this test will catch it.
+
+        $savedSettings = [];
         try {
-            // Step 1: Create the first token (simulates a successful earlier request)
-            $first = \App\Engine\LoginToken::createPasswordReset(
+            // Step 1: Create a pre-existing valid reset token via the engine
+            $existing = \App\Engine\LoginToken::createPasswordReset(
                 TestFixtures::OPERATOR_EMAIL, '127.0.0.1'
             );
-            $this->assertTrue($first['success']);
-            $this->assertTrue(\App\Engine\LoginToken::peekPasswordReset($first['token']),
-                'First token should be valid immediately after creation');
+            $this->assertTrue($existing['success']);
+            $this->assertTrue(\App\Engine\LoginToken::peekPasswordReset($existing['token']),
+                'Pre-existing token must be valid before the test');
 
-            // Step 2: Create a second token (simulates a new request attempt)
-            $second = \App\Engine\LoginToken::createPasswordReset(
-                TestFixtures::OPERATOR_EMAIL, '127.0.0.1'
+            // Step 2: Configure SMTP to a dead port so send() fails immediately
+            // isConfigured() returns true (smtp_host is set), but PHPMailer
+            // gets connection refused on port 19999.
+            $configKeys = ['mail_transport', 'smtp_host', 'smtp_port', 'mail_from_address'];
+            foreach ($configKeys as $key) {
+                $rows = \App\Engine\Database::query(
+                    "SELECT `value` FROM `settings` WHERE `key` = ? LIMIT 1", [$key]
+                );
+                $savedSettings[$key] = ['had' => !empty($rows), 'value' => $rows[0]['value'] ?? null];
+            }
+            $broken = [
+                'mail_transport'     => 'smtp',
+                'smtp_host'          => '127.0.0.1',
+                'smtp_port'          => '19999',
+                'mail_from_address'  => 'test@test.test',
+            ];
+            foreach ($broken as $key => $value) {
+                \App\Engine\Database::execute(
+                    "INSERT INTO `settings` (`key`, `value`) VALUES (?, ?)
+                     ON DUPLICATE KEY UPDATE `value` = ?",
+                    [$key, $value, $value]
+                );
+            }
+            \App\Engine\Mailer::clearConfigCache();
+
+            // Step 3: POST to the real controller endpoint
+            $page = $this->get('/admin/forgot-password');
+            preg_match('/name="_csrf_token" value="([^"]+)"/', $page['body'], $m);
+            $csrf = $m[1] ?? '';
+
+            $result = $this->post('/admin/forgot-password', [
+                '_csrf_token' => $csrf,
+                'email'       => TestFixtures::OPERATOR_EMAIL,
+            ]);
+
+            // Timing-safe: always 302 regardless of send success/failure
+            $this->assertSame(302, $result['code']);
+
+            // Step 4: The pre-existing token MUST still be valid
+            $this->assertTrue(\App\Engine\LoginToken::peekPasswordReset($existing['token']),
+                'Pre-existing reset token must survive when SMTP send fails');
+
+            // Step 5: The failed attempt should not have left a dangling token
+            $tokenCount = \App\Engine\Database::query(
+                "SELECT COUNT(*) AS cnt FROM `login_tokens`
+                 WHERE `email` = ? AND `type` = 'password_reset' AND `used_at` IS NULL",
+                [TestFixtures::OPERATOR_EMAIL]
             );
-            $this->assertTrue($second['success']);
-
-            // Step 3: Simulate send failure — delete the new token without
-            // invalidating old ones (this is the rollback path the controller uses)
-            \App\Engine\LoginToken::deleteToken($second['id']);
-
-            // Step 4: The original token must still be usable
-            $this->assertTrue(\App\Engine\LoginToken::peekPasswordReset($first['token']),
-                'First token must survive when second token is rolled back (send failure)');
-
-            // Step 5: Verify the rolled-back token is genuinely gone
-            $this->assertFalse(\App\Engine\LoginToken::peekPasswordReset($second['token']),
-                'Rolled-back token must not be usable');
-
-            // Step 6: Now simulate success — invalidate old tokens
-            $third = \App\Engine\LoginToken::createPasswordReset(
-                TestFixtures::OPERATOR_EMAIL, '127.0.0.1'
-            );
-            \App\Engine\LoginToken::invalidatePasswordResets(
-                TestFixtures::OPERATOR_EMAIL, $third['id']
-            );
-
-            // The first token should now be burned
-            $this->assertFalse(\App\Engine\LoginToken::peekPasswordReset($first['token']),
-                'First token must be invalidated after a successful send');
-            // The third (current) token should be alive
-            $this->assertTrue(\App\Engine\LoginToken::peekPasswordReset($third['token']),
-                'Current token must remain valid after invalidation');
+            $this->assertSame(1, (int) $tokenCount[0]['cnt'],
+                'Only the original token should remain — failed attempt token must be cleaned up');
         } finally {
+            // Restore SMTP settings
+            foreach ($savedSettings as $key => $prior) {
+                if ($prior['had'] && $prior['value'] !== null) {
+                    \App\Engine\Database::execute(
+                        "UPDATE `settings` SET `value` = ? WHERE `key` = ?",
+                        [$prior['value'], $key]
+                    );
+                } else {
+                    \App\Engine\Database::execute(
+                        "DELETE FROM `settings` WHERE `key` = ?", [$key]
+                    );
+                }
+            }
+            \App\Engine\Mailer::clearConfigCache();
             \App\Engine\Database::execute(
                 "DELETE FROM `login_tokens` WHERE `email` = ?",
+                [TestFixtures::OPERATOR_EMAIL]
+            );
+            \App\Engine\Database::execute(
+                "DELETE FROM `email_log` WHERE `to_email` = ?",
                 [TestFixtures::OPERATOR_EMAIL]
             );
         }
