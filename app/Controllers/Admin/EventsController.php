@@ -417,6 +417,16 @@ final class EventsController
             return $this->forbidden($request);
         }
 
+        // Guard: block delete if bookings reference this event
+        $bookingCount = Database::query(
+            'SELECT COUNT(*) as cnt FROM `bookings` WHERE `event_id` = ?',
+            [$eventId]
+        );
+        if ((int) ($bookingCount[0]['cnt'] ?? 0) > 0) {
+            FormState::toast('error', __('admin.events.error_has_bookings'));
+            return Response::redirect("/admin/tenants/{$tenantId}/events");
+        }
+
         Database::execute(
             'DELETE FROM `events` WHERE `id` = ? AND `tenant_id` = ?',
             [$eventId, $tenantId]

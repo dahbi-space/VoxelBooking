@@ -17,7 +17,7 @@ ob_start();
     <div>
         <h2 class="vb-page-title"><?= __('admin.resources.title') ?></h2>
         <p class="vb-page-subtitle">
-            <?= str_replace(':count', (string) count($resources), __('admin.resources.showing_count')) ?>
+            <?= __p('admin.resources.showing_count', count($resources)) ?>
         </p>
     </div>
     <div class="vb-page-actions">

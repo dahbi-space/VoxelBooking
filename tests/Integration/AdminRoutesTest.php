@@ -51,6 +51,13 @@ final class AdminRoutesTest extends TestCase
 
         $this->baseUrl = rtrim($_ENV['APP_TEST_URL'] ?? 'https://voxelbooking-app.test', '/');
         $this->cookieJar = tempnam(sys_get_temp_dir(), 'vb_admin_test_') ?: '/tmp/vb_admin_test_cookies';
+
+        // Clear rate limits to prevent 429s during full suite runs
+        try {
+            Database::execute('DELETE FROM `rate_limits`');
+        } catch (\Throwable) {
+            // Table may not exist; not critical
+        }
     }
 
     protected function tearDown(): void
@@ -87,6 +94,112 @@ final class AdminRoutesTest extends TestCase
         $this->assertSame(200, $r['code'], 'Create tenant form should be accessible');
     }
 
+    public function test_tenants_search_includes_matching_tenant(): void
+    {
+        $this->doLoginOperator();
+        // Fixture tenant is named "Test Tenant" — search for part of it
+        $r = $this->get('/admin/tenants?search=' . urlencode('Test Tenant'));
+        $this->assertSame(200, $r['code']);
+        $this->assertStringContainsString('test-fixture', $r['body'], 'Matching tenant slug must appear in search results');
+        $this->assertStringContainsString('vb-table', $r['body'], 'Matching search must show the table');
+    }
+
+    public function test_tenants_search_excludes_nonmatching_tenants(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/tenants?search=' . urlencode('zzznonexistent999'));
+        $this->assertSame(200, $r['code']);
+        // Fixture tenant row must not appear
+        $this->assertStringNotContainsString('test-fixture', $r['body'], 'Non-matching tenant must be excluded from results');
+        // Filtered-empty message instead of table
+        $this->assertStringNotContainsString('vb-table-wrap', $r['body'], 'Must not render table for zero results');
+        $this->assertStringContainsString('No tenants found', $r['body']);
+    }
+
+    public function test_tenants_status_filter_active_includes_fixture(): void
+    {
+        $this->doLoginOperator();
+        // Fixture tenant has status=active
+        $r = $this->get('/admin/tenants?status=active');
+        $this->assertSame(200, $r['code']);
+        $this->assertStringContainsString('test-fixture', $r['body'], 'Active fixture tenant must appear under active filter');
+        $this->assertStringContainsString('vb-filter-tab active', $r['body'], 'Active tab must be highlighted');
+    }
+
+    public function test_tenants_status_filter_archived_excludes_active_fixture(): void
+    {
+        $this->doLoginOperator();
+        // Fixture tenant has status=active, so filtering by archived must exclude it
+        $r = $this->get('/admin/tenants?status=archived');
+        $this->assertSame(200, $r['code']);
+        $this->assertStringNotContainsString('test-fixture', $r['body'], 'Active tenant must not appear under archived filter');
+    }
+
+    public function test_tenants_filtered_empty_shows_toolbar_and_message(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/tenants?search=' . urlencode('zzznonexistent999'));
+        $this->assertSame(200, $r['code']);
+        $this->assertStringContainsString('vb-filter-tabs', $r['body'], 'Filter tabs must remain visible when search returns zero rows');
+        $this->assertStringContainsString('No tenants found', $r['body'], 'Filtered-empty must show "No tenants found"');
+        $this->assertStringNotContainsString('No tenants yet', $r['body'], 'Must not show true zero-state when search is active');
+        // Scoped result-count must render even when zero rows match
+        $this->assertStringContainsString('vb-table-result-count', $r['body'], 'Scoped result-count row must render for filtered-empty');
+        $this->assertStringContainsString('No tenants', $r['body'], 'Zero count must show "No tenants"');
+        $this->assertStringContainsString('vb-table-active-filter-dot', $r['body'], 'Active filter dot must appear for filtered-empty');
+    }
+
+    public function test_tenants_search_renders_csp_safe_clear_button(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/tenants?search=' . urlencode('Test'));
+        $this->assertSame(200, $r['code']);
+        // Shared table-search partial must use CSP-safe Alpine component
+        $this->assertStringContainsString('x-data="tableSearch"', $r['body'], 'Search form must use registered tableSearch component');
+        $this->assertStringContainsString('x-ref="searchInput"', $r['body'], 'Search input must have x-ref for clear method');
+        $this->assertStringContainsString('vb-table-search-clear', $r['body'], 'Clear button must be rendered');
+        $this->assertStringContainsString('data-initial="Test"', $r['body'], 'data-initial must carry the search value');
+    }
+
+    public function test_tenants_result_count_uses_proper_pluralization(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/tenants?search=' . urlencode('Test Tenant'));
+        $this->assertSame(200, $r['code']);
+        $this->assertStringContainsString('vb-table-result-count', $r['body'], 'Result count row must render');
+        $this->assertStringContainsString('1 tenant', $r['body'], 'Singular count must read "1 tenant" not "1 tenants"');
+        $this->assertStringContainsString('vb-table-active-filter-dot', $r['body'], 'Active filter dot must appear when search is set');
+    }
+
+    public function test_tenants_empty_search_returns_unfiltered_results(): void
+    {
+        $this->doLoginOperator();
+        // Empty search= (post-clear fallback) must behave like no filter
+        $filtered = $this->get('/admin/tenants?search=');
+        $unfiltered = $this->get('/admin/tenants');
+        $this->assertSame(200, $filtered['code']);
+        $this->assertSame(200, $unfiltered['code']);
+        // Both must show the fixture tenant
+        $this->assertStringContainsString('test-fixture', $filtered['body'], 'Empty search must show all tenants');
+        $this->assertStringContainsString('test-fixture', $unfiltered['body'], 'Unfiltered must show all tenants');
+        // Neither should show the filtered-empty state
+        $this->assertStringNotContainsString('No tenants found', $filtered['body'], 'Empty search must not trigger filtered-empty');
+        $this->assertStringNotContainsString('No tenants found', $unfiltered['body']);
+    }
+
+    public function test_tenants_clear_button_url_excludes_search_param(): void
+    {
+        $this->doLoginOperator();
+        // When search is active, the form's action should be the base URL
+        $r = $this->get('/admin/tenants?search=Test&status=active');
+        $this->assertSame(200, $r['code']);
+        // The form action must be the base tenants URL (clear navigates to action + hidden fields)
+        $this->assertStringContainsString('action="/admin/tenants"', $r['body'], 'Search form action must be clean base URL');
+        // The status hidden field must be preserved for clear to carry it
+        $this->assertStringContainsString('name="status"', $r['body'], 'Status hidden field name present');
+        $this->assertStringContainsString('value="active"', $r['body'], 'Status hidden field value present');
+    }
+
     public function test_operator_tenant_dashboard_returns_200(): void
     {
         $this->doLoginOperator();
@@ -106,6 +219,33 @@ final class AdminRoutesTest extends TestCase
         $this->doLoginOperator();
         $r = $this->get('/admin/tenants/' . TestFixtures::BUSINESS_TENANT_ID . '/bookings');
         $this->assertSame(200, $r['code'], 'Tenant bookings list should be accessible');
+    }
+
+    public function test_bookings_filtered_empty_shows_toolbar_and_no_results_message(): void
+    {
+        $this->doLoginOperator();
+
+        // Use impossible status value to guarantee zero results while keeping filters active
+        $r = $this->get('/admin/tenants/' . TestFixtures::BUSINESS_TENANT_ID . '/bookings?status=no_show&from=2099-01-01&to=2099-01-02');
+        $this->assertSame(200, $r['code'], 'Filtered bookings page must return 200');
+
+        // Toolbar (filter tabs) must remain visible so the user can clear/change filters
+        $this->assertStringContainsString('vb-filter-tabs', $r['body'], 'Filter tabs must be visible when filters return zero rows');
+
+        // Filtered-empty message must appear, not the true zero-state
+        $this->assertStringContainsString('No bookings found', $r['body'], 'Filtered-empty must show "No bookings found"');
+        $this->assertStringNotContainsString('No bookings yet', $r['body'], 'Must not show true zero-state when filters are active');
+    }
+
+    public function test_bookings_uses_shared_sort_header(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/bookings');
+        $this->assertSame(200, $r['code']);
+        // Shared sort header partial must render sortable columns
+        $this->assertStringContainsString('vb-th-sort', $r['body'], 'Shared sort header must render sortable columns');
+        // Inline bookingSortHeader function must not appear in output
+        $this->assertStringNotContainsString('bookingSortHeader', $r['body'], 'Inline bookingSortHeader must not appear in output');
     }
 
     public function test_operator_settings_returns_200(): void
@@ -217,6 +357,159 @@ final class AdminRoutesTest extends TestCase
         // Access a tenant that is NOT theirs
         $r = $this->get('/admin/tenants/01SOMEOTHERTENANT0000000');
         $this->assertSame(403, $r['code'], 'Business user should be denied access to other tenants');
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Bookings CSV Export
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_operator_bookings_export_returns_csv(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/bookings/export');
+        $this->assertSame(200, $r['code'], 'Export should return 200');
+        $h = strtolower($r['headers']); // HTTP/2 lowercases header names
+        $this->assertStringContainsString('text/csv', $h, 'Content-Type must be text/csv');
+        $this->assertStringContainsString('content-disposition:', $h, 'Must have Content-Disposition');
+        $this->assertStringContainsString('bookings-export-', $h, 'Filename must include prefix');
+        $this->assertStringContainsString('.csv', $h, 'Filename must end in .csv');
+        // CSV header row
+        $this->assertStringContainsString('Date,Time,', $r['body'], 'CSV must contain header row');
+        $this->assertStringContainsString(',Tenant', $r['body'], 'Operator export must include Tenant column');
+    }
+
+    public function test_operator_bookings_export_respects_status_filter(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/bookings/export?status=confirmed');
+        $this->assertSame(200, $r['code']);
+        // Every data row must be confirmed (skip BOM + header line)
+        $lines = array_filter(explode("\n", trim($r['body'])), fn($l) => $l !== '' && !str_starts_with($l, 'Date,'));
+        foreach ($lines as $line) {
+            // Remove BOM if present
+            $line = ltrim($line, "\xEF\xBB\xBF");
+            if (str_starts_with($line, 'Date,')) continue;
+            $this->assertStringContainsString('confirmed', strtolower($line), 'Filtered export must only contain confirmed bookings');
+        }
+    }
+
+    public function test_tenant_bookings_export_returns_csv_without_tenant_column(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/tenants/' . TestFixtures::BUSINESS_TENANT_ID . '/bookings/export');
+        $this->assertSame(200, $r['code'], 'Tenant export should return 200');
+        $h = strtolower($r['headers']);
+        $this->assertStringContainsString('text/csv', $h);
+        // Tenant column must NOT be in header for tenant-scoped export
+        $headerLine = strtok(ltrim($r['body'], "\xEF\xBB\xBF"), "\n");
+        $this->assertStringNotContainsString('Tenant', $headerLine, 'Tenant-scoped export must not include Tenant column');
+    }
+
+    public function test_unauthenticated_export_redirects_to_login(): void
+    {
+        $r = $this->get('/admin/bookings/export');
+        $this->assertSame(302, $r['code']);
+        $this->assertStringContainsString('/admin/login', $r['location']);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Tenants export
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_operator_tenants_export_returns_csv(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/tenants/export');
+        $this->assertSame(200, $r['code'], 'Tenants export should return 200');
+        $h = strtolower($r['headers']);
+        $this->assertStringContainsString('text/csv', $h, 'Content-Type must be text/csv');
+        $this->assertStringContainsString('content-disposition:', $h, 'Must have Content-Disposition');
+        $this->assertStringContainsString('tenants-export-', $h, 'Filename must include prefix');
+        // CSV header row must include count columns that match the visible table
+        $headerLine = strtok(ltrim($r['body'], "\xEF\xBB\xBF"), "\n");
+        $this->assertStringContainsString('Name', $headerLine, 'CSV must contain Name column');
+        $this->assertStringContainsString('Slug', $headerLine, 'CSV must contain Slug column');
+        $this->assertStringContainsString('Status', $headerLine, 'CSV must contain Status column');
+        $this->assertStringContainsString('Bookings', $headerLine, 'CSV must contain Bookings column');
+        $this->assertStringContainsString('Services', $headerLine, 'CSV must contain Services column');
+    }
+
+    public function test_tenants_export_respects_status_filter(): void
+    {
+        $this->doLoginOperator();
+        // The test tenant is active, so filtering for archived should exclude it
+        $r = $this->get('/admin/tenants/export?status=archived');
+        $this->assertSame(200, $r['code']);
+        $body = ltrim($r['body'], "\xEF\xBB\xBF");
+        $lines = array_filter(explode("\n", trim($body)), fn($l) => $l !== '');
+        // Only header line, no data rows (test tenant is active, not archived)
+        $this->assertCount(1, $lines, 'Archived filter must exclude active test tenant');
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Customers export
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_tenant_customers_export_returns_csv(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/tenants/' . TestFixtures::BUSINESS_TENANT_ID . '/customers/export');
+        $this->assertSame(200, $r['code'], 'Customers export should return 200');
+        $h = strtolower($r['headers']);
+        $this->assertStringContainsString('text/csv', $h, 'Content-Type must be text/csv');
+        $this->assertStringContainsString('content-disposition:', $h, 'Must have Content-Disposition');
+        $this->assertStringContainsString('customers-export-', $h, 'Filename must include prefix');
+        // CSV header row
+        $headerLine = strtok(ltrim($r['body'], "\xEF\xBB\xBF"), "\n");
+        $this->assertStringContainsString('Name', $headerLine);
+        $this->assertStringContainsString('Email', $headerLine);
+        $this->assertStringContainsString('Bookings', $headerLine);
+    }
+
+    public function test_customers_export_respects_search_filter(): void
+    {
+        $this->doLoginOperator();
+        // Search for a nonexistent customer should yield header-only
+        $r = $this->get('/admin/tenants/' . TestFixtures::BUSINESS_TENANT_ID . '/customers/export?search=zzz_no_match_zzz');
+        $this->assertSame(200, $r['code']);
+        $body = ltrim($r['body'], "\xEF\xBB\xBF");
+        $lines = array_filter(explode("\n", trim($body)), fn($l) => $l !== '');
+        $this->assertCount(1, $lines, 'Non-matching search must yield header-only CSV');
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Audit log export
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_operator_audit_export_returns_csv(): void
+    {
+        $this->doLoginOperator();
+        $r = $this->get('/admin/settings/audit/export');
+        $this->assertSame(200, $r['code'], 'Audit export should return 200');
+        $h = strtolower($r['headers']);
+        $this->assertStringContainsString('text/csv', $h, 'Content-Type must be text/csv');
+        $this->assertStringContainsString('content-disposition:', $h, 'Must have Content-Disposition');
+        $this->assertStringContainsString('audit-log-export-', $h, 'Filename must include prefix');
+        // CSV header row
+        $headerLine = strtok(ltrim($r['body'], "\xEF\xBB\xBF"), "\n");
+        $this->assertStringContainsString('Action', $headerLine);
+        $this->assertStringContainsString('Entity Type', $headerLine);
+        $this->assertStringContainsString('Actor Type', $headerLine);
+    }
+
+    public function test_audit_export_respects_action_filter(): void
+    {
+        $this->doLoginOperator();
+        // Filter for auth.login only — every row must contain auth.login
+        $r = $this->get('/admin/settings/audit/export?action=auth.login');
+        $this->assertSame(200, $r['code']);
+        $body = ltrim($r['body'], "\xEF\xBB\xBF");
+        $lines = array_filter(explode("\n", trim($body)), fn($l) => $l !== '');
+        // Skip header
+        $dataLines = array_slice($lines, 1);
+        foreach ($dataLines as $line) {
+            $this->assertStringContainsString('auth.login', $line, 'Filtered audit export must only contain auth.login rows');
+        }
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -407,7 +700,7 @@ final class AdminRoutesTest extends TestCase
             $location = trim($m[1]);
         }
 
-        return compact('code', 'body', 'location');
+        return compact('code', 'body', 'location', 'headers');
     }
 
     private function post(string $path, array $data): array

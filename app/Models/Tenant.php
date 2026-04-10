@@ -33,6 +33,41 @@ final class Tenant
     }
 
     /**
+     * Get tenants with optional search and status filters.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function filtered(?string $search = null, ?string $status = null): array
+    {
+        $clauses = [];
+        $params  = [];
+
+        if ($status !== null && $status !== '' && $status !== 'all') {
+            $allowed = ['active', 'paused', 'archived'];
+            if (in_array($status, $allowed, true)) {
+                $clauses[] = '`status` = ?';
+                $params[]  = $status;
+            }
+        }
+
+        if ($search !== null && $search !== '') {
+            $clauses[] = '(`name` LIKE ? OR `slug` LIKE ? OR `email` LIKE ?)';
+            $like = '%' . $search . '%';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $sql = 'SELECT * FROM `tenants`';
+        if ($clauses) {
+            $sql .= ' WHERE ' . implode(' AND ', $clauses);
+        }
+        $sql .= ' ORDER BY `name` ASC';
+
+        return Database::query($sql, $params);
+    }
+
+    /**
      * Find a tenant by ID.
      *
      * @return array<string, mixed>|null

@@ -17,6 +17,7 @@
 
 /* ── Design Tokens ── */
 :root {
+  color-scheme: light; /* Explicit — prevents dark scrollbars when system prefers dark */
   /* Typography */
   --vb-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 
@@ -920,7 +921,8 @@ body {
   padding: 16px 20px;
   margin-bottom: 8px;
   border-radius: var(--vb-radius-xl);
-  background: var(--vb-brand-light);
+  /* Opaque tint: blend brand at 8% over page background so sticky panel doesn't bleed */
+  background: color-mix(in srgb, var(--vb-brand) 8%, var(--vb-bg));
   border: 1px solid rgba(var(--vb-brand-rgb), 0.2);
   animation: vb-confirm-slide 300ms var(--vb-ease-overshoot);
   position: sticky;

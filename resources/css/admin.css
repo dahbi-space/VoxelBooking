@@ -219,7 +219,7 @@
        ══════════════════════════════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html { height: 100%; }
+    html { height: 100%; overflow: hidden; }
 
     body {
         font-family: var(--vb-font-sans);
@@ -1210,10 +1210,13 @@
 .vb-main {
     margin-inline-start: var(--vb-sidebar-width);
     flex: 1;
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
     background: var(--vb-bg-base);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
 }
 
 /* ── Topbar: enterprise-grade glass bar ──────────────────────── */
@@ -2379,6 +2382,75 @@
     box-shadow: 0 0 0 3px var(--vb-accent-subtle);
 }
 
+/* Clear search button — inline × inside input, Linear-style.
+   Visibility driven by Alpine x-show="hasValue" (CSP-safe). */
+.vb-table-search-clear {
+    position: absolute;
+    right: 0.375rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: var(--vb-radius-sm);
+    background: var(--vb-bg-raised);
+    color: var(--vb-text-ghost);
+    cursor: pointer;
+    padding: 0;
+    transition: background var(--vb-duration-fast), color var(--vb-duration-fast);
+}
+.vb-table-search-clear svg,
+.vb-table-search-clear [data-lucide] {
+    width: 12px;
+    height: 12px;
+}
+.vb-table-search-clear:hover {
+    background: var(--vb-bg-hover);
+    color: var(--vb-text-secondary);
+}
+/* Always reserve space for clear button so input text doesn't shift */
+.vb-table-search .vb-table-search-input {
+    padding-right: 2rem;
+}
+
+/* Result count pill — sits between toolbar and table */
+.vb-table-result-count {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: var(--vb-text-xs);
+    color: var(--vb-text-tertiary);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid var(--vb-border-subtle);
+}
+.vb-table-result-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.125rem;
+    padding: 0 0.375rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    border-radius: 999px;
+    background: var(--vb-accent-subtle);
+    color: var(--vb-accent);
+}
+
+/* Active filter indicator — subtle accent dot */
+.vb-table-active-filter-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--vb-accent);
+    flex-shrink: 0;
+}
+
 .vb-table-toolbar-right {
     display: flex;
     align-items: center;
@@ -3246,9 +3318,18 @@
     color: var(--vb-success, #16A34A);
 }
 /* ── Table cell data patterns ────────────────────────────────── */
-.vb-cell-name   { font-weight: 500; }
+.vb-cell-name   { font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem; }
 .vb-cell-detail { font-size: var(--vb-text-xs); color: var(--vb-text-tertiary); }
 .vb-text-right  { text-align: right; }
+
+/* Brand color indicator dot — used inline in tenant name cells */
+.vb-color-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
 
 /* CRM cross-link inside table cells */
 .vb-cell-link {

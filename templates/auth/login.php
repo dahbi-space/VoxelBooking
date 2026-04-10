@@ -77,12 +77,14 @@ $csrfToken = $csrfToken ?? '';
                     </div>
                 <?php endif; ?>
 
-                <!-- Method tabs -->
+                <?php if (!\App\Engine\DemoMode::isActive()): ?>
+                <!-- Method tabs (hidden in demo mode — only password login is available) -->
                 <div class="login-method-tabs" id="login-method-tabs" role="tablist">
                     <button type="button" role="tab" class="login-tab active" data-method="password" id="tab-password" aria-selected="true" aria-controls="panel-password"><?= __('auth.tab_password') ?></button>
                     <button type="button" role="tab" class="login-tab" data-method="otp" id="tab-otp" aria-selected="false" aria-controls="panel-otp"><?= __('auth.tab_otp') ?></button>
                     <button type="button" role="tab" class="login-tab" data-method="magic_link" id="tab-magic-link" aria-selected="false" aria-controls="panel-magic-link"><?= __('auth.tab_magic_link') ?></button>
                 </div>
+                <?php endif; ?>
 
                 <!-- Password form -->
                 <form method="POST" action="/admin/login" id="panel-password" class="login-method-panel" role="tabpanel" aria-labelledby="tab-password">
@@ -114,10 +116,13 @@ $csrfToken = $csrfToken ?? '';
                     <button type="submit" class="vb-btn vb-btn-primary login-submit"><?= __('auth.login_button') ?></button>
                 </form>
 
+                <?php if (!\App\Engine\DemoMode::isActive()): ?>
                 <div class="login-aux-links">
                     <a href="/admin/forgot-password" class="login-aux-link"><?= __('auth.forgot_password_link') ?></a>
                 </div>
+                <?php endif; ?>
 
+                <?php if (!\App\Engine\DemoMode::isActive()): ?>
                 <!-- OTP form -->
                 <form method="POST" action="/admin/login/request-code" id="panel-otp" class="login-method-panel" role="tabpanel" aria-labelledby="tab-otp" style="display: none;">
                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
@@ -156,6 +161,7 @@ $csrfToken = $csrfToken ?? '';
 
                     <button type="submit" class="vb-btn vb-btn-primary login-submit"><?= __('auth.send_link_button') ?></button>
                 </form>
+                <?php endif; ?>
             </div>
 
             <?php if (\App\Engine\DemoMode::isActive()): ?>

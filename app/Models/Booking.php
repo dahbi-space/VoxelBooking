@@ -101,6 +101,85 @@ final class Booking
     }
 
     /**
+     * Get all bookings for CSV export (no pagination, capped at 10 000 rows).
+     *
+     * Reuses the same filters/sorting as all() but removes LIMIT/OFFSET
+     * pagination so the full filtered dataset can be streamed as CSV.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function allForExport(
+        ?string $status,
+        ?string $from,
+        ?string $to,
+        ?string $search,
+        string $sort = 'start_datetime',
+        string $direction = 'DESC',
+    ): array {
+        [$where, $bindings] = self::buildFilters($status, $from, $to, $search);
+
+        $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        [$orderCol, $orderDir] = self::resolveSort($sort, $direction);
+
+        return Database::query(
+            "SELECT b.*, t.`name` AS `tenant_name`, t.`slug` AS `tenant_slug`,
+                    c.`name` AS `customer_name`, c.`email` AS `customer_email`,
+                    s.`name` AS `service_name`,
+                    r.`name` AS `resource_name`,
+                    ev.`name` AS `event_name`
+             FROM `bookings` b
+             LEFT JOIN `tenants` t ON t.`id` = b.`tenant_id`
+             LEFT JOIN `customers` c ON c.`id` = b.`customer_id`
+             LEFT JOIN `services` s ON s.`id` = b.`service_id`
+             LEFT JOIN `resources` r ON r.`id` = b.`resource_id`
+             LEFT JOIN `events` ev ON ev.`id` = b.`event_id`
+             {$whereClause}
+             ORDER BY {$orderCol} {$orderDir}
+             LIMIT 10000",
+            $bindings
+        );
+    }
+
+    /**
+     * Get bookings for a tenant for CSV export (no pagination, capped at 10 000 rows).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function forTenantExport(
+        string $tenantId,
+        ?string $status,
+        ?string $from,
+        ?string $to,
+        string $sort = 'start_datetime',
+        string $direction = 'DESC',
+    ): array {
+        [$where, $bindings] = self::buildFilters($status, $from, $to);
+        $where[] = 'b.`tenant_id` = ?';
+        $bindings[] = $tenantId;
+
+        $whereClause = 'WHERE ' . implode(' AND ', $where);
+        [$orderCol, $orderDir] = self::resolveSort($sort, $direction);
+
+        return Database::query(
+            "SELECT b.*, t.`name` AS `tenant_name`, t.`slug` AS `tenant_slug`,
+                    c.`name` AS `customer_name`, c.`email` AS `customer_email`,
+                    s.`name` AS `service_name`,
+                    r.`name` AS `resource_name`,
+                    ev.`name` AS `event_name`
+             FROM `bookings` b
+             LEFT JOIN `tenants` t ON t.`id` = b.`tenant_id`
+             LEFT JOIN `customers` c ON c.`id` = b.`customer_id`
+             LEFT JOIN `services` s ON s.`id` = b.`service_id`
+             LEFT JOIN `resources` r ON r.`id` = b.`resource_id`
+             LEFT JOIN `events` ev ON ev.`id` = b.`event_id`
+             {$whereClause}
+             ORDER BY {$orderCol} {$orderDir}
+             LIMIT 10000",
+            $bindings
+        );
+    }
+
+    /**
      * Count all bookings cross-tenant, with optional filters.
      */
     public static function countAll(

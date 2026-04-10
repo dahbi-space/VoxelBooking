@@ -648,6 +648,40 @@ Alpine.data('imageUpload', () => ({
     },
 }));
 
+// ── Alpine: Table Search (CSP-safe clear button) ──
+// Manages the search input clear button inside table toolbars.
+// HTML: x-data="tableSearch" on the <form>, x-ref="searchInput" on <input>,
+//       @click="clear" on the clear button, @input="onInput" on the input.
+Alpine.data('tableSearch', () => ({
+    hasValue: false,
+
+    init() {
+        const initial = this.$el.dataset.initial || '';
+        this.hasValue = initial.length > 0;
+    },
+
+    // CSP-safe: referenced as @input="onInput"
+    onInput() {
+        const input = this.$refs.searchInput;
+        this.hasValue = input && input.value.length > 0;
+    },
+
+    // CSP-safe: referenced as @click="clear"
+    clear() {
+        // Navigate to clean URL: form action + hidden fields (no search param)
+        const form = this.$el;
+        const action = form.getAttribute('action') || window.location.pathname;
+        const params = new URLSearchParams();
+        form.querySelectorAll('input[type="hidden"]').forEach(input => {
+            if (input.name && input.value) {
+                params.set(input.name, input.value);
+            }
+        });
+        const qs = params.toString();
+        window.location.href = action + (qs ? '?' + qs : '');
+    },
+}));
+
 // ── Alpine: start ──
 window.Alpine = Alpine;
 Alpine.start();
@@ -724,6 +758,10 @@ function showDemoToast() {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+
+// Expose to global scope so inline onclick handlers in templates can call it.
+// Module-scoped functions are not reachable from HTML attributes.
+window.showDemoToast = showDemoToast;
 
 // ── Global Confirm Dialog (vanilla JS, CSP-safe) ──
 // Intercepts form submissions on forms with data-confirm="message" attribute.

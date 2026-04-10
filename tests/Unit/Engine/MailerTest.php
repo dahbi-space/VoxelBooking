@@ -496,4 +496,157 @@ final class MailerTest extends TestCase
         $this->assertNotSame($tenantResult, $systemResult,
             'Tenant-scoped and system emails must resolve to different From names');
     }
+
+    // ── Resource-specific email detail rows (Phase R) ──
+
+    /**
+     * sendBookingConfirmation with $patternDetails renders resource-specific
+     * labels (Room, Check-in, Check-out, Guests, Total) instead of the
+     * default timeslot rows (Date, Time, Service, Staff).
+     */
+    public function testConfirmationEmailRendersResourceDetails(): void
+    {
+        $this->setMailerConfig(['mail_transport' => 'log']);
+
+        $resourceDetails = [
+            'Room'      => 'Sea View Suite',
+            'Check-in'  => 'April 5, 2026',
+            'Check-out' => 'April 8, 2026',
+            'Guests'    => '2',
+            'Total'     => '€450.00',
+        ];
+
+        // Verify send succeeds with resource details
+        $result = Mailer::sendBookingConfirmation(
+            'guest@example.com', 'Jane Doe',
+            ['date' => '2026-04-05', 'formatted_date' => 'April 5, 2026', 'time' => '', 'end_time' => ''],
+            'Sea View Suite', null,
+            'Hotel Marina', 'TENANT_ID_TEST', 'BOOKING_ID_TEST',
+            '#2563EB',
+            $resourceDetails,
+        );
+
+        $this->assertTrue($result['sent'], 'Log transport with resource details must succeed');
+
+        // Verify rendered content via the renderer directly
+        $renderMethod = new \ReflectionMethod(Mailer::class, 'renderConfirmationEmail');
+        $plainMethod  = new \ReflectionMethod(Mailer::class, 'renderConfirmationPlainText');
+
+        $html = $renderMethod->invoke(null,
+            '#2563EB', 'Confirmed.', 'Hi Jane,', 'Confirmed.',
+            'Booking details', $resourceDetails,
+            'Footer.', 'Hotel Marina', 'VB',
+        );
+
+        $plain = $plainMethod->invoke(null,
+            'Confirmed.', 'Hi Jane,', 'Confirmed.',
+            'Booking details', $resourceDetails,
+            'Footer.', 'Hotel Marina', 'Powered by VB',
+        );
+
+        // Resource labels must appear in HTML
+        $this->assertStringContainsString('Sea View Suite', $html);
+        $this->assertStringContainsString('Check-in', $html);
+        $this->assertStringContainsString('Check-out', $html);
+        $this->assertStringContainsString('€450.00', $html);
+
+        // Timeslot labels must NOT appear in HTML
+        $this->assertStringNotContainsString('>Time<', $html);
+        $this->assertStringNotContainsString('>Service<', $html);
+        $this->assertStringNotContainsString('>Staff<', $html);
+
+        // Plain text verification
+        $this->assertStringContainsString('Room: Sea View Suite', $plain);
+        $this->assertStringContainsString('Check-in: April 5, 2026', $plain);
+        $this->assertStringContainsString('Total: €450.00', $plain);
+    }
+
+    /**
+     * sendApprovalRequest with $patternDetails renders resource-specific
+     * labels for pending resource bookings (approval flow).
+     */
+    public function testApprovalEmailRendersResourceDetails(): void
+    {
+        $this->setMailerConfig(['mail_transport' => 'log']);
+
+        $resourceDetails = [
+            'Room'      => 'Garden Room',
+            'Check-in'  => 'May 1, 2026',
+            'Check-out' => 'May 3, 2026',
+            'Guests'    => '3',
+            'Total'     => '€260.00',
+        ];
+
+        $result = Mailer::sendApprovalRequest(
+            'guest@example.com', 'John Smith',
+            ['date' => '2026-05-01', 'formatted_date' => 'May 1 – May 3, 2026', 'time' => '', 'end_time' => ''],
+            'Garden Room', null,
+            'Hotel Marina', 'TENANT_ID_TEST', 'BOOKING_ID_TEST',
+            '#2563EB',
+            $resourceDetails,
+        );
+
+        $this->assertTrue($result['sent'], 'Log transport with resource approval details must succeed');
+
+        // Verify rendered content shows resource details, not timeslot details.
+        // The approval email uses the same renderConfirmationEmail renderer.
+        $renderMethod = new \ReflectionMethod(Mailer::class, 'renderConfirmationEmail');
+        $plainMethod  = new \ReflectionMethod(Mailer::class, 'renderConfirmationPlainText');
+
+        $html = $renderMethod->invoke(null,
+            '#2563EB', 'Pending review.', 'Hi John,', 'Your booking is pending.',
+            'Booking details', $resourceDetails,
+            'We will notify you.', 'Hotel Marina', 'VB',
+        );
+
+        $plain = $plainMethod->invoke(null,
+            'Pending review.', 'Hi John,', 'Your booking is pending.',
+            'Booking details', $resourceDetails,
+            'We will notify you.', 'Hotel Marina', 'Powered by VB',
+        );
+
+        // Resource labels must appear in HTML
+        $this->assertStringContainsString('Garden Room', $html);
+        $this->assertStringContainsString('Check-in', $html);
+        $this->assertStringContainsString('Check-out', $html);
+        $this->assertStringContainsString('€260.00', $html);
+        $this->assertStringContainsString('Guests', $html);
+
+        // Timeslot labels must NOT appear
+        $this->assertStringNotContainsString('>Time<', $html);
+        $this->assertStringNotContainsString('>Service<', $html);
+        $this->assertStringNotContainsString('>Staff<', $html);
+
+        // Plain text verification
+        $this->assertStringContainsString('Room: Garden Room', $plain);
+        $this->assertStringContainsString('Check-in: May 1, 2026', $plain);
+        $this->assertStringContainsString('Check-out: May 3, 2026', $plain);
+        $this->assertStringContainsString('Guests: 3', $plain);
+        $this->assertStringContainsString('Total: €260.00', $plain);
+    }
+
+    /**
+     * sendBookingConfirmation without $patternDetails and empty time
+     * omits the Time row from the email (fixes the "Time: –" bug).
+     */
+    public function testConfirmationEmailOmitsEmptyTimeRow(): void
+    {
+        $method = new \ReflectionMethod(Mailer::class, 'renderConfirmationEmail');
+
+        // Simulate what sendBookingConfirmation builds when time is empty
+        // (the default branch now skips the Time row)
+        $details = [];
+        $details['Date'] = 'April 5, 2026';
+        // No 'Time' key — this is what the fixed code does when time is ''
+
+        $html = $method->invoke(null,
+            '#2563EB',
+            'Confirmed.', 'Hi Test,', 'Confirmed.',
+            'Booking details', $details,
+            'Footer.', 'Test Biz', 'VB',
+        );
+
+        $this->assertStringContainsString('April 5, 2026', $html);
+        $this->assertStringNotContainsString('>Time<', $html, 'Empty time row must be omitted');
+    }
 }

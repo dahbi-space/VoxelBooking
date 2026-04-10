@@ -12,16 +12,16 @@ use PHPUnit\Framework\TestCase;
 /**
  * Integration tests for tenant settings.
  *
- * Covers 5 tabs: General, Branding, Booking Rules (timeslot), Privacy, Notifications.
+ * Covers 5 tabs: General, Branding, Booking Rules (timeslot + resource), Privacy, Notifications.
  *
  * - Tab access: operator on all tabs, owner on all tabs, manager 403 on GET + POST
- * - Save: general, branding, booking (timeslot), privacy, notifications
+ * - Save: general, branding, booking (timeslot + resource), privacy, notifications
  * - Validation: empty name, invalid email, invalid notif email
  * - Old-input: general/notifications validation failure preserves user input
  * - Audit: explicit save-then-check, not inherited from prior test
  * - Sidebar: settings visible for operator, hidden for manager
  * - Slug: read-only enforcement
- * - Pattern gate: booking tab forbidden for non-timeslot tenants
+ * - Pattern gate: booking rules accessible for timeslot + resource, forbidden for capacity/event
  */
 final class TenantSettingsTest extends TestCase
 {
@@ -32,6 +32,8 @@ final class TenantSettingsTest extends TestCase
 
     private static string $tenantId = '';
     private static string $resourceTenantId = '';
+    private static string $capacityTenantId = '';
+    private static string $eventTenantId = '';
     private static string $operatorCookie = '';
     private static string $operatorCsrf = '';
     private static string $ownerCookie = '';
@@ -104,6 +106,8 @@ final class TenantSettingsTest extends TestCase
             if (self::$managerId !== '') Database::execute('DELETE FROM `business_users` WHERE `id` = ?', [self::$managerId]);
             Database::execute('DELETE FROM `tenants` WHERE `id` = ?', [self::$tenantId]);
             if (self::$resourceTenantId !== '') Database::execute('DELETE FROM `tenants` WHERE `id` = ?', [self::$resourceTenantId]);
+            if (self::$capacityTenantId !== '') Database::execute('DELETE FROM `tenants` WHERE `id` = ?', [self::$capacityTenantId]);
+            if (self::$eventTenantId !== '') Database::execute('DELETE FROM `tenants` WHERE `id` = ?', [self::$eventTenantId]);
         } catch (\Throwable) {}
     }
 
@@ -507,7 +511,7 @@ final class TenantSettingsTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════
-    // Booking Rules (timeslot pattern only)
+    // Booking Rules (timeslot + resource — Phase R)
     // ════════════════════════════════════════════════════════════════
 
     public function testBookingTabLoadsForTimeslotOperator(): void
@@ -531,10 +535,16 @@ final class TenantSettingsTest extends TestCase
         $this->assertSame(403, $res['code']);
     }
 
-    public function testBookingTabForbiddenForNonTimeslotTenant(): void
+    public function testBookingTabAccessibleForResourceTenant(): void
     {
         $res = self::httpGet("/admin/tenants/" . self::$resourceTenantId . "/settings/booking", 'operator');
-        $this->assertSame(403, $res['code']);
+        $this->assertSame(200, $res['code'], 'Booking rules tab must be accessible for resource tenants');
+        // Shared constraint fields must appear
+        $this->assertStringContainsString('ts-min-advance', $res['body'], 'min_advance field must appear');
+        $this->assertStringContainsString('ts-max-advance', $res['body'], 'max_advance field must appear');
+        // Timeslot-specific fields must NOT appear
+        $this->assertStringNotContainsString('ts-slot-duration', $res['body'], 'slot_duration must not appear for resource tenant');
+        $this->assertStringNotContainsString('ts-buffer', $res['body'], 'buffer must not appear for resource tenant');
     }
 
     public function testBookingPostForbiddenForManager(): void
@@ -567,31 +577,46 @@ final class TenantSettingsTest extends TestCase
         $this->assertSame($before[0], $after[0], 'Booking fields must be unchanged after manager POST');
     }
 
-    public function testBookingPostForbiddenForNonTimeslotTenant(): void
+    public function testBookingPostSavesSharedFieldsForResourceTenant(): void
     {
         $before = Database::query(
             'SELECT `slot_duration_minutes`, `buffer_minutes`, `min_advance_hours`, `max_advance_days` FROM `tenants` WHERE `id` = ?',
             [self::$resourceTenantId]
         );
 
-        $page = self::httpGet("/admin/tenants/" . self::$resourceTenantId . "/settings", 'operator');
+        $page = self::httpGet("/admin/tenants/" . self::$resourceTenantId . "/settings/booking", 'operator');
         self::extractCsrf($page['body'], 'operator');
 
         $res = self::httpPost("/admin/tenants/" . self::$resourceTenantId . "/settings/booking", [
-            '_csrf_token'           => self::$operatorCsrf,
-            'slot_duration_minutes' => '99',
-            'buffer_minutes'        => '99',
-            'min_advance_hours'     => '99',
-            'max_advance_days'      => '999',
+            '_csrf_token'                      => self::$operatorCsrf,
+            'slot_duration_minutes'             => '99',
+            'buffer_minutes'                    => '99',
+            'min_advance_hours'                 => '4',
+            'max_advance_days'                  => '120',
+            'max_bookings_per_customer_per_day' => '5',
         ], 'operator');
 
-        $this->assertSame(403, $res['code']);
+        $this->assertSame(302, $res['code']);
 
         $after = Database::query(
-            'SELECT `slot_duration_minutes`, `buffer_minutes`, `min_advance_hours`, `max_advance_days` FROM `tenants` WHERE `id` = ?',
+            'SELECT `slot_duration_minutes`, `buffer_minutes`, `min_advance_hours`, `max_advance_days`, `max_bookings_per_customer_per_day` FROM `tenants` WHERE `id` = ?',
             [self::$resourceTenantId]
         );
-        $this->assertSame($before[0], $after[0], 'Booking fields must be unchanged after non-timeslot POST');
+
+        // Shared fields must be updated
+        $this->assertSame(4, (int) $after[0]['min_advance_hours'], 'min_advance_hours must be saved for resource tenant');
+        $this->assertSame(120, (int) $after[0]['max_advance_days'], 'max_advance_days must be saved for resource tenant');
+        $this->assertSame(5, (int) $after[0]['max_bookings_per_customer_per_day'], 'max_bookings must be saved for resource tenant');
+
+        // Timeslot-specific fields must NOT be changed (controller skips them for non-timeslot)
+        $this->assertSame($before[0]['slot_duration_minutes'], $after[0]['slot_duration_minutes'], 'slot_duration must be unchanged for resource tenant');
+        $this->assertSame($before[0]['buffer_minutes'], $after[0]['buffer_minutes'], 'buffer_minutes must be unchanged for resource tenant');
+
+        // Restore
+        Database::execute(
+            'UPDATE `tenants` SET `min_advance_hours` = ?, `max_advance_days` = ?, `max_bookings_per_customer_per_day` = ? WHERE `id` = ?',
+            [$before[0]['min_advance_hours'] ?? 1, $before[0]['max_advance_days'] ?? 90, 3, self::$resourceTenantId]
+        );
     }
 
     public function testSaveBookingUpdatesAllFields(): void
@@ -676,12 +701,69 @@ final class TenantSettingsTest extends TestCase
         $this->assertStringContainsString('tab-booking', $res['body'], 'Booking tab must appear for timeslot tenant');
     }
 
-    public function testTabNavHidesBookingForNonTimeslotTenant(): void
+    public function testTabNavShowsBookingForResourceTenant(): void
     {
         $res = self::httpGet("/admin/tenants/" . self::$resourceTenantId . "/settings", 'operator');
         $this->assertSame(200, $res['code']);
-        // tab-booking (exact id) must not appear, but tab-bookingpage (all patterns) should
-        $this->assertStringNotContainsString('id="tab-booking"', $res['body'], 'Booking Rules tab must not appear for resource tenant');
+        // Booking Rules tab must appear for resource tenants (Phase R)
+        $this->assertStringContainsString('id="tab-booking"', $res['body'], 'Booking Rules tab must appear for resource tenant');
+        $this->assertStringContainsString('tab-bookingpage', $res['body'], 'Booking Page tab must appear for all patterns');
+    }
+
+    public function testBookingTabForbiddenForCapacityTenant(): void
+    {
+        $res = self::httpGet("/admin/tenants/" . self::$capacityTenantId . "/settings/booking", 'operator');
+        $this->assertSame(403, $res['code'], 'Booking rules GET must be 403 for capacity tenant (Phase R scope)');
+    }
+
+    public function testBookingPostForbiddenForCapacityTenant(): void
+    {
+        // Get CSRF from the settings page (not booking, which would 403)
+        $page = self::httpGet("/admin/tenants/" . self::$capacityTenantId . "/settings", 'operator');
+        self::extractCsrf($page['body'], 'operator');
+
+        $res = self::httpPost("/admin/tenants/" . self::$capacityTenantId . "/settings/booking", [
+            '_csrf_token'       => self::$operatorCsrf,
+            'min_advance_hours' => '2',
+            'max_advance_days'  => '30',
+        ], 'operator');
+
+        $this->assertSame(403, $res['code'], 'Booking rules POST must be 403 for capacity tenant (Phase R scope)');
+    }
+
+    public function testTabNavHidesBookingForCapacityTenant(): void
+    {
+        $res = self::httpGet("/admin/tenants/" . self::$capacityTenantId . "/settings", 'operator');
+        $this->assertSame(200, $res['code']);
+        $this->assertStringNotContainsString('id="tab-booking"', $res['body'], 'Booking Rules tab must be hidden for capacity tenant');
+        $this->assertStringContainsString('tab-bookingpage', $res['body'], 'Booking Page tab must appear for all patterns');
+    }
+
+    public function testBookingTabForbiddenForEventTenant(): void
+    {
+        $res = self::httpGet("/admin/tenants/" . self::$eventTenantId . "/settings/booking", 'operator');
+        $this->assertSame(403, $res['code'], 'Booking rules GET must be 403 for event tenant (Phase R scope)');
+    }
+
+    public function testBookingPostForbiddenForEventTenant(): void
+    {
+        $page = self::httpGet("/admin/tenants/" . self::$eventTenantId . "/settings", 'operator');
+        self::extractCsrf($page['body'], 'operator');
+
+        $res = self::httpPost("/admin/tenants/" . self::$eventTenantId . "/settings/booking", [
+            '_csrf_token'       => self::$operatorCsrf,
+            'min_advance_hours' => '2',
+            'max_advance_days'  => '30',
+        ], 'operator');
+
+        $this->assertSame(403, $res['code'], 'Booking rules POST must be 403 for event tenant (Phase R scope)');
+    }
+
+    public function testTabNavHidesBookingForEventTenant(): void
+    {
+        $res = self::httpGet("/admin/tenants/" . self::$eventTenantId . "/settings", 'operator');
+        $this->assertSame(200, $res['code']);
+        $this->assertStringNotContainsString('id="tab-booking"', $res['body'], 'Booking Rules tab must be hidden for event tenant');
         $this->assertStringContainsString('tab-bookingpage', $res['body'], 'Booking Page tab must appear for all patterns');
     }
 
@@ -1115,6 +1197,22 @@ final class TenantSettingsTest extends TestCase
              (`id`, `slug`, `name`, `email`, `booking_pattern`, `status`, `brand_color`, `timezone`, `currency`)
              VALUES (?, ?, 'Resource Test Tenant', 'resource-test@test.test', 'resource', 'active', '#2563EB', 'UTC', 'EUR')",
             [self::$resourceTenantId, 'test-resource-' . substr(self::$resourceTenantId, -8)]
+        );
+
+        self::$capacityTenantId = Ulid::generate();
+        Database::execute(
+            "INSERT INTO `tenants`
+             (`id`, `slug`, `name`, `email`, `booking_pattern`, `status`, `brand_color`, `timezone`, `currency`)
+             VALUES (?, ?, 'Capacity Test Tenant', 'capacity-test@test.test', 'capacity', 'active', '#2563EB', 'UTC', 'EUR')",
+            [self::$capacityTenantId, 'test-capacity-' . substr(self::$capacityTenantId, -8)]
+        );
+
+        self::$eventTenantId = Ulid::generate();
+        Database::execute(
+            "INSERT INTO `tenants`
+             (`id`, `slug`, `name`, `email`, `booking_pattern`, `status`, `brand_color`, `timezone`, `currency`)
+             VALUES (?, ?, 'Event Test Tenant', 'event-test@test.test', 'event', 'active', '#2563EB', 'UTC', 'EUR')",
+            [self::$eventTenantId, 'test-event-' . substr(self::$eventTenantId, -8)]
         );
     }
 

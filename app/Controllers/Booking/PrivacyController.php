@@ -97,6 +97,12 @@ final class PrivacyController
     {
         $slug = $request->getAttribute('slug');
         $customerId = $request->getAttribute('customer_id');
+
+        // Demo mode: redirect back to the privacy page (no writes allowed)
+        if (\App\Engine\DemoMode::isActive()) {
+            return Response::redirect("/book/{$slug}/privacy/{$customerId}");
+        }
+
         $actionType = $request->string('action');
 
         $tenant = $this->loadTenant($slug);

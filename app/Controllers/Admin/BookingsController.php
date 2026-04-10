@@ -1460,4 +1460,95 @@ final class BookingsController
     }
 
 
+    // ── CSV Export ──
+
+    /**
+     * Export bookings as CSV — operator cross-tenant.
+     *
+     * Respects the same filter/sort query params as the index view so
+     * the user gets exactly the dataset they see in the table.
+     */
+    public function export(Request $request): Response
+    {
+        if (!Auth::isOperator()) {
+            return $this->forbidden($request);
+        }
+
+        $status    = $request->string('status') ?: null;
+        $from      = $request->string('from') ?: null;
+        $to        = $request->string('to') ?: null;
+        $search    = $request->string('search') ?: null;
+        $sort      = $request->string('sort') ?: 'start_datetime';
+        $direction = $request->string('direction') ?: 'desc';
+
+        $bookings = Booking::allForExport($status, $from, $to, $search, $sort, $direction);
+
+        return $this->streamCsv($bookings, 'bookings-export', true);
+    }
+
+    /**
+     * Export bookings as CSV — tenant-scoped.
+     */
+    public function tenantExport(Request $request): Response
+    {
+        $tenantId = $request->getAttribute('tenant_id');
+
+        $status    = $request->string('status') ?: null;
+        $from      = $request->string('from') ?: null;
+        $to        = $request->string('to') ?: null;
+        $sort      = $request->string('sort') ?: 'start_datetime';
+        $direction = $request->string('direction') ?: 'desc';
+
+        $bookings = Booking::forTenantExport($tenantId, $status, $from, $to, $sort, $direction);
+
+        return $this->streamCsv($bookings, 'bookings-export', false);
+    }
+
+    /**
+     * Build a CSV response from booking rows.
+     *
+     * @param list<array<string, mixed>> $bookings
+     */
+    private function streamCsv(array $bookings, string $filenamePrefix, bool $includeTenant): Response
+    {
+        $filename = $filenamePrefix . '-' . date('Y-m-d') . '.csv';
+
+        $headers = ['Date', 'Time', 'End Time', 'Customer', 'Email', 'Service', 'Status'];
+        if ($includeTenant) {
+            $headers[] = 'Tenant';
+        }
+
+        $output = fopen('php://temp', 'r+');
+        // UTF-8 BOM for Excel compatibility
+        fwrite($output, "\xEF\xBB\xBF");
+        fputcsv($output, $headers);
+
+        foreach ($bookings as $b) {
+            $row = [
+                substr($b['start_datetime'] ?? '', 0, 10),
+                substr($b['start_datetime'] ?? '', 11, 5),
+                substr($b['end_datetime'] ?? '', 11, 5),
+                $b['customer_name'] ?? '',
+                $b['customer_email'] ?? '',
+                $b['service_name'] ?? $b['resource_name'] ?? $b['event_name'] ?? '',
+                $b['status'] ?? '',
+            ];
+            if ($includeTenant) {
+                $row[] = $b['tenant_name'] ?? '';
+            }
+            fputcsv($output, $row);
+        }
+
+        rewind($output);
+        $csv = stream_get_contents($output);
+        fclose($output);
+
+        $response = new Response();
+        return $response
+            ->header('Content-Type', 'text/csv; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Cache-Control', 'no-store')
+            ->body($csv);
+    }
+
 }

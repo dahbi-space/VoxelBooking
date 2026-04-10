@@ -363,4 +363,51 @@ final class SettingsController
     }
 
 
+    // ── Audit Export ──
+
+    /**
+     * Export audit log as CSV — operator-only.
+     *
+     * Excludes the details JSON column to prevent accidental PII leakage.
+     * Actor IDs and entity IDs remain (they are ULIDs, not PII).
+     */
+    public function auditExport(Request $request): Response
+    {
+        $actionFilter = $request->query('action');
+
+        $entries = AuditLog::queryForExport(
+            $actionFilter !== '' ? $actionFilter : null,
+        );
+
+        $filename = 'audit-log-export-' . date('Y-m-d') . '.csv';
+        $headers = ['Date', 'Action', 'Entity Type', 'Entity ID', 'Actor Type', 'Actor ID', 'IP'];
+
+        $output = fopen('php://temp', 'r+');
+        fwrite($output, "\xEF\xBB\xBF");
+        fputcsv($output, $headers);
+
+        foreach ($entries as $e) {
+            fputcsv($output, [
+                $e['created_at'] ?? '',
+                $e['action'] ?? '',
+                $e['entity_type'] ?? '',
+                $e['entity_id'] ?? '',
+                $e['actor_type'] ?? '',
+                $e['actor_id'] ?? '',
+                $e['ip_address'] ?? '',
+            ]);
+        }
+
+        rewind($output);
+        $csv = stream_get_contents($output);
+        fclose($output);
+
+        $response = new Response();
+        return $response
+            ->header('Content-Type', 'text/csv; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Cache-Control', 'no-store')
+            ->body($csv);
+    }
+
 }

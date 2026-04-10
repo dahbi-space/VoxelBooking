@@ -61,20 +61,38 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
     <div class="vb-card-header vb-card-header-toolbar">
         <div>
             <div class="vb-card-title"><?= __('admin.audit.title') ?></div>
-            <div class="vb-card-desc"><?= __n($total) ?> <?= __('admin.audit.desc_suffix') ?></div>
+            <div class="vb-card-desc"><?= __p('admin.audit.showing_count', (int) $total) ?></div>
         </div>
-        <form method="GET" action="/admin/settings/audit" class="vb-filter-form">
-            <select name="action" class="vb-input vb-input-compact vb-filter-select" onchange="this.form.submit()">
-                <option value=""><?= __('admin.audit.all_events') ?></option>
-                <?php foreach ($actionLabels as $actionKey => $meta):
-                    $selected = ($actionFilter ?? '') === $actionKey ? 'selected' : '';
-                ?>
-                    <option value="<?= htmlspecialchars($actionKey, ENT_QUOTES, 'UTF-8') ?>" <?= $selected ?>><?= htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8') ?></option>
-                <?php endforeach; ?>
-            </select>
-        </form>
+        <div class="vb-page-actions">
+            <form method="GET" action="/admin/settings/audit" class="vb-filter-form">
+                <select name="action" class="vb-input vb-input-compact vb-filter-select" onchange="this.form.submit()">
+                    <option value=""><?= __('admin.audit.all_events') ?></option>
+                    <?php foreach ($actionLabels as $actionKey => $meta):
+                        $selected = ($actionFilter ?? '') === $actionKey ? 'selected' : '';
+                    ?>
+                        <option value="<?= htmlspecialchars($actionKey, ENT_QUOTES, 'UTF-8') ?>" <?= $selected ?>><?= htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </form>
+            <?php
+            $auditExportParams = array_filter(['action' => $actionFilter ?? ''], fn($v) => $v !== '');
+            $auditExportUrl = '/admin/settings/audit/export' . ($auditExportParams ? '?' . http_build_query($auditExportParams) : '');
+            ?>
+            <a href="<?= htmlspecialchars($auditExportUrl, ENT_QUOTES, 'UTF-8') ?>"
+               class="vb-btn vb-btn-ghost vb-btn-sm" id="btn-export-csv"
+               <?php if (\App\Engine\DemoMode::isActive()): ?>onclick="event.preventDefault(); showDemoToast()"<?php endif; ?>>
+                <i data-lucide="download" class="vb-icon-sm"></i>
+                <?= __('admin.common.export_csv') ?>
+            </a>
+        </div>
     </div>
 
+    <?php
+    $resultCountKey = 'admin.audit.showing_count';
+    $resultCountValue = count($entries);
+    $resultCountActive = ($actionFilter ?? '') !== '';
+    include dirname(__DIR__, 2) . '/partials/table-result-count.php';
+    ?>
     <?php if (empty($entries)): ?>
         <div class="vb-table-empty">
             <i data-lucide="shield-check" class="vb-table-empty-icon"></i>
@@ -161,25 +179,14 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
             </table>
         </div>
 
-        <?php if ($totalPages > 1): ?>
-            <div class="vb-pagination">
-                <span><?= str_replace([':page', ':total'], [$page, $totalPages], __('admin.audit.page_of')) ?></span>
-                <div class="vb-pagination-nav">
-                    <?php if ($page > 1): ?>
-                        <a href="/admin/settings/audit?page=<?= $page - 1 ?><?= ($actionFilter ?? '') !== '' ? '&action=' . urlencode($actionFilter) : '' ?>" class="vb-btn vb-btn-ghost vb-btn-sm">
-                            <i data-lucide="chevron-left"></i>
-                            <?= __('admin.audit.previous') ?>
-                        </a>
-                    <?php endif; ?>
-                    <?php if ($page < $totalPages): ?>
-                        <a href="/admin/settings/audit?page=<?= $page + 1 ?><?= ($actionFilter ?? '') !== '' ? '&action=' . urlencode($actionFilter) : '' ?>" class="vb-btn vb-btn-ghost vb-btn-sm">
-                            <?= __('admin.audit.next') ?>
-                            <i data-lucide="chevron-right"></i>
-                        </a>
-                    <?php endif; ?>
-                </div>
-            </div>
-        <?php endif; ?>
+        <?php
+        $paginationPage = $page;
+        $paginationTotalPages = $totalPages;
+        $paginationBaseUrl = '/admin/settings/audit';
+        $paginationParams = ($actionFilter ?? '') !== '' ? '&action=' . urlencode($actionFilter) : '';
+        $paginationI18nPrefix = 'admin.audit';
+        include dirname(__DIR__, 2) . '/partials/table-pagination.php';
+        ?>
     <?php endif; ?>
 </div>
 

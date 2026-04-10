@@ -40,7 +40,14 @@ final class TenantsController
             return $this->forbidden($request);
         }
 
-        $tenants = Tenant::all(includeArchived: true);
+        $search = trim($request->string('search'));
+        $status = trim($request->string('status'));
+
+        $tenants = Tenant::filtered(
+            $search !== '' ? $search : null,
+            $status !== '' ? $status : null,
+        );
+
         foreach ($tenants as &$t) {
             $t['booking_count'] = Tenant::bookingCount($t['id']);
             $t['service_count'] = Tenant::serviceCount($t['id']);
@@ -50,6 +57,7 @@ final class TenantsController
         return $this->render('admin.tenants.index', __('admin.tenants.title'), [
             'tenants' => $tenants,
             'counts'  => Tenant::counts(),
+            'filters' => ['search' => $search, 'status' => $status],
             'flash'   => FormState::getToast(),
         ]);
     }
@@ -439,5 +447,55 @@ final class TenantsController
         ], 403);
     }
 
+
+    // ── CSV Export ──
+
+    /**
+     * Export tenants as CSV — operator-only.
+     */
+    public function export(Request $request): Response
+    {
+        if (!Auth::isOperator()) {
+            return $this->forbidden($request);
+        }
+
+        $search = trim($request->string('search'));
+        $status = trim($request->string('status'));
+
+        $tenants = Tenant::filtered(
+            $search !== '' ? $search : null,
+            $status !== '' ? $status : null,
+        );
+
+        $filename = 'tenants-export-' . date('Y-m-d') . '.csv';
+        $headers = ['Name', 'Slug', 'Email', 'Pattern', 'Status', 'Bookings', 'Services'];
+
+        $output = fopen('php://temp', 'r+');
+        fwrite($output, "\xEF\xBB\xBF");
+        fputcsv($output, $headers);
+
+        foreach ($tenants as $t) {
+            fputcsv($output, [
+                $t['name'] ?? '',
+                $t['slug'] ?? '',
+                $t['email'] ?? '',
+                $t['booking_pattern'] ?? '',
+                $t['status'] ?? '',
+                Tenant::bookingCount($t['id']),
+                Tenant::serviceCount($t['id']),
+            ]);
+        }
+
+        rewind($output);
+        $csv = stream_get_contents($output);
+        fclose($output);
+
+        $response = new Response();
+        return $response
+            ->header('Content-Type', 'text/csv; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Cache-Control', 'no-store')
+            ->body($csv);
+    }
 
 }

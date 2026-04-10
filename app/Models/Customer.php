@@ -62,6 +62,28 @@ final class Customer
     }
 
     /**
+     * Get all customers for a tenant for CSV export (no pagination, capped at 10 000).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function forTenantExport(string $tenantId, ?string $search): array
+    {
+        [$where, $bindings] = self::buildFilters($tenantId, $search);
+
+        $whereClause = 'WHERE ' . implode(' AND ', $where);
+
+        return Database::query(
+            "SELECT `name`, `email`, `phone`, `booking_count`,
+                    `last_booking_at`, `created_at`
+             FROM `customers`
+             {$whereClause}
+             ORDER BY `last_booking_at` DESC, `created_at` DESC
+             LIMIT 10000",
+            $bindings
+        );
+    }
+
+    /**
      * Count customers for a tenant with optional search.
      */
     public static function countForTenant(string $tenantId, ?string $search): int

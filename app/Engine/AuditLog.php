@@ -312,6 +312,33 @@ final class AuditLog
     }
 
     /**
+     * Query audit log entries for CSV export (no pagination, capped at 10 000).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function queryForExport(?string $action = null): array
+    {
+        $where = [];
+        $bindings = [];
+
+        if ($action !== null) {
+            $where[] = '`action` = ?';
+            $bindings[] = $action;
+        }
+
+        $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+
+        return Database::query(
+            "SELECT `action`, `entity_type`, `entity_id`, `actor_type`, `actor_id`,
+                    `ip_address`, `created_at`
+             FROM `audit_log` {$whereClause}
+             ORDER BY `created_at` DESC
+             LIMIT 10000",
+            $bindings
+        );
+    }
+
+    /**
      * Get audit log entries for a specific entity.
      *
      * Used by booking detail to render an event timeline.

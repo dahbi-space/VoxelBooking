@@ -585,16 +585,57 @@ foreach ($bookings as [$id, $custId, $svcId, $staffId, $dateOffset, $start, $end
     $stmt->execute([$id, $tenantId, $custId, $svcId, $staffId, "{$date} {$start}:00", "{$date} {$end}:00", $status]);
 }
 
-// Audit log sample entries
+// Audit log sample entries — diverse actions across tenants
 $stmt = $pdo->prepare("INSERT INTO audit_log (id, tenant_id, actor_type, actor_id, action, entity_type, entity_id, details, ip_address, request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 $logEntries = [
-    ['01JDEMO0001AUDIT000001', null, 'operator', $operatorId, 'auth.login', 'operator', $operatorId, '{}', '127.0.0.1', 'demo-req-001'],
-    ['01JDEMO0001AUDIT000002', $tenantId, 'operator', $operatorId, 'settings.updated', 'settings', null, '{"key":"site_name","old":"VoxelBooking","new":"VoxelBooking Demo"}', '127.0.0.1', 'demo-req-002'],
-    ['01JDEMO0001AUDIT000003', $tenantId, 'system', null, 'booking.created', 'booking', '01JDEMO0001BOOK0000001', '{"source":"web"}', '127.0.0.1', 'demo-req-003'],
+    // System / operator login
+    ['01JDEMO0001AUDIT000001', null,      'operator', $operatorId, 'auth.login',             'operator', $operatorId, '{}', '93.184.216.34', 'demo-req-001'],
+    ['01JDEMO0001AUDIT000002', null,      'operator', $operatorId, 'auth.password_changed',  'operator', $operatorId, '{}', '93.184.216.34', 'demo-req-002'],
+    // Tenant config
+    ['01JDEMO0001AUDIT000003', $tenantId, 'operator', $operatorId, 'settings.updated',       'settings', null, '{"key":"site_name","old":"VoxelBooking","new":"VoxelBooking Demo"}', '93.184.216.34', 'demo-req-003'],
+    ['01JDEMO0001AUDIT000004', $tenantId, 'operator', $operatorId, 'tenant.updated',         'tenant', $tenantId, '{"field":"brand_color","old":"#000","new":"#2563EB"}', '93.184.216.34', 'demo-req-004'],
+    // Bookings
+    ['01JDEMO0001AUDIT000005', $tenantId, 'system',   null,        'booking.created',        'booking', '01JDEMO0001BOOK0000001', '{"source":"web"}', '198.51.100.12', 'demo-req-005'],
+    ['01JDEMO0001AUDIT000006', $tenantId, 'system',   null,        'booking.created',        'booking', '01JDEMO0001BOOK0000002', '{"source":"web"}', '198.51.100.45', 'demo-req-006'],
+    ['01JDEMO0001AUDIT000007', $tenantId, 'operator', $operatorId, 'booking.status_changed', 'booking', '01JDEMO0001BOOK0000004', '{"old":"confirmed","new":"completed"}', '93.184.216.34', 'demo-req-007'],
+    // Hotel Marina
+    ['01JDEMO0001AUDIT000008', '01JDEMO0002TENANT00001', 'system', null, 'booking.created',   'booking', '01JDEMO0002BOOK0000001', '{"source":"web"}', '203.0.113.20', 'demo-req-008'],
+    ['01JDEMO0001AUDIT000009', '01JDEMO0002TENANT00001', 'system', null, 'booking.cancelled', 'booking', '01JDEMO0002BOOK0000005', '{"reason":"guest_request"}', '203.0.113.20', 'demo-req-009'],
+    // Trattoria Roma
+    ['01JDEMO0001AUDIT000010', '01JDEMO0003TENANT00001', 'system', null, 'booking.created', 'booking', '01JDEMO0003BOOK0000001', '{"source":"web","party_size":4}', '198.51.100.78', 'demo-req-010'],
+    // Customer data
+    ['01JDEMO0001AUDIT000011', $tenantId, 'operator', $operatorId, 'customer.updated',       'customer', '01JDEMO0001CUST0000001', '{"field":"phone"}', '93.184.216.34', 'demo-req-011'],
+    ['01JDEMO0001AUDIT000012', $tenantId, 'system',   null,        'privacy.request_received','customer', '01JDEMO0001CUST0000003', '{}', '198.51.100.99', 'demo-req-012'],
+    // Workshop Studio
+    ['01JDEMO0001AUDIT000013', '01JDEMO0004TENANT00001', 'system', null, 'booking.created', 'booking', '01JDEMO0004BOOK0000001', '{"source":"web"}', '203.0.113.55', 'demo-req-013'],
+    // Retention job
+    ['01JDEMO0001AUDIT000014', null, 'system', null, 'retention.executed', 'system', null, '{"anonymized":0,"email_log_deleted":0,"audit_log_deleted":0}', '127.0.0.1', 'demo-req-014'],
+    // Export
+    ['01JDEMO0001AUDIT000015', $tenantId, 'operator', $operatorId, 'data.export_generated',  'tenant', $tenantId, '{"type":"bookings_csv"}', '93.184.216.34', 'demo-req-015'],
 ];
 foreach ($logEntries as $log) {
     $stmt->execute($log);
 }
+
+// Email log sample entries — transactional emails across tenants
+$emailStmt = $pdo->prepare("INSERT INTO email_log (id, tenant_id, booking_id, type, to_email, subject, status, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+$emailEntries = [
+    ['01JDEMO0001ELOG0000001', $tenantId, '01JDEMO0001BOOK0000001', 'confirmation', 'emma.johnson@example.com', 'Your appointment at Demo Studio is confirmed', 'sent', date('Y-m-d H:i:s', strtotime('-1 day'))],
+    ['01JDEMO0001ELOG0000002', $tenantId, '01JDEMO0001BOOK0000002', 'confirmation', 'james.smith@example.com',  'Your appointment at Demo Studio is confirmed', 'sent', date('Y-m-d H:i:s', strtotime('-1 day'))],
+    ['01JDEMO0001ELOG0000003', $tenantId, '01JDEMO0001BOOK0000001', 'reminder',     'emma.johnson@example.com', 'Reminder: Your appointment tomorrow',          'sent', date('Y-m-d H:i:s', strtotime('-2 hours'))],
+    ['01JDEMO0001ELOG0000004', $tenantId, '01JDEMO0001BOOK0000004', 'confirmation', 'emma.johnson@example.com', 'Your appointment at Demo Studio is confirmed', 'sent', date('Y-m-d H:i:s', strtotime('-3 days'))],
+    ['01JDEMO0001ELOG0000005', '01JDEMO0002TENANT00001', '01JDEMO0002BOOK0000001', 'confirmation', 'laura.rossi@example.com', 'Your reservation at Hotel Marina is confirmed', 'sent', date('Y-m-d H:i:s', strtotime('-2 days'))],
+    ['01JDEMO0001ELOG0000006', '01JDEMO0002TENANT00001', '01JDEMO0002BOOK0000005', 'cancellation', 'marco.bianchi@example.com', 'Your reservation has been cancelled', 'sent', date('Y-m-d H:i:s', strtotime('-1 day'))],
+    ['01JDEMO0001ELOG0000007', '01JDEMO0003TENANT00001', '01JDEMO0003BOOK0000001', 'confirmation', 'antonio.verdi@example.com', 'Your table at Trattoria Roma is reserved', 'sent', date('Y-m-d H:i:s', strtotime('-12 hours'))],
+    ['01JDEMO0001ELOG0000008', '01JDEMO0004TENANT00001', '01JDEMO0004BOOK0000001', 'confirmation', 'hannah.weber@example.com', 'You are registered for Woodworking 101', 'sent', date('Y-m-d H:i:s', strtotime('-4 days'))],
+];
+foreach ($emailEntries as $e) {
+    $emailStmt->execute($e);
+}
+
+// Deletion request — seed one customer with a pending privacy request
+// Sophie Brown (tenant 1) has requested deletion, visible in the deletion queue
+$pdo->prepare("UPDATE customers SET deletion_requested_at = datetime('now', '-2 days') WHERE id = ?")->execute(['01JDEMO0001CUST0000003']);
 
 // Tenant email templates (one customized, rest use system defaults)
 $stmt = $pdo->prepare("
@@ -907,4 +948,6 @@ echo "  Customers:      {$customerCount}\n";
 echo "  Bookings:       {$bookingCount}\n";
 echo "  Business users: {$businessUserCount}\n";
 echo "  Audit entries:  " . count($logEntries) . "\n";
+echo "  Email log:      " . count($emailEntries) . "\n";
+echo "  Deletion queue: 1 (Sophie Brown)\n";
 

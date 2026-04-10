@@ -13,18 +13,8 @@ $totalPages = max(1, (int) ceil($total / $perPage));
 $filterParams = http_build_query(array_filter($filters ?? [], fn($v) => $v !== null && $v !== ''));
 $baseUrl = $backUrl ?? '/admin/bookings';
 
-// Sort header helper — generates a clickable <a> with sort indicator
-if (!function_exists('bookingSortHeader')) {
-    function bookingSortHeader(string $column, string $label, string $currentSort, string $currentDir, string $baseUrl, array $filters): string {
-        $isActive = $currentSort === $column;
-        $nextDir = ($isActive && $currentDir === 'asc') ? 'desc' : 'asc';
-        $class = 'vb-th-sort' . ($isActive ? ($currentDir === 'asc' ? ' is-asc' : ' is-desc') : '');
-        $params = array_merge($filters, ['sort' => $column, 'direction' => $nextDir, 'page' => 1]);
-        $qs = http_build_query(array_filter($params, fn($v) => $v !== null && $v !== ''));
-        $href = htmlspecialchars($baseUrl . ($qs ? '?' . $qs : ''), ENT_QUOTES, 'UTF-8');
-        return "<a href=\"{$href}\" class=\"{$class}\">{$label}</a>";
-    }
-}
+// Shared sort header helper
+include __DIR__ . '/../../partials/table-sort-header.php';
 
 ob_start();
 ?>
@@ -39,18 +29,36 @@ ob_start();
             <i data-lucide="calendar" class="vb-page-header-icon"></i>
             <?= __('admin.bookings.title') ?>
         </h2>
-        <div class="vb-page-subtitle"><?= $total ?> total</div>
+        <div class="vb-page-subtitle"><?= __p('admin.bookings.showing_count', (int) $total) ?></div>
     </div>
-    <?php if (isset($tenantId) && $tenantId): ?>
-    <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/bookings/create"
-       class="vb-btn vb-btn-primary vb-btn-sm" id="btn-new-booking">
-        <i data-lucide="plus" class="vb-icon-sm"></i>
-        <?= __('admin.bookings.new_booking') ?>
-    </a>
-    <?php endif; ?>
+    <div class="vb-page-actions">
+        <?php
+        $exportUrl = $baseUrl . '/export' . ($filterParams ? '?' . $filterParams : '');
+        ?>
+        <a href="<?= htmlspecialchars($exportUrl, ENT_QUOTES, 'UTF-8') ?>"
+           class="vb-btn vb-btn-ghost vb-btn-sm" id="btn-export-csv"
+           <?php if (\App\Engine\DemoMode::isActive()): ?>onclick="event.preventDefault(); showDemoToast()"<?php endif; ?>>
+            <i data-lucide="download" class="vb-icon-sm"></i>
+            <?= __('admin.bookings.export_csv') ?>
+        </a>
+        <?php if (isset($tenantId) && $tenantId): ?>
+        <a href="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/bookings/create"
+           class="vb-btn vb-btn-primary vb-btn-sm" id="btn-new-booking">
+            <i data-lucide="plus" class="vb-icon-sm"></i>
+            <?= __('admin.bookings.new_booking') ?>
+        </a>
+        <?php endif; ?>
+    </div>
 </div>
 
-<?php if (empty($bookings)): ?>
+<?php
+// Detect whether any filter is active (status, date range, or search term).
+// When filters are active and return zero rows, we must still render the
+// toolbar so the user can clear or change their filters.
+$hasActiveFilters = !empty($filters['status'] ?? '') || !empty($filters['from'] ?? '') || !empty($filters['to'] ?? '') || !empty($filters['search'] ?? '');
+?>
+
+<?php if (empty($bookings) && !$hasActiveFilters): ?>
     <div class="vb-empty vb-animate-in">
         <i data-lucide="calendar" class="vb-empty-icon"></i>
         <div class="vb-empty-title"><?= __('admin.bookings.empty_title') ?></div>
@@ -105,16 +113,29 @@ ob_start();
                 </form>
             </div>
         </div>
+        <?php
+        $resultCountKey = 'admin.bookings.showing_count';
+        $resultCountValue = count($bookings);
+        $resultCountActive = $hasActiveFilters;
+        include __DIR__ . '/../../partials/table-result-count.php';
+        ?>
+        <?php if (empty($bookings)): ?>
+        <div class="vb-empty vb-animate-in">
+            <i data-lucide="search-x" class="vb-empty-icon"></i>
+            <div class="vb-empty-title"><?= __('admin.bookings.empty_filter_title') ?></div>
+            <div class="vb-empty-desc"><?= __('admin.bookings.empty_filter_desc') ?></div>
+        </div>
+        <?php else: ?>
         <div class="vb-table-wrap">
             <table class="vb-table">
                 <thead>
                     <tr>
-                        <th><?= bookingSortHeader('customer', __('admin.bookings.customer'), $sort, $direction, $baseUrl, $filters) ?></th>
-                        <th><?= bookingSortHeader('service', __('admin.bookings.service'), $sort, $direction, $baseUrl, $filters) ?></th>
-                        <th><?= bookingSortHeader('start_datetime', __('admin.bookings.date_time'), $sort, $direction, $baseUrl, $filters) ?></th>
-                        <th><?= bookingSortHeader('status', __('admin.bookings.status'), $sort, $direction, $baseUrl, $filters) ?></th>
+                        <th><?= tableSortHeader('customer', __('admin.bookings.customer'), $sort, $direction, $baseUrl, $filters) ?></th>
+                        <th><?= tableSortHeader('service', __('admin.bookings.service'), $sort, $direction, $baseUrl, $filters) ?></th>
+                        <th><?= tableSortHeader('start_datetime', __('admin.bookings.date_time'), $sort, $direction, $baseUrl, $filters) ?></th>
+                        <th><?= tableSortHeader('status', __('admin.bookings.status'), $sort, $direction, $baseUrl, $filters) ?></th>
                         <?php if ($showTenantColumn): ?>
-                        <th><?= bookingSortHeader('tenant', __('admin.bookings.tenant'), $sort, $direction, $baseUrl, $filters) ?></th>
+                        <th><?= tableSortHeader('tenant', __('admin.bookings.tenant'), $sort, $direction, $baseUrl, $filters) ?></th>
                         <?php endif; ?>
                         <th><?= __('admin.bookings.actions') ?></th>
                     </tr>
@@ -167,28 +188,14 @@ ob_start();
             </table>
         </div>
 
-        <?php if ($totalPages > 1): ?>
-        <div class="vb-pagination">
-            <span class="vb-text-muted">
-                <?= str_replace([':page', ':total'], [(string) $page, (string) $totalPages], __('admin.bookings.page_info')) ?>
-            </span>
-            <div class="vb-pagination-nav">
-                <?php if ($page > 1): ?>
-                    <a href="<?= $baseUrl ?>?page=<?= $page - 1 ?><?= $filterParams ? '&' . $filterParams : '' ?>"
-                       class="vb-btn vb-btn-ghost vb-btn-sm">
-                        <i data-lucide="chevron-left"></i>
-                        <?= __('admin.bookings.previous') ?>
-                    </a>
-                <?php endif; ?>
-                <?php if ($page < $totalPages): ?>
-                    <a href="<?= $baseUrl ?>?page=<?= $page + 1 ?><?= $filterParams ? '&' . $filterParams : '' ?>"
-                       class="vb-btn vb-btn-ghost vb-btn-sm">
-                        <?= __('admin.bookings.next') ?>
-                        <i data-lucide="chevron-right"></i>
-                    </a>
-                <?php endif; ?>
-            </div>
-        </div>
+        <?php
+        $paginationPage = $page;
+        $paginationTotalPages = $totalPages;
+        $paginationBaseUrl = $baseUrl;
+        $paginationParams = $filterParams ? '&' . $filterParams : '';
+        $paginationI18nPrefix = 'admin.bookings';
+        include __DIR__ . '/../../partials/table-pagination.php';
+        ?>
         <?php endif; ?>
     </div>
 <?php endif; ?>

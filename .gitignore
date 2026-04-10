@@ -1,6 +1,7 @@
 # ── Application ──
 .env
 storage/logs/*.log
+storage/logs/*.log.*
 storage/cache/*
 !storage/logs/.gitkeep
 !storage/cache/.gitkeep

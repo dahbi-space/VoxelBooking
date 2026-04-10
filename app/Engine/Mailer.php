@@ -170,6 +170,11 @@ final class Mailer
      * @param string      $tenantId       Tenant ULID
      * @param string      $bookingId      Booking ULID
      * @param string      $brandColor     Tenant brand_color hex (sanitized internally)
+     * @param array|null  $patternDetails Optional pre-built detail rows (label => value).
+     *                                    When provided, replaces the default timeslot detail
+     *                                    rows (date/time/service/staff) entirely. Used by
+     *                                    resource and capacity patterns to show pattern-specific
+     *                                    labels (e.g. Room, Check-in, Guests, Total).
      *
      * @return array{sent: bool, error: string|null, log_id: string}
      */
@@ -183,6 +188,7 @@ final class Mailer
         string $tenantId,
         string $bookingId,
         string $brandColor = '#2563EB',
+        ?array $patternDetails = null,
     ): array {
         // Build placeholder map for tenant template resolution
         $placeholders = [
@@ -217,16 +223,24 @@ final class Mailer
         $detailsHeading = __('email.booking_confirmation.details');
         $footer         = $tpl['body_outro'] ?? __('email.booking_confirmation.footer');
 
-        // Build ordered detail rows for the summary card
-        $displayDate = $booking['formatted_date'] ?? $booking['date'];
-        $details = [];
-        $details[__('email.common.date')] = $displayDate;
-        $details[__('email.common.time')] = $booking['time'] . "\xE2\x80\x93" . $booking['end_time'];
-        if ($serviceName) {
-            $details[__('email.common.service')] = $serviceName;
-        }
-        if ($staffName) {
-            $details[__('email.common.staff')] = $staffName;
+        // Build ordered detail rows for the summary card.
+        // Pattern-specific callers can supply $patternDetails to override the
+        // default timeslot rows with their own labels (e.g. Room, Check-in).
+        if ($patternDetails !== null) {
+            $details = $patternDetails;
+        } else {
+            $displayDate = $booking['formatted_date'] ?? $booking['date'];
+            $details = [];
+            $details[__('email.common.date')] = $displayDate;
+            if (($booking['time'] ?? '') !== '') {
+                $details[__('email.common.time')] = $booking['time'] . "\xE2\x80\x93" . $booking['end_time'];
+            }
+            if ($serviceName) {
+                $details[__('email.common.service')] = $serviceName;
+            }
+            if ($staffName) {
+                $details[__('email.common.staff')] = $staffName;
+            }
         }
 
         $html = self::renderConfirmationEmail(
@@ -711,6 +725,7 @@ final class Mailer
         string $tenantId,
         string $bookingId,
         string $brandColor = '#2563EB',
+        ?array $patternDetails = null,
     ): array {
         $placeholders = [
             'customer_name' => $customerName,
@@ -740,17 +755,23 @@ final class Mailer
         $detailsHeading = __('email.booking_confirmation.details');
         $footer         = $tpl['body_outro'] ?? __('email.approval_request.footer');
 
-        $displayDate = $booking['formatted_date'] ?? $booking['date'];
-        $details = [];
-        $details[__('email.common.date')] = $displayDate;
-        if ($booking['time'] ?? '') {
-            $details[__('email.common.time')] = $booking['time'] . "\xE2\x80\x93" . ($booking['end_time'] ?? '');
-        }
-        if ($serviceName) {
-            $details[__('email.common.service')] = $serviceName;
-        }
-        if ($staffName) {
-            $details[__('email.common.staff')] = $staffName;
+        // Pattern-specific callers can supply $patternDetails to override
+        // the default timeslot rows (same contract as sendBookingConfirmation).
+        if ($patternDetails !== null) {
+            $details = $patternDetails;
+        } else {
+            $displayDate = $booking['formatted_date'] ?? $booking['date'];
+            $details = [];
+            $details[__('email.common.date')] = $displayDate;
+            if ($booking['time'] ?? '') {
+                $details[__('email.common.time')] = $booking['time'] . "\xE2\x80\x93" . ($booking['end_time'] ?? '');
+            }
+            if ($serviceName) {
+                $details[__('email.common.service')] = $serviceName;
+            }
+            if ($staffName) {
+                $details[__('email.common.staff')] = $staffName;
+            }
         }
 
         // Uses confirmation layout but without calendar CTA

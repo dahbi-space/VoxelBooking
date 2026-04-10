@@ -446,6 +446,73 @@ final class EventBookingFlowTest extends TestCase
         $this->assertEmpty($remaining, 'Deleted event must not exist');
     }
 
+    public function testAdminEventDeleteBlockedWhenBookingsExist(): void
+    {
+        // Create an event with a linked booking
+        $guardEventId = Ulid::generate();
+        $futureDate = (new \DateTimeImmutable('+65 days'))->format('Y-m-d');
+        Database::execute(
+            "INSERT INTO `events` (`id`, `tenant_id`, `name`, `description`, `max_participants`,
+             `start_datetime`, `end_datetime`, `is_recurring`, `allow_waitlist`, `waitlist_max`, `is_active`)
+             VALUES (?, ?, 'Guard Test Event', 'Should not be deletable', 10, ?, ?, 0, 0, 0, 1)",
+            [$guardEventId, self::$tenantId,
+             "{$futureDate} 09:00:00", "{$futureDate} 11:00:00"]
+        );
+
+        // Create a customer and booking referencing this event
+        $guardCustomerId = Ulid::generate();
+        Database::execute(
+            "INSERT INTO `customers` (`id`, `tenant_id`, `name`, `email`) VALUES (?, ?, 'Guard Customer', 'guard-test@test.test')",
+            [$guardCustomerId, self::$tenantId]
+        );
+        $guardBookingId = Ulid::generate();
+        Database::execute(
+            "INSERT INTO `bookings` (`id`, `tenant_id`, `customer_id`, `booking_pattern`, `event_id`,
+             `start_datetime`, `end_datetime`, `party_size`, `status`, `source`)
+             VALUES (?, ?, ?, 'event', ?, ?, ?, 1, 'confirmed', 'web')",
+            [$guardBookingId, self::$tenantId, $guardCustomerId, $guardEventId,
+             "{$futureDate} 09:00:00", "{$futureDate} 11:00:00"]
+        );
+
+        // Get CSRF
+        $listRes = self::httpGetWithCookie(
+            '/admin/tenants/' . self::$tenantId . '/events',
+            self::$operatorCookie
+        );
+        $csrf = self::$operatorCsrf;
+        if (preg_match('/name="_csrf_token"\s+value="([^"]+)"/', $listRes['body'], $m)) {
+            $csrf = $m[1];
+        }
+
+        // Attempt delete — should be blocked
+        $res = self::httpPostWithCookie(
+            '/admin/tenants/' . self::$tenantId . '/events/' . $guardEventId . '/delete',
+            ['_csrf_token' => $csrf],
+            self::$operatorCookie
+        );
+        $this->assertContains($res['code'], [302, 303], 'Blocked delete must still redirect');
+
+        // Event must still exist
+        $stillExists = Database::query('SELECT * FROM `events` WHERE `id` = ?', [$guardEventId]);
+        $this->assertNotEmpty($stillExists, 'Event with linked bookings must not be deleted');
+
+        // Follow redirect to verify flash message
+        $redirectRes = self::httpGetWithCookie(
+            '/admin/tenants/' . self::$tenantId . '/events',
+            self::$operatorCookie
+        );
+        $this->assertStringContainsString(
+            'linked bookings',
+            $redirectRes['body'],
+            'Redirect page must show the booking-guard error message'
+        );
+
+        // Cleanup
+        Database::execute('DELETE FROM `bookings` WHERE `id` = ?', [$guardBookingId]);
+        Database::execute('DELETE FROM `customers` WHERE `id` = ?', [$guardCustomerId]);
+        Database::execute('DELETE FROM `events` WHERE `id` = ?', [$guardEventId]);
+    }
+
     // ════════════════════════════════════════════════════════════════
     // Tests: Recurring event — unique instance keys
     // ════════════════════════════════════════════════════════════════

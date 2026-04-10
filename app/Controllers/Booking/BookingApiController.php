@@ -803,12 +803,25 @@ final class BookingApiController
                         'duration'       => $availability['nights'] . ' ' . ($availability['nights'] === 1 ? 'night' : 'nights'),
                     ];
 
+                    // Resource-specific detail rows for the email summary card
+                    $resourceDetails = [];
+                    if ($resourceName) {
+                        $resourceDetails[__('email.common.room')] = $resourceName;
+                    }
+                    $resourceDetails[__('email.common.check_in')]  = Locale::dateLong($checkInDt);
+                    $resourceDetails[__('email.common.check_out')] = Locale::dateLong($checkOutDt);
+                    if ($guestCount > 1) {
+                        $resourceDetails[__('email.common.guests')] = (string) $guestCount;
+                    }
+                    $resourceDetails[__('email.common.total')] = Locale::currency($availability['total'], $tenant['currency'] ?? 'EUR');
+
                     if ($bookingStatus === 'pending') {
                         Mailer::sendApprovalRequest(
                             $customerEmail, $customerName, $emailData,
                             $resourceName, null,
                             $tenant['name'], $tenant['id'], $result['id'],
                             $tenant['brand_color'] ?? '#2563EB',
+                            $resourceDetails,
                         );
                     } else {
                         $emailResult = Mailer::sendBookingConfirmation(
@@ -816,6 +829,7 @@ final class BookingApiController
                             $resourceName, null,
                             $tenant['name'], $tenant['id'], $result['id'],
                             $tenant['brand_color'] ?? '#2563EB',
+                            $resourceDetails,
                         );
                         $emailSent = ($emailResult['sent'] ?? false) && Mailer::isProductionSmtp();
                     }

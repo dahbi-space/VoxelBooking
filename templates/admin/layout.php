@@ -43,6 +43,14 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
     <meta name="robots" content="noindex, nofollow">
     <title><?= htmlspecialchars($documentTitle ?? $pageTitle, ENT_QUOTES, 'UTF-8') ?> — <?= htmlspecialchars(app_name(), ENT_QUOTES, 'UTF-8') ?></title>
     <?php include dirname(__DIR__) . '/partials/admin-head.php'; ?>
+    <style>
+        /* Critical reset — prevents layout shift before external CSS loads */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { height: 100%; overflow: hidden; }
+        body { margin: 0; padding: 0; }
+        .vb-main { scrollbar-gutter: stable; scrollbar-width: thin; }
+        [x-cloak] { display: none !important; }
+    </style>
     <link rel="stylesheet" href="/assets/css/admin-css.css?v=<?= filemtime(dirname(__DIR__, 2) . '/public/assets/css/admin-css.css') ?>">
 </head>
 <body x-data="adminShell"<?= $isImpersonating ? ' class="is-impersonating"' : '' ?>>

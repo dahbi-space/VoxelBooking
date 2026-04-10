@@ -163,6 +163,47 @@ final class BookingsIndexOutputTest extends TestCase
     // Helpers
     // ════════════════════════════════════════════════════════════════
 
+    // ════════════════════════════════════════════════════════════════
+    // Export button: demo-mode guard
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_export_button_renders_without_demo_guard_normally(): void
+    {
+        // Ensure demo mode is off
+        \App\Engine\DemoMode::init(sys_get_temp_dir() . '/vb-no-demo-' . mt_rand());
+
+        $html = $this->renderBookingsIndex([
+            'bookings' => [$this->makeBooking()],
+        ]);
+
+        $this->assertStringContainsString('id="btn-export-csv"', $html, 'Export button must exist');
+        $this->assertStringNotContainsString('showDemoToast', $html, 'Normal mode must not have demo guard');
+
+        \App\Engine\DemoMode::reset();
+    }
+
+    public function test_export_button_renders_with_demo_guard_in_demo_mode(): void
+    {
+        // Create a temp dir with .demo sentinel to activate demo mode
+        $tmpDir = sys_get_temp_dir() . '/vb-demo-test-' . mt_rand();
+        @mkdir($tmpDir, 0755, true);
+        touch($tmpDir . '/.demo');
+        \App\Engine\DemoMode::init($tmpDir);
+
+        $html = $this->renderBookingsIndex([
+            'bookings' => [$this->makeBooking()],
+        ]);
+
+        $this->assertStringContainsString('id="btn-export-csv"', $html, 'Export button must exist');
+        $this->assertStringContainsString('showDemoToast()', $html, 'Demo mode must add showDemoToast guard');
+        $this->assertStringContainsString('event.preventDefault()', $html, 'Demo mode must prevent default click');
+
+        // Cleanup
+        @unlink($tmpDir . '/.demo');
+        @rmdir($tmpDir);
+        \App\Engine\DemoMode::reset();
+    }
+
     private function makeBooking(array $overrides = []): array
     {
         return array_merge([

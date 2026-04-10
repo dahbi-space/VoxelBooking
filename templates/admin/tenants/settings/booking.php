@@ -1,8 +1,9 @@
 <?php
 /**
- * Tenant Settings — Booking Rules tab (timeslot pattern only).
+ * Tenant Settings — Booking Rules tab.
  *
- * Structure: card-header → form-grid with numeric fields.
+ * Scheduling section: timeslot-only (slot duration, buffer).
+ * Constraints section: all patterns (min/max advance, daily limit).
  * No inline styles — all layout via design system classes.
  *
  * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $old
@@ -29,7 +30,8 @@ ob_start();
 <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/settings/booking" class="vb-animate-in">
     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
-    <!-- Section 1: Scheduling -->
+    <?php if (($tenant['booking_pattern'] ?? '') === 'timeslot'): ?>
+    <!-- Section 1: Scheduling (timeslot only) -->
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
@@ -55,6 +57,7 @@ ob_start();
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
     <!-- Section 2: Constraints -->
     <div class="vb-settings-section">

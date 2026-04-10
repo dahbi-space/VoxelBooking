@@ -28,8 +28,20 @@ ob_start();
     <div>
         <h2 class="vb-page-title"><?= __('admin.customers.page_title') ?></h2>
         <p class="vb-page-subtitle">
-            <?= str_replace(':count', (string) $total, __('admin.customers.showing_count')) ?>
+            <?= __p('admin.customers.showing_count', (int) $total) ?>
         </p>
+    </div>
+    <div class="vb-page-actions">
+        <?php
+        $exportParams = array_filter(['search' => $search], fn($v) => $v !== '');
+        $exportUrl = $baseUrl . '/customers/export' . ($exportParams ? '?' . http_build_query($exportParams) : '');
+        ?>
+        <a href="<?= htmlspecialchars($exportUrl, ENT_QUOTES, 'UTF-8') ?>"
+           class="vb-btn vb-btn-ghost vb-btn-sm" id="btn-export-csv"
+           <?php if (\App\Engine\DemoMode::isActive()): ?>onclick="event.preventDefault(); showDemoToast()"<?php endif; ?>>
+            <i data-lucide="download" class="vb-icon-sm"></i>
+            <?= __('admin.common.export_csv') ?>
+        </a>
     </div>
 </div>
 
@@ -43,25 +55,21 @@ ob_start();
     <div class="vb-table-container vb-animate-in">
         <!-- Toolbar: search -->
         <div class="vb-table-toolbar">
-            <form action="<?= $baseUrl ?>/customers" method="GET" class="vb-table-search">
-                <i data-lucide="search" class="vb-table-search-icon"></i>
-                <input type="text"
-                       name="search"
-                       value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>"
-                       placeholder="<?= __('admin.customers.search_placeholder') ?>"
-                       class="vb-table-search-input"
-                       id="customer-search" />
-            </form>
-            <?php if ($search !== ''): ?>
-            <div class="vb-table-toolbar-right">
-                <a href="<?= $baseUrl ?>/customers" class="vb-btn vb-btn-ghost vb-btn-sm">
-                    <i data-lucide="x"></i>
-                    <?= __('admin.common.clear') ?>
-                </a>
-            </div>
-            <?php endif; ?>
+            <?php
+            $searchAction = $baseUrl . '/customers';
+            $searchValue = $search;
+            $searchPlaceholder = __('admin.customers.search_placeholder');
+            $searchHiddenFields = [];
+            include dirname(__DIR__, 3) . '/partials/table-search.php';
+            ?>
         </div>
 
+        <?php
+        $resultCountKey = 'admin.customers.showing_count';
+        $resultCountValue = count($customers);
+        $resultCountActive = ($search !== '');
+        include dirname(__DIR__, 3) . '/partials/table-result-count.php';
+        ?>
         <?php if (empty($customers)): ?>
             <!-- Search returned zero results -->
             <div class="vb-empty-state vb-empty-state--compact">
@@ -126,27 +134,14 @@ ob_start();
         <?php endif; ?>
     </div>
 
-    <?php if ($totalPages > 1): ?>
-    <div class="vb-pagination">
-        <?php if ($page > 1): ?>
-            <a href="<?= $baseUrl ?>/customers?page=<?= $page - 1 ?><?= $search !== '' ? '&search=' . urlencode($search) : '' ?>"
-               class="vb-btn vb-btn-ghost vb-btn-sm">
-                <i data-lucide="chevron-left"></i>
-                <?= __('admin.common.previous') ?>
-            </a>
-        <?php endif; ?>
-        <span class="vb-pagination-info">
-            <?= str_replace([':page', ':total'], [(string) $page, (string) $totalPages], __('admin.common.page_of')) ?>
-        </span>
-        <?php if ($page < $totalPages): ?>
-            <a href="<?= $baseUrl ?>/customers?page=<?= $page + 1 ?><?= $search !== '' ? '&search=' . urlencode($search) : '' ?>"
-               class="vb-btn vb-btn-ghost vb-btn-sm">
-                <?= __('admin.common.next') ?>
-                <i data-lucide="chevron-right"></i>
-            </a>
-        <?php endif; ?>
-    </div>
-    <?php endif; ?>
+    <?php
+    $paginationPage = $page;
+    $paginationTotalPages = $totalPages;
+    $paginationBaseUrl = $baseUrl . '/customers';
+    $paginationParams = $search !== '' ? '&search=' . urlencode($search) : '';
+    $paginationI18nPrefix = 'admin.common';
+    include dirname(__DIR__, 3) . '/partials/table-pagination.php';
+    ?>
 <?php endif; ?>
 
 <?php

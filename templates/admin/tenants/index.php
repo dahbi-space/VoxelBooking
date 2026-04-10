@@ -42,16 +42,37 @@ ob_start();
     <div>
         <h2 class="vb-page-title"><?= __('admin.tenants.title') ?></h2>
         <div class="vb-page-subtitle">
-            <?= str_replace(':count', (string) ($counts['total'] ?? 0), __('admin.tenants.showing_count')) ?>
+            <?= __p('admin.tenants.showing_count', (int) ($counts['total'] ?? 0)) ?>
         </div>
     </div>
-    <a href="/admin/tenants/create" class="vb-btn vb-btn-primary">
-        <i data-lucide="plus"></i>
-        <?= __('admin.tenants.create') ?>
-    </a>
+    <div class="vb-page-actions">
+        <?php
+        $exportParams = array_filter([
+            'search' => $filters['search'] ?? '',
+            'status' => ($filters['status'] ?? '') !== 'all' ? ($filters['status'] ?? '') : '',
+        ], fn($v) => $v !== '');
+        $exportUrl = '/admin/tenants/export' . ($exportParams ? '?' . http_build_query($exportParams) : '');
+        ?>
+        <a href="<?= htmlspecialchars($exportUrl, ENT_QUOTES, 'UTF-8') ?>"
+           class="vb-btn vb-btn-ghost vb-btn-sm" id="btn-export-csv"
+           <?php if (\App\Engine\DemoMode::isActive()): ?>onclick="event.preventDefault(); showDemoToast()"<?php endif; ?>>
+            <i data-lucide="download" class="vb-icon-sm"></i>
+            <?= __('admin.common.export_csv') ?>
+        </a>
+        <a href="/admin/tenants/create" class="vb-btn vb-btn-primary">
+            <i data-lucide="plus"></i>
+            <?= __('admin.tenants.create') ?>
+        </a>
+    </div>
 </div>
 
-<?php if (empty($tenants)): ?>
+<?php
+$hasActiveFilters = !empty($filters['search'] ?? '') || (!empty($filters['status'] ?? '') && ($filters['status'] ?? '') !== 'all');
+$currentStatus = ($filters['status'] ?? '') ?: 'all';
+$currentSearch = $filters['search'] ?? '';
+?>
+
+<?php if (empty($tenants) && !$hasActiveFilters): ?>
     <div class="vb-empty vb-animate-in">
         <i data-lucide="building-2" class="vb-empty-icon"></i>
         <div class="vb-empty-title"><?= __('admin.tenants.empty_title') ?></div>
@@ -64,26 +85,29 @@ ob_start();
 <?php else: ?>
     <div class="vb-table-container">
         <div class="vb-table-toolbar">
-            <form action="/admin/tenants" method="GET" class="vb-table-search">
-                <i data-lucide="search" class="vb-table-search-icon"></i>
-                <input type="text"
-                       name="search"
-                       value="<?= htmlspecialchars($_GET['search'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                       placeholder="<?= __('admin.tenants.search_placeholder') ?>"
-                       class="vb-table-search-input" />
-            </form>
+            <?php
+            $searchAction = '/admin/tenants';
+            $searchValue = $currentSearch;
+            $searchPlaceholder = __('admin.tenants.search_placeholder');
+            $searchHiddenFields = ($currentStatus && $currentStatus !== 'all') ? ['status' => $currentStatus] : [];
+            include dirname(__DIR__, 2) . '/partials/table-search.php';
+            ?>
             <div class="vb-table-toolbar-right">
                 <div class="vb-filter-tabs">
                     <?php
-                    $currentStatus = $_GET['status'] ?? 'all';
                     $statusFilters = [
                         'all'      => ['label' => __('admin.common.all'),     'count' => $counts['total'] ?? 0],
                         'active'   => ['label' => __('admin.tenants.status_active'),   'count' => $counts['active'] ?? 0],
                         'paused'   => ['label' => __('admin.tenants.status_paused'),   'count' => $counts['paused'] ?? 0],
                         'archived' => ['label' => __('admin.tenants.status_archived'), 'count' => $counts['archived'] ?? 0],
                     ];
-                    foreach ($statusFilters as $key => $filter): ?>
-                    <a href="/admin/tenants<?= $key !== 'all' ? '?status=' . $key : '' ?>"
+                    foreach ($statusFilters as $key => $filter):
+                        $tabParams = [];
+                        if ($key !== 'all') $tabParams['status'] = $key;
+                        if ($currentSearch !== '') $tabParams['search'] = $currentSearch;
+                        $tabQs = $tabParams ? '?' . http_build_query($tabParams) : '';
+                    ?>
+                    <a href="/admin/tenants<?= htmlspecialchars($tabQs, ENT_QUOTES, 'UTF-8') ?>"
                        class="vb-filter-tab <?= $currentStatus === $key ? 'active' : '' ?>">
                         <?= $filter['label'] ?>
                         <span class="vb-filter-tab-count"><?= $filter['count'] ?></span>
@@ -92,11 +116,23 @@ ob_start();
                 </div>
             </div>
         </div>
+        <?php
+        $resultCountKey = 'admin.tenants.showing_count';
+        $resultCountValue = count($tenants);
+        $resultCountActive = $hasActiveFilters;
+        include dirname(__DIR__, 2) . '/partials/table-result-count.php';
+        ?>
+        <?php if (empty($tenants)): ?>
+        <div class="vb-empty vb-animate-in">
+            <i data-lucide="search-x" class="vb-empty-icon"></i>
+            <div class="vb-empty-title"><?= __('admin.tenants.empty_filter_title') ?></div>
+            <div class="vb-empty-desc"><?= __('admin.tenants.empty_filter_desc') ?></div>
+        </div>
+        <?php else: ?>
         <div class="vb-table-wrap">
             <table class="vb-table">
                 <thead>
                     <tr>
-                        <th></th>
                         <th><?= __('admin.tenants.name') ?></th>
                         <th><?= __('admin.tenants.pattern') ?></th>
                         <th><?= __('admin.tenants.status') ?></th>
@@ -108,35 +144,23 @@ ob_start();
                 <tbody>
                     <?php foreach ($tenants as $i => $tenant): ?>
                     <tr class="vb-fade-in-up stagger-<?= min($i + 1, 6) ?>">
-                        <td>
-                            <span class="vb-color-dot" style="background: <?= htmlspecialchars($tenant['brand_color'] ?? '#2563EB', ENT_QUOTES, 'UTF-8') ?>"></span>
-                        </td>
                         <td data-label="<?= __('admin.tenants.name') ?>">
-                            <div class="vb-cell-name"><?= htmlspecialchars($tenant['name'], ENT_QUOTES, 'UTF-8') ?></div>
+                            <div class="vb-cell-name">
+                                <span class="vb-color-dot" style="background: <?= htmlspecialchars($tenant['brand_color'] ?? '#2563EB', ENT_QUOTES, 'UTF-8') ?>"></span>
+                                <?= htmlspecialchars($tenant['name'], ENT_QUOTES, 'UTF-8') ?>
+                            </div>
                             <div class="vb-cell-detail">/book/<?= htmlspecialchars($tenant['slug'], ENT_QUOTES, 'UTF-8') ?></div>
                         </td>
                         <td data-label="<?= __('admin.tenants.pattern') ?>">
                             <span class="vb-badge vb-badge-default"><?= htmlspecialchars(ucfirst($tenant['booking_pattern'] ?? 'timeslot'), ENT_QUOTES, 'UTF-8') ?></span>
                         </td>
                         <td data-label="<?= __('admin.tenants.status') ?>">
-                            <?php
-                            $statusClass = match ($tenant['status']) {
-                                'active'   => 'vb-badge-success',
-                                'paused'   => 'vb-badge-warning',
-                                'archived' => 'vb-badge-default',
-                                default    => 'vb-badge-default',
-                            };
-                            ?>
-                            <span class="vb-badge <?= $statusClass ?>">
-                                <?= __('admin.tenants.status_' . ($tenant['status'] ?? 'active')) ?>
+                            <span class="vb-status vb-status-<?= htmlspecialchars($tenant['status'], ENT_QUOTES, 'UTF-8') ?>">
+                                <?= __('admin.tenants.status_' . $tenant['status']) ?>
                             </span>
                         </td>
-                        <td class="vb-text-center" data-label="<?= __('admin.tenants.bookings') ?>">
-                            <span class="vb-cell-numeric"><?= (int) ($tenant['booking_count'] ?? 0) ?></span>
-                        </td>
-                        <td class="vb-text-center" data-label="<?= __('admin.tenants.services') ?>">
-                            <span class="vb-cell-numeric"><?= (int) ($tenant['service_count'] ?? 0) ?></span>
-                        </td>
+                        <td class="vb-text-center" data-label="<?= __('admin.tenants.bookings') ?>"><?= (int) $tenant['booking_count'] ?></td>
+                        <td class="vb-text-center" data-label="<?= __('admin.tenants.services') ?>"><?= (int) $tenant['service_count'] ?></td>
                         <td data-label="<?= __('admin.tenants.actions') ?>">
                             <div class="vb-action-group">
                                 <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/edit"
@@ -187,6 +211,7 @@ ob_start();
                 </tbody>
             </table>
         </div>
+        <?php endif; ?>
     </div>
 <?php endif; ?>
 

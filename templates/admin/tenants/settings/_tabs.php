@@ -17,8 +17,10 @@ $tabs = [
     'bookingpage' => ['label' => __('admin.tenant_settings.tab_bookingpage'), 'icon' => 'file-text', 'href' => "/admin/tenants/{$tenantId}/settings/bookingpage"],
 ];
 
-// Booking Rules tab — only for timeslot pattern tenants
-if (($tenant['booking_pattern'] ?? '') === 'timeslot') {
+// Booking Rules tab — timeslot always, resource per Phase R.
+// Capacity and event remain gated until their respective phases.
+$bookingRulesPatterns = ['timeslot', 'resource'];
+if (in_array($tenant['booking_pattern'] ?? '', $bookingRulesPatterns, true)) {
     $tabs['booking'] = [
         'label' => __('admin.tenant_settings.tab_booking'),
         'icon'  => 'clock',

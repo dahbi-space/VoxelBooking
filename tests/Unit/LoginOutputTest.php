@@ -144,4 +144,54 @@ final class LoginOutputTest extends TestCase
         include dirname(__DIR__, 2) . '/templates/auth/verify-code.php';
         return ob_get_clean() ?: '';
     }
+
+    // ════════════════════════════════════════════════════════════════
+    // Demo mode: render-time removal of write surfaces
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_demo_mode_hides_otp_magic_link_tabs_and_forgot_link(): void
+    {
+        $tmpDir = sys_get_temp_dir() . '/vb-demo-login-' . mt_rand();
+        @mkdir($tmpDir, 0755, true);
+        touch($tmpDir . '/.demo');
+        \App\Engine\DemoMode::reset();
+        \App\Engine\DemoMode::init($tmpDir);
+
+        $html = $this->renderLogin();
+
+        // Tabs + forms must be removed from DOM
+        $this->assertStringNotContainsString('login-method-tabs', $html, 'Demo mode must hide method tabs');
+        $this->assertStringNotContainsString('data-method="otp"', $html, 'Demo mode must hide OTP tab');
+        $this->assertStringNotContainsString('data-method="magic_link"', $html, 'Demo mode must hide magic-link tab');
+        $this->assertStringNotContainsString('panel-otp', $html, 'Demo mode must remove OTP form panel');
+        $this->assertStringNotContainsString('panel-magic-link', $html, 'Demo mode must remove magic-link form panel');
+        $this->assertStringNotContainsString('forgot-password', $html, 'Demo mode must hide forgot-password link');
+
+        // Password form must still render
+        $this->assertStringContainsString('panel-password', $html, 'Password form must still render in demo mode');
+
+        // Demo credential cards must render
+        $this->assertStringContainsString('login-demo-credentials', $html, 'Demo mode must render credential cards');
+        $this->assertStringContainsString('demo@voxelbooking.com', $html, 'Demo mode must show operator account');
+
+        @unlink($tmpDir . '/.demo');
+        @rmdir($tmpDir);
+        \App\Engine\DemoMode::reset();
+    }
+
+    public function test_normal_mode_shows_otp_magic_link_tabs_and_forgot_link(): void
+    {
+        \App\Engine\DemoMode::reset();
+        \App\Engine\DemoMode::init(sys_get_temp_dir() . '/vb-no-demo-' . mt_rand());
+
+        $html = $this->renderLogin();
+
+        $this->assertStringContainsString('login-method-tabs', $html, 'Normal mode must show method tabs');
+        $this->assertStringContainsString('data-method="otp"', $html, 'Normal mode must show OTP tab');
+        $this->assertStringContainsString('data-method="magic_link"', $html, 'Normal mode must show magic-link tab');
+        $this->assertStringContainsString('forgot-password', $html, 'Normal mode must show forgot-password link');
+        $this->assertStringNotContainsString('login-demo-credentials', $html, 'Normal mode must not render demo credentials');
+
+        \App\Engine\DemoMode::reset();
+    }
 }

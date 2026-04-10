@@ -24,7 +24,7 @@ use App\Models\Tenant;
  * Access: operators + business owners (Auth::canManageTenant()).
  * Managers are forbidden (403).
  *
- * Five tabs: General, Branding, Booking Rules (timeslot only), Privacy, Notifications.
+ * Five tabs: General, Branding, Booking Rules, Privacy, Notifications.
  */
 final class TenantSettingsController
 {
@@ -261,7 +261,7 @@ final class TenantSettingsController
         return Response::redirect("/admin/tenants/{$tenantId}/settings/bookingpage");
     }
 
-    // ── Booking Rules (timeslot pattern only) ──
+    // ── Booking Rules (timeslot + resource — Phase R) ──
 
     public function booking(Request $request): Response
     {
@@ -275,7 +275,8 @@ final class TenantSettingsController
             return Response::redirect('/admin/tenants');
         }
 
-        if (($tenant['booking_pattern'] ?? '') !== 'timeslot') {
+        // Phase R: timeslot + resource only. Capacity/event gated until their phases.
+        if (!in_array($tenant['booking_pattern'] ?? '', ['timeslot', 'resource'], true)) {
             return $this->forbidden($request);
         }
 
@@ -294,17 +295,23 @@ final class TenantSettingsController
             return Response::redirect('/admin/tenants');
         }
 
-        if (($tenant['booking_pattern'] ?? '') !== 'timeslot') {
+        // Phase R: timeslot + resource only. Capacity/event gated until their phases.
+        if (!in_array($tenant['booking_pattern'] ?? '', ['timeslot', 'resource'], true)) {
             return $this->forbidden($request);
         }
 
+        // Shared booking constraints (timeslot + resource)
         $data = [
-            'slot_duration_minutes'             => max(5, (int) $request->string('slot_duration_minutes')),
-            'buffer_minutes'                    => max(0, (int) $request->string('buffer_minutes')),
             'min_advance_hours'                 => max(0, (int) $request->string('min_advance_hours')),
             'max_advance_days'                  => max(1, (int) $request->string('max_advance_days')),
             'max_bookings_per_customer_per_day'  => max(0, (int) $request->string('max_bookings_per_customer_per_day')),
         ];
+
+        // Timeslot-specific fields — only process when present (template hides them for other patterns)
+        if (($tenant['booking_pattern'] ?? '') === 'timeslot') {
+            $data['slot_duration_minutes'] = max(5, (int) $request->string('slot_duration_minutes'));
+            $data['buffer_minutes']        = max(0, (int) $request->string('buffer_minutes'));
+        }
 
         $this->saveTenant($tenantId, $data, $tenant, 'booking');
         return Response::redirect("/admin/tenants/{$tenantId}/settings/booking");

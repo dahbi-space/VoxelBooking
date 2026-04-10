@@ -217,6 +217,7 @@ return [
     // ── Settings: Audit ──
     'audit' => [
         'title'              => 'Audit Log',
+        'showing_count'      => '{0} No entries|{1} :count entry|[2,*] :count entries',
         'desc_suffix'        => 'entries · Structured event log for accountability and compliance',
         'all_events'         => 'All events',
         'empty_title'        => 'No audit log entries',
@@ -316,6 +317,7 @@ return [
         'move_up'          => 'Move up',
         'move_down'        => 'Move down',
         'col_order'        => 'Order',
+        'export_csv'       => 'Export CSV',
     ],
 
     // ── Flash messages ──
@@ -408,8 +410,10 @@ return [
         'activate'           => 'Activate',
         'empty_title'        => 'No tenants yet',
         'empty_desc'         => 'Create your first tenant to start accepting bookings.',
+        'empty_filter_title' => 'No tenants found',
+        'empty_filter_desc'  => 'No tenants match the current filters.',
         'search_placeholder' => 'Search tenants…',
-        'showing_count'      => ':count tenants',
+        'showing_count'      => '{0} No tenants|{1} :count tenant|[2,*] :count tenants',
         'flash_created'      => 'Tenant created successfully.',
         'flash_updated'      => 'Tenant updated successfully.',
         'flash_archived'     => 'Tenant archived.',
@@ -463,6 +467,9 @@ return [
         'change_status'         => 'Change Status',
         'empty_title'           => 'No bookings yet',
         'empty_desc'            => 'Bookings will appear here when customers book appointments.',
+        'empty_filter_title'    => 'No bookings found',
+        'empty_filter_desc'     => 'No bookings match the current filters.',
+        'showing_count'         => '{0} No bookings|{1} :count booking|[2,*] :count bookings',
         'filter_all'            => 'All statuses',
         'filter_from'           => 'From',
         'filter_to'             => 'To',
@@ -477,6 +484,7 @@ return [
         'status_waitlisted'     => 'Waitlisted',
         'capacity_booking'      => 'Capacity booking',
         'page_info'             => 'Page :page of :total',
+        'page_of'               => 'Page :page of :total',
         'previous'              => 'Previous',
         'next'                  => 'Next',
         'flash_status_updated'  => 'Booking status updated.',
@@ -487,6 +495,7 @@ return [
         'create_title'          => 'New Booking',
         'create_subtitle'       => 'Create a booking on behalf of a customer.',
         'new_booking'           => 'New Booking',
+        'export_csv'            => 'Export CSV',
         'label_service'         => 'Service',
         'label_staff'           => 'Staff member',
         'label_date'            => 'Date',
@@ -606,7 +615,7 @@ return [
     // ── Customer management ──
     'customers' => [
         'page_title'           => 'Customers',
-        'showing_count'        => ':count customers',
+        'showing_count'        => '{0} No customers|{1} :count customer|[2,*] :count customers',
         'search_placeholder'   => 'Search by name, email, or phone…',
         'col_name'             => 'Name',
         'col_email'            => 'Email',
@@ -673,7 +682,7 @@ return [
     // ── Staff Management ──
     'staff' => [
         'title'                   => 'Staff Members',
-        'showing_count'           => ':count staff members',
+        'showing_count'           => '{0} No staff members|{1} :count staff member|[2,*] :count staff members',
         'new'                     => 'New Staff Member',
         'edit'                    => 'Edit Staff Member',
         'label_name'              => 'Full Name',
@@ -787,7 +796,7 @@ return [
     // ── Services ──
     'services' => [
         'title'                 => 'Services',
-        'showing_count'         => ':count services',
+        'showing_count'         => '{0} No services|{1} :count service|[2,*] :count services',
         'new'                   => 'New Service',
         'edit'                  => 'Edit Service',
         'created'               => 'Service created.',
@@ -829,7 +838,7 @@ return [
     // ── Resources ──
     'resources' => [
         'title'                 => 'Resources',
-        'showing_count'         => ':count resources',
+        'showing_count'         => '{0} No resources|{1} :count resource|[2,*] :count resources',
         'new'                   => 'New Resource',
         'edit'                  => 'Edit Resource',
         'created'               => 'Resource created.',
@@ -1129,6 +1138,7 @@ return [
         'error_name_required'  => 'Event name is required.',
         'error_date_required'  => 'Start and end dates are required.',
         'error_end_before_start' => 'End date must be after start date.',
+        'error_has_bookings'   => 'Cannot delete this event because it has linked bookings.',
         'error_max_participants' => 'Max participants must be at least 1.',
         'min_spot_count_label'   => 'Min Spots Per Booking',
         'max_spot_count_label'   => 'Max Spots Per Booking',

@@ -141,4 +141,50 @@ final class CustomersController
             'csrfToken' => CsrfMiddleware::generateToken(),
         ], 403);
     }
+    // ── CSV Export ──
+
+    /**
+     * Export customers as CSV — tenant-scoped.
+     */
+    public function export(Request $request): Response
+    {
+        $tenantId = $request->getAttribute('tenant_id');
+
+        if (!Auth::canAccessTenant($tenantId)) {
+            return $this->forbidden($request);
+        }
+
+        $search = $request->string('search') ?: null;
+        $customers = Customer::forTenantExport($tenantId, $search);
+
+        $filename = 'customers-export-' . date('Y-m-d') . '.csv';
+        $headers = ['Name', 'Email', 'Phone', 'Bookings', 'Last Booking', 'Registered'];
+
+        $output = fopen('php://temp', 'r+');
+        fwrite($output, "\xEF\xBB\xBF");
+        fputcsv($output, $headers);
+
+        foreach ($customers as $c) {
+            fputcsv($output, [
+                $c['name'] ?? '',
+                $c['email'] ?? '',
+                $c['phone'] ?? '',
+                $c['booking_count'] ?? 0,
+                substr($c['last_booking_at'] ?? '', 0, 10),
+                substr($c['created_at'] ?? '', 0, 10),
+            ]);
+        }
+
+        rewind($output);
+        $csv = stream_get_contents($output);
+        fclose($output);
+
+        $response = new Response();
+        return $response
+            ->header('Content-Type', 'text/csv; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Cache-Control', 'no-store')
+            ->body($csv);
+    }
+
 }

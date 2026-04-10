@@ -124,6 +124,21 @@ final class DemoModeTest extends TestCase
         $this->assertTrue(DemoMode::isWriteAllowed('POST', '/auth/logout'));
     }
 
+    public function testOtpRequestCodeIsBlocked(): void
+    {
+        $this->assertFalse(DemoMode::isWriteAllowed('POST', '/admin/login/request-code'));
+    }
+
+    public function testOtpVerifyCodeIsBlocked(): void
+    {
+        $this->assertFalse(DemoMode::isWriteAllowed('POST', '/admin/login/verify-code'));
+    }
+
+    public function testForgotPasswordPostIsBlocked(): void
+    {
+        $this->assertFalse(DemoMode::isWriteAllowed('POST', '/admin/forgot-password'));
+    }
+
     public function testSettingsPostIsBlocked(): void
     {
         $this->assertFalse(DemoMode::isWriteAllowed('POST', '/admin/settings'));
@@ -162,5 +177,37 @@ final class DemoModeTest extends TestCase
         DemoMode::reset();
         DemoMode::init($this->basePath);
         $this->assertFalse(DemoMode::isActive());
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Controller: forgot-password redirect in demo mode
+    // ════════════════════════════════════════════════════════════════
+
+    public function testForgotPasswordPageRedirectsInDemoMode(): void
+    {
+        // Activate demo mode
+        $sentinel = $this->basePath . '/.demo';
+        touch($sentinel);
+        DemoMode::reset();
+        DemoMode::init($this->basePath);
+
+        // Ensure session is active (controller calls Auth::startSession())
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            @session_start();
+        }
+
+        $controller = new \App\Controllers\Auth\AuthController();
+        $request = new \App\Engine\Request();
+        $response = $controller->showForgotPassword($request);
+
+        // Must return 302 redirect
+        $this->assertSame(302, $response->getStatusCode(), 'Forgot-password must redirect in demo mode');
+
+        // Verify Location header points to login via reflection
+        $ref = new \ReflectionProperty($response, 'headers');
+        $headers = $ref->getValue($response);
+        $this->assertSame('/admin/login', $headers['Location'] ?? '', 'Redirect must point to /admin/login');
+
+        DemoMode::reset();
     }
 }

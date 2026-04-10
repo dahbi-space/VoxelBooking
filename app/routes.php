@@ -83,6 +83,7 @@ return function (Router $router): void {
             $router->get('/admin/settings/logs', \App\Controllers\Admin\SettingsController::class, 'logs');
             // Audit log
             $router->get('/admin/settings/audit', \App\Controllers\Admin\SettingsController::class, 'audit');
+            $router->get('/admin/settings/audit/export', \App\Controllers\Admin\SettingsController::class, 'auditExport');
 
             // Deletion queue (GDPR Art. 17 — operator review)
             $router->get('/admin/deletion-queue', \App\Controllers\Admin\DeletionQueueController::class, 'index');
@@ -92,6 +93,7 @@ return function (Router $router): void {
             // Tenant management — operator-only enforced in controller, NOT in OPERATOR_ONLY_PREFIXES
             // (because /admin/tenants/{tenant_id}/... context routes will be business-user-accessible)
             $router->get('/admin/tenants', \App\Controllers\Admin\TenantsController::class, 'index');
+            $router->get('/admin/tenants/export', \App\Controllers\Admin\TenantsController::class, 'export');
             $router->get('/admin/tenants/create', \App\Controllers\Admin\TenantsController::class, 'create');
             $router->post('/admin/tenants/create', \App\Controllers\Admin\TenantsController::class, 'store');
             $router->get('/admin/tenants/{id}/edit', \App\Controllers\Admin\TenantsController::class, 'edit');
@@ -101,6 +103,7 @@ return function (Router $router): void {
 
             // Booking management — operator cross-tenant routes
             $router->get('/admin/bookings', \App\Controllers\Admin\BookingsController::class, 'index');
+            $router->get('/admin/bookings/export', \App\Controllers\Admin\BookingsController::class, 'export');
             $router->get('/admin/bookings/{id}', \App\Controllers\Admin\BookingsController::class, 'show');
             $router->post('/admin/bookings/{id}/status', \App\Controllers\Admin\BookingsController::class, 'updateStatus');
             $router->post('/admin/bookings/{id}/reschedule', \App\Controllers\Admin\BookingsController::class, 'reschedule');
@@ -111,6 +114,7 @@ return function (Router $router): void {
             // Booking management — tenant-context routes (business user + operator)
             $router->get('/admin/tenants/{tenant_id}/bookings', \App\Controllers\Admin\BookingsController::class, 'tenantIndex');
             $router->get('/admin/tenants/{tenant_id}/bookings/create', \App\Controllers\Admin\BookingsController::class, 'tenantCreate');
+            $router->get('/admin/tenants/{tenant_id}/bookings/export', \App\Controllers\Admin\BookingsController::class, 'tenantExport');
             $router->post('/admin/tenants/{tenant_id}/bookings/create', \App\Controllers\Admin\BookingsController::class, 'tenantStore');
             $router->get('/admin/tenants/{tenant_id}/bookings/{id}', \App\Controllers\Admin\BookingsController::class, 'tenantShow');
             $router->post('/admin/tenants/{tenant_id}/bookings/{id}/status', \App\Controllers\Admin\BookingsController::class, 'tenantUpdateStatus');
@@ -143,6 +147,7 @@ return function (Router $router): void {
 
             // Customer management — tenant-context (all business user roles + operator)
             $router->get('/admin/tenants/{tenant_id}/customers', \App\Controllers\Admin\CustomersController::class, 'index');
+            $router->get('/admin/tenants/{tenant_id}/customers/export', \App\Controllers\Admin\CustomersController::class, 'export');
             $router->get('/admin/tenants/{tenant_id}/customers/{id}', \App\Controllers\Admin\CustomersController::class, 'show');
 
             // Service management — operator + owner only (enforced in controller)

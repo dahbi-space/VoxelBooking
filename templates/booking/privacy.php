@@ -441,6 +441,27 @@ $customerId = $customer['id'] ?? '';
                 localStorage.setItem('vb-theme', d ? 'dark' : 'light');
                 sync();
             });
+
+            <?php if (\App\Engine\DemoMode::isActive()): ?>
+            // Demo mode: block form submissions with a toast (§6 — buttons visible, writes blocked)
+            document.querySelectorAll('form[method="post"]').forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    showDemoToast();
+                });
+            });
+
+            function showDemoToast() {
+                var existing = document.getElementById('vb-demo-toast');
+                if (existing) existing.remove();
+                var toast = document.createElement('div');
+                toast.id = 'vb-demo-toast';
+                toast.textContent = <?= json_encode(__('admin.demo.write_blocked')) ?>;
+                toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--vb-admin-error);color:#fff;padding:0.625rem 1.25rem;border-radius:var(--vb-radius-lg);font-size:var(--vb-text-sm);font-weight:500;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);animation:vb-fade-in-up 200ms ease-out both;';
+                document.body.appendChild(toast);
+                setTimeout(function() { toast.remove(); }, 4000);
+            }
+            <?php endif; ?>
         })();
     </script>
 </body>
