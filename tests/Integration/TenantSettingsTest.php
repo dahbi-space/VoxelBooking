@@ -96,6 +96,14 @@ final class TenantSettingsTest extends TestCase
         if (!self::$dbReady || self::$tenantId === '') {
             $this->markTestSkipped(self::$setupError ?: 'DB or tenant not ready');
         }
+
+        // Flush rate-limit hits before each test to prevent 429 cascades.
+        // The admin group allows 120 req/min and this test class makes ~97
+        // HTTP calls total — previous test classes and early test methods
+        // in this class accumulate hits that push later methods over the limit.
+        try {
+            Database::execute('TRUNCATE TABLE `rate_limits`');
+        } catch (\Throwable) {}
     }
 
     public static function tearDownAfterClass(): void
