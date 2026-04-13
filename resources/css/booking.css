@@ -771,14 +771,37 @@ body {
 
 /* Date range band (resource check-in / check-out) */
 .vb-book-calendar-cell.is-range {
-  background: rgba(var(--vb-brand-rgb), 0.08);
+  background: rgba(var(--vb-brand-rgb), 0.18);
+  border-radius: 0;
   color: var(--vb-brand);
   font-weight: 500;
 }
 
 .vb-book-calendar-cell.is-range::after {
   background: var(--vb-brand);
-  opacity: 0.45;
+  opacity: 0.70;
+}
+
+/* ── Pill-shaped date range: directional rounding ── */
+
+/* Check-in: pill start — round left, flat right */
+.vb-book-calendar-cell.is-check-in {
+  border-radius: var(--vb-radius-full) 0 0 var(--vb-radius-full);
+}
+
+/* Check-out: pill end — flat left, round right */
+.vb-book-calendar-cell.is-check-out {
+  border-radius: 0 var(--vb-radius-full) var(--vb-radius-full) 0;
+}
+
+/* Day-of-week restriction: dims cells that aren't valid for check-in/out */
+.vb-book-calendar-cell.is-day-restricted {
+  opacity: 0.35;
+  cursor: pointer;
+}
+
+.vb-book-calendar-cell.is-day-restricted::after {
+  display: none;
 }
 
 .vb-book-calendar-grid {
@@ -1910,7 +1933,7 @@ body {
   position: fixed;
   top: 0;
   left: 50%;
-  transform: translateX(-50%) translateY(-100%);
+  transform: translateX(-50%);
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -1928,21 +1951,32 @@ body {
   border: 1px solid var(--vb-border);
   border-top: none;
   box-shadow: 0 8px 24px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
-  opacity: 0;
-  transition: transform 300ms var(--vb-ease-out), opacity 200ms ease-out;
-  pointer-events: none;
+  pointer-events: auto;
   letter-spacing: -0.011em;
 }
 
-.vb-book-toast.is-visible {
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
-  pointer-events: auto;
+/* Alpine x-transition classes — slide down from top */
+.vb-book-toast-enter {
+  transition: transform 300ms var(--vb-ease-out), opacity 200ms ease-out;
 }
-
-.vb-book-toast.is-leaving {
-  transform: translateX(-50%) translateY(-100%);
+.vb-book-toast-enter-start {
   opacity: 0;
+  transform: translateX(-50%) translateY(-100%);
+}
+.vb-book-toast-enter-end {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.vb-book-toast-leave {
+  transition: transform 250ms var(--vb-ease-standard), opacity 180ms ease-in;
+}
+.vb-book-toast-leave-start {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.vb-book-toast-leave-end {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-100%);
 }
 
 .vb-book-toast-error {

@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <?php if (!empty($tenantConfig['manage_mode'])): ?>
+    <meta name="robots" content="noindex, nofollow">
+    <?php endif; ?>
     <meta name="description" content="Book an appointment with <?= htmlspecialchars($tenant['name']) ?>">
     <title>Book – <?= htmlspecialchars($tenant['name']) ?></title>
 
@@ -222,7 +225,10 @@
                                      'is-today': cell.today,
                                      'has-slots': cell.hasSlots,
                                      'is-selected': cell.selected,
-                                     'is-range': cell.inRange
+                                     'is-check-in': cell.isCheckIn && checkOutDate,
+                                     'is-check-out': cell.isCheckOut && checkInDate,
+                                     'is-range': cell.inRange,
+                                     'is-day-restricted': cell.dayRestricted
                                  }"
                                  x-bind:tabindex="cellTabindex(cell)"
                                  x-bind:role="cellRole(cell)"
@@ -486,42 +492,44 @@
                 <div class="vb-book-step-header">
                     <div class="vb-book-step-title" x-text="t('event.event_detail_title')"></div>
                 </div>
-                <div class="vb-book-event-detail" x-show="selectedEvent">
-                    <h3 class="vb-book-event-detail-name" x-text="selectedEvent ? selectedEvent.name : ''"></h3>
-                    <p class="vb-book-event-detail-desc" x-show="selectedEvent && selectedEvent.description" x-text="selectedEvent ? selectedEvent.description : ''"></p>
+                <template x-if="selectedEvent">
+                    <div class="vb-book-event-detail">
+                        <h3 class="vb-book-event-detail-name" x-text="eventName"></h3>
+                        <p class="vb-book-event-detail-desc" x-show="hasEventDescription" x-text="eventDescription"></p>
 
-                    <div class="vb-book-event-detail-grid">
-                        <div class="vb-book-event-detail-row">
-                            <span class="vb-book-event-detail-label" x-text="t('event.date_label')"></span>
-                            <span x-text="formatEventDate(selectedEvent ? selectedEvent.start_datetime : '')"></span>
+                        <div class="vb-book-event-detail-grid">
+                            <div class="vb-book-event-detail-row">
+                                <span class="vb-book-event-detail-label" x-text="t('event.date_label')"></span>
+                                <span x-text="formatEventDate(eventStartDatetime)"></span>
+                            </div>
+                            <div class="vb-book-event-detail-row">
+                                <span class="vb-book-event-detail-label" x-text="t('event.time_label')"></span>
+                                <span x-text="eventTimeSummary"></span>
+                            </div>
+                            <div class="vb-book-event-detail-row" x-show="hasEventLocation">
+                                <span class="vb-book-event-detail-label" x-text="t('event.location_label')"></span>
+                                <span x-text="eventLocation"></span>
+                            </div>
+                            <div class="vb-book-event-detail-row">
+                                <span class="vb-book-event-detail-label" x-text="t('event.price_label')"></span>
+                                <span x-text="formatEventPrice(eventPrice)"></span>
+                            </div>
+                            <div class="vb-book-event-detail-row">
+                                <span class="vb-book-event-detail-label" x-text="t('event.spots_remaining').replace(':count', '')"></span>
+                                <span x-text="eventCapacityLabel"></span>
+                            </div>
                         </div>
-                        <div class="vb-book-event-detail-row">
-                            <span class="vb-book-event-detail-label" x-text="t('event.time_label')"></span>
-                            <span x-text="(selectedEvent ? formatEventTime(selectedEvent.start_datetime) + ' – ' + formatEventTime(selectedEvent.end_datetime) : '')"></span>
-                        </div>
-                        <div class="vb-book-event-detail-row" x-show="selectedEvent && selectedEvent.location">
-                            <span class="vb-book-event-detail-label" x-text="t('event.location_label')"></span>
-                            <span x-text="selectedEvent ? selectedEvent.location : ''"></span>
-                        </div>
-                        <div class="vb-book-event-detail-row">
-                            <span class="vb-book-event-detail-label" x-text="t('event.price_label')"></span>
-                            <span x-text="formatEventPrice(selectedEvent ? selectedEvent.price : 0)"></span>
-                        </div>
-                        <div class="vb-book-event-detail-row">
-                            <span class="vb-book-event-detail-label" x-text="t('event.spots_remaining').replace(':count', '')"></span>
-                            <span x-text="(selectedEvent ? selectedEvent.remaining + ' / ' + selectedEvent.max_participants : '')"></span>
+
+                        <div class="vb-book-form-actions">
+                            <button type="button" class="vb-book-btn vb-book-btn-primary" @click="confirmEventDetail"
+                                    x-text="t('buttons.continue')"></button>
+                            <div class="vb-book-back-link">
+                                <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('event-list')"
+                                        x-text="t('back.change_event')"></button>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="vb-book-form-actions">
-                        <button type="button" class="vb-book-btn vb-book-btn-primary" @click="confirmEventDetail"
-                                x-text="t('buttons.continue')"></button>
-                        <div class="vb-book-back-link">
-                            <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="goBack('event-list')"
-                                    x-text="t('back.change_event')"></button>
-                        </div>
-                    </div>
-                </div>
+                </template>
             </div>
 
             <!-- ═══ Event Step 3: Spot Count ═══ -->
@@ -542,11 +550,8 @@
                         </button>
                     </div>
                     <div class="vb-book-counter-label" x-text="eventSpotCount === 1 ? t('event.spot') : t('event.spots')"></div>
-                    <template x-if="eventSpotCount >= eventMaxSpots && selectedEvent && selectedEvent.remaining > 0">
-                        <div class="vb-book-counter-hint"
-                             x-text="selectedEvent.max_spot_count && eventSpotCount >= selectedEvent.max_spot_count
-                                 ? t('event.max_spots_reached').replace(':count', selectedEvent.max_spot_count)
-                                 : t('event.max_reached')">
+                    <template x-if="showEventMaxHint">
+                        <div class="vb-book-counter-hint" x-text="eventMaxHintText">
                         </div>
                     </template>
                 </div>
@@ -1302,16 +1307,27 @@
         </main>
 
         <!-- ── Toast ── -->
-        <div class="vb-book-toast-container" x-show="hasToast" x-transition>
-            <template x-if="hasToast">
-                <div class="vb-book-toast is-visible" x-bind:class="toastClass" role="alert">
-                    <span class="vb-book-toast-message" x-text="toast.message"></span>
-                    <button class="vb-book-toast-close" type="button" @click="dismissToast" aria-label="<?= __('booking.common.dismiss') ?>">
-                        <i data-lucide="x"></i>
-                    </button>
-                </div>
-            </template>
-        </div>
+        <template x-if="hasToast">
+            <div class="vb-book-toast"
+                 x-bind:class="toastClass"
+                 x-transition:enter="vb-book-toast-enter"
+                 x-transition:enter-start="vb-book-toast-enter-start"
+                 x-transition:enter-end="vb-book-toast-enter-end"
+                 x-transition:leave="vb-book-toast-leave"
+                 x-transition:leave-start="vb-book-toast-leave-start"
+                 x-transition:leave-end="vb-book-toast-leave-end"
+                 role="alert">
+                <span class="vb-book-toast-icon">
+                    <i x-show="isToastError" data-lucide="alert-circle"></i>
+                    <i x-show="isToastWarn" data-lucide="alert-triangle"></i>
+                    <i x-show="isToastInfo" data-lucide="info"></i>
+                </span>
+                <span class="vb-book-toast-message" x-text="toastMessage"></span>
+                <button class="vb-book-toast-close" type="button" @click="dismissToast" aria-label="<?= __('booking.common.dismiss') ?>">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+        </template>
 
         <!-- ── Theme Toggle ── -->
         <button type="button"

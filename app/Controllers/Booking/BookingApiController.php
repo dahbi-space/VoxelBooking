@@ -205,21 +205,24 @@ final class BookingApiController
         }
 
         $resources = Database::query(
-            'SELECT `id`, `name`, `description`, `capacity`, `cover_image_path`, `amenities`,
-                    `price_per_night`, `min_stay_nights`, `max_stay_nights`
-             FROM `resources`
+            'SELECT * FROM `resources`
              WHERE `tenant_id` = ? AND `is_active` = 1
              ORDER BY `sort_order` ASC, `name` ASC',
             [$tenant['id']]
         );
 
-        // Decode amenities JSON for each resource
+        // Normalize + decode resource fields for API response
         foreach ($resources as &$r) {
-            $r['amenities'] = $r['amenities'] ? json_decode($r['amenities'], true) : [];
-            $r['price_per_night'] = $r['price_per_night'] !== null ? (float) $r['price_per_night'] : null;
-            $r['capacity'] = (int) $r['capacity'];
-            $r['min_stay_nights'] = (int) $r['min_stay_nights'];
-            $r['max_stay_nights'] = (int) $r['max_stay_nights'];
+            $r['amenities'] = ($r['amenities'] ?? null) ? json_decode($r['amenities'], true) : [];
+            $r['price_per_night'] = ($r['price_per_night'] ?? null) !== null ? (float) $r['price_per_night'] : null;
+            $r['capacity'] = (int) ($r['capacity'] ?? 1);
+            $r['min_stay_nights'] = (int) ($r['min_stay_nights'] ?? 1);
+            $r['max_stay_nights'] = (int) ($r['max_stay_nights'] ?? 30);
+            // Decode day restrictions (migration-safe: columns may not exist yet)
+            $raw = $r['check_in_days'] ?? null;
+            $r['check_in_days'] = ($raw !== null && $raw !== '') ? json_decode($raw, true) : null;
+            $raw = $r['check_out_days'] ?? null;
+            $r['check_out_days'] = ($raw !== null && $raw !== '') ? json_decode($raw, true) : null;
             // Normalize cover image path to absolute
             if (!empty($r['cover_image_path'])) {
                 $r['cover_image_path'] = '/' . ltrim($r['cover_image_path'], '/');

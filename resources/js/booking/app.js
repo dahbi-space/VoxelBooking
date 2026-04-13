@@ -328,6 +328,32 @@ Alpine.data('bookingWizard', () => ({
     get isRescheduleReviewStep() { return this.step === 'reschedule-review'; },
     get isRescheduleConfirmedStep() { return this.step === 'reschedule-confirmed'; },
     get hasToast() { return !!this.toast; },
+    get toastType() { return this.toast ? this.toast.type : ''; },
+    get toastMessage() { return this.toast ? this.toast.message : ''; },
+    get isToastError() { return this.toast && this.toast.type === 'error'; },
+    get isToastWarn() { return this.toast && this.toast.type === 'warn'; },
+    get isToastInfo() { return this.toast && this.toast.type === 'info'; },
+
+    // Event detail getters (null-safe for CSP pre-compilation)
+    get eventName() { return this.selectedEvent ? this.selectedEvent.name : ''; },
+    get eventDescription() { return this.selectedEvent ? this.selectedEvent.description : ''; },
+    get hasEventDescription() { return !!(this.selectedEvent && this.selectedEvent.description); },
+    get eventStartDatetime() { return this.selectedEvent ? this.selectedEvent.start_datetime : ''; },
+    get eventEndDatetime() { return this.selectedEvent ? this.selectedEvent.end_datetime : ''; },
+    get eventLocation() { return this.selectedEvent ? this.selectedEvent.location : ''; },
+    get hasEventLocation() { return !!(this.selectedEvent && this.selectedEvent.location); },
+    get eventPrice() { return this.selectedEvent ? this.selectedEvent.price : 0; },
+    get eventCapacityLabel() { return this.selectedEvent ? this.selectedEvent.remaining + ' / ' + this.selectedEvent.max_participants : ''; },
+    get eventTimeSummary() { return this.selectedEvent ? this.formatEventTime(this.selectedEvent.start_datetime) + ' – ' + this.formatEventTime(this.selectedEvent.end_datetime) : ''; },
+    get showEventMaxHint() { return this.eventSpotCount >= this.eventMaxSpots && this.selectedEvent && this.selectedEvent.remaining > 0; },
+    get eventMaxHintText() {
+        if (!this.selectedEvent) return '';
+        if (this.selectedEvent.max_spot_count && this.eventSpotCount >= this.selectedEvent.max_spot_count) {
+            return this.t('event.max_spots_reached').replace(':count', this.selectedEvent.max_spot_count);
+        }
+        return this.t('event.max_reached');
+    },
+
     get hasSelectedDate() { return !!this.selectedDate; },
     get hasNoSlots() { return this.availableSlots.length === 0 && !!this.selectedDate; },
     get hasSlots() { return this.availableSlots.length > 0; },
@@ -1760,6 +1786,15 @@ Alpine.data('bookingWizard', () => ({
 
         const data = await this.api(`/resources/${this.selectedResource.id}/availability?${params}`);
         this.resourceDates = data.dates || [];
+
+        // Store day-of-week restrictions from API (also available on selectedResource)
+        if (data.check_in_days !== undefined) {
+            this.selectedResource._check_in_days = data.check_in_days;
+        }
+        if (data.check_out_days !== undefined) {
+            this.selectedResource._check_out_days = data.check_out_days;
+        }
+
         this.goToStep('resource-date');
     },
 
@@ -1856,6 +1891,11 @@ Alpine.data('bookingWizard', () => ({
         const rawDay = new Date(year, month, 1).getDay();
         const firstDay = (rawDay - weekStart + 7) % 7;
 
+        // Day restrictions from selected resource
+        const ciDays = this.selectedResource?.check_in_days ?? this.selectedResource?._check_in_days ?? null;
+        const coDays = this.selectedResource?.check_out_days ?? this.selectedResource?._check_out_days ?? null;
+        const isSelectingCheckOut = !!this.checkInDate && !this.checkOutDate;
+
         const cells = [];
 
         for (let i = 0; i < firstDay; i++) {
@@ -1870,6 +1910,23 @@ Alpine.data('bookingWizard', () => ({
             const isCheckOut = dateStr === this.checkOutDate;
             const inRange = this.checkInDate && this.checkOutDate && dateStr > this.checkInDate && dateStr < this.checkOutDate;
 
+            // Day-of-week restriction: dim dates that aren't valid for the current selection mode
+            const dow = new Date(year, month, day).getDay();
+            let dayRestricted = false;
+            if (available && !isPast) {
+                if (isSelectingCheckOut) {
+                    // When selecting check-out, dim days not in check_out_days
+                    if (coDays && !coDays.includes(dow)) {
+                        dayRestricted = true;
+                    }
+                } else if (!this.checkInDate || (this.checkInDate && this.checkOutDate)) {
+                    // When selecting check-in, dim days not in check_in_days
+                    if (ciDays && !ciDays.includes(dow)) {
+                        dayRestricted = true;
+                    }
+                }
+            }
+
             cells.push({
                 day,
                 dateStr,
@@ -1877,7 +1934,10 @@ Alpine.data('bookingWizard', () => ({
                 today: dateStr === todayStr,
                 hasSlots: available,
                 selected: isCheckIn || isCheckOut,
+                isCheckIn,
+                isCheckOut,
                 inRange,
+                dayRestricted,
             });
         }
 
@@ -1887,15 +1947,31 @@ Alpine.data('bookingWizard', () => ({
     clickResourceDate(cell) {
         if (cell.disabled || !cell.day) return;
 
+        const ciDays = this.selectedResource?.check_in_days ?? this.selectedResource?._check_in_days ?? null;
+        const coDays = this.selectedResource?.check_out_days ?? this.selectedResource?._check_out_days ?? null;
+        const dow = new Date(cell.dateStr).getDay();
+
         if (!this.checkInDate || (this.checkInDate && this.checkOutDate)) {
-            // Start a new selection
+            // Selecting check-in
+            if (ciDays && !ciDays.includes(dow)) {
+                this.showToast(t('resource.error_invalid_check_in_day'), 'warn');
+                return;
+            }
             this.selectCheckIn(cell.dateStr);
         } else {
-            // Check-in is set, select check-out
+            // Check-in is set, selecting check-out
             if (cell.dateStr <= this.checkInDate) {
                 // Clicked before check-in, reset to this as new check-in
+                if (ciDays && !ciDays.includes(dow)) {
+                    this.showToast(t('resource.error_invalid_check_in_day'), 'warn');
+                    return;
+                }
                 this.selectCheckIn(cell.dateStr);
             } else {
+                if (coDays && !coDays.includes(dow)) {
+                    this.showToast(t('resource.error_invalid_check_out_day'), 'warn');
+                    return;
+                }
                 this.selectCheckOut(cell.dateStr);
             }
         }
