@@ -126,7 +126,13 @@ ob_start();
     <!-- Status Change -->
     <div class="vb-card">
         <div class="vb-card-header">
-            <div class="vb-card-title"><?= __('admin.bookings.change_status') ?></div>
+            <div class="vb-card-title-row">
+                <i data-lucide="refresh-cw" class="vb-card-icon"></i>
+                <div>
+                    <div class="vb-card-title"><?= __('admin.bookings.change_status') ?></div>
+                    <div class="vb-card-desc"><?= __('admin.bookings.change_status_desc') ?></div>
+                </div>
+            </div>
         </div>
         <form method="POST" action="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($booking['id'], ENT_QUOTES, 'UTF-8') ?>/status">
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
@@ -201,7 +207,13 @@ ob_start();
 <?php if (!empty($timeline)): ?>
 <div class="vb-card vb-fade-in-up stagger-3" style="margin-top: 1.5rem;">
     <div class="vb-card-header">
-        <div class="vb-card-title"><?= __('admin.bookings.activity') ?></div>
+        <div class="vb-card-title-row">
+            <i data-lucide="list" class="vb-card-icon"></i>
+            <div>
+                <div class="vb-card-title"><?= __('admin.bookings.activity') ?></div>
+                <div class="vb-card-desc"><?= __('admin.bookings.activity_desc') ?></div>
+            </div>
+        </div>
     </div>
     <div class="vb-card-body">
         <div class="vb-timeline">

@@ -24,8 +24,13 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
     <!-- Application Settings -->
     <div class="vb-card vb-fade-in-up stagger-1">
         <div class="vb-card-header">
-            <div class="vb-card-title"><?= __('admin.settings.app_title') ?></div>
-            <div class="vb-card-desc"><?= __('admin.settings.app_desc') ?></div>
+            <div class="vb-card-title-row">
+                <i data-lucide="settings" class="vb-card-icon"></i>
+                <div>
+                    <div class="vb-card-title"><?= __('admin.settings.app_title') ?></div>
+                    <div class="vb-card-desc"><?= __('admin.settings.app_desc') ?></div>
+                </div>
+            </div>
         </div>
         <form method="POST" action="/admin/settings">
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
@@ -78,8 +83,13 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
     <!-- System Information -->
     <div class="vb-card vb-fade-in-up stagger-2">
         <div class="vb-card-header">
-            <div class="vb-card-title"><?= __('admin.settings.system_title') ?></div>
-            <div class="vb-card-desc"><?= __('admin.settings.system_desc') ?></div>
+            <div class="vb-card-title-row">
+                <i data-lucide="server" class="vb-card-icon"></i>
+                <div>
+                    <div class="vb-card-title"><?= __('admin.settings.system_title') ?></div>
+                    <div class="vb-card-desc"><?= __('admin.settings.system_desc') ?></div>
+                </div>
+            </div>
         </div>
         <div class="vb-info-row">
             <span class="vb-info-label"><?= htmlspecialchars(app_name(), ENT_QUOTES, 'UTF-8') ?></span>

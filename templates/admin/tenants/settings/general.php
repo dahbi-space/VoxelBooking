@@ -39,8 +39,13 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.tenant_settings.section_identity') ?></div>
-                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_identity_desc') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="building-2" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.tenant_settings.section_identity') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.tenant_settings.section_identity_desc') ?></div>
+                    </div>
+                </div>
             </div>
             <div class="vb-form-grid vb-form-grid-2">
                 <div class="vb-settings-field">
@@ -130,8 +135,13 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.tenant_settings.section_regional') ?></div>
-                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_regional_desc') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="languages" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.tenant_settings.section_regional') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.tenant_settings.section_regional_desc') ?></div>
+                    </div>
+                </div>
             </div>
             <div class="vb-form-grid vb-form-grid-2">
                 <div class="vb-settings-field">

@@ -109,6 +109,18 @@ import {
     ImagePlus,
     UserRound,
     Camera,
+    Code2,
+    MousePointerClick,
+    Ban,
+    CalendarClock,
+    CalendarPlus,
+    CalendarRange,
+    Code,
+    NotebookPen,
+    Phone,
+    SearchX,
+    TrendingDown,
+    Languages,
 } from 'lucide';
 
 const ICON_SET = {
@@ -126,6 +138,10 @@ const ICON_SET = {
     CalendarOff, PlusCircle, UserCheck, UserMinus,
     Ticket, Bed, Grid3X3, LayoutGrid, Play,
     ImagePlus, UserRound, Camera,
+    Code2, MousePointerClick,
+    Ban, CalendarClock, CalendarPlus, CalendarRange, Code,
+    NotebookPen, Phone, SearchX, TrendingDown,
+    Languages,
 };
 
 // ── Alpine: CSP-safe component registration ──

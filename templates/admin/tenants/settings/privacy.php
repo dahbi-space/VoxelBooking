@@ -35,8 +35,13 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.tenant_settings.section_consent') ?></div>
-                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_consent_desc') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="shield-check" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.tenant_settings.section_consent') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.tenant_settings.section_consent_desc') ?></div>
+                    </div>
+                </div>
             </div>
             <div class="vb-form-grid">
                 <div class="vb-settings-toggles">
@@ -70,8 +75,13 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.tenant_settings.section_data_retention') ?></div>
-                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_data_retention_desc') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="archive" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.tenant_settings.section_data_retention') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.tenant_settings.section_data_retention_desc') ?></div>
+                    </div>
+                </div>
             </div>
             <div class="vb-form-grid">
                 <div class="vb-settings-field">

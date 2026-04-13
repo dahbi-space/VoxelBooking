@@ -35,8 +35,13 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.tenant_settings.section_scheduling') ?></div>
-                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_scheduling_desc') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="clock" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.tenant_settings.section_scheduling') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.tenant_settings.section_scheduling_desc') ?></div>
+                    </div>
+                </div>
             </div>
             <div class="vb-form-grid vb-form-grid-2">
                 <div class="vb-settings-field">
@@ -63,8 +68,13 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.tenant_settings.section_constraints') ?></div>
-                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_constraints_desc') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="lock" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.tenant_settings.section_constraints') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.tenant_settings.section_constraints_desc') ?></div>
+                    </div>
+                </div>
             </div>
             <div class="vb-form-grid vb-form-grid-2">
                 <div class="vb-settings-field">

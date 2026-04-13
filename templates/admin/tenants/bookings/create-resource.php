@@ -37,7 +37,10 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.bookings.date_time') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="calendar" class="vb-card-icon"></i>
+                    <div class="vb-card-title"><?= __('admin.bookings.date_time') ?></div>
+                </div>
             </div>
 
             <div class="vb-form-grid">
@@ -84,7 +87,10 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.bookings.customer') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="contact" class="vb-card-icon"></i>
+                    <div class="vb-card-title"><?= __('admin.bookings.customer') ?></div>
+                </div>
             </div>
 
             <div class="vb-form-grid">
@@ -128,7 +134,10 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.bookings.label_notes') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="notebook-pen" class="vb-card-icon"></i>
+                    <div class="vb-card-title"><?= __('admin.bookings.label_notes') ?></div>
+                </div>
             </div>
             <div class="vb-form-grid">
                 <div class="vb-form-group">

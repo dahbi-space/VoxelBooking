@@ -39,8 +39,13 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.tenant_settings.section_delivery') ?></div>
-                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_delivery_desc') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="bell" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.tenant_settings.section_delivery') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.tenant_settings.section_delivery_desc') ?></div>
+                    </div>
+                </div>
             </div>
             <div class="vb-form-grid">
                 <div class="vb-settings-field">
@@ -58,8 +63,13 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.tenant_settings.section_triggers') ?></div>
-                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_triggers_desc') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="zap" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.tenant_settings.section_triggers') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.tenant_settings.section_triggers_desc') ?></div>
+                    </div>
+                </div>
             </div>
             <div class="vb-form-grid">
                 <div class="vb-settings-toggles">

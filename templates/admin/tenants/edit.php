@@ -134,7 +134,13 @@ ob_start();
     <!-- Tenant Info -->
     <div class="vb-card">
         <div class="vb-card-header">
-            <div class="vb-card-title"><?= __('admin.tenants.status') ?></div>
+            <div class="vb-card-title-row">
+                <i data-lucide="activity" class="vb-card-icon"></i>
+                <div>
+                    <div class="vb-card-title"><?= __('admin.tenants.status') ?></div>
+                    <div class="vb-card-desc"><?= __('admin.tenants.status_desc') ?></div>
+                </div>
+            </div>
         </div>
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.tenants.status') ?></span>

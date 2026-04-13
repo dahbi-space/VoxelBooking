@@ -38,7 +38,13 @@ ob_start();
 <!-- Pending Requests -->
 <div class="vb-card vb-animate-in stagger-2">
     <div class="vb-card-header">
-        <div class="vb-card-title"><?= __('admin.deletion.pending_title') ?></div>
+        <div class="vb-card-title-row">
+            <i data-lucide="trash-2" class="vb-card-icon"></i>
+            <div>
+                <div class="vb-card-title"><?= __('admin.deletion.pending_title') ?></div>
+                <div class="vb-card-desc"><?= __('admin.deletion.pending_desc') ?></div>
+            </div>
+        </div>
     </div>
 
     <?php if (empty($pendingRequests)): ?>
@@ -112,7 +118,13 @@ ob_start();
 <div class="vb-section-muted vb-animate-in stagger-5">
     <div class="vb-table-container">
         <div class="vb-card-header">
-            <div class="vb-card-title"><?= __('admin.deletion.recently_processed') ?></div>
+            <div class="vb-card-title-row">
+                <i data-lucide="check" class="vb-card-icon"></i>
+                <div>
+                    <div class="vb-card-title"><?= __('admin.deletion.recently_processed') ?></div>
+                    <div class="vb-card-desc"><?= __('admin.deletion.recently_processed_desc') ?></div>
+                </div>
+            </div>
         </div>
         <table class="vb-table">
             <thead>

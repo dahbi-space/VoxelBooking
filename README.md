@@ -122,7 +122,7 @@ Each tenant is configured with one booking pattern. All four share the same book
 | Pattern | Use Case | Key Engine |
 |---------|----------|------------|
 | **Timeslot** | Salon, dentist, consultant | `TimeSlotCalculator` — service/staff/slot grid |
-| **Resource** | Hotel, rental, co-working | `ResourceCalculator` — per-unit nightly availability |
+| **Resource** | Hotel, rental, co-working | `ResourceCalculator` — per-unit nightly availability, day-of-week check-in/out restrictions |
 | **Capacity** | Restaurant, group class, gym | `CapacityCalculator` — party-size against slot min/max, remaining capacity |
 | **Event** | Workshop, concert, yoga class | `EventCalculator` — RRULE expansion, waitlist, per-booking spot limits |
 
@@ -173,7 +173,7 @@ This drops and recreates all tables in the configured MySQL database, runs all m
 - **Backend:** PHP 8.3+ (custom micro-framework, no Laravel/Symfony)
 - **Database:** MySQL 8+ (PDO, prepared statements, no ORM)
 - **Admin frontend:** Alpine.js 3 (CSP build), Tailwind CSS 4, Lucide icons
-- **Booking page frontend:** Vanilla JS SPA, Tailwind CSS 4
+- **Booking page frontend:** Alpine.js 3 (CSP build), Tailwind CSS 4, Lucide icons
 - **Build:** Vite 6 with dual entry points (admin + booking)
 
 ## Composer Dependencies (runtime)
@@ -206,6 +206,7 @@ resources/              Source frontend files
 storage/                Runtime storage
   logs/                 Application logs
   cache/                Cache files
+  sessions/             PHP session files (8h expiry)
   demo/                 Demo SQLite database (demo-seed.php output)
 templates/              PHP view templates
 tests/                  PHPUnit test suites

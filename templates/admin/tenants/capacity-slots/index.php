@@ -31,7 +31,13 @@ ob_start();
 <!-- Add Slot Form -->
 <div class="vb-card vb-mb-lg">
     <div class="vb-card-header">
-        <h3 class="vb-card-title"><?= __('admin.capacity_slots.add_slot') ?></h3>
+        <div class="vb-card-title-row">
+            <i data-lucide="plus" class="vb-card-icon"></i>
+            <div>
+                <h3 class="vb-card-title"><?= __('admin.capacity_slots.add_slot') ?></h3>
+                <div class="vb-card-desc"><?= __('admin.capacity_slots.add_slot_desc') ?></div>
+            </div>
+        </div>
     </div>
     <div class="vb-card-body">
         <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenantId, ENT_QUOTES, 'UTF-8') ?>/capacity-slots" id="add-slot-form" novalidate>

@@ -84,7 +84,10 @@ ob_start();
     <div class="vb-card-header">
         <div class="vb-card-title-row">
             <i data-lucide="notebook-pen" class="vb-card-icon"></i>
-            <div class="vb-card-title"><?= __('admin.customers.notes_title') ?></div>
+            <div>
+                <div class="vb-card-title"><?= __('admin.customers.notes_title') ?></div>
+                <div class="vb-card-desc"><?= __('admin.customers.notes_desc') ?></div>
+            </div>
         </div>
     </div>
     <div class="vb-card-body">

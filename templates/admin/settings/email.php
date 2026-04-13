@@ -23,8 +23,13 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
         <!-- SMTP Configuration -->
         <div class="vb-card vb-fade-in-up stagger-1">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.email.smtp_title') ?></div>
-                <div class="vb-card-desc"><?= __('admin.email.smtp_desc') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="mail" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.email.smtp_title') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.email.smtp_desc') ?></div>
+                    </div>
+                </div>
             </div>
 
             <div class="vb-form-group">
@@ -67,8 +72,13 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
         <!-- Sender Identity -->
         <div class="vb-card vb-fade-in-up stagger-2">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.email.sender_title') ?></div>
-                <div class="vb-card-desc"><?= __('admin.email.sender_desc') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="user" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.email.sender_title') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.email.sender_desc') ?></div>
+                    </div>
+                </div>
             </div>
 
             <div class="vb-form-group">

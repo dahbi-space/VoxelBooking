@@ -59,21 +59,14 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
 
 <div class="vb-card vb-animate-in stagger-1">
     <div class="vb-card-header vb-card-header-toolbar">
-        <div>
-            <div class="vb-card-title"><?= __('admin.audit.title') ?></div>
-            <div class="vb-card-desc"><?= __p('admin.audit.showing_count', (int) $total) ?></div>
+        <div class="vb-card-title-row">
+            <i data-lucide="shield" class="vb-card-icon"></i>
+            <div>
+                <div class="vb-card-title"><?= __('admin.audit.title') ?></div>
+                <div class="vb-card-desc"><?= __p('admin.audit.showing_count', (int) $total) ?></div>
+            </div>
         </div>
         <div class="vb-page-actions">
-            <form method="GET" action="/admin/settings/audit" class="vb-filter-form">
-                <select name="action" class="vb-input vb-input-compact vb-filter-select" onchange="this.form.submit()">
-                    <option value=""><?= __('admin.audit.all_events') ?></option>
-                    <?php foreach ($actionLabels as $actionKey => $meta):
-                        $selected = ($actionFilter ?? '') === $actionKey ? 'selected' : '';
-                    ?>
-                        <option value="<?= htmlspecialchars($actionKey, ENT_QUOTES, 'UTF-8') ?>" <?= $selected ?>><?= htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </form>
             <?php
             $auditExportParams = array_filter(['action' => $actionFilter ?? ''], fn($v) => $v !== '');
             $auditExportUrl = '/admin/settings/audit/export' . ($auditExportParams ? '?' . http_build_query($auditExportParams) : '');
@@ -84,6 +77,16 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                 <i data-lucide="download" class="vb-icon-sm"></i>
                 <?= __('admin.common.export_csv') ?>
             </a>
+            <form method="GET" action="/admin/settings/audit" class="vb-filter-form">
+                <select name="action" class="vb-input vb-input-compact vb-filter-select" onchange="this.form.submit()">
+                    <option value=""><?= __('admin.audit.all_events') ?></option>
+                    <?php foreach ($actionLabels as $actionKey => $meta):
+                        $selected = ($actionFilter ?? '') === $actionKey ? 'selected' : '';
+                    ?>
+                        <option value="<?= htmlspecialchars($actionKey, ENT_QUOTES, 'UTF-8') ?>" <?= $selected ?>><?= htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </form>
         </div>
     </div>
 

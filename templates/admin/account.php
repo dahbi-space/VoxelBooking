@@ -29,8 +29,13 @@ ob_start();
     <!-- Profile Details (Editable) -->
     <div class="vb-card vb-fade-in-up stagger-1">
         <div class="vb-card-header">
-            <div class="vb-card-title"><?= __('admin.account.profile_title') ?></div>
-            <div class="vb-card-desc"><?= __('admin.account.profile_desc') ?></div>
+            <div class="vb-card-title-row">
+                <i data-lucide="user" class="vb-card-icon"></i>
+                <div>
+                    <div class="vb-card-title"><?= __('admin.account.profile_title') ?></div>
+                    <div class="vb-card-desc"><?= __('admin.account.profile_desc') ?></div>
+                </div>
+            </div>
         </div>
         <form method="POST" action="/admin/account" autocomplete="off" novalidate>
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
@@ -74,8 +79,13 @@ ob_start();
     <!-- Change Password -->
     <div class="vb-card vb-fade-in-up stagger-2">
         <div class="vb-card-header">
-            <div class="vb-card-title"><?= __('admin.account.change_pw_title') ?></div>
-            <div class="vb-card-desc"><?= __('admin.account.change_pw_desc') ?></div>
+            <div class="vb-card-title-row">
+                <i data-lucide="key" class="vb-card-icon"></i>
+                <div>
+                    <div class="vb-card-title"><?= __('admin.account.change_pw_title') ?></div>
+                    <div class="vb-card-desc"><?= __('admin.account.change_pw_desc') ?></div>
+                </div>
+            </div>
         </div>
         <form method="POST" action="/admin/account" autocomplete="off" novalidate>
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">

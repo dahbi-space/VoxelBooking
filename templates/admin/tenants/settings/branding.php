@@ -33,8 +33,13 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.tenant_settings.section_colors') ?></div>
-                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_colors_desc') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="palette" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.tenant_settings.section_colors') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.tenant_settings.section_colors_desc') ?></div>
+                    </div>
+                </div>
             </div>
             <div class="vb-form-grid">
                 <div class="vb-settings-field" x-data="colorSync">
@@ -79,8 +84,13 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
-                <div class="vb-card-title"><?= __('admin.tenant_settings.section_page_content') ?></div>
-                <div class="vb-card-desc"><?= __('admin.tenant_settings.section_page_content_desc') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="file-text" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.tenant_settings.section_page_content') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.tenant_settings.section_page_content_desc') ?></div>
+                    </div>
+                </div>
             </div>
             <div class="vb-form-grid">
                 <div class="vb-settings-field">

@@ -133,9 +133,12 @@ ob_start();
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header vb-card-header-toggle">
-                <div>
-                    <div class="vb-card-title"><?= htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8') ?></div>
-                    <div class="vb-card-desc"><?= htmlspecialchars($meta['desc'], ENT_QUOTES, 'UTF-8') ?></div>
+                <div class="vb-card-title-row">
+                    <i data-lucide="mail" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= htmlspecialchars($meta['label'], ENT_QUOTES, 'UTF-8') ?></div>
+                        <div class="vb-card-desc"><?= htmlspecialchars($meta['desc'], ENT_QUOTES, 'UTF-8') ?></div>
+                    </div>
                 </div>
                 <label class="vb-settings-toggle-item vb-settings-toggle-inline">
                     <input type="hidden" name="<?= $type ?>_is_enabled" value="0">

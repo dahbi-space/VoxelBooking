@@ -20,8 +20,13 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
     <!-- Cron Configuration -->
     <div class="vb-card vb-fade-in-up stagger-1">
         <div class="vb-card-header">
-            <div class="vb-card-title"><?= __('admin.cron.job_title') ?></div>
-            <div class="vb-card-desc"><?= __('admin.cron.job_desc') ?></div>
+            <div class="vb-card-title-row">
+                <i data-lucide="clock" class="vb-card-icon"></i>
+                <div>
+                    <div class="vb-card-title"><?= __('admin.cron.job_title') ?></div>
+                    <div class="vb-card-desc"><?= __('admin.cron.job_desc') ?></div>
+                </div>
+            </div>
         </div>
 
         <div class="vb-form-group">
@@ -53,8 +58,13 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
     <!-- Status -->
     <div class="vb-card vb-fade-in-up stagger-2">
         <div class="vb-card-header">
-            <div class="vb-card-title"><?= __('admin.cron.status_title') ?></div>
-            <div class="vb-card-desc"><?= __('admin.cron.status_desc') ?></div>
+            <div class="vb-card-title-row">
+                <i data-lucide="activity" class="vb-card-icon"></i>
+                <div>
+                    <div class="vb-card-title"><?= __('admin.cron.status_title') ?></div>
+                    <div class="vb-card-desc"><?= __('admin.cron.status_desc') ?></div>
+                </div>
+            </div>
         </div>
 
         <div class="vb-info-row">
