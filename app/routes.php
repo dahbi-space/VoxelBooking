@@ -35,6 +35,10 @@ return function (Router $router): void {
         // ── Health check ──
         $router->get('/health', \App\Controllers\HealthController::class, 'index');
 
+        // ── SEO (PRD §XIII) ──
+        $router->get('/robots.txt', \App\Controllers\SeoController::class, 'robots');
+        $router->get('/sitemap.xml', \App\Controllers\SeoController::class, 'sitemap');
+
         // ── Root redirect ──
         $router->get('/', \App\Controllers\HomeController::class, 'index');
 
