@@ -184,12 +184,17 @@ final class ResourceController
             $maxRows = Database::query('SELECT COALESCE(MAX(`sort_order`), -1) AS m FROM `resources` WHERE `tenant_id` = ?', [$tenantId]);
             $nextOrder = ((int) $maxRows[0]['m']) + 1;
 
+            // Parse day-of-week restrictions from form checkboxes
+            $checkInDays = $this->parseDayCheckboxes('check_in_days');
+            $checkOutDays = $this->parseDayCheckboxes('check_out_days');
+
             Database::execute(
                 'INSERT INTO `resources`
                  (`id`, `tenant_id`, `name`, `description`, `capacity`, `price_per_night`,
-                  `min_stay_nights`, `max_stay_nights`, `amenities`, `sort_order`, `cover_image_path`)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [$id, $tenantId, $name, $description, $capacity, $priceValue, $minStay, $maxStay, json_encode($amenities), $nextOrder, $coverPath]
+                  `min_stay_nights`, `max_stay_nights`, `check_in_days`, `check_out_days`,
+                  `amenities`, `sort_order`, `cover_image_path`)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [$id, $tenantId, $name, $description, $capacity, $priceValue, $minStay, $maxStay, $checkInDays, $checkOutDays, json_encode($amenities), $nextOrder, $coverPath]
             );
         } catch (\Throwable $e) {
             if ($coverPath) {
@@ -361,14 +366,19 @@ final class ResourceController
             $coverPath = null;
         }
 
+        // Parse day-of-week restrictions from form checkboxes
+        $checkInDays = $this->parseDayCheckboxes('check_in_days');
+        $checkOutDays = $this->parseDayCheckboxes('check_out_days');
+
         Database::execute(
             'UPDATE `resources` SET
                 `name` = ?, `description` = ?, `capacity` = ?,
                 `price_per_night` = ?, `min_stay_nights` = ?,
-                `max_stay_nights` = ?, `amenities` = ?,
+                `max_stay_nights` = ?, `check_in_days` = ?,
+                `check_out_days` = ?, `amenities` = ?,
                 `cover_image_path` = ?
              WHERE `id` = ? AND `tenant_id` = ?',
-            [$name, $description, $capacity, $priceValue, $minStay, $maxStay, json_encode($amenities), $coverPath, $resourceId, $tenantId]
+            [$name, $description, $capacity, $priceValue, $minStay, $maxStay, $checkInDays, $checkOutDays, json_encode($amenities), $coverPath, $resourceId, $tenantId]
         );
 
         // Sync seasonal pricing: delete all, re-insert from form
@@ -577,6 +587,28 @@ final class ResourceController
             array_map('trim', explode(',', $raw)),
             fn(string $tag) => $tag !== ''
         ));
+    }
+
+    /**
+     * Parse day-of-week checkboxes from POST arrays.
+     *
+     * Expects POST data like check_in_days[] = [0, 5] (0=Sunday, 5=Friday).
+     * Returns JSON string of int array, or null if no days selected (no restriction).
+     */
+    private function parseDayCheckboxes(string $fieldName): ?string
+    {
+        $raw = $_POST[$fieldName] ?? [];
+        if (!is_array($raw) || empty($raw)) {
+            return null;
+        }
+
+        $days = array_values(array_unique(array_filter(
+            array_map(fn($v) => (int) $v, $raw),
+            fn(int $d) => $d >= 0 && $d <= 6
+        )));
+
+        sort($days);
+        return count($days) > 0 && count($days) < 7 ? json_encode($days) : null;
     }
 
     /**

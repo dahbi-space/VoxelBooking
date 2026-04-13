@@ -16,6 +16,29 @@ $minStay     = e(old('min_stay_nights', $resource['min_stay_nights'] ?? '1'));
 $maxStay     = e(old('max_stay_nights', $resource['max_stay_nights'] ?? '30'));
 
 $amenitiesStr = e(old('amenities', is_array($resource['amenities'] ?? null) ? implode(', ', $resource['amenities']) : ''));
+
+// Day-of-week restrictions: decode JSON array from DB, or empty
+$checkInDaysRaw = $resource['check_in_days'] ?? null;
+$checkInDaysArray = [];
+if ($checkInDaysRaw !== null && $checkInDaysRaw !== '') {
+    $decoded = is_string($checkInDaysRaw) ? json_decode($checkInDaysRaw, true) : $checkInDaysRaw;
+    if (is_array($decoded)) $checkInDaysArray = $decoded;
+}
+$checkOutDaysRaw = $resource['check_out_days'] ?? null;
+$checkOutDaysArray = [];
+if ($checkOutDaysRaw !== null && $checkOutDaysRaw !== '') {
+    $decoded = is_string($checkOutDaysRaw) ? json_decode($checkOutDaysRaw, true) : $checkOutDaysRaw;
+    if (is_array($decoded)) $checkOutDaysArray = $decoded;
+}
+$dayLabels = [
+    0 => __('admin.resources.day_sun'),
+    1 => __('admin.resources.day_mon'),
+    2 => __('admin.resources.day_tue'),
+    3 => __('admin.resources.day_wed'),
+    4 => __('admin.resources.day_thu'),
+    5 => __('admin.resources.day_fri'),
+    6 => __('admin.resources.day_sat'),
+];
 ?>
 
     <div class="vb-form-group col-span-full">
@@ -64,6 +87,35 @@ $amenitiesStr = e(old('amenities', is_array($resource['amenities'] ?? null) ? im
             <label for="resource-max-stay" class="vb-label"><?= __('admin.resources.field_max_stay') ?></label>
             <input type="number" name="max_stay_nights" id="resource-max-stay" value="<?= $maxStay ?>"
                    class="vb-input" min="1" max="365">
+        </div>
+    </div>
+
+    <div class="vb-form-row">
+        <div class="vb-form-group">
+            <label class="vb-label"><?= __('admin.resources.field_check_in_days') ?></label>
+            <p class="vb-hint mb-2"><?= __('admin.resources.field_check_in_days_hint') ?></p>
+            <div class="vb-day-checkboxes">
+                <?php foreach ($dayLabels as $dow => $label): ?>
+                <label class="vb-day-checkbox">
+                    <input type="checkbox" name="check_in_days[]" value="<?= $dow ?>"
+                        <?= in_array($dow, $checkInDaysArray, false) ? 'checked' : '' ?>>
+                    <span><?= $label ?></span>
+                </label>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <div class="vb-form-group">
+            <label class="vb-label"><?= __('admin.resources.field_check_out_days') ?></label>
+            <p class="vb-hint mb-2"><?= __('admin.resources.field_check_out_days_hint') ?></p>
+            <div class="vb-day-checkboxes">
+                <?php foreach ($dayLabels as $dow => $label): ?>
+                <label class="vb-day-checkbox">
+                    <input type="checkbox" name="check_out_days[]" value="<?= $dow ?>"
+                        <?= in_array($dow, $checkOutDaysArray, false) ? 'checked' : '' ?>>
+                    <span><?= $label ?></span>
+                </label>
+                <?php endforeach; ?>
+            </div>
         </div>
     </div>
 

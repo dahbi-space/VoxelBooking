@@ -137,6 +137,8 @@ return [
         'error_too_far'               => 'Check-in date is too far ahead.',
         'error_date_blocked'          => 'One or more dates are blocked.',
         'error_already_booked'        => 'This room is already booked for those dates.',
+        'error_invalid_check_in_day'  => 'Check-in is not available on this day of the week.',
+        'error_invalid_check_out_day' => 'Check-out is not available on this day of the week.',
     ],
 
     // ── Empty States ──

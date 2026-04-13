@@ -30,7 +30,7 @@ final class ResourceCalculator
      * @param int    $year       Year
      * @param int    $month      Month (1-12)
      *
-     * @return array{dates: list<string>, year: int, month: int}
+     * @return array{dates: list<string>, year: int, month: int, check_in_days: ?list<int>, check_out_days: ?list<int>}
      */
     public static function getAvailableDates(
         array $tenant,
@@ -88,7 +88,33 @@ final class ResourceCalculator
             $availableDates[] = $dateStr;
         }
 
-        return ['dates' => $availableDates, 'year' => $year, 'month' => $month];
+        // Parse check-in/out day restrictions from resource
+        $checkInDays = null;
+        $checkOutDays = null;
+        if ($resource) {
+            $raw = $resource['check_in_days'] ?? null;
+            if ($raw !== null && $raw !== '') {
+                $decoded = is_string($raw) ? json_decode($raw, true) : $raw;
+                if (is_array($decoded) && count($decoded) > 0) {
+                    $checkInDays = array_map('intval', $decoded);
+                }
+            }
+            $raw = $resource['check_out_days'] ?? null;
+            if ($raw !== null && $raw !== '') {
+                $decoded = is_string($raw) ? json_decode($raw, true) : $raw;
+                if (is_array($decoded) && count($decoded) > 0) {
+                    $checkOutDays = array_map('intval', $decoded);
+                }
+            }
+        }
+
+        return [
+            'dates'          => $availableDates,
+            'year'           => $year,
+            'month'          => $month,
+            'check_in_days'  => $checkInDays,
+            'check_out_days' => $checkOutDays,
+        ];
     }
 
     /**
@@ -144,6 +170,30 @@ final class ResourceCalculator
         // Guest count vs capacity
         if ($guestCount > (int) $resource['capacity']) {
             return self::unavailable('capacity_exceeded');
+        }
+
+        // Check-in day-of-week restriction
+        $checkInDaysRaw = $resource['check_in_days'] ?? null;
+        if ($checkInDaysRaw !== null && $checkInDaysRaw !== '') {
+            $allowedDays = is_string($checkInDaysRaw) ? json_decode($checkInDaysRaw, true) : $checkInDaysRaw;
+            if (is_array($allowedDays) && count($allowedDays) > 0) {
+                $dow = (int) $checkInDate->format('w'); // 0=Sunday
+                if (!in_array($dow, array_map('intval', $allowedDays), true)) {
+                    return self::unavailable('invalid_check_in_day');
+                }
+            }
+        }
+
+        // Check-out day-of-week restriction
+        $checkOutDaysRaw = $resource['check_out_days'] ?? null;
+        if ($checkOutDaysRaw !== null && $checkOutDaysRaw !== '') {
+            $allowedDays = is_string($checkOutDaysRaw) ? json_decode($checkOutDaysRaw, true) : $checkOutDaysRaw;
+            if (is_array($allowedDays) && count($allowedDays) > 0) {
+                $dow = (int) $checkOutDate->format('w');
+                if (!in_array($dow, array_map('intval', $allowedDays), true)) {
+                    return self::unavailable('invalid_check_out_day');
+                }
+            }
         }
 
         // Min advance
