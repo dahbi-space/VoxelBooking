@@ -55,6 +55,25 @@ final class InstallDetectionTest extends TestCase
         Database::reset();
     }
 
+    /**
+     * Safety net: always restore installed_at after this class finishes,
+     * regardless of individual test outcomes. Prevents cascading failures
+     * in curl-based integration tests that depend on the app being installed.
+     */
+    public static function tearDownAfterClass(): void
+    {
+        try {
+            Database::reset();
+            Database::execute(
+                "INSERT INTO `settings` (`key`, `value`, `updated_at`) VALUES ('installed_at', ?, NOW())
+                 ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+                ['2026-03-27 10:00:00']
+            );
+        } catch (\Throwable) {
+            // DB may be unreachable in CI — not critical
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // Environment-independent tests (always run, no DB needed)
     // ═══════════════════════════════════════════════════════════════
@@ -147,12 +166,12 @@ final class InstallDetectionTest extends TestCase
         try {
             $this->assertFalse(InstalledMiddleware::isInstalled());
         } finally {
-            if ($hadValue) {
-                Database::execute(
-                    "INSERT INTO `settings` (`key`, `value`, `updated_at`) VALUES ('installed_at', ?, NOW())",
-                    [$existing[0]['value']]
-                );
-            }
+            // Always restore via UPSERT to prevent duplicate key errors
+            Database::execute(
+                "INSERT INTO `settings` (`key`, `value`, `updated_at`) VALUES ('installed_at', ?, NOW())
+                 ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+                [$hadValue ? $existing[0]['value'] : '2026-03-27 10:00:00']
+            );
         }
     }
 

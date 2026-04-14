@@ -75,6 +75,15 @@ final class WizardController
             'db_username' => 'required',
         ]);
 
+        // Preserve submitted values for re-populating the form on error
+        $formValues = [
+            'db_host'     => $request->string('db_host', 'localhost'),
+            'db_port'     => $request->string('db_port', '3306'),
+            'db_database' => $request->string('db_database', ''),
+            'db_username' => $request->string('db_username', ''),
+        ];
+        $_SESSION['install']['form_db'] = $formValues;
+
         if (!empty($errors)) {
             return View::response('install.wizard', [
                 'step' => 2,
@@ -91,10 +100,19 @@ final class WizardController
         $database = $request->string('db_database');
         $username = $request->string('db_username');
         $password = $request->string('db_password');
+        $reconnectAction = $request->string('_reconnect_action');
+        $confirmRefresh = $request->string('confirm_refresh');
+
+        // Force TCP/IP when host is 'localhost'.
+        // PHP's PDO MySQL driver treats 'localhost' as a Unix socket connection,
+        // ignoring the port entirely. This causes "No such file or directory"
+        // on environments with non-standard socket paths (Herd, MAMP, Docker).
+        // Using 127.0.0.1 forces TCP/IP, which respects the port setting.
+        $dsnHost = ($host === 'localhost') ? '127.0.0.1' : $host;
 
         // Test MySQL connection
         try {
-            $dsn = "mysql:host={$host};port={$port};dbname={$database};charset=utf8mb4";
+            $dsn = "mysql:host={$dsnHost};port={$port};dbname={$database};charset=utf8mb4";
             $testPdo = new PDO($dsn, $username, $password, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_TIMEOUT => 5,
@@ -115,39 +133,124 @@ final class WizardController
             ]);
         }
 
-        // Detect HTTPS
-        $isSecure = $request->isSecure();
-        $protocol = $isSecure ? 'https' : 'http';
-        $appUrl = $protocol . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
-
-        // Write .env
-        $basePath = dirname(__DIR__, 3);
-        $envPath = $basePath . '/.env';
-
-        EnvWriter::setMultiple($envPath, [
-            'APP_NAME'     => $_ENV['APP_NAME'] ?? 'VoxelBooking',
-            'APP_URL'      => $appUrl,
-            'APP_DEBUG'    => 'false',
-            'APP_TIMEZONE' => 'UTC',
-            'FORCE_HTTPS'  => $isSecure ? 'true' : 'false',
-            'DB_CONNECTION' => 'mysql',
-            'DB_HOST'      => $host,
-            'DB_PORT'      => $port,
-            'DB_DATABASE'  => $database,
-            'DB_USERNAME'  => $username,
-            'DB_PASSWORD'  => $password,
-        ]);
-
-        // Reload environment
-        $_ENV['DB_HOST'] = $host;
+        // Set up DB connection with provided credentials (before writing .env)
+        $_ENV['DB_HOST'] = $dsnHost;
         $_ENV['DB_PORT'] = $port;
         $_ENV['DB_DATABASE'] = $database;
         $_ENV['DB_USERNAME'] = $username;
         $_ENV['DB_PASSWORD'] = $password;
-        $_ENV['APP_URL'] = $appUrl;
-
-        // Reset DB connection to use new credentials
         Database::reset();
+
+        // ── Reconnect detection ──
+        // Check for existing installation BEFORE writing .env.
+        // If installed_at exists, show a choice screen instead of proceeding.
+        $hasInstalledAt = false;
+        try {
+            $installed = Database::query(
+                "SELECT `value` FROM `settings` WHERE `key` = 'installed_at' LIMIT 1"
+            );
+            $hasInstalledAt = !empty($installed[0]['value'] ?? '');
+        } catch (\Throwable) {
+            // settings table doesn't exist — fresh install
+        }
+
+        $basePath = dirname(__DIR__, 3);
+        $envPath = $basePath . '/.env';
+        $isSecure = $request->isSecure();
+
+        // Helper: write .env with current credentials
+        $writeEnv = function () use ($envPath, $isSecure, $dsnHost, $port, $database, $username, $password): void {
+            EnvWriter::setMultiple($envPath, [
+                'APP_NAME'      => $_ENV['APP_NAME'] ?? 'VoxelBooking',
+                'APP_DEBUG'     => 'false',
+                'APP_TIMEZONE'  => 'UTC',
+                'FORCE_HTTPS'   => $isSecure ? 'true' : 'false',
+                'DB_CONNECTION' => 'mysql',
+                'DB_HOST'       => $dsnHost,
+                'DB_PORT'       => $port,
+                'DB_DATABASE'   => $database,
+                'DB_USERNAME'   => $username,
+                'DB_PASSWORD'   => $password,
+            ]);
+        };
+
+        if ($hasInstalledAt && $reconnectAction === '') {
+            // First visit with existing DB: show the reconnect choice screen.
+            // .env is NOT written yet — middleware won't block install routes.
+            return View::response('install.wizard', [
+                'step' => '2-reconnect',
+                'checks' => [],
+                'errors' => [],
+                'flash' => [],
+                'session' => $_SESSION['install'] ?? [],
+                'csrfToken' => CsrfMiddleware::generateToken(),
+                'mysqlVersion' => $version,
+                'dbCredentials' => [
+                    'db_host' => $host,
+                    'db_port' => $port,
+                    'db_database' => $database,
+                    'db_username' => $username,
+                    'db_password' => $password,
+                ],
+            ]);
+        }
+
+        if ($hasInstalledAt && $reconnectAction === 'keep') {
+            // Use existing data: write .env and go to login
+            $writeEnv();
+            FormState::toast('success', __('install.flash.reconnected_keep'));
+            return Response::redirect('/admin/login');
+        }
+
+        if ($hasInstalledAt && $reconnectAction === 'refresh') {
+            // Server-side guard: require typed confirmation before destructive action
+            if ($confirmRefresh !== 'REFRESH') {
+                return View::response('install.wizard', [
+                    'step' => '2-reconnect',
+                    'checks' => [],
+                    'errors' => ['confirm_refresh' => __('install.flash.refresh_confirm_required')],
+                    'flash' => [],
+                    'session' => $_SESSION['install'] ?? [],
+                    'csrfToken' => CsrfMiddleware::generateToken(),
+                    'mysqlVersion' => $version,
+                    'dbCredentials' => [
+                        'db_host' => $host,
+                        'db_port' => $port,
+                        'db_database' => $database,
+                        'db_username' => $username,
+                        'db_password' => $password,
+                    ],
+                ]);
+            }
+
+            // Fresh install: drop all tables and re-run migrations
+            try {
+                $tables = Database::query(
+                    'SELECT table_name AS tbl FROM information_schema.tables WHERE table_schema = ?',
+                    [$database]
+                );
+                Database::execute('SET FOREIGN_KEY_CHECKS = 0');
+                foreach ($tables as $row) {
+                    $tbl = $row['tbl'] ?? '';
+                    if ($tbl !== '') {
+                        Database::execute('DROP TABLE IF EXISTS `' . $tbl . '`');
+                    }
+                }
+                Database::execute('SET FOREIGN_KEY_CHECKS = 1');
+            } catch (\Throwable $e) {
+                return View::response('install.wizard', [
+                    'step' => 2,
+                    'checks' => $this->runSystemChecks(),
+                    'errors' => ['db_migration' => str_replace(':error', $e->getMessage(), __('install.flash.migration_failed'))],
+                    'flash' => [],
+                    'session' => $_SESSION['install'] ?? [],
+                    'csrfToken' => CsrfMiddleware::generateToken(),
+                ]);
+            }
+        }
+
+        // Write .env (fresh install or after refresh)
+        $writeEnv();
 
         // Run migrations
         try {
@@ -159,7 +262,13 @@ final class WizardController
             $_SESSION['install']['mysql_version'] = $version;
             $_SESSION['install']['migrations_run'] = $count;
 
-            FormState::toast('success', str_replace([':version', ':count'], [$version, $count], __('install.flash.db_connected')));
+            if ($reconnectAction === 'refresh') {
+                FormState::toast('success', str_replace([':version', ':count'], [$version, $count], __('install.flash.db_refreshed')));
+            } elseif ($count > 0) {
+                FormState::toast('success', str_replace([':version', ':count'], [$version, $count], __('install.flash.db_connected')));
+            } else {
+                FormState::toast('success', str_replace(':version', $version, __('install.flash.db_connected_existing')));
+            }
 
             return Response::redirect('/install?step=3');
         } catch (\Throwable $e) {
@@ -183,18 +292,32 @@ final class WizardController
         $skip = $request->string('skip');
 
         if ($skip === '1') {
+            // Default to log transport so email is always functional (logged, not lost)
+            $this->setSetting('mail_transport', 'log');
             $_SESSION['install']['mail_configured'] = false;
             FormState::toast('info', __('install.flash.email_skipped'));
 
             return Response::redirect('/install?step=4');
         }
 
-        $errors = Validator::validate($request->all(), [
-            'mail_host'         => 'required',
-            'mail_port'         => 'required|integer',
-            'mail_from_address' => 'required|email',
-            'mail_from_name'    => 'required|max_length:255',
-        ]);
+        $transport = $request->string('mail_transport', 'smtp');
+
+        // Validate based on transport type
+        if ($transport === 'smtp') {
+            // SMTP: need host, port, from fields
+            $errors = Validator::validate($request->all(), [
+                'mail_host'         => 'required',
+                'mail_port'         => 'required|integer',
+                'mail_from_address' => 'required|email',
+                'mail_from_name'    => 'required|max_length:255',
+            ]);
+        } else {
+            // Log and Mailpit: only from fields (Mailer hardcodes host/port/auth)
+            $errors = Validator::validate($request->all(), [
+                'mail_from_address' => 'required|email',
+                'mail_from_name'    => 'required|max_length:255',
+            ]);
+        }
 
         if (!empty($errors)) {
             return View::response('install.wizard', [
@@ -204,19 +327,33 @@ final class WizardController
                 'flash' => [],
                 'session' => $_SESSION['install'] ?? [],
                 'csrfToken' => CsrfMiddleware::generateToken(),
+                'mailTransport' => $transport,
+                'mailForm' => [
+                    'mail_from_address' => $request->string('mail_from_address'),
+                    'mail_from_name'    => $request->string('mail_from_name'),
+                    'mail_host'         => $request->string('mail_host'),
+                    'mail_port'         => $request->string('mail_port'),
+                    'mail_username'     => $request->string('mail_username'),
+                    'mail_encryption'   => $request->string('mail_encryption', 'tls'),
+                ],
             ]);
         }
 
         // Store mail settings in the database
         $mailSettings = [
-            'mail_host'         => $request->string('mail_host'),
-            'mail_port'         => $request->string('mail_port'),
-            'mail_username'     => $request->string('mail_username'),
-            'mail_password'     => $request->string('mail_password'),
-            'mail_encryption'   => $request->string('mail_encryption', 'tls'),
+            'mail_transport'    => $transport,
             'mail_from_address' => $request->string('mail_from_address'),
             'mail_from_name'    => $request->string('mail_from_name'),
         ];
+
+        // Only store SMTP fields for smtp transport (mailpit is hardcoded in Mailer)
+        if ($transport === 'smtp') {
+            $mailSettings['smtp_host']       = $request->string('mail_host');
+            $mailSettings['smtp_port']       = $request->string('mail_port');
+            $mailSettings['smtp_username']   = $request->string('mail_username');
+            $mailSettings['smtp_password']   = $request->string('mail_password');
+            $mailSettings['smtp_encryption'] = $request->string('mail_encryption', 'tls');
+        }
 
         foreach ($mailSettings as $key => $value) {
             $this->setSetting($key, $value);
@@ -373,7 +510,7 @@ final class WizardController
 
         FormState::toast('success', __('install.flash.install_complete'));
 
-        return Response::redirect('/install?step=complete');
+        return Response::redirect('/admin/login');
     }
 
     /**
@@ -482,6 +619,12 @@ final class WizardController
 
         if (str_contains($msg, 'Connection refused')) {
             return __('install.db_errors.connection_refused');
+        }
+
+        // Unix socket not found — common on Herd, MAMP, Docker, custom builds.
+        // The raw MySQL error "No such file or directory" is misleading.
+        if (str_contains($msg, 'No such file or directory')) {
+            return __('install.db_errors.socket_not_found');
         }
 
         if (str_contains($msg, 'timed out') || str_contains($msg, 'timeout')) {
