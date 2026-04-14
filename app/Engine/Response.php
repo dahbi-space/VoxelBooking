@@ -99,4 +99,10 @@ final class Response
     {
         return $this->body;
     }
+
+    /** @return array<string, string> */
+    public function getHeaders(): array
+    {
+        return $this->headers;
+    }
 }

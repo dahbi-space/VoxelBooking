@@ -30,11 +30,47 @@ function env(string $key, string $default = ''): string
 }
 
 /**
- * Get the application URL.
+ * Get the application base URL.
+ *
+ * Host resolution: SERVER_NAME (set by server config, not the request)
+ * is the trusted primary source. HTTP_HOST is used only as a fallback
+ * and is validated against a strict hostname pattern to prevent Host
+ * header poisoning in password-reset and magic-link emails.
+ *
+ * Scheme resolution: HTTPS server var → X-Forwarded-Proto (only when
+ * TRUSTED_PROXIES env is set) → FORCE_HTTPS env → fallback to http.
  */
 function app_url(string $path = ''): string
 {
-    $base = rtrim(env('APP_URL', ''), '/');
+    // Scheme: prefer server-level HTTPS flag
+    $isHttps = ($_SERVER['HTTPS'] ?? '') === 'on';
+
+    // Only trust X-Forwarded-Proto when behind a configured proxy
+    if (!$isHttps && ($_ENV['TRUSTED_PROXIES'] ?? '') !== '') {
+        $isHttps = ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+    }
+
+    // Manual override for proxies that strip all headers
+    if (!$isHttps) {
+        $isHttps = ($_ENV['FORCE_HTTPS'] ?? $_SERVER['FORCE_HTTPS'] ?? 'false') === 'true';
+    }
+
+    $scheme = $isHttps ? 'https' : 'http';
+
+    // Host: prefer SERVER_NAME (set by server config, not user-controllable)
+    // Fall back to HTTP_HOST only after strict validation
+    $host = $_SERVER['SERVER_NAME'] ?? '';
+
+    if ($host === '') {
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    }
+
+    // Validate: hostname must be alphanumeric/dots/hyphens with optional port
+    if (!preg_match('/^[a-zA-Z0-9]([a-zA-Z0-9\-\.]*[a-zA-Z0-9])?(:\d{1,5})?$/', $host)) {
+        $host = 'localhost';
+    }
+
+    $base = $scheme . '://' . $host;
 
     if ($path === '') {
         return $base;
@@ -198,7 +234,7 @@ function app_name(): string
 /**
  * Get the configured brand/vendor URL.
  *
- * Resolution order: DB setting → APP_URL env → default.
+ * Resolution order: DB setting → BRAND_URL env → default.
  * Used for white-label support: the "Powered by" footer link
  * can point to the operator's own domain instead of voxelbooking.com.
  */

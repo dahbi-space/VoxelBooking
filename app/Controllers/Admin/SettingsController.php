@@ -38,7 +38,7 @@ final class SettingsController
 
     public function general(Request $request): Response
     {
-        $settings = $this->loadSettings(['app_name', 'app_url', 'brand_url', 'timezone', 'date_format']);
+        $settings = $this->loadSettings(['app_name', 'brand_url', 'timezone', 'date_format']);
 
         return $this->render('admin.settings.general', 'General', [
             'settings' => $settings,
@@ -49,7 +49,6 @@ final class SettingsController
     public function saveGeneral(Request $request): Response
     {
         $appName    = trim($request->string('app_name'));
-        $appUrl     = rtrim(trim($request->string('app_url')), '/');
         $brandUrl   = rtrim(trim($request->string('brand_url')), '/');
         $timezone   = trim($request->string('timezone'));
         $dateFormat = trim($request->string('date_format'));
@@ -57,9 +56,6 @@ final class SettingsController
         $errors = [];
         if ($appName === '') {
             $errors[] = 'Application name is required.';
-        }
-        if ($appUrl !== '' && !filter_var($appUrl, FILTER_VALIDATE_URL)) {
-            $errors[] = 'Application URL must be a valid URL.';
         }
         if ($brandUrl !== '' && !filter_var($brandUrl, FILTER_VALIDATE_URL)) {
             $errors[] = 'Brand URL must be a valid URL.';
@@ -71,19 +67,13 @@ final class SettingsController
         }
 
         // Audit log: track what changed
-        $oldSettings = $this->loadSettings(['app_name', 'app_url', 'brand_url', 'timezone', 'date_format']);
+        $oldSettings = $this->loadSettings(['app_name', 'brand_url', 'timezone', 'date_format']);
         $changes = [];
 
         try {
             $this->saveSetting('app_name', $appName);
             if ($appName !== ($oldSettings['app_name'] ?? '')) {
                 $changes['app_name'] = ['old' => $oldSettings['app_name'] ?? '', 'new' => $appName];
-            }
-            if ($appUrl !== '') {
-                $this->saveSetting('app_url', $appUrl);
-                if ($appUrl !== ($oldSettings['app_url'] ?? '')) {
-                    $changes['app_url'] = ['old' => $oldSettings['app_url'] ?? '', 'new' => $appUrl];
-                }
             }
             if ($brandUrl !== '') {
                 $this->saveSetting('brand_url', $brandUrl);

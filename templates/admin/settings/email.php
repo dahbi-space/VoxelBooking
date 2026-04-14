@@ -41,31 +41,33 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                 </select>
             </div>
 
-            <div class="vb-form-row">
-                <div class="vb-form-group">
-                    <label for="smtp_host" class="vb-label"><?= __('admin.email.host_label') ?></label>
-                    <input type="text" id="smtp_host" name="smtp_host" class="vb-input" value="<?= htmlspecialchars($settings['smtp_host'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="smtp.example.com">
+            <div id="smtp-config-fields">
+                <div class="vb-form-row">
+                    <div class="vb-form-group">
+                        <label for="smtp_host" class="vb-label"><?= __('admin.email.host_label') ?></label>
+                        <input type="text" id="smtp_host" name="smtp_host" class="vb-input" value="<?= htmlspecialchars($settings['smtp_host'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="smtp.example.com">
+                    </div>
+                    <div class="vb-form-group">
+                        <label for="smtp_port" class="vb-label"><?= __('admin.email.port_label') ?></label>
+                        <input type="number" id="smtp_port" name="smtp_port" class="vb-input" value="<?= htmlspecialchars($settings['smtp_port'] ?? '587', ENT_QUOTES, 'UTF-8') ?>" placeholder="587">
+                    </div>
                 </div>
                 <div class="vb-form-group">
-                    <label for="smtp_port" class="vb-label"><?= __('admin.email.port_label') ?></label>
-                    <input type="number" id="smtp_port" name="smtp_port" class="vb-input" value="<?= htmlspecialchars($settings['smtp_port'] ?? '587', ENT_QUOTES, 'UTF-8') ?>" placeholder="587">
+                    <label for="smtp_username" class="vb-label"><?= __('admin.email.username_label') ?></label>
+                    <input type="text" id="smtp_username" name="smtp_username" class="vb-input" value="<?= htmlspecialchars($settings['smtp_username'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="noreply@yourdomain.com" autocomplete="off">
                 </div>
-            </div>
-            <div class="vb-form-group">
-                <label for="smtp_username" class="vb-label"><?= __('admin.email.username_label') ?></label>
-                <input type="text" id="smtp_username" name="smtp_username" class="vb-input" value="<?= htmlspecialchars($settings['smtp_username'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="noreply@yourdomain.com" autocomplete="off">
-            </div>
-            <div class="vb-form-group">
-                <label for="smtp_password" class="vb-label"><?= __('admin.email.password_label') ?></label>
-                <input type="password" id="smtp_password" name="smtp_password" class="vb-input" placeholder="<?= __('admin.email.password_hint') ?>" autocomplete="new-password">
-            </div>
-            <div class="vb-form-group">
-                <label for="smtp_encryption" class="vb-label"><?= __('admin.email.encryption_label') ?></label>
-                <select id="smtp_encryption" name="smtp_encryption" class="vb-select">
-                    <option value="tls" <?= ($settings['smtp_encryption'] ?? 'tls') === 'tls' ? 'selected' : '' ?>><?= __('admin.email.tls_recommended') ?></option>
-                    <option value="ssl" <?= ($settings['smtp_encryption'] ?? '') === 'ssl' ? 'selected' : '' ?>>SSL</option>
-                    <option value="none" <?= ($settings['smtp_encryption'] ?? '') === 'none' ? 'selected' : '' ?>>None</option>
-                </select>
+                <div class="vb-form-group">
+                    <label for="smtp_password" class="vb-label"><?= __('admin.email.password_label') ?></label>
+                    <input type="password" id="smtp_password" name="smtp_password" class="vb-input" placeholder="<?= __('admin.email.password_hint') ?>" autocomplete="new-password">
+                </div>
+                <div class="vb-form-group">
+                    <label for="smtp_encryption" class="vb-label"><?= __('admin.email.encryption_label') ?></label>
+                    <select id="smtp_encryption" name="smtp_encryption" class="vb-select">
+                        <option value="tls" <?= ($settings['smtp_encryption'] ?? 'tls') === 'tls' ? 'selected' : '' ?>><?= __('admin.email.tls_recommended') ?></option>
+                        <option value="ssl" <?= ($settings['smtp_encryption'] ?? '') === 'ssl' ? 'selected' : '' ?>>SSL</option>
+                        <option value="none" <?= ($settings['smtp_encryption'] ?? '') === 'none' ? 'selected' : '' ?>>None</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -99,6 +101,19 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
         </button>
     </div>
 </form>
+
+<script>
+(function() {
+    var sel = document.getElementById('mail_transport');
+    var fields = document.getElementById('smtp-config-fields');
+    if (!sel || !fields) return;
+    function toggle() {
+        fields.style.display = sel.value === 'smtp' ? '' : 'none';
+    }
+    sel.addEventListener('change', toggle);
+    toggle();
+})();
+</script>
 
 <?php
 $content = ob_get_clean();

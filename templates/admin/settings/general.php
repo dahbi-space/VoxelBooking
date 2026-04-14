@@ -40,10 +40,6 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                 <input type="text" id="app_name" name="app_name" class="vb-input" value="<?= htmlspecialchars($settings['app_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="VoxelBooking">
             </div>
             <div class="vb-form-group">
-                <label for="app_url" class="vb-label"><?= __('admin.settings.app_url_label') ?></label>
-                <input type="url" id="app_url" name="app_url" class="vb-input" value="<?= htmlspecialchars($settings['app_url'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="https://booking.yourdomain.com">
-            </div>
-            <div class="vb-form-group">
                 <label for="brand_url" class="vb-label"><?= __('admin.settings.brand_url_label') ?></label>
                 <input type="url" id="brand_url" name="brand_url" class="vb-input" value="<?= htmlspecialchars($settings['brand_url'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="https://voxelbooking.com">
                 <span class="vb-hint"><?= __('admin.settings.brand_url_hint') ?></span>

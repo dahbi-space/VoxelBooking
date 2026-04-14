@@ -20,7 +20,7 @@ final class SchemaController
 {
     public function index(Request $request): Response
     {
-        $baseUrl = rtrim($_ENV['APP_URL'] ?? '', '/');
+        $baseUrl = app_url();
         $appName = app_name();
 
         $schema = [

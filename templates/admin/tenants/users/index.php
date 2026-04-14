@@ -42,7 +42,7 @@ ob_start();
                 </div>
                 <div class="vb-credentials-row">
                     <span class="vb-credentials-label"><?= __('admin.users.credentials_login') ?></span>
-                    <code class="vb-credentials-value"><?= htmlspecialchars(rtrim($_ENV['APP_URL'] ?? '', '/') . '/admin/login', ENT_QUOTES, 'UTF-8') ?></code>
+                    <code class="vb-credentials-value"><?= htmlspecialchars(app_url('/admin/login'), ENT_QUOTES, 'UTF-8') ?></code>
                 </div>
             </div>
         </div>

@@ -121,7 +121,7 @@ final class AuthController
             if ($method === 'magic_link') {
                 $result = LoginToken::createMagicLink($email, $ip, $rememberMe);
                 if ($result['success']) {
-                    $link = rtrim($_ENV['APP_URL'] ?? '', '/') . '/admin/login/verify?token=' . $result['token'];
+                    $link = app_url('/admin/login/verify?token=' . $result['token']);
                     $mailResult = Mailer::sendMagicLink($email, $link);
                     $issued = true;
                     $sendOk = $mailResult['sent'] ?? false;
@@ -333,7 +333,7 @@ final class AuthController
         if (!empty($reg)) {
             $result = LoginToken::createPasswordReset($email, $ip);
             if ($result['success']) {
-                $link = rtrim($_ENV['APP_URL'] ?? '', '/') . '/admin/reset-password?token=' . $result['token'];
+                $link = app_url('/admin/reset-password?token=' . $result['token']);
                 $sendResult = Mailer::sendPasswordReset($email, $link);
 
                 if ($sendResult['sent']) {

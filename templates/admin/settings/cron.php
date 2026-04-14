@@ -31,7 +31,7 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
 
         <div class="vb-form-group">
             <label class="vb-label"><?= __('admin.cron.command_label') ?></label>
-            <input type="text" class="vb-input vb-input-mono" readonly value="*/5 * * * * curl -s <?= htmlspecialchars(($_ENV['APP_URL'] ?? 'https://yourdomain.com'), ENT_QUOTES, 'UTF-8') ?>/cron/run?token=<?= htmlspecialchars($cronToken, ENT_QUOTES, 'UTF-8') ?> > /dev/null 2>&1" onclick="this.select()">
+            <input type="text" class="vb-input vb-input-mono" readonly value="*/5 * * * * curl -s <?= htmlspecialchars(app_url(), ENT_QUOTES, 'UTF-8') ?>/cron/run?token=<?= htmlspecialchars($cronToken, ENT_QUOTES, 'UTF-8') ?> > /dev/null 2>&1" onclick="this.select()">
             <div class="vb-hint"><?= __('admin.cron.command_hint') ?></div>
         </div>
 

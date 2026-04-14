@@ -169,7 +169,7 @@ final class BusinessUsersController
 
         // Send welcome email
         if ($sendEmail && Mailer::isConfigured()) {
-            $loginUrl = rtrim($_ENV['APP_URL'] ?? '', '/') . '/admin/login';
+            $loginUrl = app_url('/admin/login');
             $emailResult = Mailer::sendBusinessUserWelcome(
                 $email,
                 $name,

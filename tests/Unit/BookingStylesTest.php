@@ -14,7 +14,7 @@ final class BookingStylesTest extends TestCase
 
         $this->assertIsString($css);
         $this->assertMatchesRegularExpression(
-            '/\\.vb-book-calendar-cell\\.is-range::after\\s*\\{[^}]*opacity:\\s*0\\.45;/s',
+            '/\\.vb-book-calendar-cell\\.is-range::after\\s*\\{[^}]*opacity:\\s*0\\.70;/s',
             $css
         );
     }

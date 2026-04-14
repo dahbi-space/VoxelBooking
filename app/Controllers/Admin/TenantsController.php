@@ -205,7 +205,7 @@ final class TenantsController
                 $emailResult = null;
 
                 if ($sendEmail && Mailer::isConfigured()) {
-                    $loginUrl = rtrim($_ENV['APP_URL'] ?? '', '/') . '/admin/login';
+                    $loginUrl = app_url('/admin/login');
                     $emailResult = Mailer::sendBusinessUserWelcome(
                         $ownerEmail, $ownerName, $ownerPass, $loginUrl, $name, $tenantId
                     );
@@ -225,7 +225,7 @@ final class TenantsController
                         'message'  => __('admin.tenants.flash_created_with_owner') . ' ' . $reason,
                         'email'    => $ownerEmail,
                         'password' => $ownerPass,
-                        'login'    => rtrim($_ENV['APP_URL'] ?? '', '/') . '/admin/login',
+                        'login'    => app_url('/admin/login'),
                     ]));
                 }
             } else {

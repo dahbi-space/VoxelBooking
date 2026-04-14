@@ -1,5 +1,6 @@
 # ── Application ──
 .env
+*.env
 storage/logs/*.log
 storage/logs/*.log.*
 storage/cache/*
