@@ -15,23 +15,16 @@ Self-hosted multi-tenant booking system. Four booking patterns (time slots, reso
 
 ## Installation
 
-### Preferred setup (VPS, dedicated, or managed hosting)
+### Standard setup (Apache, most hosting)
 
-1. Upload the ZIP to your server and extract it
-2. Point your web server's document root to the `public/` directory
-3. Navigate to your domain — the installation wizard starts automatically
+1. Upload the ZIP to your server and extract it into your web root (e.g., `public_html/`)
+2. Confirm `mod_rewrite` is enabled (most hosts enable it by default)
+3. Navigate to your domain — the root `.htaccess` rewrites traffic into `public/` and blocks access to application directories
 4. Follow the 5-step wizard: system check → database → email → operator account → first tenant
 
-### Shared hosting fallback (Apache)
+### Document root setup (VPS, dedicated hosting)
 
-If your hosting provider does not let you change the document root, the root-level `.htaccess` handles it:
-
-1. Upload the ZIP and extract it into your web root (e.g., `public_html/`)
-2. Confirm `mod_rewrite` is enabled (most shared hosts enable it by default)
-3. Navigate to your domain — the root `.htaccess` rewrites all traffic into `public/`
-4. All sensitive paths (`app/`, `config/`, `storage/`, `vendor/`, `.env`, etc.) are blocked by deny rules
-
-> **Nginx/Caddy/other servers:** The root `.htaccess` is Apache-only. You must configure your server to serve from `public/` and deny access to application directories. See the PRD (Part IX, Section "Web Server") for details.
+If you have full server control, you can point Apache's document root directly to the `public/` directory. This is functionally identical to the standard setup but removes the need for root-level rewrites.
 
 ## Local Development
 
