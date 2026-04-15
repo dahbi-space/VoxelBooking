@@ -1,6 +1,6 @@
 # VoxelBooking
 
-Self-hosted multi-tenant booking system. Four booking patterns (time slots, resources, capacity, events) in one codebase. No SaaS lock-in, no outbound telemetry, no CDN dependencies.
+Self-hosted multi-business booking system. Four booking patterns (time slots, resources, capacity, events) in one codebase. No SaaS lock-in, no outbound telemetry, no CDN dependencies.
 
 ## Requirements
 
@@ -11,7 +11,7 @@ Self-hosted multi-tenant booking system. Four booking patterns (time slots, reso
 
 ### Required PHP Extensions
 
-`pdo`, `pdo_mysql`, `curl`, `json`, `mbstring`, `fileinfo`, `openssl`, `gd`
+`pdo`, `pdo_mysql`, `curl`, `json`, `mbstring`, `fileinfo`, `openssl`, `gd`, `zip`
 
 ## Installation
 
@@ -20,7 +20,7 @@ Self-hosted multi-tenant booking system. Four booking patterns (time slots, reso
 1. Upload the ZIP to your server and extract it into your web root (e.g., `public_html/`)
 2. Confirm `mod_rewrite` is enabled (most hosts enable it by default)
 3. Navigate to your domain — the root `.htaccess` rewrites traffic into `public/` and blocks access to application directories
-4. Follow the 5-step wizard: system check → database → email → operator account → first tenant
+4. Follow the 5-step wizard: system check → database → email → operator account → first business
 
 ### Document root setup (VPS, dedicated hosting)
 
@@ -110,7 +110,7 @@ The canonical product version lives in the root [`VERSION`](VERSION) file. This 
 
 ## Booking Patterns
 
-Each tenant is configured with one booking pattern. All four share the same bookings table, admin UI, and email pipeline.
+Each business is configured with one booking pattern. All four share the same bookings table, admin UI, and email pipeline.
 
 | Pattern | Use Case | Key Engine |
 |---------|----------|------------|
@@ -143,13 +143,13 @@ All use password `welcome3210`:
 
 | Account | Email | Role | Sees |
 |---------|-------|------|------|
-| **Operator** | `demo@voxelbooking.com` | System admin | All 4 tenants |
-| **Demo Studio** | `owner@demo-studio.test` | Business owner | Timeslot tenant only — Services, Staff, Availability |
-| **Hotel Marina** | `owner@hotel-marina.test` | Business owner | Resource tenant only — Resources |
-| **Trattoria Roma** | `owner@trattoria-roma.test` | Business owner | Capacity tenant only — Capacity Slots |
-| **Workshop Studio** | `owner@workshop-studio.test` | Business owner | Event tenant only — Events |
+| **Operator** | `demo@voxelbooking.com` | System admin | All 4 businesses |
+| **Demo Studio** | `owner@demo-studio.test` | Business owner | Timeslot business only — Services, Staff, Availability |
+| **Hotel Marina** | `owner@hotel-marina.test` | Business owner | Resource business only — Resources |
+| **Trattoria Roma** | `owner@trattoria-roma.test` | Business owner | Capacity business only — Capacity Slots |
+| **Workshop Studio** | `owner@workshop-studio.test` | Business owner | Event business only — Events |
 
-The operator sees all four tenants on the dashboard. Each business user is auto-redirected to their own tenant and sees only pattern-specific menus. Only the timeslot tenant has Services; the other patterns show their own management pages.
+The operator sees all four businesses on the dashboard. Each business user is auto-redirected to their own business and sees only pattern-specific menus. Only the timeslot business has Services; the other patterns show their own management pages.
 
 ### MySQL showcase seed (local development)
 
@@ -159,7 +159,7 @@ For local development with a live MySQL database, you can import the same showca
 php demo-seed-mysql.php    # seed into the MySQL database from .env (DESTRUCTIVE)
 ```
 
-This drops and recreates all tables in the configured MySQL database, runs all migrations, then seeds the same 4-tenant dataset. Useful for testing the full write path, not just read-only demo mode.
+This drops and recreates all tables in the configured MySQL database, runs all migrations, then seeds the same 4-business dataset. Useful for testing the full write path, not just read-only demo mode.
 
 ## Stack
 
@@ -221,10 +221,10 @@ VoxelBooking is internationalization-ready from its foundation. English ships as
 
 | Context | Locale source | Timezone source |
 |---------|--------------|----------------|
-| Booking page | Explicit tenant override → browser `Accept-Language` (if translations exist) → tenant default → `en` | Storage: tenant timezone (authoritative). Display: browser timezone (JS-side) |
-| Privacy pages | Same as booking page (resolved per tenant) | Tenant `timezone` |
-| Admin panel | Tenant locale (in tenant context) → `APP_LOCALE` (.env) → `en` | Session (browser-detected) |
-| Emails | Resolved active locale at send time | Tenant `timezone` |
+| Booking page | Explicit business override → browser `Accept-Language` (if translations exist) → business default → `en` | Storage: business timezone (authoritative). Display: browser timezone (JS-side) |
+| Privacy pages | Same as booking page (resolved per business) | Business `timezone` |
+| Admin panel | Business locale (in business context) → `APP_LOCALE` (.env) → `en` | Session (browser-detected) |
+| Emails | Resolved active locale at send time | Business `timezone` |
 
 ### Adding a locale
 
@@ -248,15 +248,15 @@ VoxelBooking is built with a privacy-by-design architecture. The following descr
 
 **Structured audit logging.** Authentication events (login, logout, failed login), settings changes, and password changes produce structured, append-only audit log entries. PII is redacted centrally: passwords and tokens are never logged, email addresses are stored as SHA-256 prefixes, and email-like detail fields are automatically hashed. The audit log is viewable read-only from the admin UI.
 
-**Consent fields on tenant schema.** Each tenant has configurable `consent_text`, `privacy_policy_url`, and `requires_consent` settings.
+**Consent fields on business schema.** Each business has configurable `consent_text`, `privacy_policy_url`, and `requires_consent` settings.
 
-**Consent evidence recording.** The `BookingService::createBooking()` method captures GDPR consent evidence: the exact `consent_text_shown` the customer agreed to (verbatim at booking time) and the `consent_given_at` timestamp. Changing the tenant's consent text does not retroactively change recorded consents. Consent records are legal-hold data and are never anonymized or deleted (GDPR Art. 7(1)). `BookingService::recordConsent()` supports post-hoc consent capture for admin-created bookings.
+**Consent evidence recording.** The `BookingService::createBooking()` method captures GDPR consent evidence: the exact `consent_text_shown` the customer agreed to (verbatim at booking time) and the `consent_given_at` timestamp. Changing the business's consent text does not retroactively change recorded consents. Consent records are legal-hold data and are never anonymized or deleted (GDPR Art. 7(1)). `BookingService::recordConsent()` supports post-hoc consent capture for admin-created bookings.
 
 **Customer anonymization.** The `CustomerAnonymizer` engine performs transactional PII removal: customer name → "Deleted", email → SHA-256 hash, phone/notes → NULL. Booking structure and consent evidence are preserved. The engine supports both manual anonymization and automated batch processing via the retention cron.
 
 **Data export.** The `DataExporter` engine generates machine-readable JSON exports of all customer data (personal details, booking history, consent records, email log) for GDPR Art. 20 portability requests.
 
-**Retention cron.** The `RetentionJob` engine orchestrates automated cleanup: per-tenant customer anonymization based on `data_retention_months`, audit log cleanup, email log cleanup, and rate limit cleanup. Accessible via `GET /cron/run?token={cron_token}` (legacy alias `/cron/retention` still works).
+**Retention cron.** The `RetentionJob` engine orchestrates automated cleanup: per-business customer anonymization based on `data_retention_months`, audit log cleanup, email log cleanup, and rate limit cleanup. Accessible via `GET /cron/run?token={cron_token}` (legacy alias `/cron/retention` still works).
 
 **Privacy endpoint.** `GET /book/{slug}/privacy/{customer-ulid}` displays the customer's personal data, booking history, and consent records (GDPR Art. 15). `POST` with `action=export` returns a JSON download (Art. 20). `POST` with `action=delete` logs a deletion request and notifies the customer that the business will process it (Art. 17). The customer ULID acts as a bearer token (128-bit entropy).
 
@@ -268,14 +268,14 @@ VoxelBooking is built with a privacy-by-design architecture. The following descr
 - **`mailpit`** — delivers to `127.0.0.1:1025` with no authentication and no encryption, overriding any production SMTP settings. Intended for local development with [Mailpit](https://mailpit.axllent.org/) or similar SMTP capture tools.
 - **`log`** — records emails to the `email_log` table with status `sent` without making any outbound connection. Suitable for environments without SMTP infrastructure or for testing email flows without actual delivery.
 
-All send attempts are logged to `email_log` regardless of transport. SMTP credentials are never logged — error messages are automatically redacted. The privacy flow calls the Mailer directly: data exports trigger a customer acknowledgment email, deletion requests trigger both a customer confirmation and an operator notification (sent to `notification_email` on the tenant, falling back to the tenant's contact email). Email dispatch is synchronous within the HTTP request (10-second SMTP timeout); the privacy action always succeeds regardless of email outcome, but the HTTP response may be delayed by the SMTP round-trip. The `sendTest()` method allows operators to verify their configuration from the admin panel.
+All send attempts are logged to `email_log` regardless of transport. SMTP credentials are never logged — error messages are automatically redacted. The privacy flow calls the Mailer directly: data exports trigger a customer acknowledgment email, deletion requests trigger both a customer confirmation and an operator notification (sent to `notification_email` on the business, falling back to the business's contact email). Email dispatch is synchronous within the HTTP request (10-second SMTP timeout); the privacy action always succeeds regardless of email outcome, but the HTTP response may be delayed by the SMTP round-trip. The `sendTest()` method allows operators to verify their configuration from the admin panel.
 
 ### What operators should know
 
 VoxelBooking provides the technical controls for privacy compliance. Operators are responsible for:
 
 - Providing a legally reviewed privacy policy appropriate for their jurisdiction
-- Setting appropriate consent text for their tenants
+- Setting appropriate consent text for their businesses
 - Responding to data-subject requests within legal timeframes
 - Establishing Data Processing Agreements with their hosting and SMTP providers
 - Server-level security (TLS certificates, backups, access control)

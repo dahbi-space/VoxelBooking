@@ -1515,7 +1515,7 @@ final class BookingsController
 
         $headers = ['Date', 'Time', 'End Time', 'Customer', 'Email', 'Service', 'Status'];
         if ($includeTenant) {
-            $headers[] = 'Tenant';
+            $headers[] = 'Business';
         }
 
         $output = fopen('php://temp', 'r+');

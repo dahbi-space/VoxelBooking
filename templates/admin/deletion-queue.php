@@ -17,22 +17,16 @@ $activePage = 'deletion-queue';
 $csrfToken = \App\Middleware\CsrfMiddleware::generateToken();
 $pendingRequests = $pendingRequests ?? [];
 $processedRequests = $processedRequests ?? [];
-$pendingCount = count($pendingRequests);
 
 ob_start();
 ?>
 
 <!-- Page Header -->
-<div class="vb-page-header vb-animate-in stagger-1">
-    <i data-lucide="shield" class="vb-page-header-icon"></i>
-    <h2 class="vb-page-title">
-        <?= __('admin.deletion.title') ?>
-        <?php if ($pendingCount > 0): ?>
-            <span class="vb-badge vb-badge-error"><?= $pendingCount ?></span>
-        <?php else: ?>
-            <span class="vb-badge vb-badge-success">0</span>
-        <?php endif; ?>
-    </h2>
+<div class="vb-page-header">
+    <div>
+        <h2 class="vb-page-title"><?= __('admin.deletion.title') ?></h2>
+        <p class="vb-page-subtitle"><?= __('admin.deletion.subtitle') ?></p>
+    </div>
 </div>
 
 <!-- Pending Requests -->

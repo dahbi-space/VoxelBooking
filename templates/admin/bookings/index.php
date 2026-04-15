@@ -25,11 +25,11 @@ ob_start();
 
 <div class="vb-page-header">
     <div>
-        <h2 class="vb-page-title">
-            <i data-lucide="calendar" class="vb-page-header-icon"></i>
-            <?= __('admin.bookings.title') ?>
-        </h2>
-        <div class="vb-page-subtitle"><?= __p('admin.bookings.showing_count', (int) $total) ?></div>
+        <h2 class="vb-page-title"><?= __('admin.bookings.title') ?></h2>
+        <p class="vb-page-subtitle">
+            <?= $showTenantColumn ? __('admin.bookings.subtitle') : __('admin.bookings.subtitle_tenant') ?>
+            · <?= __p('admin.bookings.showing_count', (int) $total) ?>
+        </p>
     </div>
     <div class="vb-page-actions">
         <?php

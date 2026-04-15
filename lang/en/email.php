@@ -62,7 +62,7 @@ return [
         'detail_customer'  => 'Customer:',
         'detail_email'     => 'Email:',
         'detail_hashed'    => '(hashed)',
-        'detail_tenant'    => 'Tenant:',
+        'detail_tenant'    => 'Business:',
         'footer'           => 'Log in to :app_name and navigate to the Deletion Queue to process this request.',
     ],
 

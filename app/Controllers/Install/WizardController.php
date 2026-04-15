@@ -586,6 +586,14 @@ final class WizardController
                     : str_replace(':ext', 'gd', __('install.checks.enable_ext')),
             ],
             [
+                'name'     => __('install.checks.zip'),
+                'required' => true,
+                'passed'   => extension_loaded('zip'),
+                'message'  => extension_loaded('zip')
+                    ? __('install.checks.loaded')
+                    : str_replace(':ext', 'zip', __('install.checks.enable_ext')),
+            ],
+            [
                 'name'     => __('install.checks.storage_logs'),
                 'required' => true,
                 'passed'   => is_writable($basePath . '/storage/logs'),

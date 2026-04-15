@@ -43,6 +43,7 @@ return [
         'fileinfo'            => 'Fileinfo Extension',
         'openssl'             => 'OpenSSL Extension',
         'gd'                  => 'GD Extension',
+        'zip'                 => 'Zip Extension',
         'loaded'              => 'Loaded',
         'enable_ext'          => 'Enable the :ext extension in your php.ini',
         'storage_logs'        => 'storage/logs writable',
@@ -106,10 +107,10 @@ return [
         'reconnect_title'                  => 'Existing Installation Detected',
         'reconnect_desc'                   => 'This database (MySQL :version) already contains a VoxelBooking installation. How would you like to proceed?',
         'reconnect_keep_title'             => 'Use existing data',
-        'reconnect_keep_desc'              => 'Keep all existing operators, tenants, bookings, and settings. A new .env file will be created and you will be redirected to the login page.',
+        'reconnect_keep_desc'              => 'Keep all existing operators, businesses, bookings, and settings. A new .env file will be created and you will be redirected to the login page.',
         'reconnect_keep_btn'               => 'Use existing data',
         'reconnect_refresh_title'          => 'Fresh install',
-        'reconnect_refresh_desc'           => 'Delete all tables and start from scratch. All existing data (operators, tenants, bookings, settings) will be permanently destroyed.',
+        'reconnect_refresh_desc'           => 'Delete all tables and start from scratch. All existing data (operators, businesses, bookings, settings) will be permanently destroyed.',
         'reconnect_refresh_confirm_label'  => 'Type REFRESH to confirm:',
         'reconnect_refresh_btn'            => 'Delete all data & reinstall',
 
@@ -131,7 +132,7 @@ return [
         'op_password_generate'   => 'Generate password',
         'op_submit'              => 'Create Account & Continue',
 
-        // Step 5: First Tenant
+        // Step 5: First Business
         'step5_title'            => 'Create Your First Business',
         'step5_desc'             => 'Set up your first booking page. You can create more businesses later.',
         'tenant_name'            => 'Business Name',
