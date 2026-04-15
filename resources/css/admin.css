@@ -369,6 +369,23 @@
         border-radius: var(--vb-radius);
     }
 
+    /* Loading state: spinner replaces content */
+    .vb-btn.is-loading {
+        color: transparent !important;
+        pointer-events: none;
+        position: relative;
+    }
+    .vb-btn.is-loading::after {
+        content: '';
+        position: absolute;
+        width: 16px; height: 16px;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: vb-spin 0.5s linear infinite;
+    }
+    .vb-btn-primary.is-loading::after { border-color: rgba(255,255,255,0.4); border-right-color: transparent; border-top-color: #fff; }
+
     /* ══════════════════════════════════════════════════════════════
        INPUT SYSTEM — Refined form controls
        ══════════════════════════════════════════════════════════════ */
@@ -3608,11 +3625,7 @@
     justify-content: center;
 }
 
-/* Spacing/margin utilities */
-.vb-mb-0  { margin-bottom: 0; }
-.vb-mb-sm { margin-bottom: 0.5rem; }
-.vb-mb-md { margin-bottom: 1rem; }
-.vb-mb-lg { margin-bottom: 1.5rem; }
+/* vb-mt-md — see canonical spacing utilities near §Icon Sizing */
 .vb-mt-md { margin-top: 1rem; }
 
 /* Empty state: compact variant */

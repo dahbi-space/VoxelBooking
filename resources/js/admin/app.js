@@ -252,6 +252,41 @@ Alpine.data('slugEditor', (initialSlug = '', baseUrl = '') => ({
     },
 }));
 
+// ── Alpine: Slug Generator (auto-slug from name on create forms) ──
+// Auto-generates a slug from the name field. Once the user manually edits the
+// slug field, auto-generation stops (dirty flag). Normalizes to lowercase/hyphen-only.
+Alpine.data('slugGenerator', () => ({
+    slug: '',
+    dirty: false,
+
+    init() {
+        // Restore old input (server validation round-trip)
+        const slugInput = this.$refs.slugInput;
+        if (slugInput && slugInput.value) {
+            this.slug = slugInput.value;
+            this.dirty = true; // User (or server) already provided a slug
+        }
+    },
+
+    /** Called on name field input — auto-generate slug unless user has edited slug manually. */
+    onNameInput(e) {
+        if (this.dirty) return;
+        const name = e.target.value || '';
+        this.slug = name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-').replace(/^-|-$/g, '');
+    },
+
+    /** Called on slug field input — mark as dirty and normalize. */
+    onSlugInput() {
+        this.dirty = true;
+        this.slug = this.slug.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    },
+
+    /** Called on slug field blur — trim trailing hyphens. */
+    onSlugBlur() {
+        this.slug = this.slug.replace(/^-|-$/g, '');
+    },
+}));
+
 // ── Alpine: Pattern Cards (CSP-safe radio card selection) ──
 
 Alpine.data('patternCards', () => ({
@@ -696,6 +731,36 @@ Alpine.data('tableSearch', () => ({
         });
         const qs = params.toString();
         window.location.href = action + (qs ? '?' + qs : '');
+    },
+}));
+
+// ── Alpine: Form Submit Guard (prevents double-submission) ──
+// Adds a loading spinner to the submit button and blocks re-submit.
+// Usage: x-data="formSubmit" on <form>, @submit="onSubmit" on <form>,
+//        :disabled="submitDisabled" :class="submitClass" on <button>.
+Alpine.data('formSubmit', () => ({
+    submitting: false,
+
+    // CSP-safe: referenced as @submit="onSubmit"
+    // Alpine CSP passes the native Event as the first argument.
+    onSubmit(e) {
+        if (this.submitting) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return;
+        }
+        this.submitting = true;
+        // First submission: form submits normally via native behavior.
+    },
+
+    // CSP-safe: referenced as :disabled="submitDisabled"
+    get submitDisabled() {
+        return this.submitting;
+    },
+
+    // CSP-safe: referenced as :class="submitClass"
+    get submitClass() {
+        return this.submitting ? 'is-loading' : '';
     },
 }));
 

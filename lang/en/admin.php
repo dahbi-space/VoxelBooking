@@ -431,6 +431,14 @@ return [
         'flash_email_required'=> 'Contact email is required.',
         'flash_email_invalid'=> 'Please enter a valid email address.',
 
+        // Card section headers (tenant creation form)
+        'section_identity'       => 'Business Details',
+        'section_identity_desc'  => 'Name, contact email, and brand color.',
+        'section_pattern'        => 'Booking Pattern',
+        'section_pattern_desc'   => 'Determines how availability and scheduling work.',
+        'section_regional'       => 'Regional',
+        'section_regional_desc'  => 'Timezone and currency for this business.',
+
         // Owner onboarding (optional first-owner during business creation)
         'owner_section_title'       => 'Owner Access',
         'owner_section_desc'        => 'Create a login for the business owner so they can manage their own bookings.',

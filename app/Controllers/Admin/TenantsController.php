@@ -68,9 +68,12 @@ final class TenantsController
             return $this->forbidden($request);
         }
 
+        $defaultTimezone = $this->resolveDefaultTimezone();
+
         return $this->render('admin.tenants.create', __('admin.tenants.title'), [
-            'documentTitle' => __('admin.tenants.create'),
-            'flash'         => FormState::getToast(),
+            'documentTitle'   => __('admin.tenants.create'),
+            'defaultTimezone' => $defaultTimezone,
+            'flash'           => FormState::getToast(),
         ]);
     }
 
@@ -81,7 +84,11 @@ final class TenantsController
         }
 
         $name    = trim($request->string('name'));
-        $slug    = trim($request->string('slug')) ?: $this->generateSlug($name);
+        $rawSlug = trim($request->string('slug'));
+        // Normalize user-submitted slug to lowercase/hyphen-only, or auto-generate from name
+        $slug    = $rawSlug !== ''
+            ? trim(preg_replace('/[^a-z0-9]+/', '-', mb_strtolower($rawSlug)), '-')
+            : $this->generateSlug($name);
         $email   = trim($request->string('email'));
         $pattern = trim($request->string('booking_pattern'));
 
@@ -130,7 +137,7 @@ final class TenantsController
                 'slug'            => $slug,
                 'email'           => $email,
                 'booking_pattern' => $pattern,
-                'timezone'        => trim($request->string('timezone')) ?: 'UTC',
+                'timezone'        => trim($request->string('timezone')) ?: $this->resolveDefaultTimezone(),
                 'currency'        => trim($request->string('currency')) ?: 'EUR',
                 'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                 'create_owner'    => $createOwner ? '1' : '0',
@@ -156,7 +163,7 @@ final class TenantsController
                     'slug'            => $slug,
                     'email'           => $email,
                     'booking_pattern' => $pattern,
-                    'timezone'        => trim($request->string('timezone')) ?: 'UTC',
+                    'timezone'        => trim($request->string('timezone')) ?: $this->resolveDefaultTimezone(),
                     'currency'        => trim($request->string('currency')) ?: 'EUR',
                     'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                 ]);
@@ -240,7 +247,7 @@ final class TenantsController
                     'slug'            => $slug,
                     'email'           => $email,
                     'booking_pattern' => $pattern,
-                    'timezone'        => trim($request->string('timezone')) ?: 'UTC',
+                    'timezone'        => trim($request->string('timezone')) ?: $this->resolveDefaultTimezone(),
                     'currency'        => trim($request->string('currency')) ?: 'EUR',
                     'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                     'create_owner'    => '1',
@@ -385,6 +392,33 @@ final class TenantsController
     }
 
     // ── Helpers ──
+
+    /**
+     * Resolve the default timezone for new tenants.
+     *
+     * Priority: settings.timezone (admin General save) → settings.default_timezone
+     * (install wizard seed) → UTC.
+     */
+    private function resolveDefaultTimezone(): string
+    {
+        try {
+            $rows = Database::query(
+                "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('timezone', 'default_timezone')"
+            );
+            $fallback = 'UTC';
+            foreach ($rows as $row) {
+                if ($row['key'] === 'timezone' && $row['value'] !== '') {
+                    return $row['value']; // Explicit admin setting wins
+                }
+                if ($row['key'] === 'default_timezone' && $row['value'] !== '') {
+                    $fallback = $row['value'];
+                }
+            }
+            return $fallback;
+        } catch (\Throwable) {
+            return 'UTC';
+        }
+    }
 
     private function generateSlug(string $name): string
     {
