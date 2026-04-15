@@ -84,7 +84,7 @@ final class AdminRoutesTest extends TestCase
         $this->doLoginOperator();
         $r = $this->get('/admin/tenants');
         $this->assertSame(200, $r['code'], 'Tenants list should be accessible');
-        $this->assertStringContainsString('Tenants', $r['body']);
+        $this->assertStringContainsString('Businesses', $r['body']);
     }
 
     public function test_operator_tenant_create_returns_200(): void
@@ -113,7 +113,7 @@ final class AdminRoutesTest extends TestCase
         $this->assertStringNotContainsString('test-fixture', $r['body'], 'Non-matching tenant must be excluded from results');
         // Filtered-empty message instead of table
         $this->assertStringNotContainsString('vb-table-wrap', $r['body'], 'Must not render table for zero results');
-        $this->assertStringContainsString('No tenants found', $r['body']);
+        $this->assertStringContainsString('No businesses found', $r['body']);
     }
 
     public function test_tenants_status_filter_active_includes_fixture(): void
@@ -141,11 +141,11 @@ final class AdminRoutesTest extends TestCase
         $r = $this->get('/admin/tenants?search=' . urlencode('zzznonexistent999'));
         $this->assertSame(200, $r['code']);
         $this->assertStringContainsString('vb-filter-tabs', $r['body'], 'Filter tabs must remain visible when search returns zero rows');
-        $this->assertStringContainsString('No tenants found', $r['body'], 'Filtered-empty must show "No tenants found"');
-        $this->assertStringNotContainsString('No tenants yet', $r['body'], 'Must not show true zero-state when search is active');
+        $this->assertStringContainsString('No businesses found', $r['body'], 'Filtered-empty must show "No businesses found"');
+        $this->assertStringNotContainsString('No businesses yet', $r['body'], 'Must not show true zero-state when search is active');
         // Scoped result-count must render even when zero rows match
         $this->assertStringContainsString('vb-table-result-count', $r['body'], 'Scoped result-count row must render for filtered-empty');
-        $this->assertStringContainsString('No tenants', $r['body'], 'Zero count must show "No tenants"');
+        $this->assertStringContainsString('No businesses', $r['body'], 'Zero count must show "No businesses"');
         $this->assertStringContainsString('vb-table-active-filter-dot', $r['body'], 'Active filter dot must appear for filtered-empty');
     }
 
@@ -167,7 +167,7 @@ final class AdminRoutesTest extends TestCase
         $r = $this->get('/admin/tenants?search=' . urlencode('Test Tenant'));
         $this->assertSame(200, $r['code']);
         $this->assertStringContainsString('vb-table-result-count', $r['body'], 'Result count row must render');
-        $this->assertStringContainsString('1 tenant', $r['body'], 'Singular count must read "1 tenant" not "1 tenants"');
+        $this->assertStringContainsString('1 business', $r['body'], 'Singular count must read "1 business" not "1 businesses"');
         $this->assertStringContainsString('vb-table-active-filter-dot', $r['body'], 'Active filter dot must appear when search is set');
     }
 
@@ -183,8 +183,8 @@ final class AdminRoutesTest extends TestCase
         $this->assertStringContainsString('test-fixture', $filtered['body'], 'Empty search must show all tenants');
         $this->assertStringContainsString('test-fixture', $unfiltered['body'], 'Unfiltered must show all tenants');
         // Neither should show the filtered-empty state
-        $this->assertStringNotContainsString('No tenants found', $filtered['body'], 'Empty search must not trigger filtered-empty');
-        $this->assertStringNotContainsString('No tenants found', $unfiltered['body']);
+        $this->assertStringNotContainsString('No businesses found', $filtered['body'], 'Empty search must not trigger filtered-empty');
+        $this->assertStringNotContainsString('No businesses found', $unfiltered['body']);
     }
 
     public function test_tenants_clear_button_url_excludes_search_param(): void
@@ -265,9 +265,9 @@ final class AdminRoutesTest extends TestCase
         $r = $this->get('/admin/tenants/create');
         $this->assertSame(200, $r['code']);
         $this->assertStringContainsString(
-            '<title>Create Tenant',
+            '<title>New Business',
             $r['body'],
-            'Browser tab should say "Create Tenant", not just "Tenants"'
+            'Browser tab should say "New Business", not just "Businesses"'
         );
     }
 
@@ -277,9 +277,9 @@ final class AdminRoutesTest extends TestCase
         $r = $this->get('/admin/tenants/' . TestFixtures::BUSINESS_TENANT_ID . '/edit');
         $this->assertSame(200, $r['code']);
         $this->assertStringContainsString(
-            '<title>Edit Tenant',
+            '<title>Edit Business',
             $r['body'],
-            'Browser tab should say "Edit Tenant", not just "Tenants"'
+            'Browser tab should say "Edit Business", not just "Businesses"'
         );
     }
 
@@ -301,9 +301,9 @@ final class AdminRoutesTest extends TestCase
         $r = $this->get('/admin/tenants');
         $this->assertSame(200, $r['code']);
         $this->assertStringContainsString(
-            '<title>Tenants',
+            '<title>Businesses',
             $r['body'],
-            'Tenant list tab should say "Tenants"'
+            'Business list tab should say "Businesses"'
         );
     }
 
@@ -375,7 +375,7 @@ final class AdminRoutesTest extends TestCase
         $this->assertStringContainsString('.csv', $h, 'Filename must end in .csv');
         // CSV header row
         $this->assertStringContainsString('Date,Time,', $r['body'], 'CSV must contain header row');
-        $this->assertStringContainsString(',Tenant', $r['body'], 'Operator export must include Tenant column');
+        $this->assertStringContainsString(',Business', $r['body'], 'Operator export must include Business column');
     }
 
     public function test_operator_bookings_export_respects_status_filter(): void
@@ -402,7 +402,7 @@ final class AdminRoutesTest extends TestCase
         $this->assertStringContainsString('text/csv', $h);
         // Tenant column must NOT be in header for tenant-scoped export
         $headerLine = strtok(ltrim($r['body'], "\xEF\xBB\xBF"), "\n");
-        $this->assertStringNotContainsString('Tenant', $headerLine, 'Tenant-scoped export must not include Tenant column');
+        $this->assertStringNotContainsString('Business', $headerLine, 'Tenant-scoped export must not include Business column');
     }
 
     public function test_unauthenticated_export_redirects_to_login(): void

@@ -32,6 +32,7 @@ final class TenantTest extends TestCase
             require_once dirname(__DIR__, 3) . '/vendor/autoload.php';
             EnvLoader::load(dirname(__DIR__, 3) . '/.env');
             Database::connect();
+            Database::query('SELECT 1');
             self::$dbReady = true;
         } catch (\Throwable) {
             return;

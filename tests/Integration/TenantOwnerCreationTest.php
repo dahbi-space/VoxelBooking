@@ -56,6 +56,7 @@ final class TenantOwnerCreationTest extends TestCase
             require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
             EnvLoader::load(dirname(__DIR__, 2) . '/.env');
             Database::connect();
+            Database::query('SELECT 1');
             self::$dbReady = true;
         } catch (\Throwable) {
             return;

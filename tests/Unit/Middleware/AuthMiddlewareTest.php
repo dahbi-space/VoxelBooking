@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit\Middleware;
 
 use App\Engine\Auth;
+use App\Engine\Database;
+use App\Engine\EnvLoader;
 use App\Engine\Request;
 use App\Engine\Response;
 use App\Middleware\AuthMiddleware;
@@ -33,6 +35,21 @@ final class AuthMiddlewareTest extends TestCase
         $_SESSION = [];
         Auth::reset();
         $_SERVER['REQUEST_URI'] = $this->originalRequestUri;
+    }
+
+    /**
+     * Skip tests that trigger Database::query() via resolveAdminLocale()
+     * when the test process has no direct DB access.
+     */
+    private function requireDatabase(): void
+    {
+        try {
+            EnvLoader::load(dirname(__DIR__, 3) . '/.env');
+            Database::connect();
+            Database::query('SELECT 1');
+        } catch (\Throwable) {
+            $this->markTestSkipped('Database not available');
+        }
     }
 
     public function testUnauthenticatedRequestRedirectsToLogin(): void
@@ -66,6 +83,7 @@ final class AuthMiddlewareTest extends TestCase
 
     public function testAuthenticatedBusinessUserPassesOnTenantRoute(): void
     {
+        $this->requireDatabase();
         $_SESSION['auth_type'] = 'business_user';
         $_SESSION['auth_id'] = '01HABC5678901234UVWXYZ';
         $_SESSION['auth_name'] = 'Bob';
@@ -105,6 +123,7 @@ final class AuthMiddlewareTest extends TestCase
 
     public function testBusinessUserOnWrongTenantGets403(): void
     {
+        $this->requireDatabase();
         $_SESSION['auth_type'] = 'business_user';
         $_SESSION['auth_id'] = '01HABC5678901234UVWXYZ';
         $_SESSION['auth_name'] = 'Bob';

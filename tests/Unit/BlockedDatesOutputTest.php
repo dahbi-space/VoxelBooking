@@ -14,6 +14,20 @@ use PHPUnit\Framework\TestCase;
  */
 final class BlockedDatesOutputTest extends TestCase
 {
+    /**
+     * Templates include layout.php which calls Database::query().
+     * When the test process can't reach MySQL, skip instead of crashing.
+     */
+    private function requireDatabaseForTemplates(): void
+    {
+        try {
+            \App\Engine\EnvLoader::load(dirname(__DIR__, 2) . '/.env');
+            \App\Engine\Database::connect();
+            \App\Engine\Database::query('SELECT 1');
+        } catch (\Throwable) {
+            $this->markTestSkipped('Database not available (required by layout.php template)');
+        }
+    }
     private function renderBlockedDates(array $vars = []): string
     {
         $basePath = dirname(__DIR__, 2);
@@ -44,6 +58,7 @@ final class BlockedDatesOutputTest extends TestCase
 
     public function test_blocked_dates_uses_csp_safe_alpine(): void
     {
+        $this->requireDatabaseForTemplates();
         $html = $this->renderBlockedDates();
 
         $this->assertStringContainsString(

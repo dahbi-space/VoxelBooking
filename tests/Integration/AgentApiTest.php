@@ -51,6 +51,7 @@ final class AgentApiTest extends TestCase
             require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
             EnvLoader::load(dirname(__DIR__, 2) . '/.env');
             Database::connect();
+            Database::query('SELECT 1');
 
             // Clean up test keys
             Database::execute("DELETE FROM `api_keys` WHERE `name` LIKE 'test_%'");

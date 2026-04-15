@@ -32,6 +32,7 @@ class CapacityCalculatorTest extends TestCase
         try {
             EnvLoader::load(__DIR__ . '/../../../.env');
             Database::connect();
+            Database::query('SELECT 1');
         } catch (\Throwable) {
             self::markTestSkipped('Database not available');
             return;

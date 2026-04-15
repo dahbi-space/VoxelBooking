@@ -14,6 +14,20 @@ use PHPUnit\Framework\TestCase;
  */
 final class AvailabilityOutputTest extends TestCase
 {
+    /**
+     * Templates include layout.php which calls Database::query().
+     * When the test process can't reach MySQL, skip instead of crashing.
+     */
+    private function requireDatabaseForTemplates(): void
+    {
+        try {
+            \App\Engine\EnvLoader::load(dirname(__DIR__, 2) . '/.env');
+            \App\Engine\Database::connect();
+            \App\Engine\Database::query('SELECT 1');
+        } catch (\Throwable) {
+            $this->markTestSkipped('Database not available (required by layout.php template)');
+        }
+    }
     private function renderAvailability(array $vars = []): string
     {
         // Bootstrap translation engine with app basePath
@@ -58,6 +72,7 @@ final class AvailabilityOutputTest extends TestCase
 
     public function test_availability_page_renders_day_labels(): void
     {
+        $this->requireDatabaseForTemplates();
         // Provide a schedule with Mon having a window so we test both states
         $schedule = array_fill(0, 7, []);
         $schedule[0] = [['start' => '09:00', 'end' => '17:00']];
@@ -78,6 +93,7 @@ final class AvailabilityOutputTest extends TestCase
 
     public function test_availability_page_uses_csp_safe_alpine(): void
     {
+        $this->requireDatabaseForTemplates();
         $html = $this->renderAvailability();
 
         $this->assertStringContainsString(
@@ -101,6 +117,7 @@ final class AvailabilityOutputTest extends TestCase
 
     public function test_availability_page_has_data_schedule(): void
     {
+        $this->requireDatabaseForTemplates();
         $schedule = array_fill(0, 7, []);
         $schedule[2] = [['start' => '10:00', 'end' => '14:00']];
 

@@ -44,6 +44,7 @@ final class PrivacyEndpointTest extends TestCase
             require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
             EnvLoader::load(dirname(__DIR__, 2) . '/.env');
             Database::connect();
+            Database::query('SELECT 1');
             Database::execute('TRUNCATE TABLE `rate_limits`');
         } catch (\Throwable) {
             // best-effort
@@ -238,7 +239,7 @@ final class PrivacyEndpointTest extends TestCase
             require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
             \App\Engine\EnvLoader::load(dirname(__DIR__, 2) . '/.env');
             \App\Engine\Database::connect();
-
+            \App\Engine\Database::query('SELECT 1');
             $tenantId = \App\Engine\Ulid::generate();
             $customerId = \App\Engine\Ulid::generate();
             $slug = 'test-privacy-' . substr($tenantId, -6);

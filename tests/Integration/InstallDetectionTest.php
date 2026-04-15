@@ -219,6 +219,7 @@ final class InstallDetectionTest extends TestCase
 
         try {
             Database::connect();
+            Database::query('SELECT 1');
         } catch (\Throwable $e) {
             $this->markTestSkipped(
                 'Database not available (environment-coupled test). '

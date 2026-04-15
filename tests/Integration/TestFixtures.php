@@ -36,6 +36,20 @@ final class TestFixtures
     public const BOOKING_ID  = '01TESTBOOKING00000000000';
 
     private static bool $provisioned = false;
+    private static bool $dbAvailable = false;
+
+    /**
+     * Whether the test process has direct database access.
+     *
+     * Integration tests that call Database::query() directly in test methods
+     * (not just via curl) should check this in setUp() and markTestSkipped
+     * when false. This prevents PDOException crashes in sandboxed environments
+     * where the web server can reach MySQL but the test process cannot.
+     */
+    public static function dbAvailable(): bool
+    {
+        return self::$dbAvailable;
+    }
 
     /**
      * Ensure the test operator, business user, and their tenant exist
@@ -51,7 +65,14 @@ final class TestFixtures
         // earlier classes that share this process.
         require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
         EnvLoader::load(dirname(__DIR__, 2) . '/.env');
-        Database::connect();
+
+        try {
+            Database::connect();
+            Database::query('SELECT 1');
+            self::$dbAvailable = true;
+        } catch (\Throwable $e) {
+            throw new \RuntimeException('Database not available: ' . $e->getMessage(), 0, $e);
+        }
 
         try {
             Database::execute('TRUNCATE TABLE `rate_limits`');

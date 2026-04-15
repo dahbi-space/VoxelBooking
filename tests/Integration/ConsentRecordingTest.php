@@ -33,6 +33,7 @@ final class ConsentRecordingTest extends TestCase
                 require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
                 EnvLoader::load(dirname(__DIR__, 2) . '/.env');
                 Database::connect();
+            Database::query('SELECT 1');
                 self::$dbConnected = true;
             } catch (\Throwable $e) {
                 $this->markTestSkipped('Database not available: ' . $e->getMessage());

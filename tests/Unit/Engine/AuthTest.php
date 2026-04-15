@@ -384,6 +384,7 @@ final class AuthTest extends TestCase
         try {
             \App\Engine\EnvLoader::load(dirname(__DIR__, 3) . '/.env');
             \App\Engine\Database::connect();
+            \App\Engine\Database::query('SELECT 1');
         } catch (\Throwable) {
             $this->markTestSkipped('Database not available');
         }

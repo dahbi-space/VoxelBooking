@@ -14,6 +14,21 @@ use PHPUnit\Framework\TestCase;
  */
 final class BookingCreateOutputTest extends TestCase
 {
+    /**
+     * Templates include layout.php which calls Database::query().
+     * When the test process can't reach MySQL, skip instead of crashing.
+     */
+    private function requireDatabaseForTemplates(): void
+    {
+        try {
+            \App\Engine\EnvLoader::load(dirname(__DIR__, 2) . '/.env');
+            \App\Engine\Database::connect();
+            \App\Engine\Database::query('SELECT 1');
+        } catch (\Throwable) {
+            $this->markTestSkipped('Database not available (required by layout.php template)');
+        }
+    }
+
     private function renderBookingCreate(array $vars = []): string
     {
         $basePath = dirname(__DIR__, 2);
@@ -45,6 +60,7 @@ final class BookingCreateOutputTest extends TestCase
 
     public function test_booking_create_uses_csp_safe_alpine(): void
     {
+        $this->requireDatabaseForTemplates();
         $html = $this->renderBookingCreate();
 
         $this->assertStringContainsString(
@@ -74,6 +90,7 @@ final class BookingCreateOutputTest extends TestCase
 
     public function test_booking_create_has_data_attributes(): void
     {
+        $this->requireDatabaseForTemplates();
         $staff = [
             ['id' => 'staff-1', 'name' => 'Alice', 'title' => 'Stylist'],
             ['id' => 'staff-2', 'name' => 'Bob', 'title' => ''],

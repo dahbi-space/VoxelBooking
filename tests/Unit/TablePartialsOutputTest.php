@@ -153,9 +153,9 @@ final class TablePartialsOutputTest extends TestCase
             'resultCountValue' => 1,
             'resultCountActive' => true,
         ]);
-        // ICU plural: singular "1 tenant"
-        $this->assertStringContainsString('1 tenant', $html, 'Must show singular count');
-        $this->assertStringNotContainsString('1 tenants', $html, 'Must not show broken plural');
+        // ICU plural: singular "1 business"
+        $this->assertStringContainsString('1 business', $html, 'Must show singular count');
+        $this->assertStringNotContainsString('1 businesss', $html, 'Must not show broken plural');
     }
 
     public function test_result_count_renders_zero_count(): void
@@ -166,6 +166,6 @@ final class TablePartialsOutputTest extends TestCase
             'resultCountActive' => true,
         ]);
         $this->assertStringContainsString('vb-table-result-count', $html, 'Must render for zero results');
-        $this->assertStringContainsString('No tenants', $html, 'Must show zero plural form');
+        $this->assertStringContainsString('No businesses', $html, 'Must show zero plural form');
     }
 }

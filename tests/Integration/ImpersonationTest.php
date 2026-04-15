@@ -275,6 +275,7 @@ final class ImpersonationTest extends TestCase
         try {
             EnvLoader::load(dirname(__DIR__, 2) . '/.env');
             Database::connect();
+            Database::query('SELECT 1');
         } catch (\Throwable) {
             $this->markTestSkipped('DB not available');
         }

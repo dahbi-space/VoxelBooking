@@ -24,7 +24,13 @@ final class LoginTokenTest extends TestCase
     {
         require_once dirname(__DIR__, 3) . '/vendor/autoload.php';
         EnvLoader::load(dirname(__DIR__, 3) . '/.env');
-        Database::connect();
+
+        try {
+            Database::connect();
+            Database::query('SELECT 1');
+        } catch (\Throwable) {
+            self::markTestSkipped('Database not available');
+        }
     }
 
     protected function tearDown(): void
