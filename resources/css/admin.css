@@ -418,6 +418,36 @@
     .vb-input-icon { padding-left: 2.75rem; }
     .vb-input-mono { font-family: var(--vb-font-mono); font-size: var(--vb-text-sm); letter-spacing: 0.02em; }
 
+    /* File input — styled native file picker */
+    .vb-input-file {
+        height: auto;
+        padding: 0;
+        cursor: pointer;
+        overflow: hidden;
+    }
+    .vb-input-file::file-selector-button {
+        height: 38px;
+        padding: 0 1rem;
+        margin-right: 0.75rem;
+        font-family: var(--vb-font-sans);
+        font-size: var(--vb-text-sm);
+        font-weight: 500;
+        color: var(--vb-text-primary);
+        background: var(--vb-bg-well);
+        border: none;
+        border-right: 1px solid var(--vb-border-subtle);
+        cursor: pointer;
+        transition: background var(--vb-duration-fast), color var(--vb-duration-fast);
+    }
+    .vb-input-file::file-selector-button:hover {
+        background: var(--vb-accent-subtle);
+        color: var(--vb-accent);
+    }
+    .vb-input-file:focus::file-selector-button {
+        background: var(--vb-accent-subtle);
+        color: var(--vb-accent);
+    }
+
     .vb-input-wrap { position: relative; }
     .vb-input-wrap .vb-icon-left {
         position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%);

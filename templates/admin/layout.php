@@ -263,6 +263,10 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                     <i data-lucide="shield"></i>
                     <?= __('admin.nav.deletion_queue') ?>
                 </a>
+                <a href="/admin/updates" class="vb-sidebar-link <?= $activePage === 'updates' ? 'active' : '' ?>">
+                    <i data-lucide="download"></i>
+                    <?= __('admin.nav.updates') ?>
+                </a>
             </div>
             <?php endif; ?>
         </nav>

@@ -15,6 +15,7 @@ vendor/
 public/assets/css/*.css
 public/assets/js/*.js
 public/assets/.vite/
+dist/
 
 # ── Uploads (user content) ──
 public/uploads/*

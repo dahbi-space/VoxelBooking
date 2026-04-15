@@ -94,6 +94,11 @@ return function (Router $router): void {
             $router->post('/admin/deletion-queue/confirm', \App\Controllers\Admin\DeletionQueueController::class, 'confirm');
             $router->post('/admin/deletion-queue/dismiss', \App\Controllers\Admin\DeletionQueueController::class, 'dismiss');
 
+            // Updates (operator-only — enforced in controller)
+            $router->get('/admin/updates', \App\Controllers\Admin\UpdateController::class, 'index');
+            $router->post('/admin/updates/upload', \App\Controllers\Admin\UpdateController::class, 'upload');
+            $router->post('/admin/updates/apply', \App\Controllers\Admin\UpdateController::class, 'applyLocal');
+
             // Tenant management — operator-only enforced in controller, NOT in OPERATOR_ONLY_PREFIXES
             // (because /admin/tenants/{tenant_id}/... context routes will be business-user-accessible)
             $router->get('/admin/tenants', \App\Controllers\Admin\TenantsController::class, 'index');
