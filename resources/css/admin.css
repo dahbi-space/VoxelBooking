@@ -828,7 +828,7 @@
         padding-left: 1.5rem;
     }
     .vb-timeline::before {
-        content: ''; position: absolute; left: 0.375rem; top: 0; bottom: 0;
+        content: ''; position: absolute; left: 5px; top: 0; bottom: 0;
         width: 1px; background: var(--vb-border-subtle);
     }
     .vb-timeline-entry {
@@ -837,7 +837,7 @@
     }
     .vb-timeline-entry::before {
         content: ''; position: absolute;
-        left: -1.125rem; top: 0.875rem;
+        left: calc(-1.5rem + 2px); top: 0.875rem;
         width: 7px; height: 7px; border-radius: 50%;
         background: var(--vb-text-ghost);
         border: 1.5px solid var(--vb-bg-surface);
@@ -3537,6 +3537,11 @@
     border-top: 1px solid var(--vb-border-subtle, rgba(0, 0, 0, 0.06));
 }
 
+/* Divider between card sections (used on vb-card-section-header to draw a top border) */
+.vb-card-section-divider {
+    border-top: 1px solid var(--vb-border-subtle, rgba(0, 0, 0, 0.06));
+}
+
 /* ── Card Section Header/Footer ─────────────────────────────── */
 /* Replaces inline padding/flex on card header areas */
 .vb-card-section-header {
@@ -3627,6 +3632,7 @@
 
 /* vb-mt-md — see canonical spacing utilities near §Icon Sizing */
 .vb-mt-md { margin-top: 1rem; }
+.vb-mt-lg { margin-top: 1.5rem; }
 
 /* Empty state: compact variant */
 .vb-empty-compact {

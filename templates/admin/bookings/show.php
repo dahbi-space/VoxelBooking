@@ -2,7 +2,7 @@
 /**
  * Booking detail view.
  *
- * Two-column layout: left = booking info, right = status change.
+ * Two-column layout: left = booking info, right = actions (status + reschedule).
  * Below: event timeline from audit log.
  *
  * Variables: $user, $version, $csrfToken, $booking, $backUrl, $pageTitle,
@@ -36,6 +36,11 @@ if (!function_exists('bookingTimelineLabel')) {
     }
 }
 
+// Reschedule eligibility (computed once, used in both card and modal rendering)
+$canReschedule = ($booking['status'] === 'confirmed')
+    && (($booking['booking_pattern'] ?? 'timeslot') === 'timeslot')
+    && !\App\Engine\DemoMode::isActive();
+
 ob_start();
 ?>
 
@@ -55,7 +60,17 @@ ob_start();
 
 <div class="vb-grid vb-grid-2 vb-fade-in-up">
     <!-- Booking Info -->
-    <div class="vb-card">
+    <div class="vb-card vb-card-flush">
+        <div class="vb-card-section-header">
+            <div class="vb-card-title-row">
+                <i data-lucide="calendar-check" class="vb-card-icon"></i>
+                <div>
+                    <div class="vb-card-title"><?= __('admin.bookings.detail_title') ?></div>
+                    <div class="vb-card-desc"><?= __('admin.bookings.detail_desc') ?></div>
+                </div>
+            </div>
+        </div>
+        <div class="vb-card-body">
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.bookings.customer') ?></span>
             <span class="vb-info-value">
@@ -87,8 +102,8 @@ ob_start();
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.bookings.date_time') ?></span>
             <span class="vb-info-value">
-                <?= date('l, M j, Y', strtotime($booking['start_datetime'])) ?><br>
-                <span class="vb-text-muted">
+                <?= \App\Engine\Locale::dateLong(new \DateTimeImmutable($booking['start_datetime'])) ?><br>
+                <span class="vb-cell-secondary">
                     <?= date('H:i', strtotime($booking['start_datetime'])) ?> – <?= date('H:i', strtotime($booking['end_datetime'])) ?>
                 </span>
             </span>
@@ -113,7 +128,7 @@ ob_start();
         </div>
         <div class="vb-info-row">
             <span class="vb-info-label"><?= __('admin.bookings.created') ?></span>
-            <span class="vb-info-value"><?= htmlspecialchars($booking['created_at'] ?? '—', ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="vb-info-value"><?= \App\Engine\Locale::datetime(new \DateTimeImmutable($booking['created_at'])) ?></span>
         </div>
         <?php if (!empty($booking['notes'])): ?>
         <div class="vb-info-row">
@@ -121,78 +136,81 @@ ob_start();
             <span class="vb-info-value"><?= nl2br(htmlspecialchars($booking['notes'], ENT_QUOTES, 'UTF-8')) ?></span>
         </div>
         <?php endif; ?>
+        </div>
     </div>
 
-    <!-- Status Change -->
-    <div class="vb-card">
-        <div class="vb-card-header">
+    <!-- Actions -->
+    <div class="vb-card vb-card-flush">
+        <div class="vb-card-section-header">
             <div class="vb-card-title-row">
-                <i data-lucide="refresh-cw" class="vb-card-icon"></i>
+                <i data-lucide="layers" class="vb-card-icon"></i>
                 <div>
-                    <div class="vb-card-title"><?= __('admin.bookings.change_status') ?></div>
-                    <div class="vb-card-desc"><?= __('admin.bookings.change_status_desc') ?></div>
+                    <div class="vb-card-title"><?= __('admin.bookings.actions_title') ?></div>
+                    <div class="vb-card-desc"><?= $canReschedule ? __('admin.bookings.actions_desc') : __('admin.bookings.actions_desc_status_only') ?></div>
                 </div>
             </div>
         </div>
-        <form method="POST" action="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($booking['id'], ENT_QUOTES, 'UTF-8') ?>/status">
-            <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+        <div class="vb-card-body">
+            <form method="POST" action="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($booking['id'], ENT_QUOTES, 'UTF-8') ?>/status">
+                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
-            <div class="vb-form-group">
-                <label for="booking_status" class="vb-label"><?= __('admin.bookings.status') ?></label>
-                <select id="booking_status" name="status" class="vb-select">
-                    <?php
-                    // Allowed transitions per current status. The current status is
-                    // always included so the dropdown has a valid default selection.
-                    $transitions = [
-                        'pending'    => ['pending', 'confirmed', 'cancelled'],
-                        'confirmed'  => ['confirmed', 'cancelled', 'completed', 'no_show'],
-                        'waitlisted' => ['waitlisted', 'confirmed', 'cancelled'],
-                        'cancelled'  => ['cancelled', 'confirmed'],
-                        'completed'  => ['completed'],
-                        'no_show'    => ['no_show', 'confirmed'],
-                        'rescheduled' => ['rescheduled'],
-                    ];
-                    $allowed = $transitions[$booking['status']] ?? [$booking['status']];
-                    ?>
-                    <?php foreach ($allowed as $s): ?>
-                        <option value="<?= $s ?>" <?= $booking['status'] === $s ? 'selected' : '' ?>>
-                            <?= __('admin.bookings.status_' . $s) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+                <div class="vb-form-group">
+                    <label for="booking_status" class="vb-label"><?= __('admin.bookings.status') ?></label>
+                    <select id="booking_status" name="status" class="vb-select">
+                        <?php
+                        // Allowed transitions per current status. The current status is
+                        // always included so the dropdown has a valid default selection.
+                        $transitions = [
+                            'pending'    => ['pending', 'confirmed', 'cancelled'],
+                            'confirmed'  => ['confirmed', 'cancelled', 'completed', 'no_show'],
+                            'waitlisted' => ['waitlisted', 'confirmed', 'cancelled'],
+                            'cancelled'  => ['cancelled', 'confirmed'],
+                            'completed'  => ['completed'],
+                            'no_show'    => ['no_show', 'confirmed'],
+                            'rescheduled' => ['rescheduled'],
+                        ];
+                        $allowed = $transitions[$booking['status']] ?? [$booking['status']];
+                        ?>
+                        <?php foreach ($allowed as $s): ?>
+                            <option value="<?= $s ?>" <?= $booking['status'] === $s ? 'selected' : '' ?>>
+                                <?= __('admin.bookings.status_' . $s) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-            <div class="vb-form-actions">
-                <button type="submit" class="vb-btn vb-btn-primary">
-                    <i data-lucide="check"></i>
-                    <?= __('admin.bookings.change_status') ?>
-                </button>
-            </div>
-        </form>
+                <div class="vb-form-actions">
+                    <button type="submit" class="vb-btn vb-btn-primary">
+                        <i data-lucide="check"></i>
+                        <?= __('admin.bookings.change_status') ?>
+                    </button>
+                </div>
+            </form>
+        </div>
 
         <?php if (!empty($booking['rescheduled_to_id'])): ?>
-            <div class="vb-card-separator">
-                <p class="vb-text-muted vb-text-sm">
+            <div class="vb-card-section-footer">
+                <p class="vb-cell-secondary">
                     <?= __('admin.bookings.status_rescheduled') ?>
                     → <a href="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($booking['rescheduled_to_id'], ENT_QUOTES, 'UTF-8') ?>" class="vb-link">
-                        <?= __('admin.bookings.view_new_booking') ?? 'View new booking' ?>
+                        <?= __('admin.bookings.view_new_booking') ?>
                     </a>
                 </p>
             </div>
         <?php endif; ?>
 
-        <?php
-        // Reschedule button: only for confirmed timeslot bookings.
-        // Pending bookings must go through approval first.
-        // Non-timeslot patterns are not yet supported for reschedule.
-        // Hidden in demo mode (write-blocked — demo checklist §4).
-        $canReschedule = $booking['status'] === 'confirmed'
-            && ($booking['booking_pattern'] ?? 'timeslot') === 'timeslot'
-            && !\App\Engine\DemoMode::isActive();
-        ?>
         <?php if ($canReschedule): ?>
-        <div class="vb-card-separator">
-            <button type="button" class="vb-btn vb-btn-secondary vb-btn-block" id="btn-reschedule-open">
+        <div class="vb-card-section-header vb-card-section-divider">
+            <div class="vb-card-title-row">
+                <i data-lucide="calendar-clock" class="vb-card-icon"></i>
+                <div>
+                    <div class="vb-card-title"><?= __('admin.bookings.reschedule') ?></div>
+                    <div class="vb-card-desc"><?= __('admin.bookings.reschedule_hint') ?></div>
+                </div>
+            </div>
+        </div>
+        <div class="vb-card-body">
+            <button type="button" class="vb-btn vb-btn-secondary" id="btn-reschedule-open">
                 <i data-lucide="calendar-clock"></i>
                 <?= __('admin.bookings.reschedule') ?>
             </button>
@@ -205,8 +223,8 @@ ob_start();
 
 <!-- Event Timeline -->
 <?php if (!empty($timeline)): ?>
-<div class="vb-card vb-fade-in-up stagger-3" style="margin-top: 1.5rem;">
-    <div class="vb-card-header">
+<div class="vb-card vb-card-flush vb-fade-in-up stagger-3 vb-mt-lg">
+    <div class="vb-card-section-header">
         <div class="vb-card-title-row">
             <i data-lucide="list" class="vb-card-icon"></i>
             <div>
@@ -221,7 +239,7 @@ ob_start();
             <div class="vb-timeline-entry <?= $event['action'] === 'booking.created' ? 'is-created' : (str_contains($event['action'], 'status') ? 'is-status' : '') ?>">
                 <div class="vb-timeline-action"><?= htmlspecialchars(bookingTimelineLabel($event), ENT_QUOTES, 'UTF-8') ?></div>
                 <div class="vb-timeline-meta">
-                    <?= date('M j, Y H:i', strtotime($event['created_at'])) ?>
+                    <?= \App\Engine\Locale::datetime(new \DateTimeImmutable($event['created_at'])) ?>
                     · <?= htmlspecialchars($event['actor_type'], ENT_QUOTES, 'UTF-8') ?>
                 </div>
             </div>
