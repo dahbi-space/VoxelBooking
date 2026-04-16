@@ -67,15 +67,17 @@ return [
     ],
 
     'business_user_welcome' => [
-        'subject'          => 'Your :tenant login is ready',
-        'title'            => 'Welcome to :tenant',
-        'greeting'         => 'Hi :name,',
-        'body'             => 'An account has been created for you to manage bookings at :tenant.',
-        'detail_email'     => 'Email:',
-        'detail_password'  => 'Temporary Password:',
-        'detail_login'     => 'Login:',
-        'change_password'  => 'Please change your password after your first login.',
-        'footer'           => 'This email was sent by :app_name on behalf of :tenant.',
+        'subject'           => "You've been invited to manage :tenant",
+        'title'             => "You've been invited",
+        'greeting'          => 'Hi :name,',
+        'body'              => 'An account has been created for you to manage bookings at :tenant.',
+        'detail_email'      => 'Email',
+        'detail_password'   => 'Temporary password',
+        'detail_login_url'  => 'Login URL',
+        'cta_label'         => 'Log in to :tenant',
+        'change_password'   => 'Change your password after your first login.',
+        'booking_page_hint' => 'Your booking page is live at:',
+        'footer'            => 'Sent by :app_name on behalf of :tenant.',
     ],
 
     'waitlist_confirmation' => [

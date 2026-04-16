@@ -170,13 +170,17 @@ final class BusinessUsersController
         // Send welcome email
         if ($sendEmail && Mailer::isConfigured()) {
             $loginUrl = app_url('/admin/login');
+            $currentUser = Auth::user();
             $emailResult = Mailer::sendBusinessUserWelcome(
                 $email,
                 $name,
                 $password,
                 $loginUrl,
                 $tenant['name'],
-                $tenantId
+                $tenantId,
+                $currentUser['email'] ?? null,
+                $tenant['slug'] ?? null,
+                $currentUser['name'] ?? null,
             );
 
             if ($emailResult['sent']) {

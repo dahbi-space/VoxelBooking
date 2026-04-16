@@ -427,17 +427,24 @@ final class Mailer
         return self::send($operatorEmail, $subject, $html, 'operator_notification', $tenantId, null, null, $replyTo['email'], $replyTo['name'], $tenantName);
     }
 
-    // ── Business user onboarding ──
-
     /**
      * Send a welcome email to a newly created business user with their login credentials.
      *
-     * @param string $to           Business user email
-     * @param string $name         Business user display name
-     * @param string $tempPassword The temporary plaintext password
-     * @param string $loginUrl     Full URL to the login page (e.g. https://app.test/admin/login)
-     * @param string $tenantName   Tenant display name
-     * @param string $tenantId     Associated tenant ID
+     * This is an admin onboarding email, NOT a tenant-scoped customer email.
+     * From name = global platform From name (mail_from_name setting, fallback
+     * app_name()). Reply-To = inviter's email and name (the person who created
+     * the account). The tenant name appears prominently in the email body and
+     * subject, but the sender identity is the platform.
+     *
+     * @param string      $to              Business user email
+     * @param string      $name            Business user display name
+     * @param string      $tempPassword    The temporary plaintext password
+     * @param string      $loginUrl        Full URL to the login page
+     * @param string      $tenantName      Tenant display name
+     * @param string      $tenantId        Associated tenant ID
+     * @param string|null $operatorEmail   Inviter's email for Reply-To
+     * @param string|null $tenantSlug      Tenant slug for booking page link
+     * @param string|null $operatorName    Inviter's display name for Reply-To
      *
      * @return array{sent: bool, error: string|null, log_id: string}
      */
@@ -448,30 +455,82 @@ final class Mailer
         string $loginUrl,
         string $tenantName,
         string $tenantId,
+        ?string $operatorEmail = null,
+        ?string $tenantSlug = null,
+        ?string $operatorName = null,
     ): array {
+        $appName = app_name();
         $subject = __('email.business_user_welcome.subject', ['tenant' => $tenantName]);
 
-        $body = __('email.business_user_welcome.greeting', ['name' => $name]) . '<br><br>'
-            . __('email.business_user_welcome.body', ['tenant' => '<strong>' . htmlspecialchars($tenantName, ENT_QUOTES, 'UTF-8') . '</strong>']) . '<br><br>'
-            . '<strong>' . __('email.business_user_welcome.detail_email') . '</strong> ' . htmlspecialchars($to, ENT_QUOTES, 'UTF-8') . '<br>'
-            . '<strong>' . __('email.business_user_welcome.detail_password') . '</strong> <code style="background:#f4f4f5;padding:2px 6px;border-radius:4px;font-family:monospace;">' . htmlspecialchars($tempPassword, ENT_QUOTES, 'UTF-8') . '</code><br>'
-            . '<strong>' . __('email.business_user_welcome.detail_login') . '</strong> <a href="' . htmlspecialchars($loginUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($loginUrl, ENT_QUOTES, 'UTF-8') . '</a><br><br>'
-            . '<em>' . __('email.business_user_welcome.change_password') . '</em>';
+        // Build the booking page URL if tenant slug is available
+        $bookingPageUrl = '';
+        if ($tenantSlug !== null && $tenantSlug !== '') {
+            $bookingPageUrl = app_url('/book/' . $tenantSlug);
+        }
 
-        $footer = __('email.business_user_welcome.footer', [
-            'app_name' => app_name(),
-            'tenant'   => $tenantName,
-        ]);
-
-        $html = self::renderPrivacyEmail(
-            __('email.business_user_welcome.title', ['tenant' => $tenantName]),
-            $body,
-            $footer,
+        $html = self::renderWelcomeEmail(
+            $tenantName,
+            $name,
+            $to,
+            $tempPassword,
+            $loginUrl,
+            $bookingPageUrl,
+            $appName,
         );
 
-        $replyTo = self::resolveTenantReplyTo($tenantId);
+        $plainBody = self::renderWelcomePlainText(
+            $tenantName,
+            $name,
+            $to,
+            $tempPassword,
+            $loginUrl,
+            $bookingPageUrl,
+            $appName,
+        );
 
-        return self::send($to, $subject, $html, 'business_user_welcome', $tenantId, null, null, $replyTo['email'], $replyTo['name'], $tenantName);
+        // Admin onboarding: From = global platform From name (mail_from_name,
+        // fallback app_name()), Reply-To = inviter email + inviter name.
+        $sender = self::resolveWelcomeReplyTo($operatorEmail, $operatorName, $appName);
+
+        return self::send(
+            $to, $subject, $html, 'business_user_welcome', $tenantId,
+            null, $plainBody, $sender['replyToEmail'], $sender['replyToName'], $sender['fromName']
+        );
+    }
+
+    /**
+     * Compute admin-onboarding sender metadata for business user welcome emails.
+     *
+     * Admin onboarding emails (welcome/invite) use the global platform From name
+     * (fromName=null lets Mailer::send() use mail_from_name/app_name() fallback).
+     *
+     * Reply-To name cascade:
+     *   1. Inviter's display name (if provided)
+     *   2. Email local part (if email has @)
+     *   3. App name (fallback)
+     *
+     * @return array{fromName: null, replyToEmail: string|null, replyToName: string}
+     */
+    private static function resolveWelcomeReplyTo(
+        ?string $operatorEmail,
+        ?string $operatorName,
+        string $appName,
+    ): array {
+        $replyToEmail = $operatorEmail;
+
+        if ($operatorName !== null && $operatorName !== '') {
+            $replyToName = $operatorName;
+        } elseif ($operatorEmail !== null && $operatorEmail !== '' && str_contains($operatorEmail, '@')) {
+            $replyToName = strstr($operatorEmail, '@', true);
+        } else {
+            $replyToName = $appName;
+        }
+
+        return [
+            'fromName'     => null, // Uses global platform From name
+            'replyToEmail' => $replyToEmail,
+            'replyToName'  => $replyToName,
+        ];
     }
 
     // ── Passwordless login emails ──
@@ -1614,6 +1673,219 @@ final class Mailer
         </body>
         </html>
         HTML;
+    }
+
+    /**
+     * Render a premium business user welcome email.
+     *
+     * PRD line 1591: branded header bar, "You've been invited" heading,
+     * description, credential card (email, password, login URL), CTA button,
+     * booking page link, password change instruction, contact footer.
+     *
+     * This is a system/admin email, not a tenant-scoped customer email.
+     * Uses a neutral accent color (#2563EB) for the header bar, not the
+     * tenant's brand color.
+     */
+    private static function renderWelcomeEmail(
+        string $tenantName,
+        string $userName,
+        string $userEmail,
+        string $tempPassword,
+        string $loginUrl,
+        string $bookingPageUrl,
+        string $appName,
+    ): string {
+        $h = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+        $font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        $dir = Locale::direction();
+        $lang = Locale::getLocale();
+        $textAlign = $dir === 'rtl' ? 'text-align: right;' : '';
+        $accentColor = '#2563EB'; // System accent — not tenant brand color
+
+        $heading  = __('email.business_user_welcome.title');
+        $greeting = __('email.business_user_welcome.greeting', ['name' => $userName]);
+        $bodyText = __('email.business_user_welcome.body', ['tenant' => $tenantName]);
+
+        // Credential card labels
+        $labelEmail    = __('email.business_user_welcome.detail_email');
+        $labelPassword = __('email.business_user_welcome.detail_password');
+        $labelLoginUrl = __('email.business_user_welcome.detail_login_url');
+
+        // CTA
+        $ctaLabel = __('email.business_user_welcome.cta_label', ['tenant' => $tenantName]);
+
+        // Secondary link: booking page
+        $bookingHtml = '';
+        if ($bookingPageUrl !== '') {
+            $bookingHint = __('email.business_user_welcome.booking_page_hint');
+            $bookingHtml = <<<BOOKING
+                        <tr><td style="padding: 0 32px 8px; text-align: center;">
+                            <p style="margin: 0; font-size: 13px; color: #6B7280; font-family: {$font};">{$h($bookingHint)}</p>
+                        </td></tr>
+                        <tr><td style="padding: 0 32px 24px; text-align: center;">
+                            <a href="{$h($bookingPageUrl)}" style="font-size: 13px; color: {$accentColor}; text-decoration: none; font-family: {$font};">{$h($bookingPageUrl)}</a>
+                        </td></tr>
+            BOOKING;
+        }
+
+        // Password change instruction
+        $changePassword = __('email.business_user_welcome.change_password');
+
+        // Footer
+        $footerText = __('email.business_user_welcome.footer', [
+            'app_name' => $appName,
+            'tenant'   => $tenantName,
+        ]);
+
+        return <<<HTML
+        <html lang="{$lang}" dir="{$dir}" xmlns:v="urn:schemas-microsoft-com:vml">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light dark">
+            <meta name="supported-color-schemes" content="light dark">
+            <style>
+                @media (prefers-color-scheme: dark) {
+                    .vb-email-body { background-color: #1F2937 !important; }
+                    .vb-email-card { background-color: #111827 !important; }
+                    .vb-email-heading, .vb-email-greeting { color: #F9FAFB !important; }
+                    .vb-email-body-text { color: #D1D5DB !important; }
+                    .vb-email-credential-card { background-color: #1F2937 !important; border-color: #374151 !important; }
+                    .vb-email-value { color: #F9FAFB !important; }
+                    .vb-email-code { background-color: #111827 !important; border-color: #374151 !important; color: #F9FAFB !important; }
+                    .vb-email-footer-text { border-color: #374151 !important; }
+                }
+            </style>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: {$font}; background: #F3F4F6; {$textAlign}" class="vb-email-body">
+            <table width="100%" cellpadding="0" cellspacing="0" style="padding: 32px 16px;">
+                <tr><td align="center">
+                    <table cellpadding="0" cellspacing="0" style="max-width: 560px; width: 100%; background: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);" class="vb-email-card">
+                        <!-- Header bar -->
+                        <tr><td style="height: 4px; background: {$accentColor};"></td></tr>
+
+                        <!-- Icon + Heading -->
+                        <tr><td style="padding: 40px 40px 0; text-align: center;">
+                            <div style="display: inline-block; width: 48px; height: 48px; line-height: 48px; border-radius: 12px; background: #EEF2FF; color: #4F46E5; font-size: 20px; font-weight: 700; text-align: center; font-family: {$font};">&#x2726;</div>
+                            <h1 style="margin: 20px 0 0; font-size: 24px; font-weight: 700; color: #111827; line-height: 1.3; font-family: {$font};" class="vb-email-heading">{$h($heading)}</h1>
+                        </td></tr>
+
+                        <!-- Greeting + Body -->
+                        <tr><td style="padding: 20px 40px 0; text-align: center;">
+                            <p style="margin: 0 0 6px; font-size: 15px; font-weight: 600; color: #111827; line-height: 1.5; font-family: {$font};" class="vb-email-greeting">{$h($greeting)}</p>
+                            <p style="margin: 0; font-size: 15px; color: #4B5563; line-height: 1.6; font-family: {$font};" class="vb-email-body-text">{$h($bodyText)}</p>
+                        </td></tr>
+
+                        <!-- Credential card -->
+                        <tr><td style="padding: 28px 40px 0;">
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 10px;" class="vb-email-credential-card">
+                                <tr><td style="padding: 24px 28px;">
+                                    <table width="100%" cellpadding="0" cellspacing="0">
+                                        <!-- Email -->
+                                        <tr>
+                                            <td style="padding: 0 0 4px; font-size: 11px; font-weight: 600; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.06em; font-family: {$font};">{$h($labelEmail)}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 0 0 18px; font-size: 15px; color: #111827; font-weight: 500; font-family: {$font}; word-break: break-all;" class="vb-email-value">{$h($userEmail)}</td>
+                                        </tr>
+                                        <!-- Password -->
+                                        <tr>
+                                            <td style="padding: 0 0 4px; font-size: 11px; font-weight: 600; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.06em; font-family: {$font};">{$h($labelPassword)}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 0 0 18px;">
+                                                <code style="display: inline-block; padding: 6px 12px; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 6px; font-size: 15px; font-weight: 600; color: #111827; font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace; letter-spacing: 0.04em;" class="vb-email-code">{$h($tempPassword)}</code>
+                                            </td>
+                                        </tr>
+                                        <!-- Login URL -->
+                                        <tr>
+                                            <td style="padding: 0 0 4px; font-size: 11px; font-weight: 600; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.06em; font-family: {$font};">{$h($labelLoginUrl)}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 0; font-size: 14px; font-family: {$font}; word-break: break-all;">
+                                                <a href="{$h($loginUrl)}" style="color: {$accentColor}; text-decoration: none;">{$h($loginUrl)}</a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td></tr>
+                            </table>
+                        </td></tr>
+
+                        <!-- CTA button -->
+                        <tr><td style="padding: 28px 40px 0; text-align: center;">
+                            <a href="{$h($loginUrl)}" style="display: inline-block; padding: 14px 36px; background: {$accentColor}; color: #FFFFFF; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; font-family: {$font}; line-height: 1;">{$h($ctaLabel)}</a>
+                        </td></tr>
+
+                        <!-- Password change instruction -->
+                        <tr><td style="padding: 16px 40px 0; text-align: center;">
+                            <p style="margin: 0; font-size: 13px; color: #9CA3AF; line-height: 1.5; font-family: {$font}; font-style: italic;">{$h($changePassword)}</p>
+                        </td></tr>
+
+                        <!-- Booking page link (optional) -->
+                        {$bookingHtml}
+
+                        <!-- Spacer if no booking link -->
+                        <tr><td style="padding: 0 0 8px;"></td></tr>
+
+                        <!-- Footer -->
+                        <tr><td style="padding: 20px 40px; border-top: 1px solid #F3F4F6; text-align: center;" class="vb-email-footer-text">
+                            <p style="margin: 0; font-size: 12px; color: #9CA3AF; line-height: 1.5; font-family: {$font};">{$h($footerText)}</p>
+                        </td></tr>
+                    </table>
+                </td></tr>
+            </table>
+        </body>
+        </html>
+        HTML;
+    }
+
+    /**
+     * Render the plain-text version of the business user welcome email.
+     */
+    private static function renderWelcomePlainText(
+        string $tenantName,
+        string $userName,
+        string $userEmail,
+        string $tempPassword,
+        string $loginUrl,
+        string $bookingPageUrl,
+        string $appName,
+    ): string {
+        $heading  = mb_strtoupper(__('email.business_user_welcome.title'));
+        $greeting = __('email.business_user_welcome.greeting', ['name' => $userName]);
+        $bodyText = __('email.business_user_welcome.body', ['tenant' => $tenantName]);
+        $labelEmail    = __('email.business_user_welcome.detail_email');
+        $labelPassword = __('email.business_user_welcome.detail_password');
+        $labelLoginUrl = __('email.business_user_welcome.detail_login_url');
+        $changePassword = __('email.business_user_welcome.change_password');
+        $footerText = __('email.business_user_welcome.footer', [
+            'app_name' => $appName,
+            'tenant'   => $tenantName,
+        ]);
+
+        $lines = [];
+        $lines[] = $heading;
+        $lines[] = '';
+        $lines[] = $greeting;
+        $lines[] = $bodyText;
+        $lines[] = '';
+        $lines[] = $labelEmail . ': ' . $userEmail;
+        $lines[] = $labelPassword . ': ' . $tempPassword;
+        $lines[] = $labelLoginUrl . ': ' . $loginUrl;
+        $lines[] = '';
+        $lines[] = $changePassword;
+
+        if ($bookingPageUrl !== '') {
+            $lines[] = '';
+            $lines[] = __('email.business_user_welcome.booking_page_hint');
+            $lines[] = $bookingPageUrl;
+        }
+
+        $lines[] = '';
+        $lines[] = '—';
+        $lines[] = $footerText;
+
+        return implode("\n", $lines);
     }
 }
 
