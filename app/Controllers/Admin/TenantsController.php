@@ -85,10 +85,8 @@ final class TenantsController
 
         $name    = trim($request->string('name'));
         $rawSlug = trim($request->string('slug'));
-        // Normalize user-submitted slug to lowercase/hyphen-only, or auto-generate from name
-        $slug    = $rawSlug !== ''
-            ? trim(preg_replace('/[^a-z0-9]+/', '-', mb_strtolower($rawSlug)), '-')
-            : $this->generateSlug($name);
+        // If user submitted a slug, validate it strictly; otherwise auto-generate from name
+        $slug    = $rawSlug !== '' ? $rawSlug : $this->generateSlug($name);
         $email   = trim($request->string('email'));
         $pattern = trim($request->string('booking_pattern'));
 
@@ -102,7 +100,9 @@ final class TenantsController
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = __('admin.tenants.flash_email_invalid');
         }
-        if ($slug !== '' && Tenant::slugExists($slug)) {
+        if ($slug !== '' && !self::isValidSlug($slug)) {
+            $errors[] = __('admin.tenants.flash_slug_invalid');
+        } elseif ($slug !== '' && Tenant::slugExists($slug)) {
             $errors[] = __('admin.tenants.flash_slug_taken');
         }
         if (!in_array($pattern, ['timeslot', 'resource', 'capacity', 'event'], true)) {
@@ -213,8 +213,12 @@ final class TenantsController
 
                 if ($sendEmail && Mailer::isConfigured()) {
                     $loginUrl = app_url('/admin/login');
+                    $operatorUser = Auth::user();
                     $emailResult = Mailer::sendBusinessUserWelcome(
-                        $ownerEmail, $ownerName, $ownerPass, $loginUrl, $name, $tenantId
+                        $ownerEmail, $ownerName, $ownerPass, $loginUrl, $name, $tenantId,
+                        $operatorUser['email'] ?? null,
+                        $slug,
+                        $operatorUser['name'] ?? null,
                     );
                 }
 
@@ -308,7 +312,9 @@ final class TenantsController
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = __('admin.tenants.flash_email_invalid');
         }
-        if ($slug !== '' && Tenant::slugExists($slug, excludeId: $id)) {
+        if ($slug !== '' && !self::isValidSlug($slug)) {
+            $errors[] = __('admin.tenants.flash_slug_invalid');
+        } elseif ($slug !== '' && Tenant::slugExists($slug, excludeId: $id)) {
             $errors[] = __('admin.tenants.flash_slug_taken');
         }
 
@@ -422,7 +428,19 @@ final class TenantsController
 
     private function generateSlug(string $name): string
     {
-        return trim(preg_replace('/[^a-z0-9]+/', '-', mb_strtolower($name)), '-') ?: 'tenant';
+        $slug = trim(preg_replace('/[^a-z0-9]+/', '-', mb_strtolower($name)), '-');
+        return $slug !== '' && self::isValidSlug($slug) ? $slug : 'tenant';
+    }
+
+    /**
+     * Validate a slug against the strict format: lowercase a-z, 0-9, hyphens only.
+     *
+     * No leading/trailing hyphens, no consecutive hyphens, no uppercase,
+     * no spaces, no underscores, no path traversal, no query chars.
+     */
+    private static function isValidSlug(string $slug): bool
+    {
+        return (bool) preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug);
     }
 
     /**
@@ -438,6 +456,7 @@ final class TenantsController
             __('admin.tenants.flash_email_required')        => 'email',
             __('admin.tenants.flash_email_invalid')         => 'email',
             __('admin.tenants.flash_slug_taken')            => 'slug',
+            __('admin.tenants.flash_slug_invalid')          => 'slug',
             __('admin.tenants.flash_owner_name_required')   => 'owner_name',
             __('admin.tenants.flash_owner_email_required')  => 'owner_email',
             __('admin.tenants.flash_owner_email_invalid')   => 'owner_email',

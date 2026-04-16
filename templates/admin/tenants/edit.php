@@ -43,7 +43,7 @@ ob_start();
 
 <div class="vb-grid vb-grid-2 vb-fade-in-up">
     <!-- Edit Form -->
-    <div class="vb-card">
+    <div class="vb-card" x-data="slugGenerator">
         <form method="POST" action="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/edit" novalidate>
             <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
@@ -59,6 +59,8 @@ ob_start();
             <div class="vb-form-group">
                 <label for="tenant_slug" class="vb-label"><?= __('admin.tenants.slug') ?></label>
                 <input type="text" id="tenant_slug" name="slug" class="vb-input<?= error_class('slug') ?>"
+                       x-ref="slugInput" x-model="slug"
+                       @input="onSlugInput" @blur="onSlugBlur"
                        value="<?= e(old('slug', $tenant['slug'] ?? '')) ?>">
                 <?php if (has_error('slug')): ?>
                     <div class="vb-form-error" role="alert"><?= e(field_error('slug')) ?></div>

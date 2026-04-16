@@ -427,6 +427,7 @@ return [
         'flash_create_failed'=> 'Failed to create business. Please try again.',
         'flash_update_failed'=> 'Failed to update business. Please try again.',
         'flash_slug_taken'   => 'This slug is already in use.',
+        'flash_slug_invalid' => 'Slug must contain only lowercase letters, numbers, and hyphens.',
         'flash_name_required'=> 'Business name is required.',
         'flash_email_required'=> 'Contact email is required.',
         'flash_email_invalid'=> 'Please enter a valid email address.',
