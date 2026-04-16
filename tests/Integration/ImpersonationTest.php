@@ -86,7 +86,7 @@ final class ImpersonationTest extends TestCase
         );
     }
 
-    public function test_impersonation_shows_banner(): void
+    public function test_impersonation_shows_pill_in_topbar(): void
     {
         $this->doLoginOperator();
         $tenantId = TestFixtures::BUSINESS_TENANT_ID;
@@ -98,15 +98,33 @@ final class ImpersonationTest extends TestCase
         $r = $this->get("/admin/tenants/{$tenantId}");
 
         $this->assertSame(200, $r['code']);
+
+        // Pill element exists
         $this->assertStringContainsString(
-            'vb-impersonation-banner',
+            'vb-impersonation-pill',
             $r['body'],
-            'Impersonation banner should be visible'
+            'Impersonation pill should be visible'
         );
-        $this->assertStringContainsString(
-            'Exit impersonation',
+
+        // Pill is inside .vb-topbar-right (before .vb-profile-menu)
+        $this->assertMatchesRegularExpression(
+            '/vb-topbar-right.*vb-impersonation-pill.*vb-profile-menu/s',
             $r['body'],
-            'Exit button should be present in the banner'
+            'Pill must be inside .vb-topbar-right, before the profile menu'
+        );
+
+        // Exit form posts to the correct endpoint
+        $this->assertStringContainsString(
+            '/admin/impersonate/exit',
+            $r['body'],
+            'Exit form action should post to /admin/impersonate/exit'
+        );
+
+        // Exit button has accessible title
+        $this->assertMatchesRegularExpression(
+            '/class="vb-impersonation-exit-btn"[^>]*title="[^"]*[Ee]xit/',
+            $r['body'],
+            'Exit button should have a title attribute mentioning exit'
         );
     }
 
@@ -209,9 +227,9 @@ final class ImpersonationTest extends TestCase
         $r = $this->get('/admin');
         $this->assertSame(200, $r['code']);
         $this->assertStringNotContainsString(
-            'vb-impersonation-banner',
+            'vb-impersonation-pill',
             $r['body'],
-            'Impersonation banner should be gone after exit'
+            'Impersonation pill should be gone after exit'
         );
     }
 

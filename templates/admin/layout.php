@@ -53,7 +53,7 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
     </style>
     <link rel="stylesheet" href="/assets/css/admin-css.css?v=<?= filemtime(dirname(__DIR__, 2) . '/public/assets/css/admin-css.css') ?>">
 </head>
-<body x-data="adminShell"<?= $isImpersonating ? ' class="is-impersonating"' : '' ?>>
+<body x-data="adminShell">
 
     <!-- Mobile overlay: hidden until Alpine init via x-cloak -->
     <div class="vb-sidebar-overlay"
@@ -67,24 +67,7 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
          @click="closeSidebar"
          x-cloak></div>
 
-    <?php if ($isImpersonating): ?>
-    <div class="vb-impersonation-banner">
-        <div class="vb-impersonation-banner-content">
-            <i data-lucide="eye" class="vb-impersonation-banner-icon"></i>
-            <span>
-                <?= __('admin.impersonation.banner_prefix') ?>
-                <strong><?= htmlspecialchars($impersonatedTenantName ?? '', ENT_QUOTES, 'UTF-8') ?></strong>
-            </span>
-        </div>
-        <form method="POST" action="/admin/impersonate/exit" class="vb-form-flush">
-            <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-            <button type="submit" class="vb-impersonation-exit-btn">
-                <i data-lucide="log-out"></i>
-                <?= __('admin.impersonation.exit') ?>
-            </button>
-        </form>
-    </div>
-    <?php endif; ?>
+
 
     <!-- Shell: sidebar + main -->
     <div class="vb-shell">
@@ -289,6 +272,21 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                 <h1 class="vb-topbar-title"><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></h1>
             </div>
             <div class="vb-topbar-right">
+                <?php if ($isImpersonating): ?>
+                <div class="vb-impersonation-pill">
+                    <i data-lucide="eye" class="vb-impersonation-pill-icon"></i>
+                    <span class="vb-impersonation-pill-text">
+                        <?= __('admin.impersonation.banner_prefix') ?>
+                        <strong><?= htmlspecialchars($impersonatedTenantName ?? '', ENT_QUOTES, 'UTF-8') ?></strong>
+                    </span>
+                    <form method="POST" action="/admin/impersonate/exit" class="vb-form-flush">
+                        <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <button type="submit" class="vb-impersonation-exit-btn" title="<?= __('admin.impersonation.exit') ?>">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </form>
+                </div>
+                <?php endif; ?>
                 <div class="vb-profile-menu" x-ref="profileMenu">
                     <button type="button"
                             class="vb-profile-trigger"
