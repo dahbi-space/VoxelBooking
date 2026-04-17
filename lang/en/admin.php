@@ -589,6 +589,10 @@ return [
         'error_date_required'        => 'Please select a valid date.',
         'error_time_required'        => 'Please select a valid time.',
         'view_new_booking'           => 'View new booking',
+        'rescheduled_notice'         => 'This booking has been rescheduled. It is a historical record and can no longer be modified.',
+        'view_active_booking'        => 'View Active Booking',
+        'rescheduled_from'           => 'Rescheduled from a previous booking.',
+        'view_original_booking'      => 'View original booking',
     ],
 
     // ── Business User Management ──

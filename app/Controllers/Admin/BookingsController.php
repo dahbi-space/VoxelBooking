@@ -89,10 +89,17 @@ final class BookingsController
 
         $timeline = AuditLog::forEntity('booking', $booking['id']);
 
+        // Reverse lookup: find the original booking that was rescheduled into this one
+        $rescheduledFrom = Database::query(
+            "SELECT `id` FROM `bookings` WHERE `rescheduled_to_id` = ? LIMIT 1",
+            [$booking['id']]
+        );
+
         return $this->render('admin.bookings.show', __('admin.bookings.title'), [
             'documentTitle' => __('admin.bookings.detail_title'),
             'booking'   => $booking,
             'timeline'  => $timeline,
+            'rescheduledFrom' => $rescheduledFrom[0]['id'] ?? null,
             'flash'     => FormState::getToast(),
             'backUrl'   => '/admin/bookings',
         ]);
@@ -151,10 +158,17 @@ final class BookingsController
 
         $timeline = AuditLog::forEntity('booking', $booking['id']);
 
+        // Reverse lookup: find the original booking that was rescheduled into this one
+        $rescheduledFrom = Database::query(
+            "SELECT `id` FROM `bookings` WHERE `rescheduled_to_id` = ? LIMIT 1",
+            [$booking['id']]
+        );
+
         return $this->render('admin.bookings.show', __('admin.bookings.title'), [
             'documentTitle' => __('admin.bookings.detail_title'),
             'booking'   => $booking,
             'timeline'  => $timeline,
+            'rescheduledFrom' => $rescheduledFrom[0]['id'] ?? null,
             'flash'     => FormState::getToast(),
             'backUrl'   => "/admin/tenants/{$tenantId}/bookings",
         ]);

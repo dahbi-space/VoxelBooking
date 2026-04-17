@@ -176,9 +176,11 @@ final class RescheduleOutputTest extends TestCase
             ]),
         ]);
 
-        // Should have only one option (rescheduled itself — no outbound transitions)
-        preg_match_all('/<option/', $html, $matches);
-        $this->assertCount(1, $matches[0], 'Rescheduled dropdown should have exactly 1 option');
+        // Status form is hidden for rescheduled bookings (terminal state)
+        $this->assertStringNotContainsString('name="status"', $html, 'Status form should be hidden for rescheduled bookings');
+
+        // Terminal-state CTA: "View Active Booking" links to the replacement booking
+        $this->assertStringContainsString('btn-view-active-booking', $html, 'Should show View Active Booking button');
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -251,6 +253,7 @@ final class RescheduleOutputTest extends TestCase
             'activePage' => 'bookings',
             'booking'    => $this->makeBooking(),
             'timeline'   => [],
+            'rescheduledFrom' => null,
             'flash'      => null,
             'backUrl'    => '/admin/bookings',
         ];
@@ -287,11 +290,15 @@ final class RescheduleOutputTest extends TestCase
             // Layout include will fail — $content was already set
         }
 
+        // Capture any remaining buffer content before cleanup
+        $captured = '';
         while (ob_get_level() > $levelBefore) {
-            ob_end_clean();
+            $captured = ob_get_clean() . $captured;
         }
 
         // Combine $content (main body) + $modals (body-level overlays)
-        return ($content ?? '') . ($modals ?? '');
+        // Fall back to captured buffer if $content is empty (buffer nesting issue)
+        $body = ($content ?? '') ?: $captured;
+        return $body . ($modals ?? '');
     }
 }

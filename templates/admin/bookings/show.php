@@ -149,7 +149,43 @@ ob_start();
                 </div>
             </div>
         </div>
+
+        <?php if ($booking['status'] === 'rescheduled'): ?>
+        <!-- Terminal state: rescheduled booking — historical record -->
         <div class="vb-card-body">
+            <div class="vb-notice vb-notice-muted">
+                <i data-lucide="archive" class="vb-notice-icon"></i>
+                <div>
+                    <div class="vb-notice-text"><?= __('admin.bookings.rescheduled_notice') ?></div>
+                </div>
+            </div>
+
+            <?php if (!empty($booking['rescheduled_to_id'])): ?>
+            <a href="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($booking['rescheduled_to_id'], ENT_QUOTES, 'UTF-8') ?>"
+               class="vb-btn vb-btn-primary vb-mt-sm" id="btn-view-active-booking">
+                <i data-lucide="arrow-right"></i>
+                <?= __('admin.bookings.view_active_booking') ?>
+            </a>
+            <?php endif; ?>
+        </div>
+
+        <?php else: ?>
+        <!-- Active booking: status form + reschedule -->
+        <div class="vb-card-body">
+            <?php if (!empty($rescheduledFrom ?? null)): ?>
+            <div class="vb-notice vb-notice-info vb-mb-sm">
+                <i data-lucide="rotate-ccw" class="vb-notice-icon"></i>
+                <div>
+                    <div class="vb-notice-text">
+                        <?= __('admin.bookings.rescheduled_from') ?>
+                        <a href="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($rescheduledFrom, ENT_QUOTES, 'UTF-8') ?>" class="vb-link">
+                            <?= __('admin.bookings.view_original_booking') ?>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <form method="POST" action="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($booking['id'], ENT_QUOTES, 'UTF-8') ?>/status">
                 <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
@@ -187,17 +223,6 @@ ob_start();
             </form>
         </div>
 
-        <?php if (!empty($booking['rescheduled_to_id'])): ?>
-            <div class="vb-card-section-footer">
-                <p class="vb-cell-secondary">
-                    <?= __('admin.bookings.status_rescheduled') ?>
-                    → <a href="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($booking['rescheduled_to_id'], ENT_QUOTES, 'UTF-8') ?>" class="vb-link">
-                        <?= __('admin.bookings.view_new_booking') ?>
-                    </a>
-                </p>
-            </div>
-        <?php endif; ?>
-
         <?php if ($canReschedule): ?>
         <div class="vb-card-section-header vb-card-section-divider">
             <div class="vb-card-title-row">
@@ -214,6 +239,8 @@ ob_start();
                 <?= __('admin.bookings.reschedule') ?>
             </button>
         </div>
+        <?php endif; ?>
+
         <?php endif; ?>
     </div>
 </div>
