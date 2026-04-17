@@ -369,13 +369,6 @@ final class BookingService
             return ['allowed' => false, 'reason' => 'not_confirmed'];
         }
 
-        // v1: only timeslot-pattern bookings are reschedulable.
-        // Resource/capacity/event patterns have different availability models
-        // and will be supported in future releases.
-        if (($booking['booking_pattern'] ?? 'timeslot') !== 'timeslot') {
-            return ['allowed' => false, 'reason' => 'pattern_not_supported'];
-        }
-
         if (!(bool) ($tenant['allow_rescheduling'] ?? true)) {
             return ['allowed' => false, 'reason' => 'rescheduling_disabled'];
         }
@@ -397,18 +390,22 @@ final class BookingService
     }
 
     /**
-     * Reschedule a booking to a new date/time.
+     * Reschedule a booking to new schedule coordinates.
      *
      * Creates a replacement booking, marks the original as 'rescheduled',
      * links via rescheduled_to_id, and logs an audit event.
      *
-     * Only timeslot-pattern bookings in 'confirmed' status are supported.
+     * Pattern-aware: each pattern accepts different target fields:
+     *   - timeslot: ['new_date' => 'YYYY-MM-DD', 'new_time' => 'HH:MM']
+     *   - resource: ['check_in' => 'YYYY-MM-DD', 'check_out' => 'YYYY-MM-DD']
+     *   - capacity: ['date' => 'YYYY-MM-DD', 'slot_id' => 'ULID']
+     *   - event:    ['event_id' => 'ULID', 'date' => 'YYYY-MM-DD']
+     *
      * The caller is responsible for post-commit side effects (email, staff notification).
      *
      * @param string $bookingId  The original booking ID
      * @param array  $tenant     The tenant record
-     * @param string $newDate    Target date (YYYY-MM-DD)
-     * @param string $newTime    Target time (HH:MM)
+     * @param array  $target     Pattern-specific target fields
      * @param string $actorType  'customer' for self-service, 'operator'/'business_user' for admin
      * @param string $source     'web' for self-service, 'admin' for admin-initiated
      *
@@ -419,6 +416,7 @@ final class BookingService
      *   new_end: string,
      *   new_date: string,
      *   new_time: string,
+     *   pattern: string,
      * }
      *
      * @throws \RuntimeException With coded messages for the caller to map to HTTP responses
@@ -426,8 +424,7 @@ final class BookingService
     public static function rescheduleBooking(
         string $bookingId,
         array $tenant,
-        string $newDate,
-        string $newTime,
+        array $target,
         string $actorType = 'customer',
         string $source = 'web',
     ): array {
@@ -442,71 +439,47 @@ final class BookingService
             throw new \RuntimeException($check['reason']);
         }
 
-        // Only timeslot pattern supported in v1
         $pattern = $booking['booking_pattern'] ?? 'timeslot';
-        if ($pattern !== 'timeslot') {
-            throw new \RuntimeException('pattern_not_supported');
-        }
-
-        // Validate date format
-        if ($newDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate)) {
-            throw new \RuntimeException('invalid_date');
-        }
-
-        // Validate time format
-        if ($newTime === '' || !preg_match('/^\d{2}:\d{2}$/', $newTime)) {
-            throw new \RuntimeException('invalid_time');
-        }
-
         $tenantId = $booking['tenant_id'];
         $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
-        $newStartDt = new \DateTimeImmutable("{$newDate} {$newTime}", $tz);
 
-        // Resolve duration from the original booking
+        // Resolve original dates
         $origStart = new \DateTimeImmutable($booking['start_datetime'], $tz);
         $origEnd = new \DateTimeImmutable($booking['end_datetime'], $tz);
-        $durationMinutes = (int) (($origEnd->getTimestamp() - $origStart->getTimestamp()) / 60);
-        $newEndDt = $newStartDt->modify("+{$durationMinutes} minutes");
 
-        // Same-slot check
-        if ($newStartDt->format('Y-m-d H:i') === $origStart->format('Y-m-d H:i')) {
-            throw new \RuntimeException('same_slot');
-        }
+        // Dispatch to pattern-specific validation and target resolution
+        $resolved = match ($pattern) {
+            'timeslot' => self::resolveTimeslotTarget($target, $origStart, $origEnd, $tz),
+            'resource' => self::resolveResourceTarget($target, $booking, $tenant, $tz),
+            'capacity' => self::resolveCapacityTarget($target, $booking, $tenant, $tz),
+            'event'    => self::resolveEventTarget($target, $booking, $tenant, $tz),
+            default    => throw new \RuntimeException('pattern_not_supported'),
+        };
 
-        // Timeslot availability check + booking creation in transaction
+        $newStartDt = $resolved['new_start_dt'];
+        $newEndDt = $resolved['new_end_dt'];
+
+        // Transaction: lock + recheck availability + create replacement
         $pdo = Database::connect();
         $pdo->beginTransaction();
 
         try {
-            // Lock + recheck availability
-            $lockSql = "SELECT `id` FROM `bookings`
-                        WHERE `tenant_id` = ? AND `status` IN ('confirmed', 'rescheduled')
-                        AND DATE(`start_datetime`) = ?";
-            $lockParams = [$tenantId, $newDate];
-            if ($booking['staff_id']) {
-                $lockSql .= ' AND `staff_id` = ?';
-                $lockParams[] = $booking['staff_id'];
-            }
-            $lockSql .= ' FOR UPDATE';
-            $lockStmt = $pdo->prepare($lockSql);
-            $lockStmt->execute($lockParams);
+            // Pattern-specific locking
+            self::acquireRescheduleLock($pdo, $pattern, $booking, $tenantId, $resolved);
 
-            $availResult = TimeSlotCalculator::getAvailableSlots(
-                $tenant, $newDate, $booking['service_id'], $booking['staff_id']
+            // Temporarily exclude the original booking from availability queries
+            // by setting its status to 'cancelled'. All calculators only count
+            // confirmed/rescheduled/waitlisted statuses, so this ensures the
+            // original booking cannot self-conflict (e.g., extending a resource
+            // stay that overlaps the original range). Rollback-safe: if anything
+            // fails, the transaction reverts to the original 'confirmed' status.
+            Database::execute(
+                "UPDATE `bookings` SET `status` = 'cancelled' WHERE `id` = ?",
+                [$bookingId]
             );
 
-            $stillAvailable = false;
-            foreach ($availResult['slots'] as $slot) {
-                if ($slot['time'] === $newTime) {
-                    $stillAvailable = true;
-                    break;
-                }
-            }
-
-            if (!$stillAvailable) {
-                $pdo->rollBack();
-                throw new \RuntimeException('slot_unavailable');
-            }
+            // Pattern-specific availability recheck inside the lock
+            self::recheckAvailability($pattern, $booking, $tenant, $resolved);
 
             // Create the replacement booking
             $newBookingData = [
@@ -524,6 +497,11 @@ final class BookingService
                 if (!empty($booking[$field])) {
                     $newBookingData[$field] = $booking[$field];
                 }
+            }
+
+            // Pattern-specific overrides for the new booking
+            if ($pattern === 'event' && !empty($resolved['event_id'])) {
+                $newBookingData['event_id'] = $resolved['event_id'];
             }
 
             // Preserve custom field data (customer answers)
@@ -567,6 +545,7 @@ final class BookingService
                 'new_start'      => $newStartDt->format('Y-m-d H:i:s'),
                 'new_end'        => $newEndDt->format('Y-m-d H:i:s'),
                 'actor_type'     => $actorType,
+                'pattern'        => $pattern,
             ], $tenantId);
 
             // Cancel unsent reminders for the original booking (belt-and-suspenders
@@ -587,8 +566,9 @@ final class BookingService
                 'old_booking'    => $booking,
                 'new_start'      => $newStartDt->format('Y-m-d H:i:s'),
                 'new_end'        => $newEndDt->format('Y-m-d H:i:s'),
-                'new_date'       => $newDate,
-                'new_time'       => $newTime,
+                'new_date'       => $newStartDt->format('Y-m-d'),
+                'new_time'       => $newStartDt->format('H:i'),
+                'pattern'        => $pattern,
             ];
 
         } catch (\RuntimeException $e) {
@@ -603,9 +583,343 @@ final class BookingService
             }
             Logger::error('Booking reschedule failed', [
                 'booking' => $bookingId,
+                'pattern' => $pattern,
                 'error'   => $e->getMessage(),
             ]);
             throw new \RuntimeException('reschedule_failed');
+        }
+    }
+
+    // ── Reschedule target resolvers (per pattern) ──
+
+    /**
+     * Resolve timeslot reschedule target: date + time → new start/end.
+     *
+     * @return array{new_start_dt: \DateTimeImmutable, new_end_dt: \DateTimeImmutable, new_date: string, new_time: string}
+     */
+    private static function resolveTimeslotTarget(
+        array $target,
+        \DateTimeImmutable $origStart,
+        \DateTimeImmutable $origEnd,
+        \DateTimeZone $tz,
+    ): array {
+        $newDate = trim($target['new_date'] ?? '');
+        $newTime = trim($target['new_time'] ?? '');
+
+        if ($newDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate)) {
+            throw new \RuntimeException('invalid_date');
+        }
+        if ($newTime === '' || !preg_match('/^\d{2}:\d{2}$/', $newTime)) {
+            throw new \RuntimeException('invalid_time');
+        }
+
+        $newStartDt = new \DateTimeImmutable("{$newDate} {$newTime}", $tz);
+        $durationMinutes = (int) (($origEnd->getTimestamp() - $origStart->getTimestamp()) / 60);
+        $newEndDt = $newStartDt->modify("+{$durationMinutes} minutes");
+
+        // Same-slot check
+        if ($newStartDt->format('Y-m-d H:i') === $origStart->format('Y-m-d H:i')) {
+            throw new \RuntimeException('same_slot');
+        }
+
+        return [
+            'new_start_dt' => $newStartDt,
+            'new_end_dt'   => $newEndDt,
+            'new_date'     => $newDate,
+            'new_time'     => $newTime,
+        ];
+    }
+
+    /**
+     * Resolve resource reschedule target: check-in + check-out → new start/end.
+     *
+     * @return array{new_start_dt: \DateTimeImmutable, new_end_dt: \DateTimeImmutable, new_date: string, check_in: string, check_out: string}
+     */
+    private static function resolveResourceTarget(
+        array $target,
+        array $booking,
+        array $tenant,
+        \DateTimeZone $tz,
+    ): array {
+        $checkIn = trim($target['check_in'] ?? '');
+        $checkOut = trim($target['check_out'] ?? '');
+
+        if ($checkIn === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkIn)) {
+            throw new \RuntimeException('invalid_date');
+        }
+        if ($checkOut === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkOut)) {
+            throw new \RuntimeException('invalid_date');
+        }
+
+        $newStartDt = new \DateTimeImmutable("{$checkIn} 00:00:00", $tz);
+        $newEndDt = new \DateTimeImmutable("{$checkOut} 00:00:00", $tz);
+
+        if ($newEndDt <= $newStartDt) {
+            throw new \RuntimeException('invalid_date');
+        }
+
+        // Same-slot check (same check-in and check-out)
+        $origStart = new \DateTimeImmutable($booking['start_datetime'], $tz);
+        $origEnd = new \DateTimeImmutable($booking['end_datetime'], $tz);
+        if ($newStartDt->format('Y-m-d') === $origStart->format('Y-m-d')
+            && $newEndDt->format('Y-m-d') === $origEnd->format('Y-m-d')) {
+            throw new \RuntimeException('same_slot');
+        }
+
+        return [
+            'new_start_dt' => $newStartDt,
+            'new_end_dt'   => $newEndDt,
+            'new_date'     => $checkIn,
+            'check_in'     => $checkIn,
+            'check_out'    => $checkOut,
+            'resource_id'  => $booking['resource_id'],
+            'guest_count'  => (int) ($booking['party_size'] ?? 1),
+        ];
+    }
+
+    /**
+     * Resolve capacity reschedule target: date + slot_id → new start/end.
+     *
+     * @return array{new_start_dt: \DateTimeImmutable, new_end_dt: \DateTimeImmutable, new_date: string, slot_id: string}
+     */
+    private static function resolveCapacityTarget(
+        array $target,
+        array $booking,
+        array $tenant,
+        \DateTimeZone $tz,
+    ): array {
+        $date = trim($target['date'] ?? '');
+        $slotId = trim($target['slot_id'] ?? '');
+
+        if ($date === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            throw new \RuntimeException('invalid_date');
+        }
+        if ($slotId === '') {
+            throw new \RuntimeException('invalid_slot');
+        }
+
+        // Load the capacity slot to get start/end times
+        $slots = Database::query(
+            'SELECT `start_time`, `end_time` FROM `capacity_slots` WHERE `id` = ? AND `tenant_id` = ? AND `is_active` = 1',
+            [$slotId, $tenant['id']]
+        );
+        if (empty($slots)) {
+            throw new \RuntimeException('invalid_slot');
+        }
+
+        $slot = $slots[0];
+        $newStartDt = new \DateTimeImmutable("{$date} {$slot['start_time']}", $tz);
+        $newEndDt = new \DateTimeImmutable("{$date} {$slot['end_time']}", $tz);
+
+        // Same-slot check
+        $origStart = new \DateTimeImmutable($booking['start_datetime'], $tz);
+        if ($newStartDt->format('Y-m-d H:i') === $origStart->format('Y-m-d H:i')) {
+            throw new \RuntimeException('same_slot');
+        }
+
+        return [
+            'new_start_dt' => $newStartDt,
+            'new_end_dt'   => $newEndDt,
+            'new_date'     => $date,
+            'slot_id'      => $slotId,
+            'party_size'   => (int) ($booking['party_size'] ?? 1),
+        ];
+    }
+
+    /**
+     * Resolve event reschedule target: event_id + date → new start/end.
+     *
+     * For self-service reschedule, event_id stays the same (different occurrence).
+     * For admin/API, event_id can change (transfer to another event).
+     *
+     * @return array{new_start_dt: \DateTimeImmutable, new_end_dt: \DateTimeImmutable, new_date: string, event_id: string, spot_count: int}
+     */
+    private static function resolveEventTarget(
+        array $target,
+        array $booking,
+        array $tenant,
+        \DateTimeZone $tz,
+    ): array {
+        $date = trim($target['date'] ?? '');
+        // event_id defaults to the original booking's event if not provided
+        $eventId = trim($target['event_id'] ?? $booking['event_id'] ?? '');
+
+        if ($date === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            throw new \RuntimeException('invalid_date');
+        }
+        if ($eventId === '') {
+            throw new \RuntimeException('invalid_event');
+        }
+
+        // Load the event to get start/end times
+        $events = Database::query(
+            'SELECT `start_datetime`, `end_datetime` FROM `events` WHERE `id` = ? AND `tenant_id` = ? AND `is_active` = 1',
+            [$eventId, $tenant['id']]
+        );
+        if (empty($events)) {
+            throw new \RuntimeException('invalid_event');
+        }
+
+        $event = $events[0];
+        $eventStart = new \DateTimeImmutable($event['start_datetime'], $tz);
+        $eventEnd = new \DateTimeImmutable($event['end_datetime'], $tz);
+
+        // Build instance datetime: target date + event's time-of-day
+        $newStartDt = new \DateTimeImmutable("{$date} " . $eventStart->format('H:i:s'), $tz);
+        $duration = $eventStart->diff($eventEnd);
+        $newEndDt = $newStartDt->add($duration);
+
+        // Same-slot check: same event, same date
+        $origStart = new \DateTimeImmutable($booking['start_datetime'], $tz);
+        if ($eventId === ($booking['event_id'] ?? '') && $newStartDt->format('Y-m-d') === $origStart->format('Y-m-d')) {
+            throw new \RuntimeException('same_slot');
+        }
+
+        return [
+            'new_start_dt' => $newStartDt,
+            'new_end_dt'   => $newEndDt,
+            'new_date'     => $date,
+            'event_id'     => $eventId,
+            'spot_count'   => (int) ($booking['party_size'] ?? 1),
+        ];
+    }
+
+    // ── Reschedule locking and availability recheck ──
+
+    /**
+     * Acquire pattern-specific row locks for double-booking prevention.
+     */
+    private static function acquireRescheduleLock(
+        \PDO $pdo,
+        string $pattern,
+        array $booking,
+        string $tenantId,
+        array $resolved,
+    ): void {
+        $lockSql = match ($pattern) {
+            'timeslot' => self::buildTimeslotLockSql($booking, $tenantId, $resolved),
+            'resource' => [
+                "SELECT `id` FROM `bookings`
+                 WHERE `tenant_id` = ? AND `resource_id` = ?
+                 AND `status` IN ('confirmed', 'rescheduled')
+                 AND `start_datetime` < ? AND `end_datetime` > ?
+                 FOR UPDATE",
+                [$tenantId, $resolved['resource_id'], $resolved['check_out'] . ' 00:00:00', $resolved['check_in'] . ' 00:00:00'],
+            ],
+            'capacity' => [
+                "SELECT `id` FROM `bookings`
+                 WHERE `tenant_id` = ? AND `booking_pattern` = 'capacity'
+                 AND `start_datetime` = ?
+                 AND `status` IN ('confirmed', 'rescheduled')
+                 FOR UPDATE",
+                [$tenantId, $resolved['new_start_dt']->format('Y-m-d H:i:s')],
+            ],
+            'event' => [
+                "SELECT `id` FROM `bookings`
+                 WHERE `tenant_id` = ? AND `event_id` = ? AND `booking_pattern` = 'event'
+                 AND DATE(`start_datetime`) = ?
+                 AND `status` IN ('confirmed', 'rescheduled', 'waitlisted')
+                 FOR UPDATE",
+                [$tenantId, $resolved['event_id'], $resolved['new_date']],
+            ],
+            default => throw new \RuntimeException('pattern_not_supported'),
+        };
+
+        $stmt = $pdo->prepare($lockSql[0]);
+        $stmt->execute($lockSql[1]);
+    }
+
+    /**
+     * Build the timeslot-pattern lock query (preserves existing logic).
+     *
+     * @return array{0: string, 1: list<string>}
+     */
+    private static function buildTimeslotLockSql(array $booking, string $tenantId, array $resolved): array
+    {
+        $sql = "SELECT `id` FROM `bookings`
+                WHERE `tenant_id` = ? AND `status` IN ('confirmed', 'rescheduled')
+                AND DATE(`start_datetime`) = ?";
+        $params = [$tenantId, $resolved['new_date']];
+        if ($booking['staff_id']) {
+            $sql .= ' AND `staff_id` = ?';
+            $params[] = $booking['staff_id'];
+        }
+        $sql .= ' FOR UPDATE';
+        return [$sql, $params];
+    }
+
+    /**
+     * Recheck availability inside the lock for each pattern.
+     *
+     * @throws \RuntimeException If the target is no longer available
+     */
+    private static function recheckAvailability(
+        string $pattern,
+        array $booking,
+        array $tenant,
+        array $resolved,
+    ): void {
+        switch ($pattern) {
+            case 'timeslot':
+                $availResult = TimeSlotCalculator::getAvailableSlots(
+                    $tenant, $resolved['new_date'], $booking['service_id'], $booking['staff_id']
+                );
+                $stillAvailable = false;
+                foreach ($availResult['slots'] as $slot) {
+                    if ($slot['time'] === $resolved['new_time']) {
+                        $stillAvailable = true;
+                        break;
+                    }
+                }
+                if (!$stillAvailable) {
+                    throw new \RuntimeException('slot_unavailable');
+                }
+                break;
+
+            case 'resource':
+                $avail = ResourceCalculator::checkAvailability(
+                    $tenant,
+                    $resolved['resource_id'],
+                    $resolved['check_in'],
+                    $resolved['check_out'],
+                    $resolved['guest_count'],
+                );
+                if (!$avail['available']) {
+                    throw new \RuntimeException($avail['error'] ?? 'slot_unavailable');
+                }
+                break;
+
+            case 'capacity':
+                $avail = CapacityCalculator::checkSlotAvailability(
+                    $tenant,
+                    $resolved['slot_id'],
+                    $resolved['new_date'],
+                    $resolved['party_size'],
+                );
+                if (!$avail['available']) {
+                    throw new \RuntimeException($avail['error'] ?? 'capacity_exceeded');
+                }
+                break;
+
+            case 'event':
+                $avail = EventCalculator::checkAvailability(
+                    $tenant,
+                    $resolved['event_id'],
+                    $resolved['new_date'],
+                    $resolved['spot_count'],
+                );
+                if (!$avail['available']) {
+                    throw new \RuntimeException($avail['error'] ?? 'event_full');
+                }
+                // Reject if the result would place the booking on the waitlist:
+                // a confirmed booking must stay confirmed after reschedule.
+                if (!empty($avail['waitlisted'])) {
+                    throw new \RuntimeException('event_full');
+                }
+                break;
+
+            default:
+                throw new \RuntimeException('pattern_not_supported');
         }
     }
 

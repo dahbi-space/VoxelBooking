@@ -155,7 +155,21 @@ $hasActiveFilters = !empty($filters['status'] ?? '') || !empty($filters['from'] 
                             <?php endif; ?>
                         </td>
                         <td data-label="<?= __('admin.bookings.service') ?>">
-                            <?= htmlspecialchars(booking_display_label($b), ENT_QUOTES, 'UTF-8') ?>
+                            <div class="vb-cell-primary"><?= htmlspecialchars(booking_display_label($b), ENT_QUOTES, 'UTF-8') ?></div>
+                            <?php
+                            $rowPattern = $b['booking_pattern'] ?? 'timeslot';
+                            $patternLabel = __('admin.bookings.type_' . $rowPattern);
+                            $patternIcon = match ($rowPattern) {
+                                'resource' => 'bed',
+                                'capacity' => 'users',
+                                'event'    => 'ticket',
+                                default    => 'clock',
+                            };
+                            ?>
+                            <div class="vb-cell-secondary vb-pattern-label">
+                                <i data-lucide="<?= $patternIcon ?>" class="vb-pattern-icon"></i>
+                                <?= htmlspecialchars($patternLabel, ENT_QUOTES, 'UTF-8') ?>
+                            </div>
                         </td>
                         <td data-label="<?= __('admin.bookings.date_time') ?>">
                             <div class="vb-cell-primary"><?= date('M j, Y', strtotime($b['start_datetime'])) ?></div>

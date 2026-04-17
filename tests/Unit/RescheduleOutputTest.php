@@ -10,8 +10,8 @@ use PHPUnit\Framework\TestCase;
  * Template output tests for the reschedule UI on the booking detail page.
  *
  * Verifies:
- * - Reschedule button/modal shown only for confirmed timeslot bookings
- * - Hidden for pending, cancelled, rescheduled, non-timeslot bookings
+ * - Reschedule button/modal shown for confirmed bookings of any pattern
+ * - Hidden for pending, cancelled, rescheduled bookings
  * - Rescheduled-to link shown when rescheduled_to_id is set
  * - Rescheduled status in dropdown is read-only (no outbound transitions)
  */
@@ -97,7 +97,7 @@ final class RescheduleOutputTest extends TestCase
         $this->assertStringNotContainsString('reschedule-modal', $html);
     }
 
-    public function test_reschedule_button_hidden_for_resource_pattern(): void
+    public function test_reschedule_button_shown_for_resource_pattern(): void
     {
         $html = $this->renderDetail([
             'booking' => $this->makeBooking([
@@ -106,10 +106,10 @@ final class RescheduleOutputTest extends TestCase
             ]),
         ]);
 
-        $this->assertStringNotContainsString('btn-reschedule-open', $html);
+        $this->assertStringContainsString('btn-reschedule-open', $html);
     }
 
-    public function test_reschedule_button_hidden_for_capacity_pattern(): void
+    public function test_reschedule_button_shown_for_capacity_pattern(): void
     {
         $html = $this->renderDetail([
             'booking' => $this->makeBooking([
@@ -118,10 +118,10 @@ final class RescheduleOutputTest extends TestCase
             ]),
         ]);
 
-        $this->assertStringNotContainsString('btn-reschedule-open', $html);
+        $this->assertStringContainsString('btn-reschedule-open', $html);
     }
 
-    public function test_reschedule_button_hidden_for_event_pattern(): void
+    public function test_reschedule_button_shown_for_event_pattern(): void
     {
         $html = $this->renderDetail([
             'booking' => $this->makeBooking([
@@ -130,7 +130,7 @@ final class RescheduleOutputTest extends TestCase
             ]),
         ]);
 
-        $this->assertStringNotContainsString('btn-reschedule-open', $html);
+        $this->assertStringContainsString('btn-reschedule-open', $html);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -257,11 +257,11 @@ final class RescheduleOutputTest extends TestCase
 
         $vars = array_merge($defaults, $overrides);
 
-        // Derive $canReschedule the same way the controller does:
-        // confirmed + timeslot pattern
+        // Derive $canReschedule the same way the template does:
+        // confirmed status (all patterns now supported)
         $b = $vars['booking'];
         if (!isset($vars['canReschedule'])) {
-            $vars['canReschedule'] = ($b['status'] === 'confirmed' && ($b['booking_pattern'] ?? '') === 'timeslot');
+            $vars['canReschedule'] = ($b['status'] === 'confirmed');
         }
 
         return $this->renderTemplate(

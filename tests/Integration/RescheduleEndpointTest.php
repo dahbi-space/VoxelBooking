@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
  * Covers:
  * - Operator guard on cross-tenant route
  * - Business user access on tenant-context route
- * - Non-timeslot pattern rejection
+ * - Non-timeslot pattern with wrong fields → validation error
  * - Pending booking rejection (must be confirmed)
  * - Same-slot rejection
  * - Successful reschedule: booking chain, status, rescheduled_to_id
@@ -29,6 +29,9 @@ final class RescheduleEndpointTest extends TestCase
     private const RESCHEDULE_CUSTOMER_ID = '01TESTRESCHEDCUST000000';
     private const RESCHEDULE_SERVICE_ID = '01TESTRESCHEDSVC00000000';
     private const HAPPY_BOOKING_ID = '01TESTRESCHEDHAPPY000000';
+    private const RESOURCE_ID      = '01TESTRESCHEDRESRC000000';
+    private const SLOT_ID           = '01TESTRESCHEDSLOT0000000';
+    private const EVENT_ID          = '01TESTRESCHEDEVNT0000000';
 
     public static function setUpBeforeClass(): void
     {
@@ -123,10 +126,10 @@ final class RescheduleEndpointTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════
-    // Pattern guard: non-timeslot patterns are rejected
+    // Pattern-aware validation: wrong fields for non-timeslot patterns
     // ════════════════════════════════════════════════════════════════
 
-    public function test_reschedule_resource_booking_is_rejected(): void
+    public function test_reschedule_resource_booking_with_timeslot_fields_is_rejected(): void
     {
         $resourceId = '01TESTRESCHEDRESOURCE000';
         $this->insertBooking($resourceId, 'confirmed', 'resource');
@@ -137,11 +140,13 @@ final class RescheduleEndpointTest extends TestCase
             'new_time' => '14:00',
         ]);
 
+        // Resource bookings need check_in/check_out, not new_date/new_time
+        // So sending timeslot fields results in a validation error redirect
         $this->assertSame(302, $r['code']);
         $this->assertStringContainsString($resourceId, $r['location']);
     }
 
-    public function test_reschedule_capacity_booking_is_rejected(): void
+    public function test_reschedule_capacity_booking_with_timeslot_fields_is_rejected(): void
     {
         $capacityId = '01TESTRESCHEDCAPACITY000';
         $this->insertBooking($capacityId, 'confirmed', 'capacity');
@@ -156,7 +161,7 @@ final class RescheduleEndpointTest extends TestCase
         $this->assertStringContainsString($capacityId, $r['location']);
     }
 
-    public function test_reschedule_event_booking_is_rejected(): void
+    public function test_reschedule_event_booking_with_timeslot_fields_is_rejected(): void
     {
         $eventId = '01TESTRESCHEDEVENT000000';
         $this->insertBooking($eventId, 'confirmed', 'event');
@@ -338,6 +343,156 @@ final class RescheduleEndpointTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════
+    // Happy path: successful resource reschedule
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_successful_resource_reschedule_via_admin(): void
+    {
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+        $bookingId = '01TESTRESCHEDRESRCHAPPY0';
+        $checkIn = date('Y-m-d', strtotime('+10 days'));
+        $checkOut = date('Y-m-d', strtotime('+12 days'));
+        $newCheckIn = date('Y-m-d', strtotime('+20 days'));
+        $newCheckOut = date('Y-m-d', strtotime('+22 days'));
+
+        self::seedResourceFixture();
+        $this->insertPatternBooking($bookingId, 'resource', [
+            'resource_id' => self::RESOURCE_ID,
+            'start_datetime' => "{$checkIn} 00:00:00",
+            'end_datetime' => "{$checkOut} 00:00:00",
+            'party_size' => 2,
+        ]);
+
+        $this->doLoginOperator();
+        $r = $this->postWithCsrf('/admin/bookings/' . $bookingId . '/reschedule', [
+            'check_in'  => $newCheckIn,
+            'check_out' => $newCheckOut,
+        ]);
+
+        $this->assertSame(302, $r['code'], 'Resource reschedule should redirect');
+        $this->assertStringNotContainsString($bookingId, $r['location'],
+            'Redirect should point to the new booking');
+
+        $original = Database::query(
+            "SELECT `status`, `rescheduled_to_id` FROM `bookings` WHERE `id` = ?",
+            [$bookingId]
+        );
+        $this->assertSame('rescheduled', $original[0]['status'] ?? null);
+        $this->assertNotNull($original[0]['rescheduled_to_id'] ?? null);
+
+        $newBooking = Database::query(
+            "SELECT `status`, `booking_pattern`, `resource_id` FROM `bookings` WHERE `id` = ?",
+            [$original[0]['rescheduled_to_id']]
+        );
+        $this->assertSame('confirmed', $newBooking[0]['status']);
+        $this->assertSame('resource', $newBooking[0]['booking_pattern']);
+        $this->assertSame(self::RESOURCE_ID, $newBooking[0]['resource_id']);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Happy path: successful capacity reschedule
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_successful_capacity_reschedule_via_admin(): void
+    {
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+        $bookingId = '01TESTRESCHEDCAPHAPPY000';
+
+        // Original date: +10 days (weekday)
+        $origDt = new \DateTimeImmutable('+10 days');
+        while ((int) $origDt->format('N') >= 6) {
+            $origDt = $origDt->modify('+1 day');
+        }
+        $origDate = $origDt->format('Y-m-d');
+        $origDow = ((int) $origDt->format('N')) - 1;
+
+        // Target date: +17 days (weekday)
+        $newDt = new \DateTimeImmutable('+17 days');
+        while ((int) $newDt->format('N') >= 6) {
+            $newDt = $newDt->modify('+1 day');
+        }
+        $newDate = $newDt->format('Y-m-d');
+        $newDow = ((int) $newDt->format('N')) - 1;
+
+        // Ensure slots exist for both DOWs
+        $origSlotId = self::SLOT_ID;
+        self::seedCapacitySlot($origSlotId, $origDow);
+        $targetSlotId = '01TESTRESCHEDSLOT' . str_pad((string) $newDow, 7, '0', STR_PAD_LEFT);
+        self::seedCapacitySlot($targetSlotId, $newDow);
+
+        $this->insertPatternBooking($bookingId, 'capacity', [
+            'start_datetime' => "{$origDate} 12:00:00",
+            'end_datetime' => "{$origDate} 14:00:00",
+            'party_size' => 2,
+        ]);
+
+        $this->doLoginOperator();
+        $r = $this->postWithCsrf('/admin/bookings/' . $bookingId . '/reschedule', [
+            'date'    => $newDate,
+            'slot_id' => $targetSlotId,
+        ]);
+
+        $this->assertSame(302, $r['code'], 'Capacity reschedule should redirect');
+        $this->assertStringNotContainsString($bookingId, $r['location']);
+
+        $original = Database::query(
+            "SELECT `status`, `rescheduled_to_id` FROM `bookings` WHERE `id` = ?",
+            [$bookingId]
+        );
+        $this->assertSame('rescheduled', $original[0]['status'] ?? null);
+
+        $newBooking = Database::query(
+            "SELECT `status`, `booking_pattern` FROM `bookings` WHERE `id` = ?",
+            [$original[0]['rescheduled_to_id']]
+        );
+        $this->assertSame('confirmed', $newBooking[0]['status']);
+        $this->assertSame('capacity', $newBooking[0]['booking_pattern']);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Happy path: successful event reschedule
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_successful_event_reschedule_via_admin(): void
+    {
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+        $bookingId = '01TESTRESCHEDEVTHAPPY000';
+        $origDate = date('Y-m-d', strtotime('+10 days'));
+        $newDate = date('Y-m-d', strtotime('+17 days'));
+
+        self::seedEventFixture();
+        $this->insertPatternBooking($bookingId, 'event', [
+            'event_id' => self::EVENT_ID,
+            'start_datetime' => "{$origDate} 14:00:00",
+            'end_datetime' => "{$origDate} 16:00:00",
+            'party_size' => 1,
+        ]);
+
+        $this->doLoginOperator();
+        $r = $this->postWithCsrf('/admin/bookings/' . $bookingId . '/reschedule', [
+            'date'     => $newDate,
+            'event_id' => self::EVENT_ID,
+        ]);
+
+        $this->assertSame(302, $r['code'], 'Event reschedule should redirect');
+        $this->assertStringNotContainsString($bookingId, $r['location']);
+
+        $original = Database::query(
+            "SELECT `status`, `rescheduled_to_id` FROM `bookings` WHERE `id` = ?",
+            [$bookingId]
+        );
+        $this->assertSame('rescheduled', $original[0]['status'] ?? null);
+
+        $newBooking = Database::query(
+            "SELECT `status`, `booking_pattern`, `event_id` FROM `bookings` WHERE `id` = ?",
+            [$original[0]['rescheduled_to_id']]
+        );
+        $this->assertSame('confirmed', $newBooking[0]['status']);
+        $this->assertSame('event', $newBooking[0]['booking_pattern']);
+        $this->assertSame(self::EVENT_ID, $newBooking[0]['event_id']);
+    }
+
+    // ════════════════════════════════════════════════════════════════
     // Fixtures
     // ════════════════════════════════════════════════════════════════
 
@@ -405,6 +560,68 @@ final class RescheduleEndpointTest extends TestCase
               '{$startDate} 10:00:00', '{$startDate} 10:30:00',
               ?, 'web')",
             [$id, $tenantId, $pattern, self::RESCHEDULE_CUSTOMER_ID, $status]
+        );
+    }
+
+    /**
+     * Insert a pattern-specific booking with custom field overrides.
+     */
+    private function insertPatternBooking(string $id, string $pattern, array $fields): void
+    {
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+        Database::execute("DELETE FROM `bookings` WHERE `id` = ?", [$id]);
+
+        $cols = ['`id`', '`tenant_id`', '`booking_pattern`', '`customer_id`', '`status`', '`source`'];
+        $vals = [$id, $tenantId, $pattern, self::RESCHEDULE_CUSTOMER_ID, 'confirmed', 'web'];
+        $placeholders = ['?', '?', '?', '?', '?', '?'];
+
+        foreach ($fields as $col => $val) {
+            $cols[] = "`{$col}`";
+            $vals[] = $val;
+            $placeholders[] = '?';
+        }
+
+        $colStr = implode(', ', $cols);
+        $phStr = implode(', ', $placeholders);
+        Database::execute("INSERT INTO `bookings` ({$colStr}) VALUES ({$phStr})", $vals);
+    }
+
+    private static function seedResourceFixture(): void
+    {
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+        $existing = Database::query("SELECT `id` FROM `resources` WHERE `id` = ?", [self::RESOURCE_ID]);
+        if (!empty($existing)) return;
+
+        Database::execute(
+            "INSERT INTO `resources` (`id`, `tenant_id`, `name`, `capacity`, `min_stay_nights`, `max_stay_nights`, `is_active`)
+             VALUES (?, ?, 'Admin Reschedule Cabin', 4, 1, 30, 1)",
+            [self::RESOURCE_ID, $tenantId]
+        );
+    }
+
+    private static function seedCapacitySlot(string $slotId, int $dow): void
+    {
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+        $existing = Database::query("SELECT `id` FROM `capacity_slots` WHERE `id` = ?", [$slotId]);
+        if (!empty($existing)) return;
+
+        Database::execute(
+            "INSERT INTO `capacity_slots` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `min_party_size`, `max_party_size`, `is_active`)
+             VALUES (?, ?, ?, '12:00:00', '14:00:00', 20, 1, 8, 1)",
+            [$slotId, $tenantId, $dow]
+        );
+    }
+
+    private static function seedEventFixture(): void
+    {
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+        $existing = Database::query("SELECT `id` FROM `events` WHERE `id` = ?", [self::EVENT_ID]);
+        if (!empty($existing)) return;
+
+        Database::execute(
+            "INSERT INTO `events` (`id`, `tenant_id`, `name`, `max_participants`, `start_datetime`, `end_datetime`, `is_recurring`, `rrule`, `is_active`)
+             VALUES (?, ?, 'Admin Reschedule Workshop', 20, '2026-01-01 14:00:00', '2026-01-01 16:00:00', 1, 'FREQ=DAILY;COUNT=365', 1)",
+            [self::EVENT_ID, $tenantId]
         );
     }
 

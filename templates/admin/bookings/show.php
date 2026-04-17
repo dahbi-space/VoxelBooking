@@ -38,7 +38,6 @@ if (!function_exists('bookingTimelineLabel')) {
 
 // Reschedule eligibility (computed once, used in both card and modal rendering)
 $canReschedule = ($booking['status'] === 'confirmed')
-    && (($booking['booking_pattern'] ?? 'timeslot') === 'timeslot')
     && !\App\Engine\DemoMode::isActive();
 
 ob_start();
@@ -271,6 +270,9 @@ if ($canReschedule ?? false):
             <p class="vb-modal-desc"><?= __('admin.bookings.reschedule_desc') ?></p>
             <form method="POST" action="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>/<?= htmlspecialchars($booking['id'], ENT_QUOTES, 'UTF-8') ?>/reschedule" id="reschedule-form">
                 <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                <?php $bookingPattern = $booking['booking_pattern'] ?? 'timeslot'; ?>
+
+                <?php if ($bookingPattern === 'timeslot'): ?>
                 <div class="vb-modal-form-row">
                     <div class="vb-form-group">
                         <label for="reschedule_date" class="vb-label"><?= __('admin.bookings.reschedule_new_date') ?></label>
@@ -284,6 +286,64 @@ if ($canReschedule ?? false):
                                value="<?= date('H:i', strtotime($booking['start_datetime'])) ?>" required>
                     </div>
                 </div>
+
+                <?php elseif ($bookingPattern === 'resource'): ?>
+                <div class="vb-modal-form-row">
+                    <div class="vb-form-group">
+                        <label for="reschedule_checkin" class="vb-label"><?= __('admin.bookings.reschedule_check_in') ?></label>
+                        <input type="date" id="reschedule_checkin" name="check_in" class="vb-input"
+                               value="<?= date('Y-m-d', strtotime($booking['start_datetime'])) ?>"
+                               min="<?= date('Y-m-d') ?>" required>
+                    </div>
+                    <div class="vb-form-group">
+                        <label for="reschedule_checkout" class="vb-label"><?= __('admin.bookings.reschedule_check_out') ?></label>
+                        <input type="date" id="reschedule_checkout" name="check_out" class="vb-input"
+                               value="<?= date('Y-m-d', strtotime($booking['end_datetime'])) ?>"
+                               min="<?= date('Y-m-d', strtotime('+1 day')) ?>" required>
+                    </div>
+                </div>
+
+                <?php elseif ($bookingPattern === 'capacity'): ?>
+                <div class="vb-modal-form-row">
+                    <div class="vb-form-group">
+                        <label for="reschedule_cap_date" class="vb-label"><?= __('admin.bookings.reschedule_new_date') ?></label>
+                        <input type="date" id="reschedule_cap_date" name="date" class="vb-input"
+                               value="<?= date('Y-m-d', strtotime($booking['start_datetime'])) ?>"
+                               min="<?= date('Y-m-d') ?>" required>
+                    </div>
+                    <div class="vb-form-group">
+                        <label for="reschedule_slot" class="vb-label"><?= __('admin.bookings.reschedule_slot') ?></label>
+                        <select id="reschedule_slot" name="slot_id" class="vb-select" required>
+                            <?php
+                            $capSlots = \App\Engine\Database::query(
+                                'SELECT `id`, `start_time`, `end_time`, `label`, `day_of_week` FROM `capacity_slots` WHERE `tenant_id` = ? AND `is_active` = 1 ORDER BY `day_of_week`, `start_time`',
+                                [$booking['tenant_id']]
+                            );
+                            foreach ($capSlots as $cs):
+                                $slotLabel = $cs['label'] ?: (substr($cs['start_time'], 0, 5) . ' – ' . substr($cs['end_time'], 0, 5));
+                                $dayNames = [__('admin.availability.day_mon'), __('admin.availability.day_tue'), __('admin.availability.day_wed'), __('admin.availability.day_thu'), __('admin.availability.day_fri'), __('admin.availability.day_sat'), __('admin.availability.day_sun')];
+                                $dayLabel = $dayNames[(int) $cs['day_of_week']] ?? '';
+                            ?>
+                                <option value="<?= htmlspecialchars($cs['id'], ENT_QUOTES, 'UTF-8') ?>"
+                                        data-dow="<?= (int) $cs['day_of_week'] ?>">
+                                    <?= htmlspecialchars("{$dayLabel} {$slotLabel}", ENT_QUOTES, 'UTF-8') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <?php elseif ($bookingPattern === 'event'): ?>
+                <input type="hidden" name="event_id" value="<?= htmlspecialchars($booking['event_id'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                <div class="vb-modal-form-row">
+                    <div class="vb-form-group">
+                        <label for="reschedule_evt_date" class="vb-label"><?= __('admin.bookings.reschedule_new_date') ?></label>
+                        <input type="date" id="reschedule_evt_date" name="date" class="vb-input"
+                               value="<?= date('Y-m-d', strtotime($booking['start_datetime'])) ?>"
+                               min="<?= date('Y-m-d') ?>" required>
+                    </div>
+                </div>
+                <?php endif; ?>
             </form>
         </div>
         <div class="vb-modal-footer">

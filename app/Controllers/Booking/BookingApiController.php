@@ -1530,6 +1530,14 @@ final class BookingApiController
         $canCancel = BookingService::canCancel($booking, $tenant);
         $canReschedule = BookingService::canReschedule($booking, $tenant);
 
+        // Public self-service reschedule UI currently only supports the timeslot
+        // pattern flow (date/time picker wizard). Suppress the reschedule flag
+        // for other patterns until the public JS flow is extended.
+        $pattern = $booking['booking_pattern'] ?? 'timeslot';
+        if ($canReschedule['allowed'] && $pattern !== 'timeslot') {
+            $canReschedule = ['allowed' => false, 'reason' => 'pattern_not_supported'];
+        }
+
         // Format dates for JS
         $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
         $startDt = new \DateTimeImmutable($booking['start_datetime'], $tz);
@@ -1719,16 +1727,27 @@ final class BookingApiController
 
         $bookingId = $request->getAttribute('id');
         $input = $request->json();
-        $newDate = trim($input['new_date'] ?? '');
-        $newTime = trim($input['new_time'] ?? '');
+
+        // Build pattern-aware target from request input.
+        // The booking's pattern determines which keys are required.
+        // For backward compatibility, the public reschedule page currently
+        // sends new_date + new_time (timeslot). Other patterns send their
+        // own fields.
+        $target = [];
+        if (isset($input['new_date'])) $target['new_date'] = trim($input['new_date'] ?? '');
+        if (isset($input['new_time'])) $target['new_time'] = trim($input['new_time'] ?? '');
+        if (isset($input['check_in'])) $target['check_in'] = trim($input['check_in'] ?? '');
+        if (isset($input['check_out'])) $target['check_out'] = trim($input['check_out'] ?? '');
+        if (isset($input['date'])) $target['date'] = trim($input['date'] ?? '');
+        if (isset($input['slot_id'])) $target['slot_id'] = trim($input['slot_id'] ?? '');
+        if (isset($input['event_id'])) $target['event_id'] = trim($input['event_id'] ?? '');
 
         // Delegate to the engine
         try {
             $result = BookingService::rescheduleBooking(
                 $bookingId,
                 $tenant,
-                $newDate,
-                $newTime,
+                $target,
                 'customer', // actor_type
                 'web',      // source
             );
@@ -1755,8 +1774,12 @@ final class BookingApiController
                     'error' => 'same_slot',
                     'message' => __('booking.manage.same_slot'),
                 ], 422),
-                'slot_unavailable' => Response::json([
-                    'error' => 'slot_unavailable',
+                'slot_unavailable', 'already_booked' => Response::json([
+                    'error' => $msg,
+                    'message' => __('booking.api.slot_unavailable'),
+                ], 409),
+                'capacity_exceeded', 'event_full' => Response::json([
+                    'error' => $msg,
                     'message' => __('booking.api.slot_unavailable'),
                 ], 409),
                 'pattern_not_supported' => Response::json([
@@ -1770,6 +1793,10 @@ final class BookingApiController
                 'invalid_time' => Response::json([
                     'error' => 'invalid_time',
                     'message' => __('booking.api.start_time_required'),
+                ], 422),
+                'invalid_slot', 'invalid_event' => Response::json([
+                    'error' => $msg,
+                    'message' => __('booking.api.booking_failed'),
                 ], 422),
                 default => Response::json([
                     'error' => 'reschedule_failed',

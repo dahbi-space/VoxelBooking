@@ -18,7 +18,7 @@ use PHPUnit\Framework\TestCase;
  * - Tenant toggle (allow_rescheduling=0)
  * - Time-gate rejection
  * - Same-slot rejection
- * - Pattern guard (non-timeslot)
+ * - Pattern-aware validation (wrong fields for non-timeslot patterns)
  * - Happy path: booking chain, status, rescheduled_to_id, audit log
  * - Custom field + notes preservation on the new booking
  * - Consent inheritance from original booking
@@ -206,22 +206,25 @@ final class SelfServiceRescheduleTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════
-    // Pattern guard: non-timeslot patterns not supported
+    // Pattern-aware validation: wrong fields for resource pattern
     // ════════════════════════════════════════════════════════════════
 
-    public function test_reschedule_resource_booking_returns_409(): void
+    public function test_reschedule_resource_booking_with_timeslot_fields_returns_422(): void
     {
         $resourceId = '01TESTSSRESCHEDRESOURC0';
         $this->insertBooking($resourceId, 'confirmed', 'resource');
 
+        // Sending timeslot fields (new_date/new_time) to a resource booking should
+        // return a validation error, not a pattern rejection — resource bookings
+        // need check_in/check_out fields instead.
         $r = $this->postJsonWithCsrf("/api/test-fixture/bookings/{$resourceId}/reschedule", [
             'new_date' => date('Y-m-d', strtotime('+3 days')),
             'new_time' => '14:00',
         ]);
 
-        $this->assertSame(409, $r['code']);
+        $this->assertSame(422, $r['code']);
         $data = json_decode($r['body'], true);
-        $this->assertSame('pattern_not_supported', $data['error'] ?? null); // pattern guard returns proper code
+        $this->assertSame('invalid_date', $data['error'] ?? null);
     }
 
     // ════════════════════════════════════════════════════════════════

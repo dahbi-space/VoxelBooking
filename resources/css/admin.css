@@ -762,6 +762,15 @@
     .vb-status-waitlisted::before { background: #8B5CF6; }
     .vb-status-waitlisted { color: #8B5CF6; }
 
+    /* Pattern type label — subtle icon + text beneath item name in bookings list */
+    .vb-pattern-label {
+        display: inline-flex; align-items: center; gap: 0.25rem;
+    }
+    .vb-pattern-icon {
+        width: 11px; height: 11px; flex-shrink: 0;
+        stroke-width: 2; opacity: 0.6;
+    }
+
     /* ══════════════════════════════════════════════════════════════
        FILTER PILLS — Capsule-style filter bar
        ══════════════════════════════════════════════════════════════ */

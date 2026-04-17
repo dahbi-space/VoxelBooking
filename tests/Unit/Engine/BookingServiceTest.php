@@ -421,5 +421,91 @@ final class BookingServiceTest extends TestCase
         $this->assertFalse($result['allowed']);
         $this->assertSame('not_confirmed', $result['reason']);
     }
+
+    // ── canReschedule: pattern-aware ──
+
+    /**
+     * Confirmed timeslot booking with explicit pattern key is reschedulable.
+     */
+    public function testCanRescheduleAllowsTimeslotPattern(): void
+    {
+        $booking = [
+            'status' => 'confirmed',
+            'booking_pattern' => 'timeslot',
+            'start_datetime' => (new \DateTimeImmutable('+48 hours'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_rescheduling' => 1,
+            'rescheduling_hours_before' => 24,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canReschedule($booking, $tenant);
+        $this->assertTrue($result['allowed']);
+        $this->assertNull($result['reason']);
+    }
+
+    /**
+     * Confirmed resource booking outside time gate can be rescheduled.
+     */
+    public function testCanRescheduleAllowsResourcePattern(): void
+    {
+        $booking = [
+            'status' => 'confirmed',
+            'booking_pattern' => 'resource',
+            'start_datetime' => (new \DateTimeImmutable('+48 hours'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_rescheduling' => 1,
+            'rescheduling_hours_before' => 24,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canReschedule($booking, $tenant);
+        $this->assertTrue($result['allowed']);
+        $this->assertNull($result['reason']);
+    }
+
+    /**
+     * Confirmed capacity booking outside time gate can be rescheduled.
+     */
+    public function testCanRescheduleAllowsCapacityPattern(): void
+    {
+        $booking = [
+            'status' => 'confirmed',
+            'booking_pattern' => 'capacity',
+            'start_datetime' => (new \DateTimeImmutable('+48 hours'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_rescheduling' => 1,
+            'rescheduling_hours_before' => 24,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canReschedule($booking, $tenant);
+        $this->assertTrue($result['allowed']);
+        $this->assertNull($result['reason']);
+    }
+
+    /**
+     * Confirmed event booking outside time gate can be rescheduled.
+     */
+    public function testCanRescheduleAllowsEventPattern(): void
+    {
+        $booking = [
+            'status' => 'confirmed',
+            'booking_pattern' => 'event',
+            'start_datetime' => (new \DateTimeImmutable('+48 hours'))->format('Y-m-d H:i:s'),
+        ];
+        $tenant = [
+            'allow_rescheduling' => 1,
+            'rescheduling_hours_before' => 24,
+            'timezone' => 'UTC',
+        ];
+
+        $result = BookingService::canReschedule($booking, $tenant);
+        $this->assertTrue($result['allowed']);
+        $this->assertNull($result['reason']);
+    }
 }
 

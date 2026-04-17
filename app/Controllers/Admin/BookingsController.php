@@ -203,17 +203,8 @@ final class BookingsController
     /**
      * Shared reschedule handler.
      *
-     * Creates a replacement booking at the new date/time, marks the original
-     * as 'rescheduled' with rescheduled_to_id linking to the new booking,
-     * sends the reschedule confirmation email to the customer, and fires
-     * the staff notification.
-     *
-     * Only confirmed bookings can be rescheduled. Pending bookings must
-     * go through the approval flow first — rescheduling a pending booking
-     * would silently bypass approval and schedule reminders prematurely.
-     *
-     * Only the timeslot pattern is supported in this slice. Other patterns
-     * are rejected until their availability validators are implemented.
+     * Delegates to BookingService::rescheduleBooking() for all patterns.
+     * Handles email dispatch (customer + staff) as post-commit side effects.
      */
     private function doReschedule(Request $request, string $redirectBase): Response
     {
@@ -225,32 +216,6 @@ final class BookingsController
             return Response::redirect($redirectBase);
         }
 
-        // Only confirmed bookings can be rescheduled
-        if ($booking['status'] !== 'confirmed') {
-            FormState::toast('error', __('admin.bookings.error_reschedule_not_allowed'));
-            return Response::redirect("{$redirectBase}/{$id}");
-        }
-
-        // Only timeslot pattern is supported for reschedule in this slice
-        $pattern = $booking['booking_pattern'] ?? 'timeslot';
-        if ($pattern !== 'timeslot') {
-            FormState::toast('error', __('admin.bookings.error_reschedule_not_allowed'));
-            return Response::redirect("{$redirectBase}/{$id}");
-        }
-
-        $newDate = trim($request->string('new_date'));
-        $newTime = trim($request->string('new_time'));
-
-        if ($newDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate)) {
-            FormState::toast('error', __('admin.bookings.error_date_required'));
-            return Response::redirect("{$redirectBase}/{$id}");
-        }
-
-        if ($newTime === '' || !preg_match('/^\d{2}:\d{2}$/', $newTime)) {
-            FormState::toast('error', __('admin.bookings.error_time_required'));
-            return Response::redirect("{$redirectBase}/{$id}");
-        }
-
         $tenantId = $booking['tenant_id'];
         $tenant = $this->loadTenant($tenantId);
         if ($tenant === null) {
@@ -258,169 +223,111 @@ final class BookingsController
             return Response::redirect($redirectBase);
         }
 
-        $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
-        $newStartDt = new \DateTimeImmutable("{$newDate} {$newTime}", $tz);
+        // Build pattern-aware target from POST params
+        $pattern = $booking['booking_pattern'] ?? 'timeslot';
+        $target = match ($pattern) {
+            'timeslot' => [
+                'new_date' => trim($request->string('new_date')),
+                'new_time' => trim($request->string('new_time')),
+            ],
+            'resource' => [
+                'check_in'  => trim($request->string('check_in')),
+                'check_out' => trim($request->string('check_out')),
+            ],
+            'capacity' => [
+                'date'    => trim($request->string('date')),
+                'slot_id' => trim($request->string('slot_id')),
+            ],
+            'event' => [
+                'event_id' => trim($request->string('event_id') ?: ($booking['event_id'] ?? '')),
+                'date'     => trim($request->string('date')),
+            ],
+            default => [],
+        };
 
-        // Resolve duration from the original booking
-        $origStart = new \DateTimeImmutable($booking['start_datetime'], $tz);
-        $origEnd = new \DateTimeImmutable($booking['end_datetime'], $tz);
-        $durationMinutes = (int) (($origEnd->getTimestamp() - $origStart->getTimestamp()) / 60);
-        $newEndDt = $newStartDt->modify("+{$durationMinutes} minutes");
-
-        // Same-slot check
-        if ($newStartDt->format('Y-m-d H:i') === $origStart->format('Y-m-d H:i')) {
-            FormState::toast('error', __('admin.bookings.error_same_slot'));
+        // Delegate to the service
+        try {
+            $result = BookingService::rescheduleBooking(
+                $id,
+                $tenant,
+                $target,
+                Auth::isOperator() ? 'operator' : 'business_user',
+                'admin',
+            );
+        } catch (\RuntimeException $e) {
+            $msg = $e->getMessage();
+            $errorKey = match ($msg) {
+                'not_confirmed'         => 'error_reschedule_not_allowed',
+                'rescheduling_disabled' => 'error_reschedule_not_allowed',
+                'too_late'              => 'error_reschedule_not_allowed',
+                'same_slot'             => 'error_same_slot',
+                'slot_unavailable', 'already_booked', 'capacity_exceeded', 'event_full' => 'flash_slot_taken',
+                'invalid_date'          => 'error_date_required',
+                'invalid_time'          => 'error_time_required',
+                'invalid_slot'          => 'flash_reschedule_failed',
+                'invalid_event'         => 'flash_reschedule_failed',
+                default                 => 'flash_reschedule_failed',
+            };
+            FormState::toast('error', __("admin.bookings.{$errorKey}"));
             return Response::redirect("{$redirectBase}/{$id}");
         }
 
-        // Timeslot availability check + booking creation
-        $pdo = Database::connect();
-        $pdo->beginTransaction();
+        // Post-commit: send reschedule confirmation email to customer
+        if (Mailer::isConfigured()) {
+            try {
+                $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+                $newStartDt = new \DateTimeImmutable($result['new_start'], $tz);
+                $newEndDt = new \DateTimeImmutable($result['new_end'], $tz);
 
-        try {
-            // Lock + recheck availability
-            $lockSql = "SELECT `id` FROM `bookings`
-                        WHERE `tenant_id` = ? AND `status` IN ('confirmed', 'rescheduled')
-                        AND DATE(`start_datetime`) = ?";
-            $lockParams = [$tenantId, $newDate];
-            if ($booking['staff_id']) {
-                $lockSql .= ' AND `staff_id` = ?';
-                $lockParams[] = $booking['staff_id'];
-            }
-            $lockSql .= ' FOR UPDATE';
-            $lockStmt = $pdo->prepare($lockSql);
-            $lockStmt->execute($lockParams);
+                // Load full booking details for email
+                $details = BookingService::findByIdWithDetails($id, $tenantId);
+                $serviceName = $details['service_name'] ?? $details['resource_name'] ?? $details['event_name'] ?? null;
 
-            $availResult = TimeSlotCalculator::getAvailableSlots(
-                $tenant, $newDate, $booking['service_id'], $booking['staff_id']
-            );
+                $emailData = [
+                    'date'           => $result['new_date'],
+                    'formatted_date' => Locale::dateLong($newStartDt),
+                    'time'           => $newStartDt->format('H:i'),
+                    'end_time'       => $newEndDt->format('H:i'),
+                ];
 
-            $stillAvailable = false;
-            foreach ($availResult['slots'] as $slot) {
-                if ($slot['time'] === $newTime) {
-                    $stillAvailable = true;
-                    break;
-                }
-            }
-
-            if (!$stillAvailable) {
-                $pdo->rollBack();
-                FormState::toast('error', __('admin.bookings.flash_slot_taken'));
-                return Response::redirect("{$redirectBase}/{$id}");
-            }
-
-            // Create the replacement booking
-            $newBookingData = [
-                'tenant_id'       => $tenantId,
-                'customer_id'     => $booking['customer_id'],
-                'booking_pattern' => $pattern,
-                'start_datetime'  => $newStartDt->format('Y-m-d H:i:s'),
-                'end_datetime'    => $newEndDt->format('Y-m-d H:i:s'),
-                'source'          => 'admin',
-                'status'          => 'confirmed',
-            ];
-
-            // Carry forward optional fields from the original booking
-            foreach (['service_id', 'staff_id', 'resource_id', 'event_id', 'party_size', 'notes', 'internal_notes', 'customer_timezone'] as $field) {
-                if (!empty($booking[$field])) {
-                    $newBookingData[$field] = $booking[$field];
-                }
+                Mailer::sendRescheduleConfirmation(
+                    $details['customer_email'] ?? '',
+                    $details['customer_name'] ?? '',
+                    $emailData,
+                    $serviceName,
+                    $details['staff_name'] ?? null,
+                    $tenant['name'],
+                    $tenantId,
+                    $result['new_booking_id'],
+                    $tenant['brand_color'] ?? '#2563EB',
+                );
+            } catch (\Throwable $e) {
+                Logger::error('Reschedule email dispatch failed', [
+                    'booking' => $result['new_booking_id'],
+                    'error'   => $e->getMessage(),
+                ]);
             }
 
-            // Preserve custom field data (customer answers) — pass as-is,
-            // BookingService handles JSON encoding when needed
-            if (!empty($booking['custom_field_data'])) {
-                $newBookingData['custom_field_data'] = $booking['custom_field_data'];
-            }
-
-            $result = BookingService::createBooking($newBookingData, $tenant, false);
-
-            // Mark the original as rescheduled and link to the new booking
-            Database::execute(
-                "UPDATE `bookings` SET `status` = 'rescheduled', `rescheduled_to_id` = ?, `updated_at` = NOW() WHERE `id` = ?",
-                [$result['id'], $id]
-            );
-
-            AuditLog::log('booking.rescheduled', 'booking', $id, [
-                'old_start'     => $booking['start_datetime'],
-                'old_end'       => $booking['end_datetime'],
-                'new_booking_id' => $result['id'],
-                'new_start'     => $newStartDt->format('Y-m-d H:i:s'),
-                'new_end'       => $newEndDt->format('Y-m-d H:i:s'),
-            ], $tenantId);
-
-            $pdo->commit();
-
-            // Post-commit: schedule reminder for the new booking (dedupe-safe)
-            $this->scheduleReminderForApprovedBooking([
-                'id'             => $result['id'],
-                'tenant_id'      => $tenantId,
-                'start_datetime' => $newStartDt->format('Y-m-d H:i:s'),
-            ]);
-
-            // Post-commit: send reschedule confirmation email to customer
-            if (Mailer::isConfigured()) {
+            // Staff notification (fire-and-forget)
+            if ((int) ($tenant['notify_on_booking'] ?? 0) === 1) {
                 try {
-                    $serviceName = $booking['service_name'] ?? $booking['resource_name'] ?? $booking['event_name'] ?? null;
-                    $emailData = [
-                        'date'           => $newDate,
-                        'formatted_date' => Locale::dateLong($newStartDt),
-                        'time'           => $newStartDt->format('H:i'),
-                        'end_time'       => $newEndDt->format('H:i'),
-                    ];
-
-                    Mailer::sendRescheduleConfirmation(
-                        $booking['customer_email'],
-                        $booking['customer_name'],
-                        $emailData,
-                        $serviceName,
-                        $booking['staff_name'] ?? null,
-                        $tenant['name'],
-                        $tenantId,
-                        $result['id'],
+                    Mailer::sendStaffBookingNotification(
+                        $emailData, $serviceName, $details['staff_name'] ?? null,
+                        $details['customer_name'] ?? '',
+                        $tenant['name'], $tenantId, $result['new_booking_id'],
                         $tenant['brand_color'] ?? '#2563EB',
                     );
                 } catch (\Throwable $e) {
-                    Logger::error('Reschedule email dispatch failed', [
-                        'booking' => $result['id'],
+                    Logger::error('Staff reschedule notification failed', [
+                        'booking' => $result['new_booking_id'],
                         'error'   => $e->getMessage(),
                     ]);
                 }
-
-                // Staff notification (fire-and-forget)
-                if ((int) ($tenant['notify_on_booking'] ?? 0) === 1) {
-                    try {
-                        Mailer::sendStaffBookingNotification(
-                            $emailData, $serviceName, $booking['staff_name'] ?? null,
-                            $booking['customer_name'],
-                            $tenant['name'], $tenantId, $result['id'],
-                            $tenant['brand_color'] ?? '#2563EB',
-                        );
-                    } catch (\Throwable $e) {
-                        Logger::error('Staff reschedule notification failed', [
-                            'booking' => $result['id'],
-                            'error'   => $e->getMessage(),
-                        ]);
-                    }
-                }
             }
-
-            FormState::toast('success', __('admin.bookings.flash_rescheduled'));
-            return Response::redirect("{$redirectBase}/{$result['id']}");
-
-        } catch (\Throwable $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-
-            Logger::error('Admin booking reschedule failed', [
-                'booking' => $id,
-                'error'   => $e->getMessage(),
-            ]);
-
-            FormState::toast('error', __('admin.bookings.flash_reschedule_failed'));
-            return Response::redirect("{$redirectBase}/{$id}");
         }
+
+        FormState::toast('success', __('admin.bookings.flash_rescheduled'));
+        return Response::redirect("{$redirectBase}/{$result['new_booking_id']}");
     }
 
     // ── Tenant-context: Manual booking creation ──
