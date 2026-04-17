@@ -1537,18 +1537,19 @@ final class BookingApiController
         $canCancel = BookingService::canCancel($booking, $tenant);
         $canReschedule = BookingService::canReschedule($booking, $tenant);
 
-        // Public self-service reschedule UI currently only supports the timeslot
-        // pattern flow (date/time picker wizard). Suppress the reschedule flag
-        // for other patterns until the public JS flow is extended.
-        $pattern = $booking['booking_pattern'] ?? 'timeslot';
-        if ($canReschedule['allowed'] && $pattern !== 'timeslot') {
-            $canReschedule = ['allowed' => false, 'reason' => 'pattern_not_supported'];
-        }
-
         // Format dates for JS
         $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
         $startDt = new \DateTimeImmutable($booking['start_datetime'], $tz);
         $endDt = new \DateTimeImmutable($booking['end_datetime'], $tz);
+
+        // Resource pattern: compute check-in/check-out from start/end dates
+        $pattern = $booking['booking_pattern'] ?? 'timeslot';
+        $checkIn = null;
+        $checkOut = null;
+        if ($pattern === 'resource') {
+            $checkIn = $startDt->format('Y-m-d');
+            $checkOut = $endDt->format('Y-m-d');
+        }
 
         return Response::json([
             'booking' => [
@@ -1563,6 +1564,8 @@ final class BookingApiController
                 'party_size'      => (int) $booking['party_size'],
                 'service_id'      => $booking['service_id'] ?? null,
                 'staff_id'        => $booking['staff_id'] ?? null,
+                'resource_id'     => $booking['resource_id'] ?? null,
+                'event_id'        => $booking['event_id'] ?? null,
                 'service_name'    => $booking['service_name'] ?? null,
                 'staff_name'      => $booking['staff_name'] ?? null,
                 'resource_name'   => $booking['resource_name'] ?? null,
@@ -1572,6 +1575,8 @@ final class BookingApiController
                 'customer_email'  => $booking['customer_email'] ?? null,
                 'cancelled_at'    => $booking['cancelled_at'] ?? null,
                 'cancellation_reason' => $booking['cancellation_reason'] ?? null,
+                'check_in'        => $checkIn,
+                'check_out'       => $checkOut,
             ],
             'can_cancel'     => $canCancel['allowed'],
             'cancel_reason'  => $canCancel['reason'],
@@ -1896,16 +1901,30 @@ final class BookingApiController
         }
 
         // Build response with new booking details
+        $newBookingResponse = [
+            'id'       => $result['new_booking_id'],
+            'date'     => $result['new_date'],
+            'time'     => $result['new_time'],
+            'end_time' => (new \DateTimeImmutable($result['new_end']))->format('H:i'),
+        ];
+
+        // Enrich with pattern-specific fields
+        $pattern = $result['pattern'] ?? 'timeslot';
+        if ($pattern === 'resource') {
+            $tz = new \DateTimeZone($tenant['timezone'] ?? 'UTC');
+            $newBookingResponse['check_in'] = (new \DateTimeImmutable($result['new_start'], $tz))->format('Y-m-d');
+            $newBookingResponse['check_out'] = (new \DateTimeImmutable($result['new_end'], $tz))->format('Y-m-d');
+        }
+        if ($pattern === 'event' && !empty($target['event_id'])) {
+            $event = Database::query('SELECT `name` FROM `events` WHERE `id` = ? LIMIT 1', [$target['event_id']]);
+            $newBookingResponse['event_name'] = $event[0]['name'] ?? null;
+        }
+
         return Response::json([
             'rescheduled'    => true,
             'new_booking_id' => $result['new_booking_id'],
             'email_sent'     => $emailSent,
-            'new_booking'    => [
-                'id'       => $result['new_booking_id'],
-                'date'     => $result['new_date'],
-                'time'     => $result['new_time'],
-                'end_time' => (new \DateTimeImmutable($result['new_end']))->format('H:i'),
-            ],
+            'new_booking'    => $newBookingResponse,
         ]);
     }
 

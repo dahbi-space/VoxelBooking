@@ -139,6 +139,7 @@ return [
         'error_already_booked'        => 'This room is already booked for those dates.',
         'error_invalid_check_in_day'  => 'Check-in is not available on this day of the week.',
         'error_invalid_check_out_day' => 'Check-out is not available on this day of the week.',
+        'select_dates'                => 'Select your new check-in and check-out dates.',
     ],
 
     // ── Empty States ──
@@ -204,6 +205,8 @@ return [
         'select_event'        => 'Select an event…',
         'full_badge'          => 'Full',
         'waitlist_badge'      => 'Waitlist',
+        'no_upcoming'         => 'No upcoming events available for rescheduling.',
+        'spots_left'          => 'spots left',
     ],
 
     // ── Errors & Toasts ──

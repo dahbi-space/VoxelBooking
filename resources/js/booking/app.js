@@ -278,6 +278,16 @@ Alpine.data('bookingWizard', () => ({
     rescheduleSubmitting: false,
     rescheduleNewBooking: null,
     rescheduleCalendarFading: false,
+    // Resource reschedule
+    rescheduleCheckIn: null,
+    rescheduleCheckOut: null,
+    rescheduleResourceDates: [],
+    // Capacity reschedule
+    rescheduleCapacitySlots: [],
+    rescheduleCapacitySlot: null,
+    // Event reschedule
+    rescheduleEvents: [],
+    rescheduleSelectedEvent: null,
 
     // CSP-safe setters for x-model (nested property assignment is prohibited)
     setCustomerName(val) { this.customerName = val; },
@@ -327,6 +337,9 @@ Alpine.data('bookingWizard', () => ({
     get isRescheduleDateStep() { return this.step === 'reschedule-date'; },
     get isRescheduleReviewStep() { return this.step === 'reschedule-review'; },
     get isRescheduleConfirmedStep() { return this.step === 'reschedule-confirmed'; },
+    get isRescheduleResourceStep() { return this.step === 'reschedule-resource'; },
+    get isRescheduleCapacityStep() { return this.step === 'reschedule-capacity'; },
+    get isRescheduleEventStep() { return this.step === 'reschedule-event'; },
     get hasToast() { return !!this.toast; },
     get toastType() { return this.toast ? this.toast.type : ''; },
     get toastMessage() { return this.toast ? this.toast.message : ''; },
@@ -1290,7 +1303,7 @@ Alpine.data('bookingWizard', () => ({
 
     /**
      * Start the reschedule wizard from the manage page.
-     * Navigates the calendar to the month of the current booking.
+     * Branches by booking pattern to the appropriate flow.
      */
     async startReschedule() {
         if (config.is_demo) {
@@ -1299,8 +1312,24 @@ Alpine.data('bookingWizard', () => ({
         }
         if (!this.managedBooking || !this.manageCanReschedule) return;
 
-        // Pre-position calendar to the month of the current booking
-        const bookingDate = this.managedBooking.date;
+        const pattern = this.managedBooking.booking_pattern || 'timeslot';
+
+        // Reset shared state
+        this.rescheduleDate = null;
+        this.rescheduleSlot = null;
+        this.rescheduleSlots = [];
+        this.rescheduleDates = [];
+        this.rescheduleNewBooking = null;
+        this.rescheduleCheckIn = null;
+        this.rescheduleCheckOut = null;
+        this.rescheduleResourceDates = [];
+        this.rescheduleCapacitySlots = [];
+        this.rescheduleCapacitySlot = null;
+        this.rescheduleEvents = [];
+        this.rescheduleSelectedEvent = null;
+
+        // Pre-position calendar to booking month
+        const bookingDate = this.managedBooking.check_in || this.managedBooking.date;
         if (bookingDate) {
             const [y, m] = bookingDate.split('-').map(Number);
             this.rescheduleYear = y;
@@ -1311,14 +1340,19 @@ Alpine.data('bookingWizard', () => ({
             this.rescheduleMonth = now.getMonth();
         }
 
-        this.rescheduleDate = null;
-        this.rescheduleSlot = null;
-        this.rescheduleSlots = [];
-        this.rescheduleDates = [];
-        this.rescheduleNewBooking = null;
-
-        this.goToStep('reschedule-date');
-        await this.loadRescheduleDates();
+        if (pattern === 'resource') {
+            this.goToStep('reschedule-resource');
+            await this.loadRescheduleResourceDates();
+        } else if (pattern === 'capacity') {
+            this.goToStep('reschedule-capacity');
+            await this.loadRescheduleCapacityDates();
+        } else if (pattern === 'event') {
+            this.goToStep('reschedule-event');
+            await this.loadRescheduleEvents();
+        } else {
+            this.goToStep('reschedule-date');
+            await this.loadRescheduleDates();
+        }
     },
 
     /**
@@ -1330,15 +1364,34 @@ Alpine.data('bookingWizard', () => ({
         this.rescheduleSlots = [];
         this.rescheduleDates = [];
         this.rescheduleNewBooking = null;
+        this.rescheduleCheckIn = null;
+        this.rescheduleCheckOut = null;
+        this.rescheduleResourceDates = [];
+        this.rescheduleCapacitySlots = [];
+        this.rescheduleCapacitySlot = null;
+        this.rescheduleEvents = [];
+        this.rescheduleSelectedEvent = null;
         this.goToStep('manage');
     },
 
     /**
-     * Go back from review to date step (preserves selected date).
+     * Go back from review to the pattern-appropriate date step.
      */
     goBackToRescheduleDate() {
         this.rescheduleSlot = null;
-        this.goToStep('reschedule-date');
+        this.rescheduleCapacitySlot = null;
+        this.rescheduleSelectedEvent = null;
+        const pattern = this.managedBooking?.booking_pattern || 'timeslot';
+        if (pattern === 'resource') {
+            this.rescheduleCheckOut = null;
+            this.goToStep('reschedule-resource');
+        } else if (pattern === 'capacity') {
+            this.goToStep('reschedule-capacity');
+        } else if (pattern === 'event') {
+            this.goToStep('reschedule-event');
+        } else {
+            this.goToStep('reschedule-date');
+        }
     },
 
     /**
@@ -1472,20 +1525,55 @@ Alpine.data('bookingWizard', () => ({
     },
 
     /**
-     * Display string for the original booking date/time.
+     * Display string for the original booking date/time (pattern-aware).
      */
     get rescheduleOriginalDisplay() {
         if (!this.managedBooking) return '';
         const b = this.managedBooking;
+        const pattern = b.booking_pattern || 'timeslot';
+        if (pattern === 'resource') {
+            const cin = b.check_in ? this.formatDateDisplay(b.check_in) : '';
+            const cout = b.check_out ? this.formatDateDisplay(b.check_out) : '';
+            return cin && cout ? `${cin} → ${cout}` : cin;
+        }
+        if (pattern === 'event') {
+            const parts = [b.event_name || ''];
+            if (b.date) parts.push(this.formatDateDisplay(b.date));
+            if (b.time && b.end_time) parts.push(`${b.time} – ${b.end_time}`);
+            return parts.filter(Boolean).join(', ');
+        }
         const dateLabel = this.formatDateDisplay(b.date);
         const timeLabel = b.time && b.end_time ? `${b.time} – ${b.end_time}` : '';
         return timeLabel ? `${dateLabel}, ${timeLabel}` : dateLabel;
     },
 
     /**
-     * Display string for the new reschedule date/time.
+     * Display string for the new reschedule date/time (pattern-aware).
      */
     get rescheduleNewDisplay() {
+        const pattern = this.managedBooking?.booking_pattern || 'timeslot';
+        if (pattern === 'resource') {
+            if (!this.rescheduleCheckIn || !this.rescheduleCheckOut) return '';
+            return `${this.formatDateDisplay(this.rescheduleCheckIn)} → ${this.formatDateDisplay(this.rescheduleCheckOut)}`;
+        }
+        if (pattern === 'capacity') {
+            if (!this.rescheduleDate || !this.rescheduleCapacitySlot) return '';
+            const dateLabel = this.formatDateDisplay(this.rescheduleDate);
+            const label = this.rescheduleCapacitySlot.label || '';
+            const time = this.rescheduleCapacitySlot.time && this.rescheduleCapacitySlot.end_time
+                ? `${this.rescheduleCapacitySlot.time} – ${this.rescheduleCapacitySlot.end_time}` : '';
+            return [dateLabel, label, time].filter(Boolean).join(', ');
+        }
+        if (pattern === 'event') {
+            if (!this.rescheduleSelectedEvent) return '';
+            const ev = this.rescheduleSelectedEvent;
+            const parts = [ev.name || ''];
+            if (ev.start_datetime) {
+                parts.push(this.formatEventDate(ev.start_datetime));
+                parts.push(this.formatEventTime(ev.start_datetime) + '–' + this.formatEventTime(ev.end_datetime));
+            }
+            return parts.filter(Boolean).join(', ');
+        }
         if (!this.rescheduleDate || !this.rescheduleSlot) return '';
         const dateLabel = this.formatDateDisplay(this.rescheduleDate);
         const endTime = this.rescheduleSlot.end_time || '';
@@ -1494,10 +1582,38 @@ Alpine.data('bookingWizard', () => ({
     },
 
     /**
-     * Confirm the reschedule via the public API.
+     * Build pattern-specific payload for the reschedule API.
+     */
+    _buildReschedulePayload() {
+        const pattern = this.managedBooking?.booking_pattern || 'timeslot';
+        if (pattern === 'resource') {
+            return { check_in: this.rescheduleCheckIn, check_out: this.rescheduleCheckOut };
+        }
+        if (pattern === 'capacity') {
+            return { date: this.rescheduleDate, slot_id: this.rescheduleCapacitySlot?.id };
+        }
+        if (pattern === 'event') {
+            return { date: this.rescheduleSelectedEvent?.date, event_id: this.rescheduleSelectedEvent?.id };
+        }
+        return { new_date: this.rescheduleDate, new_time: this.rescheduleSlot?.time };
+    },
+
+    /**
+     * Check if the reschedule review can proceed (pattern-aware guard).
+     */
+    get canConfirmReschedule() {
+        const pattern = this.managedBooking?.booking_pattern || 'timeslot';
+        if (pattern === 'resource') return !!(this.rescheduleCheckIn && this.rescheduleCheckOut);
+        if (pattern === 'capacity') return !!(this.rescheduleDate && this.rescheduleCapacitySlot);
+        if (pattern === 'event') return !!this.rescheduleSelectedEvent;
+        return !!(this.rescheduleDate && this.rescheduleSlot);
+    },
+
+    /**
+     * Confirm the reschedule via the public API (pattern-aware).
      */
     async confirmReschedule() {
-        if (this.rescheduleSubmitting || !this.rescheduleDate || !this.rescheduleSlot) return;
+        if (this.rescheduleSubmitting || !this.canConfirmReschedule) return;
         this.rescheduleSubmitting = true;
 
         try {
@@ -1507,10 +1623,7 @@ Alpine.data('bookingWizard', () => ({
                     'Content-Type': 'application/json',
                     'X-CSRF-Token': csrfToken,
                 },
-                body: JSON.stringify({
-                    new_date: this.rescheduleDate,
-                    new_time: this.rescheduleSlot.time,
-                }),
+                body: JSON.stringify(this._buildReschedulePayload()),
             });
             const data = await resp.json();
 
@@ -1529,6 +1642,176 @@ Alpine.data('bookingWizard', () => ({
         }
     },
 
+    // ── Resource reschedule methods ──
+
+    async loadRescheduleResourceDates() {
+        if (!this.managedBooking?.resource_id) return;
+        const params = new URLSearchParams({
+            year: this.rescheduleYear,
+            month: this.rescheduleMonth + 1,
+        });
+        const data = await this.api(`/resources/${this.managedBooking.resource_id}/availability?${params}`);
+        this.rescheduleResourceDates = data.dates || [];
+    },
+
+    get rescheduleResourceCalendarCells() {
+        const year = this.rescheduleYear;
+        const month = this.rescheduleMonth;
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const weekStart = fmt.week_start ?? 0;
+        const rawDay = new Date(year, month, 1).getDay();
+        const firstDay = (rawDay - weekStart + 7) % 7;
+        const cells = [];
+        for (let i = 0; i < firstDay; i++) {
+            cells.push({ day: '', dateStr: '', disabled: true, today: false, hasSlots: false, selected: false, inRange: false });
+        }
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const isPast = new Date(dateStr) < new Date(today.toDateString());
+            const hasSlots = this.rescheduleResourceDates.includes(dateStr);
+            const isCheckIn = dateStr === this.rescheduleCheckIn;
+            const isCheckOut = dateStr === this.rescheduleCheckOut;
+            const inRange = this.rescheduleCheckIn && this.rescheduleCheckOut
+                && dateStr > this.rescheduleCheckIn && dateStr < this.rescheduleCheckOut;
+            cells.push({
+                day, dateStr,
+                disabled: !hasSlots || isPast,
+                today: dateStr === todayStr,
+                hasSlots,
+                selected: isCheckIn || isCheckOut,
+                inRange,
+            });
+        }
+        return cells;
+    },
+
+    selectRescheduleResourceDate(cell) {
+        if (cell.disabled || !cell.day) return;
+        if (!this.rescheduleCheckIn || (this.rescheduleCheckIn && this.rescheduleCheckOut)) {
+            this.rescheduleCheckIn = cell.dateStr;
+            this.rescheduleCheckOut = null;
+        } else {
+            if (cell.dateStr <= this.rescheduleCheckIn) {
+                this.rescheduleCheckIn = cell.dateStr;
+            } else {
+                this.rescheduleCheckOut = cell.dateStr;
+            }
+        }
+    },
+
+    confirmRescheduleResource() {
+        if (!this.rescheduleCheckIn || !this.rescheduleCheckOut) return;
+        this.goToStep('reschedule-review');
+    },
+
+    async rescheduleResourcePrevMonth() {
+        this.rescheduleCalendarFading = true;
+        this.rescheduleMonth--;
+        if (this.rescheduleMonth < 0) { this.rescheduleMonth = 11; this.rescheduleYear--; }
+        await this.loadRescheduleResourceDates();
+        setTimeout(() => { this.rescheduleCalendarFading = false; }, 180);
+    },
+
+    async rescheduleResourceNextMonth() {
+        this.rescheduleCalendarFading = true;
+        this.rescheduleMonth++;
+        if (this.rescheduleMonth > 11) { this.rescheduleMonth = 0; this.rescheduleYear++; }
+        await this.loadRescheduleResourceDates();
+        setTimeout(() => { this.rescheduleCalendarFading = false; }, 180);
+    },
+
+    get rescheduleResourceLabel() {
+        if (!this.rescheduleCheckIn) return '';
+        const cin = this.formatDateDisplay(this.rescheduleCheckIn);
+        if (!this.rescheduleCheckOut) return cin;
+        return `${cin} → ${this.formatDateDisplay(this.rescheduleCheckOut)}`;
+    },
+
+    // ── Capacity reschedule methods ──
+
+    async loadRescheduleCapacityDates() {
+        if (!this.managedBooking) return;
+        const ps = this.managedBooking.party_size || 1;
+        const res = await this.api(`/capacity/available-dates?year=${this.rescheduleYear}&month=${this.rescheduleMonth + 1}&party_size=${ps}`);
+        this.rescheduleDates = res.dates || [];
+    },
+
+    async selectRescheduleCapacityDate(cell) {
+        if (cell.disabled || !cell.day) return;
+        this.rescheduleDate = cell.dateStr;
+        this.rescheduleCapacitySlot = null;
+        this.rescheduleCapacitySlots = [];
+        const ps = this.managedBooking?.party_size || 1;
+        const res = await this.api(`/capacity/slots?date=${cell.dateStr}&party_size=${ps}`);
+        this.rescheduleCapacitySlots = res.slots || [];
+    },
+
+    selectRescheduleCapacitySlot(slot) {
+        this.rescheduleCapacitySlot = slot;
+    },
+
+    confirmRescheduleCapacity() {
+        if (!this.rescheduleDate || !this.rescheduleCapacitySlot) return;
+        this.goToStep('reschedule-review');
+    },
+
+    async rescheduleCapacityPrevMonth() {
+        this.rescheduleCalendarFading = true;
+        this.rescheduleMonth--;
+        if (this.rescheduleMonth < 0) { this.rescheduleMonth = 11; this.rescheduleYear--; }
+        this.rescheduleDate = null;
+        this.rescheduleCapacitySlot = null;
+        this.rescheduleCapacitySlots = [];
+        await this.loadRescheduleCapacityDates();
+        setTimeout(() => { this.rescheduleCalendarFading = false; }, 180);
+    },
+
+    async rescheduleCapacityNextMonth() {
+        this.rescheduleCalendarFading = true;
+        this.rescheduleMonth++;
+        if (this.rescheduleMonth > 11) { this.rescheduleMonth = 0; this.rescheduleYear++; }
+        this.rescheduleDate = null;
+        this.rescheduleCapacitySlot = null;
+        this.rescheduleCapacitySlots = [];
+        await this.loadRescheduleCapacityDates();
+        setTimeout(() => { this.rescheduleCalendarFading = false; }, 180);
+    },
+
+    get rescheduleCapacitySlotLabel() {
+        if (!this.rescheduleCapacitySlot || !this.rescheduleDate) return '';
+        const sl = this.rescheduleCapacitySlot;
+        const dateLabel = this.formatDateDisplay(this.rescheduleDate);
+        const time = sl.time && sl.end_time ? `${sl.time} – ${sl.end_time}` : '';
+        return [dateLabel, sl.label, time].filter(Boolean).join('  ·  ');
+    },
+
+    // ── Event reschedule methods ──
+
+    async loadRescheduleEvents() {
+        const data = await this.api('/events');
+        // Exclude the exact same occurrence (same event_id + same date) but allow
+        // same event on a different date (recurring-event reschedule to another occurrence).
+        const currentEventId = this.managedBooking?.event_id;
+        const currentDate = this.managedBooking?.date;
+        const now = new Date();
+        this.rescheduleEvents = (data.events || []).filter(ev => {
+            if (ev.id === currentEventId && ev.date === currentDate) return false;
+            if (ev.start_datetime && new Date(ev.start_datetime) < now) return false;
+            return true;
+        });
+    },
+
+    selectRescheduleEvent(event) {
+        this.rescheduleSelectedEvent = event;
+    },
+
+    confirmRescheduleEvent() {
+        if (!this.rescheduleSelectedEvent) return;
+        this.goToStep('reschedule-review');
+    },
+
     /**
      * Summary rows for the reschedule confirmed state.
      */
@@ -1536,7 +1819,25 @@ Alpine.data('bookingWizard', () => ({
         const rows = [];
         if (!this.rescheduleNewBooking) return rows;
         const nb = this.rescheduleNewBooking;
+        const pattern = this.managedBooking?.booking_pattern || 'timeslot';
 
+        if (pattern === 'resource') {
+            if (this.managedBooking?.resource_name) {
+                rows.push({ label: t('summary.resource_label'), value: this.managedBooking.resource_name });
+            }
+            if (nb.check_in) rows.push({ label: t('resource.check_in_label'), value: this.formatDateDisplay(nb.check_in) });
+            if (nb.check_out) rows.push({ label: t('resource.check_out_label'), value: this.formatDateDisplay(nb.check_out) });
+            return rows;
+        }
+
+        if (pattern === 'event') {
+            if (nb.event_name) rows.push({ label: t('event.events_title').replace(/s$/, ''), value: nb.event_name });
+            if (nb.date) rows.push({ label: t('summary.date_label'), value: this.formatDateDisplay(nb.date) });
+            if (nb.time) rows.push({ label: t('summary.time_label'), value: `${nb.time} – ${nb.end_time}` });
+            return rows;
+        }
+
+        // Timeslot / Capacity
         if (this.managedBooking?.service_name) {
             rows.push({ label: t('summary.service_label'), value: this.managedBooking.service_name });
         }
@@ -1568,12 +1869,13 @@ Alpine.data('bookingWizard', () => ({
         // Staff
         if (b.staff_name) rows.push({ label: t('summary.with_label'), value: b.staff_name });
 
-        // Date
-        if (b.date) rows.push({ label: t('summary.date_label'), value: this.formatDateDisplay(b.date) });
-
-        // Time (skip for resource pattern — check-in/out dates only)
-        if (b.time && b.booking_pattern !== 'resource') {
-            rows.push({ label: t('summary.time_label'), value: `${b.time} – ${b.end_time}` });
+        // Date — resource shows check-in/check-out, others show date + time
+        if (b.booking_pattern === 'resource') {
+            if (b.check_in) rows.push({ label: t('resource.check_in_label'), value: this.formatDateDisplay(b.check_in) });
+            if (b.check_out) rows.push({ label: t('resource.check_out_label'), value: this.formatDateDisplay(b.check_out) });
+        } else {
+            if (b.date) rows.push({ label: t('summary.date_label'), value: this.formatDateDisplay(b.date) });
+            if (b.time) rows.push({ label: t('summary.time_label'), value: `${b.time} – ${b.end_time}` });
         }
 
         // Party size (capacity/event)

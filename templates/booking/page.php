@@ -1232,6 +1232,216 @@
                 </div>
             </div>
 
+            <!-- ═══ Reschedule: Resource Date Range ═══ -->
+            <div class="vb-book-step" x-show="isRescheduleResourceStep" x-cloak>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('manage.reschedule_heading')"></div>
+                    <div class="vb-book-step-subtitle" x-text="t('resource.select_dates')"></div>
+                </div>
+
+                <!-- Selection confirmation -->
+                <div class="vb-book-selection-confirm" x-show="rescheduleCheckIn && rescheduleCheckOut" x-cloak>
+                    <div class="vb-book-selection-badge">
+                        <i data-lucide="calendar-check"></i>
+                        <div class="vb-book-selection-detail">
+                            <span class="vb-book-selection-label" x-text="t('resource.check_in_label') + ' → ' + t('resource.check_out_label')"></span>
+                            <span class="vb-book-selection-value" x-text="rescheduleResourceLabel"></span>
+                        </div>
+                    </div>
+                    <button type="button" class="vb-book-btn vb-book-btn-primary vb-book-btn-continue"
+                            @click="confirmRescheduleResource"
+                            x-text="t('buttons.continue')">
+                    </button>
+                </div>
+
+                <!-- Calendar -->
+                <div class="vb-book-calendar" role="grid">
+                    <div class="vb-book-calendar-nav">
+                        <button class="vb-book-calendar-btn" @click="rescheduleResourcePrevMonth"
+                                aria-label="<?= __('booking.calendar.prev_month') ?>">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
+                        <span class="vb-book-calendar-month" x-text="rescheduleMonthLabel"></span>
+                        <button class="vb-book-calendar-btn" @click="rescheduleResourceNextMonth"
+                                aria-label="<?= __('booking.calendar.next_month') ?>">
+                            <i data-lucide="chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="vb-book-calendar-grid"
+                         x-bind:class="{ 'is-fading': rescheduleCalendarFading }">
+                        <template x-for="d in dayNames" x-bind:key="'rr-' + d">
+                            <div class="vb-book-calendar-dayname" x-text="d"></div>
+                        </template>
+                        <template x-for="(cell, ci) in rescheduleResourceCalendarCells" x-bind:key="'rrc-' + ci">
+                            <div class="vb-book-calendar-cell"
+                                 x-bind:class="{
+                                     'is-disabled': cell.disabled,
+                                     'is-today': cell.today,
+                                     'has-slots': cell.hasSlots,
+                                     'is-selected': cell.selected,
+                                     'is-in-range': cell.inRange
+                                 }"
+                                 x-bind:tabindex="cell.day && !cell.disabled ? 0 : -1"
+                                 @click="selectRescheduleResourceDate(cell)"
+                                 @keydown.enter="selectRescheduleResourceDate(cell)"
+                                 @keydown.space.prevent="selectRescheduleResourceDate(cell)"
+                                 x-text="cell.day"></div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="vb-book-back-link">
+                    <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="cancelReschedule"
+                            x-text="t('manage.reschedule_cancel')"></button>
+                </div>
+            </div>
+
+            <!-- ═══ Reschedule: Capacity Date + Slot ═══ -->
+            <div class="vb-book-step" x-show="isRescheduleCapacityStep" x-cloak>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('manage.reschedule_heading')"></div>
+                    <div class="vb-book-step-subtitle" x-text="t('manage.reschedule_pick_date')"></div>
+                </div>
+
+                <!-- Selection confirmation (slot selected) -->
+                <div class="vb-book-selection-confirm" x-show="rescheduleCapacitySlot" x-cloak>
+                    <div class="vb-book-selection-badge">
+                        <i data-lucide="calendar-check"></i>
+                        <div class="vb-book-selection-detail">
+                            <span class="vb-book-selection-label" x-text="t('buttons.selected_time')"></span>
+                            <span class="vb-book-selection-value" x-text="rescheduleCapacitySlotLabel"></span>
+                        </div>
+                    </div>
+                    <button type="button" class="vb-book-btn vb-book-btn-primary vb-book-btn-continue"
+                            @click="confirmRescheduleCapacity"
+                            x-text="t('buttons.continue')">
+                    </button>
+                </div>
+
+                <!-- Calendar -->
+                <div class="vb-book-calendar" role="grid">
+                    <div class="vb-book-calendar-nav">
+                        <button class="vb-book-calendar-btn" @click="rescheduleCapacityPrevMonth"
+                                aria-label="<?= __('booking.calendar.prev_month') ?>">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
+                        <span class="vb-book-calendar-month" x-text="rescheduleMonthLabel"></span>
+                        <button class="vb-book-calendar-btn" @click="rescheduleCapacityNextMonth"
+                                aria-label="<?= __('booking.calendar.next_month') ?>">
+                            <i data-lucide="chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="vb-book-calendar-grid"
+                         x-bind:class="{ 'is-fading': rescheduleCalendarFading }">
+                        <template x-for="d in dayNames" x-bind:key="'rcap-' + d">
+                            <div class="vb-book-calendar-dayname" x-text="d"></div>
+                        </template>
+                        <template x-for="(cell, ci) in rescheduleCalendarCells" x-bind:key="'rcc-' + ci">
+                            <div class="vb-book-calendar-cell"
+                                 x-bind:class="{
+                                     'is-disabled': cell.disabled,
+                                     'is-today': cell.today,
+                                     'has-slots': cell.hasSlots,
+                                     'is-selected': cell.selected
+                                 }"
+                                 x-bind:tabindex="cell.day && !cell.disabled ? 0 : -1"
+                                 @click="selectRescheduleCapacityDate(cell)"
+                                 @keydown.enter="selectRescheduleCapacityDate(cell)"
+                                 @keydown.space.prevent="selectRescheduleCapacityDate(cell)"
+                                 x-text="cell.day"></div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Capacity slots (shown after date selection) -->
+                <div x-show="rescheduleDate" id="vb-reschedule-capacity-slots">
+                    <template x-if="rescheduleCapacitySlots.length === 0 && rescheduleDate">
+                        <div class="vb-book-empty" x-text="t('empty.no_times')"></div>
+                    </template>
+                    <template x-if="rescheduleCapacitySlots.length > 0">
+                        <div class="vb-book-time-grid" role="radiogroup">
+                            <template x-for="(slot, i) in rescheduleCapacitySlots" x-bind:key="'rcs-' + slot.id">
+                                <div class="vb-book-time-pill"
+                                     x-bind:class="{
+                                         'is-selected': rescheduleCapacitySlot && rescheduleCapacitySlot.id === slot.id,
+                                         'is-dimmed': rescheduleCapacitySlot && rescheduleCapacitySlot.id !== slot.id
+                                     }"
+                                     @click="selectRescheduleCapacitySlot(slot)"
+                                     @keydown.enter="selectRescheduleCapacitySlot(slot)"
+                                     @keydown.space.prevent="selectRescheduleCapacitySlot(slot)"
+                                     role="radio" tabindex="0"
+                                     x-bind:aria-checked="rescheduleCapacitySlot && rescheduleCapacitySlot.id === slot.id"
+                                     x-bind:style="slotAnimDelay(i)">
+                                    <i data-lucide="check" class="vb-pill-check" x-show="rescheduleCapacitySlot && rescheduleCapacitySlot.id === slot.id"></i>
+                                    <span x-text="slot.label + ' · ' + slot.time + '–' + slot.end_time"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="vb-book-back-link">
+                    <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="cancelReschedule"
+                            x-text="t('manage.reschedule_cancel')"></button>
+                </div>
+            </div>
+
+            <!-- ═══ Reschedule: Event Selection ═══ -->
+            <div class="vb-book-step" x-show="isRescheduleEventStep" x-cloak>
+                <div class="vb-book-step-header">
+                    <div class="vb-book-step-title" x-text="t('manage.reschedule_heading')"></div>
+                    <div class="vb-book-step-subtitle" x-text="t('event.select_event')"></div>
+                </div>
+
+                <template x-if="rescheduleEvents.length === 0">
+                    <div class="vb-book-empty" x-text="t('event.no_upcoming')"></div>
+                </template>
+
+                <template x-if="rescheduleEvents.length > 0">
+                    <div class="vb-book-service-list" role="radiogroup">
+                        <template x-for="ev in rescheduleEvents" x-bind:key="ev.id">
+                            <div class="vb-book-service-card"
+                                 x-bind:class="{ 'is-selected': rescheduleSelectedEvent && rescheduleSelectedEvent.id === ev.id }"
+                                 @click="selectRescheduleEvent(ev)"
+                                 role="radio" tabindex="0"
+                                 x-bind:aria-checked="rescheduleSelectedEvent && rescheduleSelectedEvent.id === ev.id"
+                                 @keydown.enter="selectRescheduleEvent(ev)"
+                                 @keydown.space.prevent="selectRescheduleEvent(ev)">
+                                <div class="vb-book-service-info">
+                                    <div class="vb-book-service-name" x-text="ev.name"></div>
+                                    <div class="vb-book-service-meta">
+                                        <span class="vb-book-service-meta-item">
+                                            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3.5l2.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                            <span x-text="formatEventDate(ev.start_datetime) + ' · ' + formatEventTime(ev.start_datetime) + '–' + formatEventTime(ev.end_datetime)"></span>
+                                        </span>
+                                    </div>
+                                    <template x-if="ev.location">
+                                        <div class="vb-book-service-desc" x-text="ev.location"></div>
+                                    </template>
+                                </div>
+                                <template x-if="ev.spots_remaining !== undefined && ev.spots_remaining !== null">
+                                    <div class="vb-book-service-price" x-text="ev.spots_remaining + ' ' + t('event.spots_left')"></div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <template x-if="rescheduleSelectedEvent">
+                    <div class="vb-book-form-actions" style="margin-top: var(--vb-space-4)">
+                        <button type="button" class="vb-book-btn vb-book-btn-primary"
+                                @click="confirmRescheduleEvent"
+                                x-text="t('buttons.continue')">
+                        </button>
+                    </div>
+                </template>
+
+                <div class="vb-book-back-link">
+                    <button type="button" class="vb-book-btn vb-book-btn-ghost" @click="cancelReschedule"
+                            x-text="t('manage.reschedule_cancel')"></button>
+                </div>
+            </div>
+
             <!-- ═══ Reschedule Step 2: Review ═══ -->
             <div class="vb-book-step" x-show="isRescheduleReviewStep" x-cloak>
                 <div class="vb-book-step-header">

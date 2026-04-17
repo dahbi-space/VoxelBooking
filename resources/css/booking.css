@@ -769,15 +769,16 @@ body {
   opacity: 0.7;
 }
 
-/* Date range band (resource check-in / check-out) */
-.vb-book-calendar-cell.is-range {
+.vb-book-calendar-cell.is-range,
+.vb-book-calendar-cell.is-in-range {
   background: rgba(var(--vb-brand-rgb), 0.18);
   border-radius: 0;
   color: var(--vb-brand);
   font-weight: 500;
 }
 
-.vb-book-calendar-cell.is-range::after {
+.vb-book-calendar-cell.is-range::after,
+.vb-book-calendar-cell.is-in-range::after {
   background: var(--vb-brand);
   opacity: 0.70;
 }

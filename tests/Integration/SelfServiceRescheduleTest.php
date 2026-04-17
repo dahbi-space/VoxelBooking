@@ -30,10 +30,13 @@ final class SelfServiceRescheduleTest extends TestCase
     private string $cookieJar;
 
     // Fixture IDs — deterministic ULIDs for self-service reschedule tests
-    private const CUSTOMER_ID = '01TESTSSRESCHEDCUST0000';
-    private const SERVICE_ID  = '01TESTSSRESCHEDSVC00000';
-    private const BOOKING_ID  = '01TESTSSRESCHEDBOOKING0';
-    private const TENANT_ID   = '01TESTTENANT000000000000'; // from TestFixtures
+    private const CUSTOMER_ID  = '01TESTSSRESCHEDCUST0000';
+    private const SERVICE_ID   = '01TESTSSRESCHEDSVC00000';
+    private const BOOKING_ID   = '01TESTSSRESCHEDBOOKING0';
+    private const TENANT_ID    = '01TESTTENANT000000000000'; // from TestFixtures
+    private const RESOURCE_ID  = '01TESTSSRESCHEDRESRC000';
+    private const CAP_SLOT_ID  = '01TESTSSRESCHEDCAPSLOT0';
+    private const EVENT_ID     = '01TESTSSRESCHEDEVNT0000';
 
     public static function setUpBeforeClass(): void
     {
@@ -67,6 +70,13 @@ final class SelfServiceRescheduleTest extends TestCase
 
         $this->baseUrl = rtrim($_ENV['APP_TEST_URL'] ?? 'https://voxelbooking-app.test', '/');
         $this->cookieJar = tempnam(sys_get_temp_dir(), 'vb_ss_resched_') ?: '/tmp/vb_ss_resched_cookies';
+
+        // Clear rate limits to prevent throttling across test methods
+        try {
+            Database::execute("DELETE FROM `rate_limits`");
+        } catch (\Throwable) {
+            // best-effort
+        }
     }
 
     protected function tearDown(): void
@@ -420,6 +430,217 @@ final class SelfServiceRescheduleTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════
+    // Resource reschedule: happy path
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_successful_resource_reschedule_via_public_api(): void
+    {
+        self::seedResourceFixture();
+
+        $bookingId = '01TESTSSRESCHEDRESBOOK0';
+        $checkIn   = date('Y-m-d', strtotime('+10 days'));
+        $checkOut  = date('Y-m-d', strtotime('+12 days'));
+
+        Database::execute("DELETE FROM `bookings` WHERE `id` = ?", [$bookingId]);
+        Database::execute(
+            "INSERT INTO `bookings`
+             (`id`, `tenant_id`, `booking_pattern`, `customer_id`, `resource_id`,
+              `start_datetime`, `end_datetime`, `status`, `source`, `party_size`)
+             VALUES (?, ?, 'resource', ?, ?,
+              '{$checkIn} 00:00:00', '{$checkOut} 00:00:00',
+              'confirmed', 'web', 2)",
+            [$bookingId, self::TENANT_ID, self::CUSTOMER_ID, self::RESOURCE_ID]
+        );
+
+        $newCheckIn  = date('Y-m-d', strtotime('+20 days'));
+        $newCheckOut = date('Y-m-d', strtotime('+22 days'));
+
+        // Get CSRF from the manage page for THIS booking
+        $csrf = $this->getCsrfForBooking($bookingId);
+
+        $r = $this->postJson("/api/test-fixture/bookings/{$bookingId}/reschedule", [
+            'check_in'  => $newCheckIn,
+            'check_out' => $newCheckOut,
+        ], $csrf);
+
+        $this->assertSame(200, $r['code'], 'Resource reschedule should succeed. Body: ' . $r['body']);
+        $data = json_decode($r['body'], true);
+        $this->assertTrue($data['rescheduled'] ?? false);
+        $this->assertNotEmpty($data['new_booking_id'] ?? null);
+
+        // Verify new_booking includes check_in/check_out
+        $this->assertSame($newCheckIn, $data['new_booking']['check_in'] ?? null,
+            'Response new_booking should include check_in');
+        $this->assertSame($newCheckOut, $data['new_booking']['check_out'] ?? null,
+            'Response new_booking should include check_out');
+
+        // Verify DB chain
+        $original = Database::query(
+            "SELECT `status`, `rescheduled_to_id` FROM `bookings` WHERE `id` = ?",
+            [$bookingId]
+        );
+        $this->assertSame('rescheduled', $original[0]['status'] ?? null);
+
+        $newBooking = Database::query(
+            "SELECT `status`, `booking_pattern`, `resource_id` FROM `bookings` WHERE `id` = ?",
+            [$original[0]['rescheduled_to_id']]
+        );
+        $this->assertSame('confirmed', $newBooking[0]['status']);
+        $this->assertSame('resource', $newBooking[0]['booking_pattern']);
+        $this->assertSame(self::RESOURCE_ID, $newBooking[0]['resource_id']);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Capacity reschedule: happy path
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_successful_capacity_reschedule_via_public_api(): void
+    {
+        // Target date: +17 days (weekday)
+        $newDt = new \DateTimeImmutable('+17 days');
+        while ((int) $newDt->format('N') >= 6) {
+            $newDt = $newDt->modify('+1 day');
+        }
+        $newDate = $newDt->format('Y-m-d');
+        $newDow = ((int) $newDt->format('N')) - 1;
+
+        // Original date: +10 days (weekday)
+        $origDt = new \DateTimeImmutable('+10 days');
+        while ((int) $origDt->format('N') >= 6) {
+            $origDt = $origDt->modify('+1 day');
+        }
+        $origDate = $origDt->format('Y-m-d');
+        $origDow  = ((int) $origDt->format('N')) - 1;
+
+        // Seed slots for both DOWs
+        self::seedCapacitySlot(self::CAP_SLOT_ID, $origDow);
+        $targetSlotId = '01TESTSSRESSLOT' . str_pad((string) $newDow, 8, '0', STR_PAD_LEFT);
+        $targetSlotId = self::seedCapacitySlot($targetSlotId, $newDow);
+
+        $bookingId = '01TESTSSRESCHEDCAPBOOK0';
+        Database::execute("DELETE FROM `bookings` WHERE `id` = ?", [$bookingId]);
+        Database::execute(
+            "INSERT INTO `bookings`
+             (`id`, `tenant_id`, `booking_pattern`, `customer_id`,
+              `start_datetime`, `end_datetime`, `status`, `source`, `party_size`)
+             VALUES (?, ?, 'capacity', ?,
+              '{$origDate} 06:00:00', '{$origDate} 07:30:00',
+              'confirmed', 'web', 2)",
+            [$bookingId, self::TENANT_ID, self::CUSTOMER_ID]
+        );
+
+        $csrf = $this->getCsrfForBooking($bookingId);
+
+        $r = $this->postJson("/api/test-fixture/bookings/{$bookingId}/reschedule", [
+            'date'    => $newDate,
+            'slot_id' => $targetSlotId,
+        ], $csrf);
+
+        $this->assertSame(200, $r['code'], 'Capacity reschedule should succeed. Body: ' . $r['body']);
+        $data = json_decode($r['body'], true);
+        $this->assertTrue($data['rescheduled'] ?? false);
+
+        $original = Database::query(
+            "SELECT `status`, `rescheduled_to_id` FROM `bookings` WHERE `id` = ?",
+            [$bookingId]
+        );
+        $this->assertSame('rescheduled', $original[0]['status'] ?? null);
+
+        $newBooking = Database::query(
+            "SELECT `status`, `booking_pattern` FROM `bookings` WHERE `id` = ?",
+            [$original[0]['rescheduled_to_id']]
+        );
+        $this->assertSame('confirmed', $newBooking[0]['status']);
+        $this->assertSame('capacity', $newBooking[0]['booking_pattern']);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Event reschedule: happy path + P1 regression guard
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_event_reschedule_without_date_returns_422(): void
+    {
+        self::seedEventFixture();
+
+        $bookingId = '01TESTSSRESCHEDEVTNODT0';
+        $origDate  = date('Y-m-d', strtotime('+10 days'));
+        Database::execute("DELETE FROM `bookings` WHERE `id` = ?", [$bookingId]);
+        Database::execute(
+            "INSERT INTO `bookings`
+             (`id`, `tenant_id`, `booking_pattern`, `customer_id`, `event_id`,
+              `start_datetime`, `end_datetime`, `status`, `source`, `party_size`)
+             VALUES (?, ?, 'event', ?, ?,
+              '{$origDate} 14:00:00', '{$origDate} 16:00:00',
+              'confirmed', 'web', 1)",
+            [$bookingId, self::TENANT_ID, self::CUSTOMER_ID, self::EVENT_ID]
+        );
+
+        $csrf = $this->getCsrfForBooking($bookingId);
+
+        // POST without date — must fail with invalid_date
+        $r = $this->postJson("/api/test-fixture/bookings/{$bookingId}/reschedule", [
+            'event_id' => self::EVENT_ID,
+        ], $csrf);
+
+        $this->assertSame(422, $r['code'], 'Event reschedule without date should return 422');
+        $data = json_decode($r['body'], true);
+        $this->assertSame('invalid_date', $data['error'] ?? null,
+            'Missing date should trigger invalid_date error');
+    }
+
+    public function test_successful_event_reschedule_via_public_api(): void
+    {
+        self::seedEventFixture();
+
+        $bookingId = '01TESTSSRESCHEDEVTBOOK0';
+        $origDate  = date('Y-m-d', strtotime('+10 days'));
+        $newDate   = date('Y-m-d', strtotime('+17 days'));
+
+        Database::execute("DELETE FROM `bookings` WHERE `id` = ?", [$bookingId]);
+        Database::execute(
+            "INSERT INTO `bookings`
+             (`id`, `tenant_id`, `booking_pattern`, `customer_id`, `event_id`,
+              `start_datetime`, `end_datetime`, `status`, `source`, `party_size`)
+             VALUES (?, ?, 'event', ?, ?,
+              '{$origDate} 14:00:00', '{$origDate} 16:00:00',
+              'confirmed', 'web', 1)",
+            [$bookingId, self::TENANT_ID, self::CUSTOMER_ID, self::EVENT_ID]
+        );
+
+        $csrf = $this->getCsrfForBooking($bookingId);
+
+        // POST with both date and event_id
+        $r = $this->postJson("/api/test-fixture/bookings/{$bookingId}/reschedule", [
+            'date'     => $newDate,
+            'event_id' => self::EVENT_ID,
+        ], $csrf);
+
+        $this->assertSame(200, $r['code'], 'Event reschedule should succeed. Body: ' . $r['body']);
+        $data = json_decode($r['body'], true);
+        $this->assertTrue($data['rescheduled'] ?? false);
+        $this->assertNotEmpty($data['new_booking_id'] ?? null);
+
+        // Verify event_name is in the response
+        $this->assertNotEmpty($data['new_booking']['event_name'] ?? null,
+            'Response new_booking should include event_name');
+
+        // Verify DB chain
+        $original = Database::query(
+            "SELECT `status`, `rescheduled_to_id` FROM `bookings` WHERE `id` = ?",
+            [$bookingId]
+        );
+        $this->assertSame('rescheduled', $original[0]['status'] ?? null);
+
+        $newBooking = Database::query(
+            "SELECT `status`, `booking_pattern`, `event_id` FROM `bookings` WHERE `id` = ?",
+            [$original[0]['rescheduled_to_id']]
+        );
+        $this->assertSame('confirmed', $newBooking[0]['status']);
+        $this->assertSame('event', $newBooking[0]['booking_pattern']);
+        $this->assertSame(self::EVENT_ID, $newBooking[0]['event_id']);
+    }
+
+    // ════════════════════════════════════════════════════════════════
     // Fixtures
     // ════════════════════════════════════════════════════════════════
 
@@ -505,6 +726,47 @@ final class SelfServiceRescheduleTest extends TestCase
         );
     }
 
+    private static function seedResourceFixture(): void
+    {
+        $existing = Database::query("SELECT `id` FROM `resources` WHERE `id` = ?", [self::RESOURCE_ID]);
+        if (!empty($existing)) return;
+
+        Database::execute(
+            "INSERT INTO `resources` (`id`, `tenant_id`, `name`, `capacity`, `min_stay_nights`, `max_stay_nights`, `is_active`)
+             VALUES (?, ?, 'SS Reschedule Cabin', 4, 1, 30, 1)",
+            [self::RESOURCE_ID, self::TENANT_ID]
+        );
+    }
+
+    private static function seedCapacitySlot(string $slotId, int $dow): string
+    {
+        // Check by the actual unique constraint to avoid collisions
+        $existing = Database::query(
+            "SELECT `id` FROM `capacity_slots` WHERE `tenant_id` = ? AND `day_of_week` = ? AND `start_time` = '06:00:00' AND `end_time` = '07:30:00'",
+            [self::TENANT_ID, $dow]
+        );
+        if (!empty($existing)) return $existing[0]['id'];
+
+        Database::execute(
+            "INSERT INTO `capacity_slots` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `min_party_size`, `max_party_size`, `is_active`)
+             VALUES (?, ?, ?, '06:00:00', '07:30:00', 20, 1, 8, 1)",
+            [$slotId, self::TENANT_ID, $dow]
+        );
+        return $slotId;
+    }
+
+    private static function seedEventFixture(): void
+    {
+        $existing = Database::query("SELECT `id` FROM `events` WHERE `id` = ?", [self::EVENT_ID]);
+        if (!empty($existing)) return;
+
+        Database::execute(
+            "INSERT INTO `events` (`id`, `tenant_id`, `name`, `max_participants`, `start_datetime`, `end_datetime`, `is_recurring`, `rrule`, `is_active`, `allow_waitlist`, `waitlist_max`)
+             VALUES (?, ?, 'SS Reschedule Workshop', 20, '2026-01-01 14:00:00', '2026-01-01 16:00:00', 1, 'FREQ=DAILY;COUNT=365', 1, 0, 0)",
+            [self::EVENT_ID, self::TENANT_ID]
+        );
+    }
+
     // ════════════════════════════════════════════════════════════════
     // HTTP helpers
     // ════════════════════════════════════════════════════════════════
@@ -514,9 +776,20 @@ final class SelfServiceRescheduleTest extends TestCase
      */
     private function getCsrfToken(): string
     {
-        $r = $this->get("/book/test-fixture/manage/" . self::BOOKING_ID);
-        preg_match('/window\.__VB_CSRF__\s*=\s*["\']([^"\']+)["\']/', $r['body'], $m);
-        return $m[1] ?? '';
+        return $this->getCsrfForBooking(self::BOOKING_ID);
+    }
+
+    /**
+     * Obtain a CSRF token for a specific booking's manage page.
+     * Uses a fresh cookie jar session to avoid CSRF token reuse issues.
+     */
+    private function getCsrfForBooking(string $bookingId): string
+    {
+        $r = $this->get("/book/test-fixture/manage/{$bookingId}");
+        if (preg_match('/window\.\x5f\x5fVB_CSRF\x5f\x5f\s*=\s*"([a-f0-9]+)"/', $r['body'], $m)) {
+            return $m[1];
+        }
+        return '';
     }
 
     /**
