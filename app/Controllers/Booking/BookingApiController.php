@@ -578,6 +578,7 @@ final class BookingApiController
                             $serviceName, $staffName,
                             $tenant['name'], $tenant['id'], $result['id'],
                             $tenant['brand_color'] ?? '#2563EB',
+                            null, $tenant['slug'],
                         );
                     } else {
                         $emailResult = Mailer::sendBookingConfirmation(
@@ -585,6 +586,7 @@ final class BookingApiController
                             $serviceName, $staffName,
                             $tenant['name'], $tenant['id'], $result['id'],
                             $tenant['brand_color'] ?? '#2563EB',
+                            null, $tenant['slug'],
                         );
                         $emailSent = ($emailResult['sent'] ?? false) && Mailer::isProductionSmtp();
                     }
@@ -824,7 +826,7 @@ final class BookingApiController
                             $resourceName, null,
                             $tenant['name'], $tenant['id'], $result['id'],
                             $tenant['brand_color'] ?? '#2563EB',
-                            $resourceDetails,
+                            $resourceDetails, $tenant['slug'],
                         );
                     } else {
                         $emailResult = Mailer::sendBookingConfirmation(
@@ -832,7 +834,7 @@ final class BookingApiController
                             $resourceName, null,
                             $tenant['name'], $tenant['id'], $result['id'],
                             $tenant['brand_color'] ?? '#2563EB',
-                            $resourceDetails,
+                            $resourceDetails, $tenant['slug'],
                         );
                         $emailSent = ($emailResult['sent'] ?? false) && Mailer::isProductionSmtp();
                     }
@@ -1114,6 +1116,7 @@ final class BookingApiController
                             $slotLabel, null,
                             $tenant['name'], $tenant['id'], $result['id'],
                             $tenant['brand_color'] ?? '#2563EB',
+                            null, $tenant['slug'],
                         );
                     } else {
                         $emailResult = Mailer::sendBookingConfirmation(
@@ -1121,6 +1124,7 @@ final class BookingApiController
                             $slotLabel, null,
                             $tenant['name'], $tenant['id'], $result['id'],
                             $tenant['brand_color'] ?? '#2563EB',
+                            null, $tenant['slug'],
                         );
                         $emailSent = ($emailResult['sent'] ?? false) && Mailer::isProductionSmtp();
                     }
@@ -1418,6 +1422,7 @@ final class BookingApiController
                             $event['name'], null,
                             $tenant['name'], $tenant['id'], $result['id'],
                             $tenant['brand_color'] ?? '#2563EB',
+                            null, $tenant['slug'],
                         );
                     } elseif ($isWaitlisted) {
                         $emailResult = Mailer::sendWaitlistConfirmation(
@@ -1429,6 +1434,7 @@ final class BookingApiController
                             $tenant['id'],
                             $result['id'],
                             $tenant['brand_color'] ?? '#2563EB',
+                            $tenant['slug'],
                         );
                         $emailSent = ($emailResult['sent'] ?? false) && Mailer::isProductionSmtp();
                     } else {
@@ -1442,6 +1448,7 @@ final class BookingApiController
                             $tenant['id'],
                             $result['id'],
                             $tenant['brand_color'] ?? '#2563EB',
+                            null, $tenant['slug'],
                         );
                         $emailSent = ($emailResult['sent'] ?? false) && Mailer::isProductionSmtp();
                     }
@@ -1860,6 +1867,7 @@ final class BookingApiController
                     $tenant['id'],
                     $result['new_booking_id'],
                     $tenant['brand_color'] ?? '#2563EB',
+                    $tenant['slug'],
                 );
                 $emailSent = ($emailResult['sent'] ?? false) && Mailer::isProductionSmtp();
             } catch (\Throwable $e) {

@@ -132,6 +132,20 @@ final class Mailer
     }
 
     /**
+     * Build the customer-facing manage-booking URL.
+     *
+     * This is a bearer-link: the booking ULID is unguessable and acts as
+     * the access token. See .ai/23-VoxelBooking-Legal-Logging.md §Manage Link.
+     */
+    private static function buildManageUrl(string $tenantSlug, string $bookingId): string
+    {
+        if ($tenantSlug === '' || $bookingId === '') {
+            return '';
+        }
+        return app_url('/book/' . $tenantSlug . '/manage/' . $bookingId);
+    }
+
+    /**
      * Send a test email to verify SMTP configuration.
      *
      * @return array{sent: bool, error: string|null}
@@ -189,6 +203,7 @@ final class Mailer
         string $bookingId,
         string $brandColor = '#2563EB',
         ?array $patternDetails = null,
+        string $tenantSlug = '',
     ): array {
         // Build placeholder map for tenant template resolution
         $placeholders = [
@@ -243,15 +258,18 @@ final class Mailer
             }
         }
 
+        $manageUrl = self::buildManageUrl($tenantSlug, $bookingId);
+
         $html = self::renderConfirmationEmail(
             $safeBrandColor, $heading, $greeting, $bodyText,
             $detailsHeading, $details, $footer, $tenantName, app_name(),
+            $manageUrl,
         );
 
         $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
         $plainBody = self::renderConfirmationPlainText(
             $heading, $greeting, $bodyText, $detailsHeading,
-            $details, $footer, $tenantName, $poweredBy,
+            $details, $footer, $tenantName, $poweredBy, $manageUrl,
         );
 
         // Resolve tenant Reply-To and From name: customer sees the business name
@@ -277,6 +295,7 @@ final class Mailer
         string $tenantId,
         string $bookingId,
         string $brandColor = '#2563EB',
+        string $tenantSlug = '',
     ): array {
         $brandTokens = BrandColorHelper::derive($brandColor);
         $safeBrandColor = $brandTokens['brand'];
@@ -299,15 +318,18 @@ final class Mailer
             $details[__('email.common.service')] = $eventName;
         }
 
+        $manageUrl = self::buildManageUrl($tenantSlug, $bookingId);
+
         $html = self::renderConfirmationEmail(
             $safeBrandColor, $heading, $greeting, $bodyText,
             $detailsHeading, $details, $footer, $tenantName, app_name(),
+            $manageUrl,
         );
 
         $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
         $plainBody = self::renderConfirmationPlainText(
             $heading, $greeting, $bodyText, $detailsHeading,
-            $details, $footer, $tenantName, $poweredBy,
+            $details, $footer, $tenantName, $poweredBy, $manageUrl,
         );
 
         $replyTo = self::resolveTenantReplyTo($tenantId);
@@ -710,6 +732,7 @@ final class Mailer
         string $tenantId,
         string $bookingId,
         string $brandColor = '#2563EB',
+        string $tenantSlug = '',
     ): array {
         $placeholders = [
             'customer_name' => $customerName,
@@ -753,15 +776,18 @@ final class Mailer
             $details[__('email.common.staff')] = $staffName;
         }
 
+        $manageUrl = self::buildManageUrl($tenantSlug, $bookingId);
+
         $html = self::renderConfirmationEmail(
             $safeBrandColor, $heading, $greeting, $bodyText,
             $detailsHeading, $details, $footer, $tenantName, app_name(),
+            $manageUrl,
         );
 
         $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
         $plainBody = self::renderConfirmationPlainText(
             $heading, $greeting, $bodyText, $detailsHeading,
-            $details, $footer, $tenantName, $poweredBy,
+            $details, $footer, $tenantName, $poweredBy, $manageUrl,
         );
 
         $replyTo = self::resolveTenantReplyTo($tenantId);
@@ -785,6 +811,7 @@ final class Mailer
         string $bookingId,
         string $brandColor = '#2563EB',
         ?array $patternDetails = null,
+        string $tenantSlug = '',
     ): array {
         $placeholders = [
             'customer_name' => $customerName,
@@ -833,16 +860,19 @@ final class Mailer
             }
         }
 
+        $manageUrl = self::buildManageUrl($tenantSlug, $bookingId);
+
         // Uses confirmation layout but without calendar CTA
         $html = self::renderConfirmationEmail(
             $safeBrandColor, $heading, $greeting, $bodyText,
             $detailsHeading, $details, $footer, $tenantName, app_name(),
+            $manageUrl,
         );
 
         $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
         $plainBody = self::renderConfirmationPlainText(
             $heading, $greeting, $bodyText, $detailsHeading,
-            $details, $footer, $tenantName, $poweredBy,
+            $details, $footer, $tenantName, $poweredBy, $manageUrl,
         );
 
         $replyTo = self::resolveTenantReplyTo($tenantId);
@@ -865,6 +895,7 @@ final class Mailer
         string $tenantId,
         string $bookingId,
         string $brandColor = '#2563EB',
+        string $tenantSlug = '',
     ): array {
         $placeholders = [
             'customer_name' => $customerName,
@@ -907,15 +938,18 @@ final class Mailer
             $details[__('email.common.staff')] = $staffName;
         }
 
+        $manageUrl = self::buildManageUrl($tenantSlug, $bookingId);
+
         $html = self::renderConfirmationEmail(
             $safeBrandColor, $heading, $greeting, $bodyText,
             $detailsHeading, $details, $footer, $tenantName, app_name(),
+            $manageUrl,
         );
 
         $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
         $plainBody = self::renderConfirmationPlainText(
             $heading, $greeting, $bodyText, $detailsHeading,
-            $details, $footer, $tenantName, $poweredBy,
+            $details, $footer, $tenantName, $poweredBy, $manageUrl,
         );
 
         $replyTo = self::resolveTenantReplyTo($tenantId);
@@ -938,6 +972,7 @@ final class Mailer
         string $tenantId,
         string $bookingId,
         string $brandColor = '#2563EB',
+        string $tenantSlug = '',
     ): array {
         $placeholders = [
             'customer_name' => $customerName,
@@ -980,15 +1015,18 @@ final class Mailer
             $details[__('email.common.staff')] = $staffName;
         }
 
+        $manageUrl = self::buildManageUrl($tenantSlug, $bookingId);
+
         $html = self::renderConfirmationEmail(
             $safeBrandColor, $heading, $greeting, $bodyText,
             $detailsHeading, $details, $footer, $tenantName, app_name(),
+            $manageUrl,
         );
 
         $poweredBy = __('email.common.powered_by', ['app_name' => app_name()]);
         $plainBody = self::renderConfirmationPlainText(
             $heading, $greeting, $bodyText, $detailsHeading,
-            $details, $footer, $tenantName, $poweredBy,
+            $details, $footer, $tenantName, $poweredBy, $manageUrl,
         );
 
         $replyTo = self::resolveTenantReplyTo($tenantId);
@@ -1428,6 +1466,7 @@ final class Mailer
         string $footerText,
         string $tenantName,
         string $appName,
+        string $manageUrl = '',
     ): string {
         $h = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
         $font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -1446,6 +1485,19 @@ final class Mailer
         }
 
         $poweredBy = __('email.common.powered_by', ['app_name' => $appName]);
+
+        // Build manage-booking CTA block (only if URL is provided)
+        $manageBlock = '';
+        if ($manageUrl !== '') {
+            $manageCta = $h(__('email.common.manage_booking'));
+            $safeUrl = htmlspecialchars($manageUrl, ENT_QUOTES, 'UTF-8');
+            $manageBlock = <<<MANAGE
+                        <!-- Manage booking CTA -->
+                        <tr><td style="padding: 0 32px 24px; text-align: center;">
+                            <a href="{$safeUrl}" style="display: inline-block; padding: 12px 28px; background: {$brandColor}; color: #FFFFFF; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; font-family: {$font};">{$manageCta}</a>
+                        </td></tr>
+            MANAGE;
+        }
 
         return <<<HTML
         <html lang="{$lang}" dir="{$dir}">
@@ -1482,6 +1534,8 @@ final class Mailer
                             </table>
                         </td></tr>
 
+                        {$manageBlock}
+
                         <!-- Footer text -->
                         <tr><td style="padding: 0 32px 24px; text-align: center;">
                             <p style="margin: 0; font-size: 14px; color: #6B7280; line-height: 1.5; font-family: {$font};">{$h($footerText)}</p>
@@ -1515,6 +1569,7 @@ final class Mailer
         string $footerText,
         string $tenantName,
         string $poweredBy,
+        string $manageUrl = '',
     ): string {
         $lines = [];
         $lines[] = mb_strtoupper($heading);
@@ -1527,6 +1582,11 @@ final class Mailer
             $lines[] = $label . ': ' . $value;
         }
         $lines[] = '';
+        if ($manageUrl !== '') {
+            $lines[] = __('email.common.manage_booking') . ':';
+            $lines[] = $manageUrl;
+            $lines[] = '';
+        }
         $lines[] = $footerText;
         $lines[] = '';
         $lines[] = '—';

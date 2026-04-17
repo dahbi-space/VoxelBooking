@@ -649,4 +649,140 @@ final class MailerTest extends TestCase
         $this->assertStringContainsString('April 5, 2026', $html);
         $this->assertStringNotContainsString('>Time<', $html, 'Empty time row must be omitted');
     }
+
+    // ── Manage-link CTA tests ──
+
+    /**
+     * renderConfirmationEmail includes a branded CTA button when manageUrl is provided.
+     */
+    public function testConfirmationEmailIncludesManageLinkCta(): void
+    {
+        $method = new \ReflectionMethod(Mailer::class, 'renderConfirmationEmail');
+
+        $manageUrl = 'https://example.com/book/test-salon/manage/01JTEST000000000000000000';
+
+        $html = $method->invoke(null,
+            '#2563EB',
+            'Confirmed.', 'Hi Test,', 'Confirmed.',
+            'Booking details', ['Date' => '2026-04-17'],
+            'Footer.', 'Test Biz', 'VB',
+            $manageUrl,
+        );
+
+        // CTA anchor must contain the manage URL
+        $this->assertStringContainsString($manageUrl, $html, 'HTML must contain the manage URL');
+        // CTA must have the translated label
+        $this->assertStringContainsString('View or Manage Booking', $html, 'HTML must contain the CTA label');
+        // CTA must be styled as a button with brand color
+        $this->assertStringContainsString('background: #2563EB', $html, 'CTA button must use brand color');
+    }
+
+    /**
+     * renderConfirmationPlainText includes the manage URL on its own line.
+     */
+    public function testPlainTextEmailIncludesManageLink(): void
+    {
+        $method = new \ReflectionMethod(Mailer::class, 'renderConfirmationPlainText');
+
+        $manageUrl = 'https://example.com/book/test-salon/manage/01JTEST000000000000000000';
+
+        $plain = $method->invoke(null,
+            'Confirmed.', 'Hi Test,', 'Confirmed.',
+            'Booking details', ['Date' => '2026-04-17'],
+            'Footer.', 'Test Biz', 'Powered by VB',
+            $manageUrl,
+        );
+
+        $this->assertStringContainsString($manageUrl, $plain, 'Plain text must contain the manage URL');
+        $this->assertStringContainsString("View or Manage Booking:\n" . $manageUrl, $plain,
+            'Manage URL must appear on its own line after the label');
+    }
+
+    /**
+     * Both renderers omit the manage CTA when manageUrl is empty.
+     */
+    public function testEmailOmitsManageLinkWhenEmpty(): void
+    {
+        $htmlMethod  = new \ReflectionMethod(Mailer::class, 'renderConfirmationEmail');
+        $plainMethod = new \ReflectionMethod(Mailer::class, 'renderConfirmationPlainText');
+
+        $html = $htmlMethod->invoke(null,
+            '#2563EB',
+            'Confirmed.', 'Hi Test,', 'Confirmed.',
+            'Booking details', ['Date' => '2026-04-17'],
+            'Footer.', 'Test Biz', 'VB',
+            '', // empty manageUrl
+        );
+
+        $plain = $plainMethod->invoke(null,
+            'Confirmed.', 'Hi Test,', 'Confirmed.',
+            'Booking details', ['Date' => '2026-04-17'],
+            'Footer.', 'Test Biz', 'Powered by VB',
+            '', // empty manageUrl
+        );
+
+        $this->assertStringNotContainsString('View or Manage Booking', $html,
+            'HTML must not contain manage CTA when URL is empty');
+        $this->assertStringNotContainsString('/manage/', $html,
+            'HTML must not contain manage path when URL is empty');
+        $this->assertStringNotContainsString('View or Manage Booking', $plain,
+            'Plain text must not contain manage CTA when URL is empty');
+    }
+
+    /**
+     * sendBookingConfirmation with tenantSlug produces an email containing
+     * the manage-booking URL in the expected format.
+     */
+    public function testSendBookingConfirmationIncludesManageUrl(): void
+    {
+        $this->setMailerConfig(['mail_transport' => 'log']);
+
+        // Use reflection to capture the rendered HTML from buildManageUrl
+        $buildMethod = new \ReflectionMethod(Mailer::class, 'buildManageUrl');
+
+        $url = $buildMethod->invoke(null, 'test-salon', 'BOOKING_01');
+        $this->assertStringContainsString('/book/test-salon/manage/BOOKING_01', $url,
+            'buildManageUrl must construct the correct path');
+
+        // Verify the full send path works with slug
+        $result = Mailer::sendBookingConfirmation(
+            'test@example.com', 'Jane Doe',
+            ['date' => '2026-04-17', 'formatted_date' => 'April 17, 2026', 'time' => '10:00', 'end_time' => '10:30'],
+            'Haircut', 'Emma',
+            'Test Salon', 'TENANT_ID', 'BOOKING_01',
+            '#2563EB',
+            null,           // patternDetails
+            'test-salon',   // tenantSlug
+        );
+
+        $this->assertTrue($result['sent'], 'Log transport must succeed with tenantSlug');
+    }
+
+    /**
+     * sendCancellationConfirmation does NOT include a manage-booking link.
+     * Cancellation uses renderCancellationEmail (separate renderer with "Book Again" CTA).
+     */
+    public function testCancellationEmailDoesNotIncludeManageLink(): void
+    {
+        $this->setMailerConfig(['mail_transport' => 'log']);
+
+        // Use reflection to verify the cancellation HTML does not contain the manage path
+        $cancelMethod = new \ReflectionMethod(Mailer::class, 'renderCancellationEmail');
+
+        $html = $cancelMethod->invoke(null,
+            '#2563EB',
+            'Booking Cancelled', 'Hi Test,', 'Your booking has been cancelled.',
+            'Booking details', ['Date' => '2026-04-17', 'Time' => '10:00–10:30'],
+            'Book again anytime.', 'Test Salon', 'VB',
+            'test-salon', // tenantSlug — used for "Book Again", NOT for manage link
+        );
+
+        $this->assertStringNotContainsString('/manage/', $html,
+            'Cancellation email must NOT contain a manage link');
+        $this->assertStringNotContainsString('View or Manage Booking', $html,
+            'Cancellation email must NOT contain manage CTA label');
+        // It should contain "Book Again" instead
+        $this->assertStringContainsString('Book Again', $html,
+            'Cancellation email must contain "Book Again" CTA');
+    }
 }

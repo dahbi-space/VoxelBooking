@@ -314,6 +314,7 @@ final class BookingsController
                     $tenantId,
                     $result['new_booking_id'],
                     $tenant['brand_color'] ?? '#2563EB',
+                    $tenant['slug'],
                 );
             } catch (\Throwable $e) {
                 Logger::error('Reschedule email dispatch failed', [
@@ -1191,6 +1192,7 @@ final class BookingsController
                 $tenant['id'],
                 $booking['id'],
                 $tenant['brand_color'] ?? '#2563EB',
+                null, $tenant['slug'],
             );
         } catch (\Throwable $e) {
             Logger::error('Promotion confirmation email failed', [
@@ -1255,6 +1257,7 @@ final class BookingsController
                     $tenant['id'],
                     $booking['id'],
                     $tenant['brand_color'] ?? '#2563EB',
+                    $tenant['slug'],
                 );
             } elseif ($type === 'reschedule') {
                 \App\Engine\Mailer::sendRescheduleConfirmation(
@@ -1267,6 +1270,7 @@ final class BookingsController
                     $tenant['id'],
                     $booking['id'],
                     $tenant['brand_color'] ?? '#2563EB',
+                    $tenant['slug'],
                 );
             }
         } catch (\Throwable $e) {

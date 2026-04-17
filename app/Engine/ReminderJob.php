@@ -152,6 +152,7 @@ final class ReminderJob
             $reminder['tenant_id'],
             $reminder['booking_id'],
             $booking['brand_color'] ?? '#2563EB',
+            $booking['tenant_slug'] ?? '',
         );
 
         // Handle disabled-by-tenant (skipped emails return ['skipped' => true])

@@ -137,8 +137,9 @@ return [
         'check_out'  => 'Check-out',
         'guests'     => 'Guests',
         'total'      => 'Total',
-        'regards'    => 'Best regards,',
-        'customer'   => 'Customer',
-        'powered_by' => 'Powered by :app_name',
+        'regards'        => 'Best regards,',
+        'customer'       => 'Customer',
+        'manage_booking' => 'View or Manage Booking',
+        'powered_by'     => 'Powered by :app_name',
     ],
 ];
