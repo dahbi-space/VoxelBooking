@@ -2,15 +2,16 @@
 /**
  * Business user dashboard — tenant-scoped view.
  *
- * Four rhythm bands:
+ * Five rhythm bands:
  *   1. Greeting (personalized hero)
  *   2. Metrics (4 cards with deltas)
  *   3. Today's schedule (compact strip with per-service-color pills)
- *   4. Next Up + Quick Actions (two-column grid)
+ *   4. Who's working today (timeslot-pattern only)
+ *   5. Next Up + Quick Actions (two-column grid)
  *
  * Variables: $user, $version, $csrfToken, $tenant, $todayBookings, $weekBookings,
  *            $monthBookings, $totalCustomers, $upcoming, $pageTitle, $activePage,
- *            $deltaToday, $deltaWeek, $todaySchedule
+ *            $deltaToday, $deltaWeek, $todaySchedule, $staffWorkingToday
  */
 $activePage = 'dashboard';
 
@@ -187,6 +188,65 @@ ob_start();
         <?php endif; ?>
     </div>
 </div>
+
+<?php
+/**
+ * "Who's Working Today" section — timeslot-pattern tenants only.
+ *
+ * Three states:
+ *   1. $staffWorkingToday === null  → No staff exist → CTA to create staff
+ *   2. $staffWorkingToday === []    → Staff exist, none working today → calm message
+ *   3. $staffWorkingToday is array  → Show compact list with windows
+ */
+if ($staffWorkingToday !== null || (isset($tenant['booking_pattern']) && $tenant['booking_pattern'] === 'timeslot')):
+?>
+<div class="vb-dash-staff-today-wrap">
+    <div class="vb-card vb-card-flush vb-fade-in-up stagger-5">
+        <div class="vb-schedule-header">
+            <div class="vb-schedule-title"><?= __('admin.dashboard.staff_working_today') ?></div>
+        </div>
+        <?php if ($staffWorkingToday === null): ?>
+            <!-- No staff members exist yet -->
+            <div class="vb-schedule-empty">
+                <i data-lucide="user-plus" class="vb-schedule-empty-icon"></i>
+                <div class="vb-schedule-empty-text"><?= __('admin.dashboard.staff_none_yet') ?></div>
+                <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/staff/create"
+                   class="vb-link-cta"><?= __('admin.dashboard.staff_add_first') ?></a>
+            </div>
+        <?php elseif (empty($staffWorkingToday)): ?>
+            <!-- Staff exist but none are working today -->
+            <div class="vb-schedule-empty">
+                <i data-lucide="coffee" class="vb-schedule-empty-icon"></i>
+                <div class="vb-schedule-empty-text"><?= __('admin.dashboard.staff_none_today') ?></div>
+                <a href="/admin/tenants/<?= htmlspecialchars($tenant['id'], ENT_QUOTES, 'UTF-8') ?>/availability"
+                   class="vb-link-cta"><?= __('admin.dashboard.staff_manage_hours') ?></a>
+            </div>
+        <?php else: ?>
+            <!-- Staff working today -->
+            <div class="vb-staff-today-list">
+                <?php foreach ($staffWorkingToday as $sw): ?>
+                <div class="vb-staff-today-row">
+                    <div class="vb-staff-today-avatar">
+                        <?= strtoupper(mb_substr($sw['name'], 0, 1)) ?>
+                    </div>
+                    <div class="vb-staff-today-info">
+                        <div class="vb-staff-today-name"><?= htmlspecialchars($sw['name'], ENT_QUOTES, 'UTF-8') ?></div>
+                        <?php if (!empty($sw['title'])): ?>
+                        <div class="vb-staff-today-title"><?= htmlspecialchars($sw['title'], ENT_QUOTES, 'UTF-8') ?></div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="vb-staff-today-windows">
+                        <?php foreach ($sw['windows'] as $w): ?>
+                        <span class="vb-staff-today-window"><?= $w['start'] ?> – <?= $w['end'] ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- Next Up + Quick Actions -->
 <div class="vb-dash-grid">

@@ -131,6 +131,12 @@ final class DashboardController
         // Today's schedule for the schedule strip
         $todaySchedule = Booking::forTenantDate($tenantId, $today);
 
+        // "Who's working today" — timeslot-pattern tenants only
+        $staffWorkingToday = null;
+        if (($tenant['booking_pattern'] ?? '') === 'timeslot') {
+            $staffWorkingToday = $this->loadStaffWorkingToday($tenantId);
+        }
+
         return View::response('admin.dashboard-business', [
             'user'           => Auth::user(),
             'version'        => Version::get(),
@@ -146,7 +152,120 @@ final class DashboardController
             'deltaToday'     => $deltaToday,
             'deltaWeek'      => $deltaWeek,
             'todaySchedule'  => $todaySchedule,
+            'staffWorkingToday' => $staffWorkingToday,
         ]);
+    }
+
+    /**
+     * Load active staff with availability windows for today.
+     *
+     * Resolution order per staff member:
+     * 1. Staff-specific override rows in `availability` (staff_id = X)
+     * 2. Tenant default rows (staff_id IS NULL)
+     *
+     * Returns null (no staff exist) or array of staff with their windows.
+     * Staff who have no windows today are excluded from the result.
+     *
+     * @return list<array{id: string, name: string, title: ?string, windows: list<array{start: string, end: string}>}>|null
+     */
+    private function loadStaffWorkingToday(string $tenantId): ?array
+    {
+        // 1. Load all active staff
+        $allStaff = Database::query(
+            'SELECT `id`, `name`, `title` FROM `staff`
+             WHERE `tenant_id` = ? AND `is_active` = 1
+             ORDER BY `sort_order` ASC, `name` ASC',
+            [$tenantId]
+        );
+
+        if (empty($allStaff)) {
+            return null; // no staff at all → template shows "create staff" CTA
+        }
+
+        // 2. Today's day_of_week (0=Mon … 6=Sun, ISO convention)
+        $todayDow = ((int) date('N')) - 1;
+
+        // 3. Bulk-load all staff overrides for today in one query
+        $staffIds = array_column($allStaff, 'id');
+        $placeholders = implode(',', array_fill(0, count($staffIds), '?'));
+        $overrideRows = Database::query(
+            "SELECT `staff_id`, `start_time`, `end_time`
+             FROM `availability`
+             WHERE `tenant_id` = ? AND `staff_id` IN ({$placeholders})
+              AND `day_of_week` = ? AND `is_available` = 1
+             ORDER BY `start_time` ASC",
+            array_merge([$tenantId], $staffIds, [$todayDow])
+        );
+
+        // Index overrides by staff_id
+        $overrideMap = [];
+        $staffWithOverrides = [];
+        foreach ($overrideRows as $row) {
+            $overrideMap[$row['staff_id']][] = [
+                'start' => substr($row['start_time'], 0, 5),
+                'end'   => substr($row['end_time'], 0, 5),
+            ];
+            $staffWithOverrides[$row['staff_id']] = true;
+        }
+
+        // 4. Which staff have ANY override rows (even for other days)?
+        //    Staff with overrides on other days but NOT today → they're off today.
+        $anyOverrideRows = Database::query(
+            "SELECT DISTINCT `staff_id` FROM `availability`
+             WHERE `tenant_id` = ? AND `staff_id` IN ({$placeholders})",
+            array_merge([$tenantId], $staffIds)
+        );
+        $hasAnyOverride = [];
+        foreach ($anyOverrideRows as $row) {
+            $hasAnyOverride[$row['staff_id']] = true;
+        }
+
+        // 5. Load tenant defaults for today (fallback for staff without overrides)
+        $defaultRows = Database::query(
+            'SELECT `start_time`, `end_time`
+             FROM `availability`
+             WHERE `tenant_id` = ? AND `staff_id` IS NULL
+              AND `day_of_week` = ? AND `is_available` = 1
+             ORDER BY `start_time` ASC',
+            [$tenantId, $todayDow]
+        );
+        $defaultWindows = [];
+        foreach ($defaultRows as $row) {
+            $defaultWindows[] = [
+                'start' => substr($row['start_time'], 0, 5),
+                'end'   => substr($row['end_time'], 0, 5),
+            ];
+        }
+
+        // 6. Resolve per-staff: override → tenant default, attach windows
+        $result = [];
+        foreach ($allStaff as $staff) {
+            $sid = $staff['id'];
+
+            if (isset($staffWithOverrides[$sid])) {
+                // Has override windows for today → use them
+                $windows = $overrideMap[$sid];
+            } elseif (isset($hasAnyOverride[$sid])) {
+                // Has overrides but none for today → staff is off today
+                $windows = [];
+            } else {
+                // No overrides at all → fall back to tenant defaults
+                $windows = $defaultWindows;
+            }
+
+            if (empty($windows)) {
+                continue; // not working today
+            }
+
+            $result[] = [
+                'id'      => $sid,
+                'name'    => $staff['name'],
+                'title'   => $staff['title'] ?? null,
+                'windows' => $windows,
+            ];
+        }
+
+        return $result;
     }
 
     private function queryCount(string $sql, array $bindings = []): int

@@ -224,7 +224,7 @@ final class BookingLinkCopyOutputTest extends TestCase
         $basePath = dirname(__DIR__, 2);
 
         $user = ['name' => 'Test Owner', 'type' => 'owner'];
-        $tenant = ['id' => 'T1', 'slug' => 'test-salon', 'name' => 'Test Salon', 'brand_color' => '#2563EB', 'timezone' => 'UTC'];
+        $tenant = ['id' => 'T1', 'slug' => 'test-salon', 'name' => 'Test Salon', 'brand_color' => '#2563EB', 'timezone' => 'UTC', 'booking_pattern' => 'timeslot'];
         $version = '1.0.0';
         $csrfToken = 'test-csrf';
         $pageTitle = 'Dashboard';
@@ -236,6 +236,7 @@ final class BookingLinkCopyOutputTest extends TestCase
         $todayBookings = [];
         $weekBookings = [];
         $flash = null;
+        $staffWorkingToday = null;
 
         ob_start();
         include $basePath . '/templates/admin/dashboard-business.php';

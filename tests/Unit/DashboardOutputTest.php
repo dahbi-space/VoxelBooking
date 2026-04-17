@@ -256,6 +256,47 @@ final class DashboardOutputTest extends TestCase
         $this->assertStringContainsString('vb-status vb-status-confirmed', $html);
     }
 
+    public function test_tenant_dashboard_renders_staff_working_today(): void
+    {
+        $html = $this->renderTenantDashboard([
+            'staffWorkingToday' => [
+                [
+                    'id' => 'staff-1',
+                    'name' => 'Alice Stylist',
+                    'title' => 'Senior Stylist',
+                    'windows' => [['start' => '09:00', 'end' => '17:00']],
+                ],
+            ],
+        ]);
+
+        $this->assertStringContainsString('vb-staff-today-list', $html);
+        $this->assertStringContainsString('Alice Stylist', $html);
+        $this->assertStringContainsString('Senior Stylist', $html);
+        $this->assertStringContainsString('09:00', $html);
+        $this->assertStringContainsString('17:00', $html);
+        $this->assertStringContainsString('vb-staff-today-avatar', $html);
+    }
+
+    public function test_tenant_dashboard_renders_staff_none_cta(): void
+    {
+        $html = $this->renderTenantDashboard([
+            'staffWorkingToday' => null,
+        ]);
+
+        $this->assertStringContainsString('staff/create', $html);
+        $this->assertStringContainsString('vb-link-cta', $html);
+    }
+
+    public function test_tenant_dashboard_hides_staff_for_non_timeslot(): void
+    {
+        $html = $this->renderTenantDashboard([
+            'tenant' => ['id' => 'test-tenant-id', 'name' => 'Test Hotel', 'slug' => 'test-hotel', 'booking_pattern' => 'resource'],
+            'staffWorkingToday' => null,
+        ]);
+
+        $this->assertStringNotContainsString('vb-dash-staff-today-wrap', $html);
+    }
+
     // ════════════════════════════════════════════════════════════════
     // Helpers
     // ════════════════════════════════════════════════════════════════
@@ -289,7 +330,7 @@ final class DashboardOutputTest extends TestCase
             'csrfToken' => 'test-csrf-token',
             'pageTitle' => 'Test Salon',
             'activePage' => 'dashboard',
-            'tenant' => ['id' => 'test-tenant-id', 'name' => 'Test Salon', 'slug' => 'test-salon'],
+            'tenant' => ['id' => 'test-tenant-id', 'name' => 'Test Salon', 'slug' => 'test-salon', 'booking_pattern' => 'timeslot'],
             'todayBookings' => 5,
             'weekBookings' => 20,
             'monthBookings' => 42,
@@ -298,6 +339,7 @@ final class DashboardOutputTest extends TestCase
             'deltaToday' => 0,
             'deltaWeek' => 0,
             'todaySchedule' => [],
+            'staffWorkingToday' => null,
         ];
 
         return $this->renderTemplate(

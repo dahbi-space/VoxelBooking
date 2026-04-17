@@ -91,6 +91,11 @@ return [
         'action_bookings_hint'      => 'Full booking ledger',
         'action_booking_page_hint'  => 'Open customer portal',
         'action_copy_hint'          => 'Copy to clipboard',
+        'staff_working_today'       => 'Who\'s working today',
+        'staff_none_yet'            => 'No staff members yet',
+        'staff_add_first'           => 'Add your first staff member →',
+        'staff_none_today'          => 'No one is scheduled today',
+        'staff_manage_hours'        => 'Manage availability →',
     ],
 
     // ── Settings Tabs ──
