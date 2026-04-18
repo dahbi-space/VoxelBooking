@@ -111,10 +111,13 @@ final class DashboardOutputTest extends TestCase
         $this->assertStringContainsString('Jane Doe', $html);
         $this->assertStringContainsString('Test Salon', $html);
         $this->assertStringContainsString('vb-cell-primary', $html);
-        // CRM cross-linking: customer name links to customer detail
-        $this->assertStringContainsString('vb-cell-link', $html);
+        // Customer names use impersonation-starting forms (POST to /impersonate)
+        // with redirect_to pointing to the customer page.
+        $this->assertStringContainsString('/admin/tenants/test-tenant-id/impersonate', $html);
+        $this->assertStringContainsString('redirect_to', $html);
         $this->assertStringContainsString('/admin/tenants/test-tenant-id/customers/test-customer-id', $html);
-        // Booking detail link
+        $this->assertStringContainsString('vb-btn-reset', $html);
+        // Booking detail link is present via eye-icon button
         $this->assertStringContainsString('/admin/bookings/test-booking-id', $html);
     }
 

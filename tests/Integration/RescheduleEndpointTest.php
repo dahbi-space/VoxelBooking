@@ -22,6 +22,7 @@ use PHPUnit\Framework\TestCase;
 final class RescheduleEndpointTest extends TestCase
 {
     private static bool $appReachable = false;
+    private static bool $fixturesReady = false;
     private string $baseUrl;
     private string $cookieJar;
 
@@ -49,11 +50,17 @@ final class RescheduleEndpointTest extends TestCase
 
         self::$appReachable = true;
 
+        // Provision shared fixtures — do NOT swallow errors.
+        // If provisioning fails, tests must skip, not produce FK violations.
+        TestFixtures::provision();
+
         try {
-            TestFixtures::provision();
             self::seedRescheduleFixtures();
-        } catch (\Throwable) {
-            // best-effort
+            self::$fixturesReady = true;
+        } catch (\Throwable $e) {
+            // Fixture seeding failed — tests will skip via setUp() guard.
+            // Output the error so CI logs capture the root cause.
+            fwrite(STDERR, "RescheduleEndpointTest fixture seeding failed: {$e->getMessage()}\n");
         }
     }
 
@@ -65,6 +72,26 @@ final class RescheduleEndpointTest extends TestCase
 
         $this->baseUrl = rtrim($_ENV['APP_TEST_URL'] ?? 'https://voxelbooking-app.test', '/');
         $this->cookieJar = tempnam(sys_get_temp_dir(), 'vb_resched_test_') ?: '/tmp/vb_resched_test_cookies';
+
+        // Per-test safety net: ensure all FK targets and availability exist.
+        // If setUpBeforeClass seeding failed, this recovers the state.
+        // If it already succeeded, these are cheap SELECT-only no-ops.
+        if (!self::$fixturesReady) {
+            try {
+                $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+                self::ensureCustomerExists($tenantId);
+                self::ensureServiceExists($tenantId);
+                self::ensureAvailabilityExists($tenantId);
+                self::$fixturesReady = true;
+            } catch (\Throwable $e) {
+                $this->markTestSkipped('Fixtures could not be recovered: ' . $e->getMessage());
+            }
+        } else {
+            $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+            self::ensureCustomerExists($tenantId);
+            self::ensureServiceExists($tenantId);
+            self::ensureAvailabilityExists($tenantId);
+        }
     }
 
     protected function tearDown(): void
@@ -220,6 +247,51 @@ final class RescheduleEndpointTest extends TestCase
     }
 
     // ════════════════════════════════════════════════════════════════
+    // Completed→confirmed recovery (accidental completion reversal)
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_completed_booking_can_be_recovered_to_confirmed(): void
+    {
+        $completedId = '01TESTRESCHEDCMPRECOV000';
+        $this->insertBooking($completedId, 'completed', 'timeslot');
+
+        $this->doLoginOperator();
+        $r = $this->postWithCsrf('/admin/bookings/' . $completedId . '/status', [
+            'status' => 'confirmed',
+        ]);
+
+        // Should redirect back (302) — a successful status change
+        $this->assertSame(302, $r['code']);
+
+        // Verify the booking is now confirmed
+        $booking = Database::query("SELECT `status` FROM `bookings` WHERE `id` = ?", [$completedId]);
+        $this->assertSame('confirmed', $booking[0]['status'] ?? null,
+            'Completed booking should be recoverable to confirmed');
+
+        // Verify audit log entry
+        $audit = Database::query(
+            "SELECT `action` FROM `audit_log` WHERE `entity_type` = 'booking' AND `entity_id` = ? ORDER BY `created_at` DESC LIMIT 1",
+            [$completedId]
+        );
+        $this->assertNotEmpty($audit, 'Status change should create audit log entry');
+        $this->assertSame('booking.status_changed', $audit[0]['action']);
+    }
+
+    public function test_completed_booking_shows_confirmed_in_status_dropdown(): void
+    {
+        $completedId = '01TESTRESCHEDCMPUI00000';
+        $this->insertBooking($completedId, 'completed', 'timeslot');
+
+        $this->doLoginOperator();
+        $r = $this->get('/admin/bookings/' . $completedId);
+
+        // The booking detail page should include 'confirmed' as an option in the status dropdown
+        $this->assertSame(200, $r['code']);
+        $this->assertStringContainsString('value="confirmed"', $r['body'],
+            'Completed booking detail page should offer "confirmed" as a recovery option');
+    }
+
+    // ════════════════════════════════════════════════════════════════
     // Input validation
     // ════════════════════════════════════════════════════════════════
 
@@ -259,17 +331,22 @@ final class RescheduleEndpointTest extends TestCase
     {
         $tenantId = TestFixtures::BUSINESS_TENANT_ID;
 
-        // Determine a valid target date (weekday, +3 days, clamped to avoid weekends)
-        $targetTs = strtotime('+3 days');
-        // Walk to next weekday if Saturday/Sunday
+        // Clamp origDate to weekday (availability only covers Mon-Fri)
+        $origTs = strtotime('+2 days');
+        while (date('N', $origTs) >= 6) {
+            $origTs = strtotime('+1 day', $origTs);
+        }
+
+        // targetDate must be a DIFFERENT weekday from origDate
+        $targetTs = strtotime('+1 day', $origTs);
         while (date('N', $targetTs) >= 6) {
             $targetTs = strtotime('+1 day', $targetTs);
         }
+        $origDate   = date('Y-m-d', $origTs);
         $targetDate = date('Y-m-d', $targetTs);
 
         // Reset the happy-path booking to confirmed with custom data
         Database::execute("DELETE FROM `bookings` WHERE `id` = ?", [self::HAPPY_BOOKING_ID]);
-        $origDate = date('Y-m-d', strtotime('+2 days'));
         Database::execute(
             "INSERT INTO `bookings`
              (`id`, `tenant_id`, `booking_pattern`, `customer_id`, `service_id`,
@@ -500,6 +577,18 @@ final class RescheduleEndpointTest extends TestCase
     {
         $tenantId = TestFixtures::BUSINESS_TENANT_ID;
 
+        // Verify the shared tenant exists — if it doesn't, provision() failed
+        // or the DB was reset since last run. Bail early with a clear message.
+        $tenant = Database::query(
+            'SELECT `id` FROM `tenants` WHERE `id` = ? LIMIT 1',
+            [$tenantId]
+        );
+        if (empty($tenant)) {
+            throw new \RuntimeException(
+                "Tenant {$tenantId} not found. TestFixtures::provision() must run first."
+            );
+        }
+
         // Clean prior reschedule test bookings
         Database::execute("DELETE FROM `bookings` WHERE `id` LIKE '01TESTRESCHED%'");
         Database::execute("DELETE FROM `customers` WHERE `id` = ?", [self::RESCHEDULE_CUSTOMER_ID]);
@@ -551,6 +640,9 @@ final class RescheduleEndpointTest extends TestCase
         $tenantId = TestFixtures::BUSINESS_TENANT_ID;
         $startDate = date('Y-m-d', strtotime('+2 days'));
 
+        // Ensure customer FK target exists (idempotent — survives any DB state)
+        self::ensureCustomerExists($tenantId);
+
         Database::execute("DELETE FROM `bookings` WHERE `id` = ?", [$id]);
         Database::execute(
             "INSERT INTO `bookings`
@@ -569,6 +661,7 @@ final class RescheduleEndpointTest extends TestCase
     private function insertPatternBooking(string $id, string $pattern, array $fields): void
     {
         $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+        self::ensureCustomerExists($tenantId);
         Database::execute("DELETE FROM `bookings` WHERE `id` = ?", [$id]);
 
         $cols = ['`id`', '`tenant_id`', '`booking_pattern`', '`customer_id`', '`status`', '`source`'];
@@ -584,6 +677,81 @@ final class RescheduleEndpointTest extends TestCase
         $colStr = implode(', ', $cols);
         $phStr = implode(', ', $placeholders);
         Database::execute("INSERT INTO `bookings` ({$colStr}) VALUES ({$phStr})", $vals);
+    }
+
+    /**
+     * Ensure the reschedule-test customer row exists.
+     *
+     * Uses explicit SELECT + INSERT (not INSERT IGNORE) because INSERT IGNORE
+     * silently swallows FK violations in some MySQL modes, which would hide
+     * the real problem (missing tenant) instead of fixing it.
+     */
+    private static function ensureCustomerExists(string $tenantId): void
+    {
+        $exists = Database::query(
+            'SELECT `id` FROM `customers` WHERE `id` = ? LIMIT 1',
+            [self::RESCHEDULE_CUSTOMER_ID]
+        );
+        if (empty($exists)) {
+            Database::execute(
+                "INSERT INTO `customers` (`id`, `tenant_id`, `name`, `email`)
+                 VALUES (?, ?, 'Reschedule Test Customer', 'resched@example.com')",
+                [self::RESCHEDULE_CUSTOMER_ID, $tenantId]
+            );
+        }
+    }
+
+    /**
+     * Ensure the reschedule-test service row exists.
+     *
+     * The happy-path reschedule needs a service for slot calculation.
+     * Without it, the app can't compute available time slots and the
+     * reschedule silently fails (redirects back to original booking).
+     */
+    private static function ensureServiceExists(string $tenantId): void
+    {
+        $exists = Database::query(
+            'SELECT `id` FROM `services` WHERE `id` = ? LIMIT 1',
+            [self::RESCHEDULE_SERVICE_ID]
+        );
+        if (empty($exists)) {
+            Database::execute(
+                "INSERT INTO `services` (`id`, `tenant_id`, `name`, `duration_minutes`, `is_active`, `sort_order`)
+                 VALUES (?, ?, 'Reschedule Test Service', 30, 1, 99)",
+                [self::RESCHEDULE_SERVICE_ID, $tenantId]
+            );
+        }
+    }
+
+    /**
+     * Ensure weekday availability rows exist for the test tenant.
+     *
+     * The reschedule slot calculator requires availability entries.
+     * Without them, no valid target slots are found and the reschedule fails.
+     */
+    private static function ensureAvailabilityExists(string $tenantId): void
+    {
+        $count = Database::query(
+            "SELECT COUNT(*) AS cnt FROM `availability`
+             WHERE `tenant_id` = ? AND `staff_id` IS NULL AND `is_available` = 1",
+            [$tenantId]
+        );
+        if (((int) ($count[0]['cnt'] ?? 0)) >= 5) {
+            return; // Already has Mon-Fri availability
+        }
+
+        // Clear and re-seed Mon-Fri (day_of_week 0-4)
+        Database::execute(
+            "DELETE FROM `availability` WHERE `tenant_id` = ? AND `staff_id` IS NULL",
+            [$tenantId]
+        );
+        for ($dow = 0; $dow <= 4; $dow++) {
+            Database::execute(
+                "INSERT INTO `availability` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `is_available`)
+                 VALUES (?, ?, ?, '08:00', '18:00', 1)",
+                ["01TESTRESCHEDAVAIL00000{$dow}", $tenantId, $dow]
+            );
+        }
     }
 
     private static function seedResourceFixture(): void
@@ -602,8 +770,16 @@ final class RescheduleEndpointTest extends TestCase
     private static function seedCapacitySlot(string $slotId, int $dow): void
     {
         $tenantId = TestFixtures::BUSINESS_TENANT_ID;
-        $existing = Database::query("SELECT `id` FROM `capacity_slots` WHERE `id` = ?", [$slotId]);
-        if (!empty($existing)) return;
+
+        // Delete any existing slot with the same unique window (tenant, DOW, times)
+        // to avoid unique constraint violations from prior test runs
+        Database::execute(
+            "DELETE FROM `capacity_slots` WHERE `tenant_id` = ? AND `day_of_week` = ? AND `start_time` = '12:00:00' AND `end_time` = '14:00:00'",
+            [$tenantId, $dow]
+        );
+
+        // Also delete by ID in case a prior run left an orphan
+        Database::execute("DELETE FROM `capacity_slots` WHERE `id` = ?", [$slotId]);
 
         Database::execute(
             "INSERT INTO `capacity_slots` (`id`, `tenant_id`, `day_of_week`, `start_time`, `end_time`, `max_capacity`, `min_party_size`, `max_party_size`, `is_active`)
