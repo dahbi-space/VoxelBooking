@@ -185,7 +185,7 @@ app/                    PHP application code
   Controllers/          Route handlers (Admin, Booking, Auth, API)
   Engine/               Core framework classes + calculators
   Middleware/           Request middleware (CSRF, Auth, Demo, Rate limit)
-  Migrations/           Sequential SQL migrations (001–026)
+  Migrations/           Sequential SQL migrations (001–028)
   Models/               Data models (no ORM)
 config/                 Configuration files (locale registry)
 lang/                   Translation files (en shipped; nl, de, es, fr, id, it, ja, pt, pl, tr, ar registry-ready)
