@@ -338,7 +338,206 @@ final class ImpersonationTest extends TestCase
         $this->assertSame('operator', $end['actor_type']);
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // Customer deep-link impersonation (redirect_to flow)
+    // ════════════════════════════════════════════════════════════════
+
+    public function test_impersonation_redirect_to_customer_page(): void
+    {
+        $this->doLoginOperator();
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+        $customerId = TestFixtures::CUSTOMER_ID;
+
+        $csrf = $this->getCsrf();
+        $redirectTo = "/admin/tenants/{$tenantId}/customers/{$customerId}";
+        $r = $this->post("/admin/tenants/{$tenantId}/impersonate", [
+            '_csrf_token' => $csrf,
+            'redirect_to' => $redirectTo,
+        ]);
+
+        $this->assertSame(302, $r['code'], 'Should redirect');
+        $this->assertStringContainsString(
+            $redirectTo,
+            $r['location'],
+            'Should redirect to customer page via redirect_to, not default tenant dashboard'
+        );
+
+        // Follow the redirect — customer page should load with impersonation pill
+        $r = $this->get($redirectTo);
+        $this->assertSame(200, $r['code'], 'Customer page should load');
+        $this->assertStringContainsString(
+            'vb-impersonation-pill',
+            $r['body'],
+            'Impersonation pill should appear on the customer page'
+        );
+    }
+
+    public function test_impersonation_redirect_to_rejects_external_path(): void
+    {
+        $this->doLoginOperator();
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+
+        // Each case must fall back to the default tenant dashboard
+        $malicious = [
+            '/admin/settings'                                    => 'plain external path',
+            "/admin/tenants/{$tenantId}/../../settings"           => 'dot-segment traversal',
+            "/admin/tenants/{$tenantId}/%2e%2e/settings"          => 'URL-encoded traversal',
+            "http://evil.com/admin/tenants/{$tenantId}/customers" => 'scheme injection',
+            "//evil.com/admin/tenants/{$tenantId}/customers"      => 'host injection',
+            "/admin/tenants/{$tenantId}-evil/customers"           => 'prefix-boundary trick',
+            '/admin/tenants/OTHER_TENANT_ID/customers'            => 'cross-tenant attempt',
+        ];
+
+        foreach ($malicious as $path => $label) {
+            $csrf = $this->getCsrf();
+            $r = $this->post("/admin/tenants/{$tenantId}/impersonate", [
+                '_csrf_token' => $csrf,
+                'redirect_to' => $path,
+            ]);
+
+            $this->assertSame(302, $r['code'], "[$label] should redirect");
+            $this->assertStringEndsWith(
+                "/admin/tenants/{$tenantId}",
+                rtrim($r['location'], '/'),
+                "[$label] must fall back to tenant dashboard, not follow malicious path"
+            );
+        }
+    }
+
+    public function test_impersonation_redirect_creates_audit_event(): void
+    {
+        try {
+            EnvLoader::load(dirname(__DIR__, 2) . '/.env');
+            Database::connect();
+            Database::query('SELECT 1');
+        } catch (\Throwable) {
+            $this->markTestSkipped('DB not available');
+        }
+
+        // Clear old entries
+        Database::execute(
+            "DELETE FROM `audit_log` WHERE `action` = 'impersonation.started'"
+        );
+
+        $this->doLoginOperator();
+        $tenantId = TestFixtures::BUSINESS_TENANT_ID;
+        $customerId = TestFixtures::CUSTOMER_ID;
+
+        $csrf = $this->getCsrf();
+        $this->post("/admin/tenants/{$tenantId}/impersonate", [
+            '_csrf_token' => $csrf,
+            'redirect_to' => "/admin/tenants/{$tenantId}/customers/{$customerId}",
+        ]);
+
+        $entries = Database::query(
+            "SELECT `action`, `entity_type`, `entity_id`
+             FROM `audit_log`
+             WHERE `action` = 'impersonation.started'
+             ORDER BY `id` DESC LIMIT 1"
+        );
+
+        $this->assertNotEmpty($entries, 'Audit entry should exist for redirect_to flow');
+        $this->assertSame('impersonation.started', $entries[0]['action']);
+        $this->assertSame($tenantId, $entries[0]['entity_id']);
+    }
+
+    public function test_all_bookings_renders_impersonation_forms_for_operator(): void
+    {
+        // Seed a guaranteed future booking so the page is never empty
+        $this->ensureTestBookingExists();
+        $this->doLoginOperator();
+
+        $r = $this->get('/admin/bookings');
+        $this->assertSame(200, $r['code']);
+
+        // Operator view MUST contain impersonation forms (booking is seeded)
+        $this->assertStringContainsString(
+            '/impersonate',
+            $r['body'],
+            'All Bookings operator view must have impersonation form actions'
+        );
+        $this->assertStringContainsString(
+            'redirect_to',
+            $r['body'],
+            'Impersonation forms must include redirect_to hidden input'
+        );
+        $this->assertStringContainsString(
+            'vb-btn-reset',
+            $r['body'],
+            'Customer names must use button-reset styling'
+        );
+    }
+
+    public function test_dashboard_renders_impersonation_forms_for_operator(): void
+    {
+        // Seed a guaranteed future booking so the dashboard upcoming list is never empty
+        $this->ensureTestBookingExists();
+        $this->doLoginOperator();
+
+        $r = $this->get('/admin');
+        $this->assertSame(200, $r['code']);
+
+        // Dashboard upcoming list MUST contain impersonation forms (booking is seeded)
+        $this->assertStringContainsString(
+            '/impersonate',
+            $r['body'],
+            'Dashboard operator view must have impersonation form actions'
+        );
+        $this->assertStringContainsString(
+            'redirect_to',
+            $r['body'],
+            'Impersonation forms must include redirect_to'
+        );
+    }
+
     // ── Helpers ──
+
+    /**
+     * Ensure a future booking exists for the test tenant/customer.
+     *
+     * Uses the shared TestFixtures IDs so the booking appears on
+     * All Bookings and Dashboard. Idempotent via SELECT + INSERT.
+     */
+    private function ensureTestBookingExists(): void
+    {
+        try {
+            EnvLoader::load(dirname(__DIR__, 2) . '/.env');
+            Database::connect();
+        } catch (\Throwable) {
+            return; // DB unavailable — test will fail on its own assertions
+        }
+
+        // Ensure customer exists
+        $customer = Database::query(
+            'SELECT `id` FROM `customers` WHERE `id` = ? LIMIT 1',
+            [TestFixtures::CUSTOMER_ID]
+        );
+        if (empty($customer)) {
+            Database::execute(
+                "INSERT INTO `customers` (`id`, `tenant_id`, `name`, `email`)
+                 VALUES (?, ?, 'Test Customer', 'customer@example.com')",
+                [TestFixtures::CUSTOMER_ID, TestFixtures::BUSINESS_TENANT_ID]
+            );
+        }
+
+        // Ensure booking exists (future date)
+        $booking = Database::query(
+            'SELECT `id` FROM `bookings` WHERE `id` = ? LIMIT 1',
+            [TestFixtures::BOOKING_ID]
+        );
+        if (empty($booking)) {
+            Database::execute(
+                "INSERT INTO `bookings`
+                 (`id`, `tenant_id`, `booking_pattern`, `customer_id`,
+                  `start_datetime`, `end_datetime`, `status`, `source`)
+                 VALUES (?, ?, 'timeslot', ?,
+                  DATE_ADD(CURDATE(), INTERVAL 1 DAY),
+                  DATE_ADD(DATE_ADD(CURDATE(), INTERVAL 1 DAY), INTERVAL 30 MINUTE),
+                  'confirmed', 'web')",
+                [TestFixtures::BOOKING_ID, TestFixtures::BUSINESS_TENANT_ID, TestFixtures::CUSTOMER_ID]
+            );
+        }
+    }
 
     private function doLoginOperator(): void
     {

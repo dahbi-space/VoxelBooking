@@ -144,7 +144,18 @@ $hasActiveFilters = !empty($filters['status'] ?? '') || !empty($filters['from'] 
                     <?php foreach ($bookings as $i => $b): ?>
                     <tr class="vb-fade-in-up stagger-<?= min($i + 1, 6) ?>">
                         <td data-label="<?= __('admin.bookings.customer') ?>">
-                            <?php if (!empty($b['customer_id']) && !empty($b['tenant_id'])): ?>
+                            <?php if (!empty($b['customer_id']) && !empty($b['tenant_id']) && ($showTenantColumn ?? false)): ?>
+                            <?php // Operator context: start impersonation before navigating to customer ?>
+                            <form method="POST" action="/admin/tenants/<?= htmlspecialchars($b['tenant_id'], ENT_QUOTES, 'UTF-8') ?>/impersonate" class="vb-inline-form">
+                                <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                                <input type="hidden" name="redirect_to" value="/admin/tenants/<?= htmlspecialchars($b['tenant_id'], ENT_QUOTES, 'UTF-8') ?>/customers/<?= htmlspecialchars($b['customer_id'], ENT_QUOTES, 'UTF-8') ?>">
+                                <button type="submit" class="vb-cell-link vb-btn-reset">
+                                    <div class="vb-cell-primary"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
+                                    <div class="vb-cell-secondary"><?= htmlspecialchars($b['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>
+                                </button>
+                            </form>
+                            <?php elseif (!empty($b['customer_id']) && !empty($b['tenant_id'])): ?>
+                            <?php // Tenant-scoped: direct link (already within tenant context) ?>
                             <a href="/admin/tenants/<?= htmlspecialchars($b['tenant_id'], ENT_QUOTES, 'UTF-8') ?>/customers/<?= htmlspecialchars($b['customer_id'], ENT_QUOTES, 'UTF-8') ?>" class="vb-cell-link">
                                 <div class="vb-cell-primary"><?= htmlspecialchars($b['customer_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
                                 <div class="vb-cell-secondary"><?= htmlspecialchars($b['customer_email'] ?? '', ENT_QUOTES, 'UTF-8') ?></div>

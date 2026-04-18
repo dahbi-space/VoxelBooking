@@ -3924,6 +3924,19 @@
     display: inline;
 }
 
+/* Button that looks like an anchor — used for impersonation-starting
+   customer links that must POST but appear as regular cell links. */
+.vb-btn-reset {
+    border: none;
+    background: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    text-align: inherit;
+}
+
 /* ══════════════════════════════════════════════════════════════
    BUSINESS USER CRUD — Team management surface
    ══════════════════════════════════════════════════════════════ */
@@ -5505,6 +5518,7 @@
     position: relative;
     display: inline-flex;
     align-items: center;
+    gap: 0.625rem;
     cursor: pointer;
     flex-shrink: 0;
 }
