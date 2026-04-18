@@ -80,6 +80,37 @@ ob_start();
         </div>
     </div>
 
+    <!-- Section 1c: Powered-by -->
+    <div class="vb-settings-section">
+        <div class="vb-card">
+            <div class="vb-card-header">
+                <div class="vb-card-title-row">
+                    <i data-lucide="badge-check" class="vb-card-icon"></i>
+                    <div>
+                        <div class="vb-card-title"><?= __('admin.tenant_settings.section_powered_by') ?></div>
+                        <div class="vb-card-desc"><?= __('admin.tenant_settings.section_powered_by_desc') ?></div>
+                    </div>
+                </div>
+            </div>
+            <div class="vb-form-grid">
+                <div class="vb-settings-field">
+                    <div class="vb-toggle-row">
+                        <label class="vb-toggle" for="ts-show-powered-by">
+                            <input type="hidden" name="show_powered_by" value="0">
+                            <input type="checkbox" name="show_powered_by" id="ts-show-powered-by" value="1"
+                                   <?= (int) ($tenant['show_powered_by'] ?? 1) ? 'checked' : '' ?>>
+                            <span class="vb-toggle-slider"></span>
+                        </label>
+                        <div class="vb-toggle-label-group">
+                            <span class="vb-label"><?= __('admin.tenant_settings.field_show_powered_by') ?></span>
+                            <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_show_powered_by_hint') ?></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Section 2: Booking Page Content -->
     <div class="vb-settings-section">
         <div class="vb-card">

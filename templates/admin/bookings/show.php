@@ -200,7 +200,7 @@ ob_start();
                             'confirmed'  => ['confirmed', 'cancelled', 'completed', 'no_show'],
                             'waitlisted' => ['waitlisted', 'confirmed', 'cancelled'],
                             'cancelled'  => ['cancelled', 'confirmed'],
-                            'completed'  => ['completed'],
+                            'completed'  => ['completed', 'confirmed'],
                             'no_show'    => ['no_show', 'confirmed'],
                             'rescheduled' => ['rescheduled'],
                         ];

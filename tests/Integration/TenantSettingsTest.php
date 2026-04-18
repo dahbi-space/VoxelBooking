@@ -367,6 +367,54 @@ final class TenantSettingsTest extends TestCase
         $this->assertSame('Book your appointment.', $row[0]['booking_page_description']);
     }
 
+    public function testSaveBrandingDisablesPoweredBy(): void
+    {
+        $page = self::httpGet("/admin/tenants/" . self::$tenantId . "/settings/branding", 'operator');
+        self::extractCsrf($page['body'], 'operator');
+
+        $res = self::httpPost("/admin/tenants/" . self::$tenantId . "/settings/branding", [
+            '_csrf_token'      => self::$operatorCsrf,
+            'brand_color'      => '#2563EB',
+            'show_powered_by'  => '0',
+        ], 'operator');
+
+        $this->assertSame(302, $res['code']);
+
+        $row = Database::query('SELECT `show_powered_by` FROM `tenants` WHERE `id` = ?', [self::$tenantId]);
+        $this->assertSame(0, (int) $row[0]['show_powered_by'], 'show_powered_by must be 0 after disabling');
+    }
+
+    public function testBookingPageHidesFooterWhenPoweredByDisabled(): void
+    {
+        // Ensure powered_by is off
+        Database::execute('UPDATE `tenants` SET `show_powered_by` = 0 WHERE `id` = ?', [self::$tenantId]);
+
+        $slug = Database::query('SELECT `slug` FROM `tenants` WHERE `id` = ?', [self::$tenantId]);
+        $res = self::httpGetPublic("/book/" . $slug[0]['slug']);
+
+        $this->assertSame(200, $res['code']);
+        $this->assertStringNotContainsString('vb-book-footer', $res['body'], 'Footer must not render when show_powered_by=0');
+    }
+
+    public function testBookingPageShowsFooterWhenPoweredByEnabled(): void
+    {
+        // Ensure powered_by is on
+        Database::execute('UPDATE `tenants` SET `show_powered_by` = 1 WHERE `id` = ?', [self::$tenantId]);
+
+        $slug = Database::query('SELECT `slug` FROM `tenants` WHERE `id` = ?', [self::$tenantId]);
+        $res = self::httpGetPublic("/book/" . $slug[0]['slug']);
+
+        $this->assertSame(200, $res['code']);
+        $this->assertStringContainsString('vb-book-footer', $res['body'], 'Footer must render when show_powered_by=1');
+    }
+
+    public function testBrandingFormShowsPoweredByToggle(): void
+    {
+        $res = self::httpGet("/admin/tenants/" . self::$tenantId . "/settings/branding", 'operator');
+        $this->assertSame(200, $res['code']);
+        $this->assertStringContainsString('ts-show-powered-by', $res['body'], 'Powered-by toggle must appear on branding tab');
+    }
+
     // ════════════════════════════════════════════════════════════════
     // Save privacy
     // ════════════════════════════════════════════════════════════════
@@ -1371,6 +1419,30 @@ final class TenantSettingsTest extends TestCase
         return [
             'code'    => $code,
             'headers' => $responseHeaders,
+            'body'    => substr($response, $headerSize),
+        ];
+    }
+
+    /** @return array{code: int, headers: string, body: string} */
+    private static function httpGetPublic(string $path): array
+    {
+        $ch = curl_init(self::$baseUrl . $path);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_HEADER         => true,
+        ]);
+
+        $response = (string) curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        curl_close($ch);
+
+        return [
+            'code'    => $code,
+            'headers' => substr($response, 0, $headerSize),
             'body'    => substr($response, $headerSize),
         ];
     }

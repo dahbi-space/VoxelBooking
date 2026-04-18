@@ -1097,7 +1097,7 @@ final class BookingsController
             'confirmed'   => ['cancelled', 'completed', 'no_show'],
             'waitlisted'  => ['confirmed', 'cancelled'],
             'cancelled'   => ['confirmed'],
-            'completed'   => [],
+            'completed'   => ['confirmed'],
             'no_show'     => ['confirmed'],
             'rescheduled' => [],
         ];

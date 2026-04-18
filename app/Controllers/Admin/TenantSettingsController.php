@@ -158,6 +158,7 @@ final class TenantSettingsController
         $data = [
             'brand_color'              => $brandColor,
             'brand_color_text'         => $brandColorTxt,
+            'show_powered_by'          => $request->string('show_powered_by') === '1' ? 1 : 0,
             'booking_page_heading'     => $heading,
             'booking_page_description' => $description,
         ];

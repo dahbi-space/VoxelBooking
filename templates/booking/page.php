@@ -1553,10 +1553,12 @@
 
         <!-- ── Footer (hidden in embed mode) ── -->
         <?php if (!($isEmbed ?? false)): ?>
+        <?php if (!empty($tenant['show_powered_by'])): ?>
         <footer class="vb-book-footer" x-show="!isLoading">
             <span><?= __('booking.footer.powered_by') ?></span>
             <a href="<?= htmlspecialchars(brand_url(), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><?= htmlspecialchars(app_name(), ENT_QUOTES, 'UTF-8') ?></a>
         </footer>
+        <?php endif; ?>
         <?php endif; ?>
     </div>
 

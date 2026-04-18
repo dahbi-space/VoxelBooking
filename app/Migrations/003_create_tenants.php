@@ -24,6 +24,7 @@ return [
         `currency` VARCHAR(3) NOT NULL DEFAULT 'EUR',
         `brand_color` VARCHAR(7) NOT NULL DEFAULT '#2563EB',
         `brand_color_text` VARCHAR(7) NOT NULL DEFAULT '#FFFFFF',
+        `show_powered_by` TINYINT(1) NOT NULL DEFAULT 1,
         `logo_path` VARCHAR(500) NULL DEFAULT NULL,
         `cover_image_path` VARCHAR(500) NULL DEFAULT NULL,
         `booking_page_heading` VARCHAR(255) NULL DEFAULT NULL,

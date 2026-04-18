@@ -122,6 +122,8 @@ import {
     SearchX,
     TrendingDown,
     Languages,
+    Inbox,
+    XCircle,
 } from 'lucide';
 
 const ICON_SET = {
@@ -143,6 +145,7 @@ const ICON_SET = {
     Ban, CalendarClock, CalendarPlus, CalendarRange, Code,
     NotebookPen, Phone, SearchX, TrendingDown,
     Languages,
+    Inbox, XCircle,
 };
 
 // ── Alpine: CSP-safe component registration ──
