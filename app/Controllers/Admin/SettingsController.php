@@ -38,7 +38,7 @@ final class SettingsController
 
     public function general(Request $request): Response
     {
-        $settings = $this->loadSettings(['app_name', 'brand_url', 'timezone', 'date_format']);
+        $settings = $this->loadSettings(['app_name', 'brand_url', 'timezone', 'date_format', 'enable_applications']);
 
         return $this->render('admin.settings.general', 'General', [
             'settings' => $settings,
@@ -67,7 +67,7 @@ final class SettingsController
         }
 
         // Audit log: track what changed
-        $oldSettings = $this->loadSettings(['app_name', 'brand_url', 'timezone', 'date_format']);
+        $oldSettings = $this->loadSettings(['app_name', 'brand_url', 'timezone', 'date_format', 'enable_applications']);
         $changes = [];
 
         try {
@@ -92,6 +92,12 @@ final class SettingsController
                 if ($dateFormat !== ($oldSettings['date_format'] ?? '')) {
                     $changes['date_format'] = ['old' => $oldSettings['date_format'] ?? '', 'new' => $dateFormat];
                 }
+            }
+
+            $enableApps = $request->string('enable_applications') === '1' ? '1' : '0';
+            $this->saveSetting('enable_applications', $enableApps);
+            if ($enableApps !== ($oldSettings['enable_applications'] ?? '0')) {
+                $changes['enable_applications'] = ['old' => $oldSettings['enable_applications'] ?? '0', 'new' => $enableApps];
             }
         } catch (\Throwable $e) {
             Logger::error('Settings persistence failed', ['error' => $e->getMessage()]);

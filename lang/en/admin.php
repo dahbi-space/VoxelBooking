@@ -11,6 +11,7 @@ return [
         'dashboard'      => 'Dashboard',
         'bookings'       => 'Bookings',
         'all_bookings'   => 'All Bookings',
+        'applications'   => 'Applications',
         'services'       => 'Services',
         'staff'          => 'Staff',
         'customers'      => 'Customers',
@@ -128,6 +129,8 @@ return [
         'app_url_label'      => 'Application URL',
         'brand_url_label'    => 'Brand URL',
         'brand_url_hint'     => 'URL for the "Powered by" link in booking page footers.',
+        'enable_applications_label' => 'Accept business applications',
+        'enable_applications_hint'  => 'When enabled, the homepage shows a landing page with a request access form. When disabled, the homepage shows a simple logo and name.',
         'timezone_label'     => 'Timezone',
         'date_format_label'  => 'Date format',
         'system_title'       => 'System Information',
@@ -1043,6 +1046,12 @@ return [
         'field_description'       => 'Booking page description',
         'field_description_hint'  => 'Short text below the heading.',
 
+        // Branding — Powered-by footer
+        'section_powered_by'          => 'Footer Branding',
+        'section_powered_by_desc'     => 'Control the "Powered by" attribution in the booking page footer.',
+        'field_show_powered_by'       => 'Show "Powered by" in footer',
+        'field_show_powered_by_hint'  => 'When disabled, the branding link is hidden from the public booking page.',
+
         // Privacy — section headers
         'section_consent'              => 'Consent',
         'section_consent_desc'         => 'Require customer consent before processing booking data.',
@@ -1309,5 +1318,28 @@ return [
         'error_commit_rolled_back' => 'Update failed and was rolled back. No changes were made. Check file permissions and try again.',
         'errors_partial'          => ':count file(s) could not be written.',
         'success'                 => 'Updated to v:version. :count files updated.',
+    ],
+
+    // ── Business Applications ──
+    'applications' => [
+        'title'            => 'Applications',
+        'status_pending'   => 'Pending',
+        'status_approved'  => 'Approved',
+        'status_rejected'  => 'Rejected',
+        'status_all'       => 'All',
+        'col_business'     => 'Business',
+        'col_contact'      => 'Contact',
+        'col_email'        => 'Email',
+        'col_date'         => 'Date',
+        'col_status'       => 'Status',
+        'col_actions'      => 'Actions',
+        'approve_btn'      => 'Approve',
+        'reject_btn'       => 'Reject',
+        'approved'         => ':name has been approved.',
+        'rejected'         => ':name has been rejected.',
+        'not_found'        => 'Application not found.',
+        'already_reviewed' => 'This application has already been reviewed.',
+        'empty_title'      => 'No applications',
+        'empty_desc'       => 'No business access requests match the selected filter.',
     ],
 ];

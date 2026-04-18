@@ -41,6 +41,7 @@ return function (Router $router): void {
 
         // ── Root redirect ──
         $router->get('/', \App\Controllers\HomeController::class, 'index');
+        $router->post('/request-access', \App\Controllers\HomeController::class, 'submitRequest');
 
         // ── Installation wizard ──
         $router->get('/install', \App\Controllers\Install\WizardController::class, 'show');
@@ -93,6 +94,11 @@ return function (Router $router): void {
             $router->get('/admin/deletion-queue', \App\Controllers\Admin\DeletionQueueController::class, 'index');
             $router->post('/admin/deletion-queue/confirm', \App\Controllers\Admin\DeletionQueueController::class, 'confirm');
             $router->post('/admin/deletion-queue/dismiss', \App\Controllers\Admin\DeletionQueueController::class, 'dismiss');
+
+            // Business applications — operator-only (enforced in controller)
+            $router->get('/admin/applications', \App\Controllers\Admin\ApplicationsController::class, 'index');
+            $router->post('/admin/applications/{id}/approve', \App\Controllers\Admin\ApplicationsController::class, 'approve');
+            $router->post('/admin/applications/{id}/reject', \App\Controllers\Admin\ApplicationsController::class, 'reject');
 
             // Updates (operator-only — enforced in controller)
             $router->get('/admin/updates', \App\Controllers\Admin\UpdateController::class, 'index');

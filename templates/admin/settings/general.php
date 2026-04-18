@@ -67,6 +67,18 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                     </select>
                 </div>
             </div>
+
+            <div class="vb-form-group">
+                <label class="vb-toggle">
+                    <input type="hidden" name="enable_applications" value="0">
+                    <input type="checkbox" class="vb-toggle-input" name="enable_applications" value="1"
+                           <?= ($settings['enable_applications'] ?? '0') === '1' ? 'checked' : '' ?>>
+                    <span class="vb-toggle-track"></span>
+                    <span class="vb-toggle-label"><?= __('admin.settings.enable_applications_label') ?></span>
+                </label>
+                <span class="vb-hint"><?= __('admin.settings.enable_applications_hint') ?></span>
+            </div>
+
             <div class="vb-form-actions">
                 <button type="submit" class="vb-btn vb-btn-primary">
                     <i data-lucide="check"></i>

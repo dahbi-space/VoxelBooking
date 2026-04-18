@@ -234,6 +234,17 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                     <i data-lucide="calendar"></i>
                     <?= __('admin.nav.all_bookings') ?>
                 </a>
+                <a href="/admin/applications" class="vb-sidebar-link <?= $activePage === 'applications' ? 'active' : '' ?>">
+                    <i data-lucide="inbox"></i>
+                    <?= __('admin.nav.applications') ?>
+                    <?php
+                    $pendingAppCount = \App\Engine\Database::query(
+                        "SELECT COUNT(*) AS `cnt` FROM `business_applications` WHERE `status` = 'pending'"
+                    )[0]['cnt'] ?? 0;
+                    if ((int) $pendingAppCount > 0): ?>
+                    <span class="vb-badge vb-badge-warning" style="margin-left: auto;"><?= $pendingAppCount ?></span>
+                    <?php endif; ?>
+                </a>
                 <?php endif; ?>
             <?php if (\App\Engine\Auth::isOperator() && !$isImpersonating): ?>
             <div class="vb-sidebar-section">

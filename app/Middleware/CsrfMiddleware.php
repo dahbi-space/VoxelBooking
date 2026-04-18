@@ -38,9 +38,14 @@ final class CsrfMiddleware
         }
 
         // Ensure session is started for CSRF verification
-        // Admin routes use Auth::startSession() for consistent session naming
+        // Admin/auth routes and the public homepage use Auth::startSession()
+        // for consistent vb_session naming. Other routes use PHPSESSID.
         if (session_status() !== PHP_SESSION_ACTIVE) {
-            if (str_starts_with($request->path(), '/admin') || str_starts_with($request->path(), '/auth/')) {
+            $path = $request->path();
+            if (str_starts_with($path, '/admin')
+                || str_starts_with($path, '/auth/')
+                || $path === '/'
+                || $path === '/request-access') {
                 Auth::startSession();
             } else {
                 session_start();
