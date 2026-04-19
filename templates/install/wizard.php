@@ -1210,6 +1210,62 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
                     <?php if (isset($errors['password_confirmation'])): ?><div class="form-error"><?= htmlspecialchars($errors['password_confirmation'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                 </div>
 
+                <!-- ── Regional Defaults Section ── -->
+                <hr class="section-divider">
+                <div class="card-header">
+                    <svg class="card-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                    <div class="card-header-content">
+                        <h3 class="card-title"><?= __('install.wizard.regional_section_title') ?></h3>
+                        <p class="card-desc"><?= __('install.wizard.regional_section_desc') ?></p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="timezone"><?= __('install.wizard.timezone') ?></label>
+                    <select id="timezone" name="timezone" class="form-input">
+                        <?php
+                        $browserTz = $session['timezone'] ?? 'UTC';
+                        foreach (get_supported_timezones() as $tz):
+                        ?>
+                        <option value="<?= htmlspecialchars($tz, ENT_QUOTES, 'UTF-8') ?>" <?= $browserTz === $tz ? 'selected' : '' ?>><?= htmlspecialchars(format_timezone($tz), ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div class="form-hint"><?= __('install.wizard.timezone_hint') ?></div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="date_format"><?= __('install.wizard.date_format') ?></label>
+                        <select id="date_format" name="date_format" class="form-input">
+                            <?php
+                            $dateFormats = [
+                                'Y-m-d'  => '2026-04-19',
+                                'd/m/Y'  => '19/04/2026',
+                                'm/d/Y'  => '04/19/2026',
+                                'd-m-Y'  => '19-04-2026',
+                                'd.m.Y'  => '19.04.2026',
+                            ];
+                            $selectedDateFormat = $session['date_format'] ?? 'Y-m-d';
+                            foreach ($dateFormats as $fmt => $example):
+                            ?>
+                            <option value="<?= $fmt ?>" <?= $selectedDateFormat === $fmt ? 'selected' : '' ?>><?= $example ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="number_format"><?= __('install.wizard.number_format') ?></label>
+                        <select id="number_format" name="number_format" class="form-input">
+                            <?php
+                            $numberFormats = \App\Engine\Locale::numberFormatPresets();
+                            $selectedNumberFormat = $session['number_format'] ?? 'period';
+                            foreach ($numberFormats as $key => $example):
+                            ?>
+                            <option value="<?= $key ?>" <?= $selectedNumberFormat === $key ? 'selected' : '' ?>><?= $example ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="actions" style="margin-top: 1.5rem;">
                     <button type="submit" class="btn btn-primary btn-block" data-loading><span class="btn-text"><?= __('install.wizard.op_submit') ?></span></button>
                 </div>
@@ -1441,6 +1497,22 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
                 // Trigger strength bar update
                 passwordInput.dispatchEvent(new Event('input'));
             });
+        }
+
+        // ── Timezone Auto-detect (Step 4) ──
+        var tzSelect = document.getElementById('timezone');
+        if (tzSelect && !tzSelect.dataset.userSet) {
+            try {
+                var browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                if (browserTz) {
+                    for (var i = 0; i < tzSelect.options.length; i++) {
+                        if (tzSelect.options[i].value === browserTz) {
+                            tzSelect.value = browserTz;
+                            break;
+                        }
+                    }
+                }
+            } catch(e) { /* Intl not available — keep server default */ }
         }
 
         // ── Pattern Card Selection ──

@@ -208,6 +208,41 @@ ob_start();
                     </select>
                     <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_time_format_hint') ?></span>
                 </div>
+
+                <div class="vb-settings-field">
+                    <label class="vb-label" for="ts-date-format"><?= __('admin.tenant_settings.field_date_format') ?></label>
+                    <select class="vb-input" id="ts-date-format" name="date_format">
+                        <?php
+                        $currentDateFormat = old('date_format', $tenant['date_format'] ?? '');
+                        $dateFormats = [
+                            ''       => __('admin.tenant_settings.field_date_format_auto'),
+                            'Y-m-d'  => '2026-04-19',
+                            'd/m/Y'  => '19/04/2026',
+                            'm/d/Y'  => '04/19/2026',
+                            'd-m-Y'  => '19-04-2026',
+                            'd.m.Y'  => '19.04.2026',
+                        ];
+                        foreach ($dateFormats as $dv => $dl):
+                        ?>
+                        <option value="<?= $dv ?>" <?= $currentDateFormat === $dv ? 'selected' : '' ?>><?= e($dl) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_date_format_hint') ?></span>
+                </div>
+
+                <div class="vb-settings-field">
+                    <label class="vb-label" for="ts-number-format"><?= __('admin.tenant_settings.field_number_format') ?></label>
+                    <select class="vb-input" id="ts-number-format" name="number_format">
+                        <?php
+                        $currentNumberFormat = old('number_format', $tenant['number_format'] ?? '');
+                        $numberFormats = ['' => __('admin.tenant_settings.field_number_format_auto')] + \App\Engine\Locale::numberFormatPresets();
+                        foreach ($numberFormats as $nv => $nl):
+                        ?>
+                        <option value="<?= $nv ?>" <?= $currentNumberFormat === $nv ? 'selected' : '' ?>><?= e($nl) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_number_format_hint') ?></span>
+                </div>
             </div>
         </div>
     </div>

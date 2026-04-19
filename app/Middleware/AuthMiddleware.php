@@ -101,11 +101,19 @@ final class AuthMiddleware
 
         if ($tenantId !== null && $tenantId !== '') {
             $rows = \App\Engine\Database::query(
-                'SELECT `locale` FROM `tenants` WHERE `id` = ? LIMIT 1',
+                'SELECT `locale`, `week_start`, `time_format`, `date_format`, `number_format` FROM `tenants` WHERE `id` = ? LIMIT 1',
                 [$tenantId]
             );
             if (!empty($rows)) {
                 $tenant = $rows[0];
+
+                // Apply tenant formatting overrides for all admin pages
+                \App\Engine\Locale::setTenantOverrides([
+                    'week_start'    => $tenant['week_start'] !== null ? (int) $tenant['week_start'] : null,
+                    'time_format'   => !empty($tenant['time_format']) ? $tenant['time_format'] : null,
+                    'date_format'   => !empty($tenant['date_format']) ? $tenant['date_format'] : null,
+                    'number_format' => !empty($tenant['number_format']) ? $tenant['number_format'] : null,
+                ]);
             }
         }
 

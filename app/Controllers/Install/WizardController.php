@@ -412,18 +412,23 @@ final class WizardController
         // Store global settings
         $timezone = $request->string('timezone', 'UTC') ?: 'UTC';
         $locale = $request->string('locale', 'en') ?: 'en';
+        $dateFormat = $request->string('date_format', 'Y-m-d') ?: 'Y-m-d';
+        $numberFormat = $request->string('number_format', 'period') ?: 'period';
 
         $this->setSetting('operator_email', $request->string('email'));
         $defaultName = $_ENV['APP_NAME'] ?? 'VoxelBooking';
         $this->setSetting('app_name', $request->string('app_name', $defaultName) ?: $defaultName);
         $this->setSetting('default_timezone', $timezone);
         $this->setSetting('default_locale', $locale);
+        $this->setSetting('date_format', $dateFormat);
+        $this->setSetting('number_format', $numberFormat);
         $this->setSetting('cron_secret', bin2hex(random_bytes(32)));
         $this->setSetting('version', Version::get());
 
         $_SESSION['install']['operator_created'] = true;
         $_SESSION['install']['operator_id'] = $operatorId;
         $_SESSION['install']['operator_email'] = $request->string('email');
+        $_SESSION['install']['timezone'] = $timezone;
 
         FormState::toast('success', __('install.flash.operator_created'));
 

@@ -1900,11 +1900,34 @@ Alpine.data('bookingWizard', () => ({
     formatPrice(price) {
         const num = parseFloat(price);
         if (isNaN(num)) return '';
+        const currency = config.currency || 'EUR';
+
+        // Use resolved separators from PHP Locale engine (tenant → system → locale)
+        const decSep = fmt.decimal_sep;
+        const thousSep = fmt.thousands_sep;
+
+        if (decSep !== undefined) {
+            // Manual formatting using resolved separators
+            const fixed = Math.abs(num).toFixed(2);
+            const [intPart, decPart] = fixed.split('.');
+            const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '\x00');
+            const formatted = (num < 0 ? '-' : '') + grouped.replace(/\x00/g, thousSep || '') + decSep + decPart;
+
+            // Symbol from PHP currency registry (config/currencies.php)
+            const symbol = fmt.currency_symbol || currency;
+            const space = fmt.currency_space ? ' ' : '';
+            const pos = fmt.currency_position || 'before';
+            return pos === 'before' ? symbol + space + formatted : formatted + space + symbol;
+        }
+
+        // Fallback: Intl.NumberFormat
         try {
-            return new Intl.NumberFormat(config.locale || 'en', {
-                style: 'currency', currency: config.currency || 'EUR',
+            return new Intl.NumberFormat(fmt.intl_locale || config.locale || 'en', {
+                style: 'currency', currency,
             }).format(num);
-        } catch { return `€${num.toFixed(2)}`; }
+        } catch {
+            return `${currency} ${num.toFixed(2)}`;
+        }
     },
 
     formatDuration(minutes) {

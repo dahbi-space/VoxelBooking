@@ -68,7 +68,7 @@ final class TenantsController
             return $this->forbidden($request);
         }
 
-        $defaultTimezone = $this->resolveDefaultTimezone();
+        $defaultTimezone = $this->resolveSystemDefaults()['timezone'];
 
         return $this->render('admin.tenants.create', __('admin.tenants.title'), [
             'documentTitle'   => __('admin.tenants.create'),
@@ -137,7 +137,7 @@ final class TenantsController
                 'slug'            => $slug,
                 'email'           => $email,
                 'booking_pattern' => $pattern,
-                'timezone'        => trim($request->string('timezone')) ?: $this->resolveDefaultTimezone(),
+                'timezone'        => trim($request->string('timezone')) ?: $this->resolveSystemDefaults()['timezone'],
                 'currency'        => trim($request->string('currency')) ?: 'EUR',
                 'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                 'create_owner'    => $createOwner ? '1' : '0',
@@ -163,7 +163,7 @@ final class TenantsController
                     'slug'            => $slug,
                     'email'           => $email,
                     'booking_pattern' => $pattern,
-                    'timezone'        => trim($request->string('timezone')) ?: $this->resolveDefaultTimezone(),
+                    'timezone'        => trim($request->string('timezone')) ?: $this->resolveSystemDefaults()['timezone'],
                     'currency'        => trim($request->string('currency')) ?: 'EUR',
                     'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                 ]);
@@ -251,7 +251,7 @@ final class TenantsController
                     'slug'            => $slug,
                     'email'           => $email,
                     'booking_pattern' => $pattern,
-                    'timezone'        => trim($request->string('timezone')) ?: $this->resolveDefaultTimezone(),
+                    'timezone'        => trim($request->string('timezone')) ?: $this->resolveSystemDefaults()['timezone'],
                     'currency'        => trim($request->string('currency')) ?: 'EUR',
                     'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                     'create_owner'    => '1',
@@ -400,29 +400,48 @@ final class TenantsController
     // ── Helpers ──
 
     /**
-     * Resolve the default timezone for new tenants.
+     * Resolve system defaults for new tenants.
      *
-     * Priority: settings.timezone (admin General save) → settings.default_timezone
-     * (install wizard seed) → UTC.
+     * Priority for timezone: settings.timezone (admin General save)
+     * → settings.default_timezone (install wizard seed) → UTC.
+     *
+     * date_format and number_format: read from settings table
+     * or NULL (inherit from locale config).
+     *
+     * @return array{timezone: string, date_format: string|null, number_format: string|null}
      */
-    private function resolveDefaultTimezone(): string
+    private function resolveSystemDefaults(): array
     {
+        $defaults = [
+            'timezone'      => 'UTC',
+            'date_format'   => null,
+            'number_format' => null,
+        ];
+
         try {
             $rows = Database::query(
-                "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('timezone', 'default_timezone')"
+                "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('timezone', 'default_timezone', 'date_format', 'number_format')"
             );
-            $fallback = 'UTC';
+            $installTz = null;
             foreach ($rows as $row) {
-                if ($row['key'] === 'timezone' && $row['value'] !== '') {
-                    return $row['value']; // Explicit admin setting wins
+                if ($row['value'] === '' || $row['value'] === null) {
+                    continue;
                 }
-                if ($row['key'] === 'default_timezone' && $row['value'] !== '') {
-                    $fallback = $row['value'];
-                }
+                match ($row['key']) {
+                    'timezone'         => $defaults['timezone'] = $row['value'],
+                    'default_timezone' => $installTz = $row['value'],
+                    'date_format'      => $defaults['date_format'] = $row['value'],
+                    'number_format'    => $defaults['number_format'] = $row['value'],
+                    default            => null,
+                };
             }
-            return $fallback;
+            // Fall back to install-time timezone if admin hasn't set one explicitly
+            if ($defaults['timezone'] === 'UTC' && $installTz !== null) {
+                $defaults['timezone'] = $installTz;
+            }
+            return $defaults;
         } catch (\Throwable) {
-            return 'UTC';
+            return $defaults;
         }
     }
 

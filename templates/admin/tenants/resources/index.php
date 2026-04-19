@@ -105,7 +105,7 @@ ob_start();
                         </td>
                         <td class="vb-text-secondary">
                             <?php if ($res['price_per_night'] !== null): ?>
-                                <?= __c((float) $res['price_per_night'], $tenant['currency'] ?? 'EUR') ?>/night
+                                <?= __c((float) $res['price_per_night'], $tenant['currency'] ?? 'EUR') ?>/<?= __('admin.bookings.per_night') ?>
                             <?php else: ?>
                                 <span class="vb-text-ghost">—</span>
                             <?php endif; ?>

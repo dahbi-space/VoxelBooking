@@ -53,7 +53,7 @@ ob_start();
                                 <option value="<?= htmlspecialchars($r['id'], ENT_QUOTES, 'UTF-8') ?>"
                                         <?= old('resource_id') === $r['id'] ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($r['name'], ENT_QUOTES, 'UTF-8') ?>
-                                    (<?= (int) $r['capacity'] ?> guests<?php if ($r['price_per_night']): ?> · <?= htmlspecialchars($r['price_per_night'], ENT_QUOTES, 'UTF-8') ?>/night<?php endif; ?>)
+                                    (<?= (int) $r['capacity'] ?> <?= __('admin.bookings.guests_unit') ?><?php if ($r['price_per_night']): ?> · <?= __c((float) $r['price_per_night'], $tenant['currency'] ?? 'EUR') ?>/<?= __('admin.bookings.per_night') ?><?php endif; ?>)
                                 </option>
                             <?php endforeach; ?>
                         </select>

@@ -88,7 +88,7 @@ final class BookingPageController
 
         // Inject translations and formatting config for JS
         $translations = Locale::getTranslationsForDomain('booking');
-        $formatting   = Locale::getFormattingConfig();
+        $formatting   = Locale::getFormattingConfig($tenant['currency'] ?? 'EUR');
 
         // Generate grouped timezones from canonical PHP source
         $timezoneGroups = self::buildTimezoneGroups();
@@ -200,7 +200,7 @@ final class BookingPageController
 
         // Inject translations and formatting config for JS
         $translations = Locale::getTranslationsForDomain('booking');
-        $formatting   = Locale::getFormattingConfig();
+        $formatting   = Locale::getFormattingConfig($tenant['currency'] ?? 'EUR');
 
         // Generate grouped timezones from canonical PHP source
         $timezoneGroups = self::buildTimezoneGroups();

@@ -98,6 +98,8 @@ CREATE TABLE tenants (
     locale_override TEXT DEFAULT NULL,
     week_start INTEGER DEFAULT NULL,
     time_format TEXT DEFAULT NULL,
+    date_format TEXT DEFAULT NULL,
+    number_format TEXT DEFAULT NULL,
     currency TEXT NOT NULL DEFAULT 'EUR',
     brand_color TEXT NOT NULL DEFAULT '#2563EB',
     brand_color_text TEXT NOT NULL DEFAULT '#FFFFFF',

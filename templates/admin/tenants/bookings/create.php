@@ -74,7 +74,7 @@ ob_start();
                                         data-duration="<?= (int) $s['duration_minutes'] ?>"
                                         <?= old('service_id') === $s['id'] ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($s['name'], ENT_QUOTES, 'UTF-8') ?>
-                                    (<?= str_replace(':count', (string) (int) $s['duration_minutes'], __('admin.bookings.duration_unit')) ?><?php if ($s['price']): ?> · <?= htmlspecialchars($s['price_label'] ?? $s['price'], ENT_QUOTES, 'UTF-8') ?><?php endif; ?>)
+                                    (<?= str_replace(':count', (string) (int) $s['duration_minutes'], __('admin.bookings.duration_unit')) ?><?php if ($s['price']): ?> · <?= htmlspecialchars($s['price_label'] ?? __c((float) $s['price'], $tenant['currency'] ?? 'EUR'), ENT_QUOTES, 'UTF-8') ?><?php endif; ?>)
                                 </option>
                             <?php endforeach; ?>
                         </select>

@@ -414,21 +414,11 @@ final class CalendarController
     private function loadTenant(string $tenantId): ?array
     {
         $rows = Database::query(
-            'SELECT `id`, `name`, `slug`, `email`, `timezone`, `currency`, `brand_color`, `week_start`, `time_format` FROM `tenants` WHERE `id` = ? LIMIT 1',
+            'SELECT `id`, `name`, `slug`, `email`, `timezone`, `currency`, `brand_color` FROM `tenants` WHERE `id` = ? LIMIT 1',
             [$tenantId]
         );
 
-        $tenant = $rows[0] ?? null;
-
-        if ($tenant !== null) {
-            // Apply tenant-level calendar overrides to the Locale engine
-            Locale::setTenantOverrides([
-                'week_start'   => $tenant['week_start'] !== null ? (int) $tenant['week_start'] : null,
-                'time_format'  => $tenant['time_format'] ?: null,
-            ]);
-        }
-
-        return $tenant;
+        return $rows[0] ?? null;
     }
 
     /**

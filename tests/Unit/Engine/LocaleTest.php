@@ -761,4 +761,190 @@ final class LocaleTest extends TestCase
         $this->assertSame('de', Locale::getLocale());
         $this->assertFalse(Locale::isRtl());
     }
+
+    // ════════════════════════════════════════════════════════════════
+    // 3-Tier Resolution: Tenant Override → System Default → Locale Config
+    // ════════════════════════════════════════════════════════════════
+
+    public function testDateFormatTenantOverrideTakesPrecedence(): void
+    {
+        // English locale uses m/d/Y by default; tenant override should win
+        Locale::setTenantOverrides(['date_format' => 'Y-m-d']);
+        $dt = new \DateTimeImmutable('2026-03-27');
+        $this->assertSame('2026-03-27', Locale::date($dt));
+    }
+
+    public function testDateFormatTenantOverrideNullFallsToLocale(): void
+    {
+        // NULL tenant override should fall through to locale config
+        Locale::setTenantOverrides(['date_format' => null]);
+        $dt = new \DateTimeImmutable('2026-03-27');
+        $this->assertSame('03/27/2026', Locale::date($dt)); // English default
+    }
+
+    public function testDateFormatTenantOverrideEmptyFallsToLocale(): void
+    {
+        Locale::setTenantOverrides(['date_format' => '']);
+        $dt = new \DateTimeImmutable('2026-03-27');
+        $this->assertSame('03/27/2026', Locale::date($dt));
+    }
+
+    public function testNumberFormatTenantOverrideCommaSeparator(): void
+    {
+        // English locale uses period decimal by default;
+        // tenant override to 'comma' should produce European format
+        Locale::setTenantOverrides(['number_format' => 'comma']);
+        $this->assertSame('1.234,50', Locale::number(1234.5, 2));
+    }
+
+    public function testNumberFormatTenantOverrideSpaceSeparator(): void
+    {
+        Locale::setTenantOverrides(['number_format' => 'space']);
+        $result = Locale::number(1234.5, 2);
+        // Space preset: thin space thousands, comma decimal
+        $this->assertStringContainsString(',50', $result);
+    }
+
+    public function testNumberFormatTenantOverridePeriodSeparator(): void
+    {
+        // Dutch locale uses comma decimal; override to 'period' should produce US format
+        Locale::setLocale('nl');
+        Locale::setTenantOverrides(['number_format' => 'period']);
+        $this->assertSame('1,234.50', Locale::number(1234.5, 2));
+    }
+
+    public function testNumberFormatNullFallsToLocaleConfig(): void
+    {
+        Locale::setLocale('nl');
+        Locale::setTenantOverrides(['number_format' => null]);
+        // Dutch locale config has comma decimal
+        $this->assertSame('1.234,50', Locale::number(1234.5, 2));
+    }
+
+    public function testCurrencyRespectsTenantNumberFormat(): void
+    {
+        // English locale + comma tenant override
+        Locale::setTenantOverrides(['number_format' => 'comma']);
+        $result = Locale::currency(1234.50, 'EUR');
+        // Currency should use comma decimal from tenant override
+        $this->assertStringContainsString('1.234,50', $result);
+        $this->assertStringContainsString('€', $result);
+    }
+
+    public function testFormattingConfigReflectsTenantDateOverride(): void
+    {
+        Locale::setTenantOverrides(['date_format' => 'd/m/Y']);
+        $config = Locale::getFormattingConfig();
+        $this->assertSame('d/m/Y', $config['date_format']);
+    }
+
+    public function testFormattingConfigReflectsTenantNumberOverride(): void
+    {
+        Locale::setTenantOverrides(['number_format' => 'comma']);
+        $config = Locale::getFormattingConfig();
+        $this->assertSame(',', $config['decimal_sep']);
+        $this->assertSame('.', $config['thousands_sep']);
+    }
+
+    public function testFormattingConfigFallsToLocaleWithoutOverrides(): void
+    {
+        Locale::setLocale('de');
+        Locale::setTenantOverrides([]);
+        $config = Locale::getFormattingConfig();
+        // German locale config: comma decimal, period thousands
+        $this->assertSame(',', $config['decimal_sep']);
+        $this->assertSame('.', $config['thousands_sep']);
+        $this->assertSame('d.m.Y', $config['date_format']);
+    }
+
+    public function testMultipleOverridesCombineCorrectly(): void
+    {
+        Locale::setTenantOverrides([
+            'date_format'   => 'Y/m/d',
+            'number_format' => 'space',
+            'time_format'   => '24h',
+            'week_start'    => 0,
+        ]);
+
+        $dt = new \DateTimeImmutable('2026-03-27 14:30:00');
+        $this->assertSame('2026/03/27', Locale::date($dt));
+        $this->assertSame('14:30', Locale::time($dt));
+        $this->assertSame(0, Locale::weekStart());
+
+        $config = Locale::getFormattingConfig();
+        $this->assertSame('Y/m/d', $config['date_format']);
+        $this->assertSame(0, $config['week_start']);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // System Default Tier (middle of the 3-tier chain)
+    // ════════════════════════════════════════════════════════════════
+
+    public function testDateFormatSystemDefaultUsedWhenNoTenantOverride(): void
+    {
+        // No tenant override, system default set → system default wins over locale
+        Locale::setSystemDefaults(['date_format' => 'Y-m-d']);
+        $dt = new \DateTimeImmutable('2026-03-27');
+        $this->assertSame('2026-03-27', Locale::date($dt));
+    }
+
+    public function testNumberFormatSystemDefaultUsedWhenNoTenantOverride(): void
+    {
+        // English locale (period decimal), system default = comma → comma wins
+        Locale::setSystemDefaults(['number_format' => 'comma']);
+        $this->assertSame('1.234,50', Locale::number(1234.5, 2));
+    }
+
+    public function testTenantOverrideBeatsSystemDefault(): void
+    {
+        // Both set → tenant override wins
+        Locale::setSystemDefaults(['date_format' => 'Y-m-d']);
+        Locale::setTenantOverrides(['date_format' => 'd/m/Y']);
+        $dt = new \DateTimeImmutable('2026-03-27');
+        $this->assertSame('27/03/2026', Locale::date($dt));
+    }
+
+    public function testSystemDefaultBeatsLocaleConfig(): void
+    {
+        // Dutch locale has d-m-Y; system default overrides it
+        Locale::setLocale('nl');
+        Locale::setSystemDefaults(['date_format' => 'm/d/Y']);
+        $dt = new \DateTimeImmutable('2026-03-27');
+        $this->assertSame('03/27/2026', Locale::date($dt));
+    }
+
+    public function testFormattingConfigReflectsSystemDefault(): void
+    {
+        Locale::setSystemDefaults(['number_format' => 'space']);
+        $config = Locale::getFormattingConfig();
+        $this->assertSame(',', $config['decimal_sep']);
+    }
+
+    public function testFormattingConfigTenantOverridesSystemDefault(): void
+    {
+        Locale::setSystemDefaults(['number_format' => 'comma']);
+        Locale::setTenantOverrides(['number_format' => 'period']);
+        $config = Locale::getFormattingConfig();
+        $this->assertSame('.', $config['decimal_sep']);
+        $this->assertSame(',', $config['thousands_sep']);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Centralized Currency Registry
+    // ════════════════════════════════════════════════════════════════
+
+    public function testCurrencySymbolFromRegistry(): void
+    {
+        // EUR, AUD, TRY should all resolve from config/currencies.php
+        $this->assertSame('€45.00', Locale::currency(45.00, 'EUR'));
+        $this->assertSame('A$45.00', Locale::currency(45.00, 'AUD'));
+        $this->assertSame('₺45.00', Locale::currency(45.00, 'TRY'));
+    }
+
+    public function testFormattingConfigIncludesCurrencySymbol(): void
+    {
+        $config = Locale::getFormattingConfig('GBP');
+        $this->assertArrayHasKey('currency_symbol', $config);
+        $this->assertSame('£', $config['currency_symbol']);
+    }
 }

@@ -290,40 +290,18 @@ function booking_display_label(array $booking): string
  */
 function get_supported_currencies(): array
 {
-    return [
-        'EUR' => '€ EUR — ' . __('admin.currencies.EUR'),
-        'USD' => '$ USD — ' . __('admin.currencies.USD'),
-        'GBP' => '£ GBP — ' . __('admin.currencies.GBP'),
-        'CHF' => 'CHF — ' . __('admin.currencies.CHF'),
-        'SEK' => 'SEK — ' . __('admin.currencies.SEK'),
-        'NOK' => 'NOK — ' . __('admin.currencies.NOK'),
-        'DKK' => 'DKK — ' . __('admin.currencies.DKK'),
-        'PLN' => 'PLN — ' . __('admin.currencies.PLN'),
-        'CZK' => 'CZK — ' . __('admin.currencies.CZK'),
-        'HUF' => 'HUF — ' . __('admin.currencies.HUF'),
-        'RON' => 'RON — ' . __('admin.currencies.RON'),
-        'BGN' => 'BGN — ' . __('admin.currencies.BGN'),
-        'HRK' => 'HRK — ' . __('admin.currencies.HRK'),
-        'CAD' => 'CAD — ' . __('admin.currencies.CAD'),
-        'AUD' => 'AUD — ' . __('admin.currencies.AUD'),
-        'NZD' => 'NZD — ' . __('admin.currencies.NZD'),
-        'BRL' => 'BRL — ' . __('admin.currencies.BRL'),
-        'MXN' => 'MXN — ' . __('admin.currencies.MXN'),
-        'ARS' => 'ARS — ' . __('admin.currencies.ARS'),
-        'JPY' => '¥ JPY — ' . __('admin.currencies.JPY'),
-        'CNY' => '¥ CNY — ' . __('admin.currencies.CNY'),
-        'KRW' => '₩ KRW — ' . __('admin.currencies.KRW'),
-        'INR' => '₹ INR — ' . __('admin.currencies.INR'),
-        'SGD' => 'SGD — ' . __('admin.currencies.SGD'),
-        'THB' => '฿ THB — ' . __('admin.currencies.THB'),
-        'IDR' => 'IDR — ' . __('admin.currencies.IDR'),
-        'AED' => 'AED — ' . __('admin.currencies.AED'),
-        'ZAR' => 'ZAR — ' . __('admin.currencies.ZAR'),
-        'TRY' => '₺ TRY — ' . __('admin.currencies.TRY'),
-        'ILS' => '₪ ILS — ' . __('admin.currencies.ILS'),
-        'EGP' => 'EGP — ' . __('admin.currencies.EGP'),
-        'NGN' => '₦ NGN — ' . __('admin.currencies.NGN'),
-    ];
+    static $currencies = null;
+    if ($currencies !== null) {
+        return $currencies;
+    }
+
+    $registry = require dirname(__DIR__) . '/config/currencies.php';
+    $currencies = [];
+    foreach ($registry as $code => $symbol) {
+        $label = $symbol !== $code ? "{$symbol} {$code}" : $code;
+        $currencies[$code] = $label . ' — ' . __("admin.currencies.{$code}");
+    }
+    return $currencies;
 }
 
 /**

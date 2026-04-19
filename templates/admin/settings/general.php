@@ -67,6 +67,20 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                     </select>
                 </div>
             </div>
+            <div class="vb-form-row">
+                <div class="vb-form-group">
+                    <label for="number_format" class="vb-label"><?= __('admin.settings.number_format_label') ?></label>
+                    <select id="number_format" name="number_format" class="vb-select">
+                        <?php
+                        $numberPresets = \App\Engine\Locale::numberFormatPresets();
+                        $currentNumberFormat = $settings['number_format'] ?? 'period';
+                        foreach ($numberPresets as $key => $example):
+                        ?>
+                            <option value="<?= $key ?>" <?= $currentNumberFormat === $key ? 'selected' : '' ?>><?= $example ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
 
             <div class="vb-form-group">
                 <label class="vb-toggle">

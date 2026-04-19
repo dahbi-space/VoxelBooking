@@ -46,10 +46,27 @@ final class Locale
     /**
      * Per-request tenant overrides.
      *
-     * Supported keys: 'week_start' (int|null), 'time_format' ('12h'|'24h'|null).
-     * NULL means "follow locale default". Non-null overrides the locale preset.
+     * Supported keys: 'week_start' (int|null), 'time_format' ('12h'|'24h'|null),
+     * 'date_format' (string|null), 'number_format' (string|null).
+     * NULL means "follow system default → locale config".
      */
     private static array $tenantOverrides = [];
+
+    /**
+     * System-level defaults from the settings table.
+     *
+     * Loaded lazily on first access. Sits between tenant overrides and
+     * locale config in the resolution chain.
+     */
+    private static ?array $systemDefaults = null;
+    private static bool $systemDefaultsLoaded = false;
+
+    /**
+     * Currency registry from config/currencies.php.
+     * Lazy-loaded on first currencySymbol() call.
+     * @var array<string, string>|null
+     */
+    private static ?array $currencyRegistry = null;
 
     /**
      * Initialize the locale engine.
@@ -105,16 +122,60 @@ final class Locale
     }
 
     /**
-     * Set per-request tenant overrides for week_start and time_format.
+     * Set per-request tenant overrides for week_start, time_format,
+     * date_format, and number_format.
      *
      * Call once per request after loading the tenant row.
      * NULL values = follow locale default.
      *
-     * @param array{week_start?: int|null, time_format?: string|null} $overrides
+     * @param array{week_start?: int|null, time_format?: string|null, date_format?: string|null, number_format?: string|null} $overrides
      */
     public static function setTenantOverrides(array $overrides): void
     {
         self::$tenantOverrides = $overrides;
+    }
+
+    /**
+     * Explicitly set system-level defaults (for testing or manual injection).
+     *
+     * @param array{date_format?: string|null, number_format?: string|null} $defaults
+     */
+    public static function setSystemDefaults(array $defaults): void
+    {
+        self::$systemDefaults = $defaults;
+        self::$systemDefaultsLoaded = true;
+    }
+
+    /**
+     * Lazily load system defaults from the settings table.
+     *
+     * Called internally by date()/number()/getFormattingConfig() when
+     * no tenant override is set and before falling back to locale config.
+     */
+    private static function loadSystemDefaults(): array
+    {
+        if (self::$systemDefaultsLoaded) {
+            return self::$systemDefaults ?? [];
+        }
+
+        self::$systemDefaultsLoaded = true;
+
+        try {
+            $rows = Database::query(
+                "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('date_format', 'number_format')"
+            );
+            $defaults = [];
+            foreach ($rows as $row) {
+                if ($row['value'] !== '' && $row['value'] !== null) {
+                    $defaults[$row['key']] = $row['value'];
+                }
+            }
+            self::$systemDefaults = $defaults;
+            return $defaults;
+        } catch (\Throwable) {
+            self::$systemDefaults = [];
+            return [];
+        }
     }
 
     /**
@@ -290,10 +351,56 @@ final class Locale
     // ════════════════════════════════════════════════════════════════
 
     /**
+     * Number format presets: named keys → [decimal_sep, thousands_sep].
+     *
+     * Covers the three major global conventions:
+     *   - period: 1,234.56 (US, UK, JP, AU)
+     *   - comma:  1.234,56 (DE, NL, BR, ID, ES, IT, TR)
+     *   - space:  1 234,56 (FR, PL)
+     */
+    private const NUMBER_FORMAT_PRESETS = [
+        'period' => ['.', ','],   // 1,234.56
+        'comma'  => [',', '.'],   // 1.234,56
+        'space'  => [',', ' '],   // 1 234,56
+    ];
+
+    /**
+     * Get available number format presets for UI selects.
+     *
+     * @return array<string, string> preset key => human-readable example
+     */
+    public static function numberFormatPresets(): array
+    {
+        return [
+            'period' => '1,234.56',
+            'comma'  => '1.234,56',
+            'space'  => '1 234,56',
+        ];
+    }
+
+    /**
      * Format a number according to the active locale.
+     *
+     * Resolution: tenant number_format override → system default → locale config.
      */
     public static function number(float $value, int $decimals = 0): string
     {
+        // 1. Tenant override
+        $override = self::$tenantOverrides['number_format'] ?? null;
+        if ($override !== null && isset(self::NUMBER_FORMAT_PRESETS[$override])) {
+            [$dec, $thou] = self::NUMBER_FORMAT_PRESETS[$override];
+            return number_format($value, $decimals, $dec, $thou);
+        }
+
+        // 2. System default
+        $sysDefaults = self::loadSystemDefaults();
+        $sysFormat = $sysDefaults['number_format'] ?? null;
+        if ($sysFormat !== null && isset(self::NUMBER_FORMAT_PRESETS[$sysFormat])) {
+            [$dec, $thou] = self::NUMBER_FORMAT_PRESETS[$sysFormat];
+            return number_format($value, $decimals, $dec, $thou);
+        }
+
+        // 3. Locale config
         $config = self::getConfig();
 
         return number_format(
@@ -328,9 +435,25 @@ final class Locale
 
     /**
      * Format date (short): 03/27/2026 or 27-03-2026.
+     *
+     * Resolution: tenant date_format override → system default → locale config.
      */
     public static function date(\DateTimeInterface $dt): string
     {
+        // 1. Tenant override
+        $override = self::$tenantOverrides['date_format'] ?? null;
+        if ($override !== null && $override !== '') {
+            return $dt->format($override);
+        }
+
+        // 2. System default
+        $sysDefaults = self::loadSystemDefaults();
+        $sysFormat = $sysDefaults['date_format'] ?? null;
+        if ($sysFormat !== null && $sysFormat !== '') {
+            return $dt->format($sysFormat);
+        }
+
+        // 3. Locale config
         $config = self::getConfig();
 
         return $dt->format($config['date_format'] ?? 'Y-m-d');
@@ -498,6 +621,14 @@ final class Locale
      */
     public static function resolveForBooking(array $tenant, ?string $acceptLang): string
     {
+        // Apply tenant formatting overrides for date/number/time/week
+        self::setTenantOverrides([
+            'week_start'    => isset($tenant['week_start']) && $tenant['week_start'] !== null ? (int) $tenant['week_start'] : null,
+            'time_format'   => !empty($tenant['time_format']) ? $tenant['time_format'] : null,
+            'date_format'   => !empty($tenant['date_format']) ? $tenant['date_format'] : null,
+            'number_format' => !empty($tenant['number_format']) ? $tenant['number_format'] : null,
+        ]);
+
         // 1. Explicit operator lock (always honored, even without translations)
         $override = $tenant['locale_override'] ?? '';
         if ($override !== '' && self::isSupported($override)) {
@@ -593,11 +724,34 @@ final class Locale
     /**
      * Get formatting config for JS (date/time/number formats, week start).
      *
+     * @param string $currencyCode ISO 4217 currency code for symbol resolution
      * @return array<string, mixed>
      */
-    public static function getFormattingConfig(): array
+    public static function getFormattingConfig(string $currencyCode = 'EUR'): array
     {
         $config = self::getConfig();
+        $sysDefaults = self::loadSystemDefaults();
+
+        // Resolve date_format: tenant override → system default → locale config
+        $dateFormat = self::$tenantOverrides['date_format'] ?? null;
+        if ($dateFormat === null || $dateFormat === '') {
+            $dateFormat = $sysDefaults['date_format'] ?? null;
+        }
+        if ($dateFormat === null || $dateFormat === '') {
+            $dateFormat = $config['date_format'] ?? 'Y-m-d';
+        }
+
+        // Resolve number separators: tenant override → system default → locale config
+        $numOverride = self::$tenantOverrides['number_format'] ?? null;
+        if ($numOverride === null) {
+            $numOverride = $sysDefaults['number_format'] ?? null;
+        }
+        if ($numOverride !== null && isset(self::NUMBER_FORMAT_PRESETS[$numOverride])) {
+            [$decSep, $thousSep] = self::NUMBER_FORMAT_PRESETS[$numOverride];
+        } else {
+            $decSep = $config['decimal_sep'] ?? '.';
+            $thousSep = $config['thousands_sep'] ?? ',';
+        }
 
         return [
             'locale'           => self::$locale,
@@ -605,12 +759,13 @@ final class Locale
             'intl_locale'      => $config['intl_locale'] ?? 'en-US',
             'week_start'       => self::weekStart(),
             'time_format'      => $config['time_format'] ?? 'H:i',
-            'date_format'      => $config['date_format'] ?? 'Y-m-d',
+            'date_format'      => $dateFormat,
             'date_format_long' => $config['date_format_long'] ?? 'F j, Y',
-            'decimal_sep'      => $config['decimal_sep'] ?? '.',
-            'thousands_sep'    => $config['thousands_sep'] ?? ',',
+            'decimal_sep'      => $decSep,
+            'thousands_sep'    => $thousSep,
             'currency_position'=> $config['currency_position'] ?? 'before',
             'currency_space'   => $config['currency_space'] ?? false,
+            'currency_symbol'  => self::currencySymbol($currencyCode),
         ];
     }
 
@@ -698,16 +853,25 @@ final class Locale
      */
     private static function currencySymbol(string $code): string
     {
-        return match (strtoupper($code)) {
-            'EUR' => '€',
-            'USD' => '$',
-            'GBP' => '£',
-            'CHF' => 'CHF',
-            'SEK', 'NOK', 'DKK' => 'kr',
-            'PLN' => 'zł',
-            'CZK' => 'Kč',
-            default => $code,
-        };
+        if (self::$currencyRegistry === null) {
+            $path = self::$basePath . '/config/currencies.php';
+            self::$currencyRegistry = is_file($path) ? require $path : [];
+        }
+        return self::$currencyRegistry[strtoupper($code)] ?? $code;
+    }
+
+    /**
+     * Get all supported currency codes.
+     *
+     * @return string[]
+     */
+    public static function supportedCurrencies(): array
+    {
+        if (self::$currencyRegistry === null) {
+            $path = self::$basePath . '/config/currencies.php';
+            self::$currencyRegistry = is_file($path) ? require $path : [];
+        }
+        return array_keys(self::$currencyRegistry);
     }
 
     /**
@@ -720,5 +884,8 @@ final class Locale
         self::$translations = [];
         self::$basePath = '';
         self::$tenantOverrides = [];
+        self::$currencyRegistry = null;
+        self::$systemDefaults = null;
+        self::$systemDefaultsLoaded = false;
     }
 }

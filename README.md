@@ -226,6 +226,22 @@ VoxelBooking is internationalization-ready from its foundation. English ships as
 | Admin panel | Business locale (in business context) → `APP_LOCALE` (.env) → `en` | Session (browser-detected) |
 | Emails | Resolved active locale at send time | Business `timezone` |
 
+### Date & number formatting — 3-tier resolution
+
+All date/number formatting follows: **business override** (per-business `date_format`/`number_format` columns, NULL = inherit) → **system default** (settings table, set during installation) → **locale config** (`config/locales.php` registry defaults).
+
+| Setting | Business column | System setting key | Locale config key |
+|---------|----------------|-------------------|------------------|
+| Date notation | `tenants.date_format` | `date_format` | `date_format` |
+| Number notation | `tenants.number_format` | `number_format` | `decimal_sep` / `thousands_sep` |
+| Time format | `tenants.time_format` | — | `time_format` |
+| Week start | `tenants.week_start` | — | `week_start` |
+
+### Currency
+
+- **`config/currencies.php`** — single-source-of-truth registry mapping ISO 4217 codes to display symbols (30 currencies)
+- Used by `Locale::currency()` (PHP), `get_supported_currencies()` (admin selects), and injected into `window.__VB_FMT__.currency_symbol` (JS booking page)
+
 ### Adding a locale
 
 1. Add the locale entry to `config/locales.php`
@@ -234,7 +250,7 @@ VoxelBooking is internationalization-ready from its foundation. English ships as
 
 ### JS integration
 
-The booking page injects `window.__VB_I18N__` (flat key→value translations) and `window.__VB_FMT__` (formatting config). The JS `t(key, replace)` function resolves translations at runtime.
+The booking page injects `window.__VB_I18N__` (flat key→value translations) and `window.__VB_FMT__` (formatting config including `decimal_sep`, `thousands_sep`, `currency_symbol`, `currency_position`, `currency_space`, `week_start`, `date_format`). The JS `t(key, replace)` function resolves translations, and `formatPrice()` uses the resolved separators and symbol for consistent currency display across PHP and JS surfaces.
 
 ## Privacy & Compliance Posture
 

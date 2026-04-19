@@ -73,6 +73,14 @@ final class TenantSettingsController
         if ($timeFormat !== null && !in_array($timeFormat, ['12h', '24h'], true)) {
             $timeFormat = null;
         }
+        $dateFormat = trim($request->string('date_format')) ?: null;
+        if ($dateFormat !== null && !in_array($dateFormat, ['Y-m-d', 'd/m/Y', 'm/d/Y', 'd-m-Y', 'd.m.Y'], true)) {
+            $dateFormat = null;
+        }
+        $numberFormat = trim($request->string('number_format')) ?: null;
+        if ($numberFormat !== null && !in_array($numberFormat, ['period', 'comma', 'space'], true)) {
+            $numberFormat = null;
+        }
 
         $errors = [];
         if ($name === '') {
@@ -100,15 +108,17 @@ final class TenantSettingsController
         }
 
         $data = [
-            'name'        => $name,
-            'email'       => $email,
-            'phone'       => $phone,
-            'slug'        => $slug !== null && $slug !== '' ? $slug : ($tenant['slug'] ?? null),
-            'timezone'    => $timezone,
-            'locale'      => $locale,
-            'currency'    => $currency,
-            'week_start'  => $weekStart,
-            'time_format' => $timeFormat,
+            'name'          => $name,
+            'email'         => $email,
+            'phone'         => $phone,
+            'slug'          => $slug !== null && $slug !== '' ? $slug : ($tenant['slug'] ?? null),
+            'timezone'      => $timezone,
+            'locale'        => $locale,
+            'currency'      => $currency,
+            'week_start'    => $weekStart,
+            'time_format'   => $timeFormat,
+            'date_format'   => $dateFormat,
+            'number_format' => $numberFormat,
         ];
 
         $this->saveTenant($tenantId, $data, $tenant, 'general');

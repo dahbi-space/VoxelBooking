@@ -38,7 +38,7 @@ final class SettingsController
 
     public function general(Request $request): Response
     {
-        $settings = $this->loadSettings(['app_name', 'brand_url', 'timezone', 'date_format', 'enable_applications']);
+        $settings = $this->loadSettings(['app_name', 'brand_url', 'timezone', 'date_format', 'number_format', 'enable_applications']);
 
         return $this->render('admin.settings.general', 'General', [
             'settings' => $settings,
@@ -52,6 +52,7 @@ final class SettingsController
         $brandUrl   = rtrim(trim($request->string('brand_url')), '/');
         $timezone   = trim($request->string('timezone'));
         $dateFormat = trim($request->string('date_format'));
+        $numberFormat = trim($request->string('number_format'));
 
         $errors = [];
         if ($appName === '') {
@@ -67,7 +68,7 @@ final class SettingsController
         }
 
         // Audit log: track what changed
-        $oldSettings = $this->loadSettings(['app_name', 'brand_url', 'timezone', 'date_format', 'enable_applications']);
+        $oldSettings = $this->loadSettings(['app_name', 'brand_url', 'timezone', 'date_format', 'number_format', 'enable_applications']);
         $changes = [];
 
         try {
@@ -91,6 +92,12 @@ final class SettingsController
                 $this->saveSetting('date_format', $dateFormat);
                 if ($dateFormat !== ($oldSettings['date_format'] ?? '')) {
                     $changes['date_format'] = ['old' => $oldSettings['date_format'] ?? '', 'new' => $dateFormat];
+                }
+            }
+            if ($numberFormat !== '') {
+                $this->saveSetting('number_format', $numberFormat);
+                if ($numberFormat !== ($oldSettings['number_format'] ?? '')) {
+                    $changes['number_format'] = ['old' => $oldSettings['number_format'] ?? '', 'new' => $numberFormat];
                 }
             }
 

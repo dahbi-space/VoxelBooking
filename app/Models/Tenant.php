@@ -110,7 +110,7 @@ final class Tenant
         $columns = ['id', 'slug', 'name', 'email', 'booking_pattern'];
         $values = [$id, $data['slug'], $data['name'], $data['email'], $data['booking_pattern']];
 
-        // Optional fields
+        // Optional fields (non-null values only)
         $optionalFields = [
             'phone', 'timezone', 'locale', 'currency', 'brand_color',
             'notification_email', 'privacy_policy_url', 'consent_text',
@@ -120,6 +120,16 @@ final class Tenant
             if (isset($data[$field]) && $data[$field] !== '') {
                 $columns[] = $field;
                 $values[] = $data[$field];
+            }
+        }
+
+        // Nullable fields (NULL = inherit from system/locale, non-null = explicit override)
+        $nullableFields = ['date_format', 'number_format'];
+
+        foreach ($nullableFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $columns[] = $field;
+                $values[] = $data[$field]; // may be NULL
             }
         }
 

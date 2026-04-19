@@ -132,6 +132,14 @@ return [
         'op_password_generate'   => 'Generate password',
         'op_submit'              => 'Create Account & Continue',
 
+        // Step 4: Regional Defaults
+        'regional_section_title' => 'Regional Defaults',
+        'regional_section_desc'  => 'These settings apply system-wide and are inherited by new businesses.',
+        'timezone'               => 'Timezone',
+        'timezone_hint'          => 'Default timezone for new businesses. Auto-detected from your browser.',
+        'date_format'            => 'Date notation',
+        'number_format'          => 'Number notation',
+
         // Step 5: First Business
         'step5_title'            => 'Create Your First Business',
         'step5_desc'             => 'Set up your first booking page. You can create more businesses later.',

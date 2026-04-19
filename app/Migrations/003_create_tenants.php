@@ -21,6 +21,8 @@ return [
         `locale_override` VARCHAR(10) NULL DEFAULT NULL,
         `week_start` TINYINT(1) NULL DEFAULT NULL COMMENT 'Week start override (0=Sun,1=Mon,...,6=Sat). NULL=locale default',
         `time_format` VARCHAR(3) NULL DEFAULT NULL COMMENT 'Time format override: 12h or 24h. NULL=locale default',
+        `date_format` VARCHAR(10) NULL DEFAULT NULL COMMENT 'Date format override: Y-m-d, d/m/Y, etc. NULL=locale default',
+        `number_format` VARCHAR(10) NULL DEFAULT NULL COMMENT 'Number format override: period, comma, space. NULL=locale default',
         `currency` VARCHAR(3) NOT NULL DEFAULT 'EUR',
         `brand_color` VARCHAR(7) NOT NULL DEFAULT '#2563EB',
         `brand_color_text` VARCHAR(7) NOT NULL DEFAULT '#FFFFFF',
