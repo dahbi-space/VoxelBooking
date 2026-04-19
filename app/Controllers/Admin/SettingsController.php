@@ -113,7 +113,7 @@ final class SettingsController
 
             // Regional: locale
             $locale = trim($request->string('default_locale'));
-            if ($locale !== '') {
+            if ($locale !== '' && \App\Engine\Locale::isSupported($locale)) {
                 $this->saveSetting('default_locale', $locale);
                 if ($locale !== ($oldSettings['default_locale'] ?? '')) {
                     $changes['default_locale'] = ['old' => $oldSettings['default_locale'] ?? '', 'new' => $locale];
@@ -122,7 +122,8 @@ final class SettingsController
 
             // Regional: currency
             $currency = strtoupper(trim($request->string('default_currency')));
-            if ($currency !== '') {
+            $supportedCurrencies = array_keys(get_supported_currencies());
+            if ($currency !== '' && in_array($currency, $supportedCurrencies, true)) {
                 $this->saveSetting('default_currency', $currency);
                 if ($currency !== ($oldSettings['default_currency'] ?? '')) {
                     $changes['default_currency'] = ['old' => $oldSettings['default_currency'] ?? '', 'new' => $currency];

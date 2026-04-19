@@ -140,6 +140,7 @@ final class TenantsController
                 'booking_pattern' => $pattern,
                 'timezone'        => trim($request->string('timezone')) ?: $this->resolveSystemDefaults()['timezone'],
                 'currency'        => trim($request->string('currency')) ?: $this->resolveSystemDefaults()['currency'],
+                'locale'          => trim($request->string('locale')) ?: $this->resolveSystemDefaults()['locale'],
                 'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                 'create_owner'    => $createOwner ? '1' : '0',
                 'owner_name'      => $ownerName,
@@ -166,6 +167,7 @@ final class TenantsController
                     'booking_pattern' => $pattern,
                 'timezone'        => trim($request->string('timezone')) ?: $this->resolveSystemDefaults()['timezone'],
                     'currency'        => trim($request->string('currency')) ?: $this->resolveSystemDefaults()['currency'],
+                    'locale'          => trim($request->string('locale')) ?: $this->resolveSystemDefaults()['locale'],
                     'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                 ]);
 
@@ -254,6 +256,7 @@ final class TenantsController
                     'booking_pattern' => $pattern,
                     'timezone'        => trim($request->string('timezone')) ?: $this->resolveSystemDefaults()['timezone'],
                     'currency'        => trim($request->string('currency')) ?: $this->resolveSystemDefaults()['currency'],
+                    'locale'          => trim($request->string('locale')) ?: $this->resolveSystemDefaults()['locale'],
                     'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                     'create_owner'    => '1',
                     'owner_name'      => $ownerName,

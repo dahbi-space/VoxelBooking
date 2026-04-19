@@ -7,6 +7,7 @@ namespace App\Controllers\Install;
 use App\Engine\Database;
 use App\Engine\EnvWriter;
 use App\Engine\FormState;
+use App\Engine\Locale;
 use App\Engine\Migrator;
 use App\Engine\Request;
 use App\Engine\Response;
@@ -412,11 +413,23 @@ final class WizardController
         // Store global settings
         $timezone = $request->string('timezone', 'UTC') ?: 'UTC';
         $locale = $request->string('locale', 'en') ?: 'en';
+        if (!Locale::isSupported($locale)) {
+            $locale = 'en';
+        }
         $dateFormat = $request->string('date_format', 'Y-m-d') ?: 'Y-m-d';
         $numberFormat = $request->string('number_format', 'period') ?: 'period';
         $timeFormat = $request->string('time_format', '24h') ?: '24h';
+        if (!in_array($timeFormat, ['12h', '24h'], true)) {
+            $timeFormat = '24h';
+        }
         $weekStart = $request->string('week_start', '1');
+        if (!in_array($weekStart, ['0', '1', '6'], true)) {
+            $weekStart = '1';
+        }
         $defaultCurrency = strtoupper(trim($request->string('default_currency', 'EUR'))) ?: 'EUR';
+        if (!array_key_exists($defaultCurrency, get_supported_currencies())) {
+            $defaultCurrency = 'EUR';
+        }
 
         $this->setSetting('operator_email', $request->string('email'));
         $defaultName = $_ENV['APP_NAME'] ?? 'VoxelBooking';
@@ -436,6 +449,7 @@ final class WizardController
         $_SESSION['install']['operator_email'] = $request->string('email');
         $_SESSION['install']['timezone'] = $timezone;
         $_SESSION['install']['default_currency'] = $defaultCurrency;
+        $_SESSION['install']['default_locale'] = $locale;
 
         FormState::toast('success', __('install.flash.operator_created'));
 
@@ -477,8 +491,8 @@ final class WizardController
         $brandColor = $request->string('brand_color', '#2563EB');
 
         Database::execute(
-            "INSERT INTO `tenants` (`id`, `slug`, `name`, `email`, `booking_pattern`, `brand_color`, `brand_color_text`, `timezone`, `currency`)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO `tenants` (`id`, `slug`, `name`, `email`, `booking_pattern`, `brand_color`, `brand_color_text`, `timezone`, `currency`, `locale`)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $tenantId,
                 $slug,
@@ -489,6 +503,7 @@ final class WizardController
                 $this->contrastColor($brandColor),
                 $_SESSION['install']['timezone'] ?? 'UTC',
                 $_SESSION['install']['default_currency'] ?? 'EUR',
+                $_SESSION['install']['default_locale'] ?? 'en',
             ]
         );
 
