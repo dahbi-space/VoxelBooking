@@ -1235,6 +1235,33 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
 
                 <div class="form-row">
                     <div class="form-group">
+                        <label class="form-label" for="locale"><?= __('install.wizard.locale') ?></label>
+                        <select id="locale" name="locale" class="form-input">
+                            <?php
+                            $selectedLocale = $session['locale'] ?? 'en';
+                            foreach (\App\Engine\Locale::localeOptions() as $code => $label):
+                            ?>
+                            <option value="<?= $code ?>" <?= $selectedLocale === $code ? 'selected' : '' ?>><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="form-hint"><?= __('install.wizard.locale_hint') ?></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="default_currency"><?= __('install.wizard.currency') ?></label>
+                        <select id="default_currency" name="default_currency" class="form-input">
+                            <?php
+                            $selectedCurrency = $session['default_currency'] ?? 'EUR';
+                            foreach (get_supported_currencies() as $code => $label):
+                            ?>
+                            <option value="<?= $code ?>" <?= $selectedCurrency === $code ? 'selected' : '' ?>><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="form-hint"><?= __('install.wizard.currency_hint') ?></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
                         <label class="form-label" for="date_format"><?= __('install.wizard.date_format') ?></label>
                         <select id="date_format" name="date_format" class="form-input">
                             <?php
@@ -1261,6 +1288,40 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
                             foreach ($numberFormats as $key => $example):
                             ?>
                             <option value="<?= $key ?>" <?= $selectedNumberFormat === $key ? 'selected' : '' ?>><?= $example ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="time_format"><?= __('install.wizard.time_format') ?></label>
+                        <select id="time_format" name="time_format" class="form-input">
+                            <?php
+                            $selectedTimeFormat = $session['time_format'] ?? '24h';
+                            $timeFormats = [
+                                '12h' => __('install.wizard.time_format_12h'),
+                                '24h' => __('install.wizard.time_format_24h'),
+                            ];
+                            foreach ($timeFormats as $tv => $tl):
+                            ?>
+                            <option value="<?= $tv ?>" <?= $selectedTimeFormat === $tv ? 'selected' : '' ?>><?= htmlspecialchars($tl, ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="week_start"><?= __('install.wizard.week_start') ?></label>
+                        <select id="week_start" name="week_start" class="form-input">
+                            <?php
+                            $selectedWeekStart = $session['week_start'] ?? '1';
+                            $weekDays = [
+                                '1' => __('booking.days.1'),
+                                '0' => __('booking.days.0'),
+                                '6' => __('booking.days.6'),
+                            ];
+                            foreach ($weekDays as $wv => $wl):
+                            ?>
+                            <option value="<?= $wv ?>" <?= $selectedWeekStart === $wv ? 'selected' : '' ?>><?= htmlspecialchars($wl, ENT_QUOTES, 'UTF-8') ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

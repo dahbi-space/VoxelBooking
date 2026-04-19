@@ -162,7 +162,7 @@ final class Locale
 
         try {
             $rows = Database::query(
-                "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('date_format', 'number_format')"
+                "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('date_format', 'number_format', 'week_start', 'time_format', 'default_locale', 'default_currency')"
             );
             $defaults = [];
             foreach ($rows as $row) {
@@ -476,6 +476,12 @@ final class Locale
     {
         $override = self::$tenantOverrides['time_format'] ?? null;
 
+        // System default fallback
+        if ($override === null) {
+            $sysDefaults = self::loadSystemDefaults();
+            $override = $sysDefaults['time_format'] ?? null;
+        }
+
         if ($override === '12h') {
             return $dt->format('g:i A');
         }
@@ -556,6 +562,12 @@ final class Locale
         $override = self::$tenantOverrides['week_start'] ?? null;
         if ($override !== null) {
             return (int) $override;
+        }
+
+        // System default fallback
+        $sysDefaults = self::loadSystemDefaults();
+        if (isset($sysDefaults['week_start']) && $sysDefaults['week_start'] !== '') {
+            return (int) $sysDefaults['week_start'];
         }
 
         $config = self::getConfig();
@@ -753,12 +765,23 @@ final class Locale
             $thousSep = $config['thousands_sep'] ?? ',';
         }
 
+        // Resolve time_format: tenant override → system default → locale config
+        $timeOverride = self::$tenantOverrides['time_format'] ?? null;
+        if ($timeOverride === null) {
+            $timeOverride = $sysDefaults['time_format'] ?? null;
+        }
+        $timeFormat = match ($timeOverride) {
+            '12h'   => 'g:i A',
+            '24h'   => 'H:i',
+            default => $config['time_format'] ?? 'H:i',
+        };
+
         return [
             'locale'           => self::$locale,
             'direction'        => self::direction(),
             'intl_locale'      => $config['intl_locale'] ?? 'en-US',
             'week_start'       => self::weekStart(),
-            'time_format'      => $config['time_format'] ?? 'H:i',
+            'time_format'      => $timeFormat,
             'date_format'      => $dateFormat,
             'date_format_long' => $config['date_format_long'] ?? 'F j, Y',
             'decimal_sep'      => $decSep,

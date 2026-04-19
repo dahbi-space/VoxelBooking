@@ -56,6 +56,32 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                     </select>
                 </div>
                 <div class="vb-form-group">
+                    <label for="default_locale" class="vb-label"><?= __('admin.settings.locale_label') ?></label>
+                    <select id="default_locale" name="default_locale" class="vb-select">
+                        <?php
+                        $currentLocale = $settings['default_locale'] ?? 'en';
+                        foreach ($localeOptions as $code => $label):
+                        ?>
+                        <option value="<?= $code ?>" <?= $currentLocale === $code ? 'selected' : '' ?>><?= e($label) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span class="vb-hint"><?= __('admin.settings.locale_hint') ?></span>
+                </div>
+            </div>
+            <div class="vb-form-row">
+                <div class="vb-form-group">
+                    <label for="default_currency" class="vb-label"><?= __('admin.settings.currency_label') ?></label>
+                    <select id="default_currency" name="default_currency" class="vb-select">
+                        <?php
+                        $currentCurrency = $settings['default_currency'] ?? 'EUR';
+                        foreach ($currencyOptions as $code => $label):
+                        ?>
+                        <option value="<?= $code ?>" <?= $currentCurrency === $code ? 'selected' : '' ?>><?= e($label) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span class="vb-hint"><?= __('admin.settings.currency_hint') ?></span>
+                </div>
+                <div class="vb-form-group">
                     <label for="date_format" class="vb-label"><?= __('admin.settings.date_format_label') ?></label>
                     <select id="date_format" name="date_format" class="vb-select">
                         <?php
@@ -79,6 +105,42 @@ include dirname(__DIR__, 2) . '/partials/settings-tabs.php';
                             <option value="<?= $key ?>" <?= $currentNumberFormat === $key ? 'selected' : '' ?>><?= $example ?></option>
                         <?php endforeach; ?>
                     </select>
+                </div>
+                <div class="vb-form-group">
+                    <label for="time_format" class="vb-label"><?= __('admin.settings.time_format_label') ?></label>
+                    <select id="time_format" name="time_format" class="vb-select">
+                        <?php
+                        $currentTimeFormat = $settings['time_format'] ?? '24h';
+                        $timeFormats = [
+                            '12h' => __('admin.settings.time_format_12h'),
+                            '24h' => __('admin.settings.time_format_24h'),
+                        ];
+                        foreach ($timeFormats as $tv => $tl):
+                        ?>
+                        <option value="<?= $tv ?>" <?= $currentTimeFormat === $tv ? 'selected' : '' ?>><?= e($tl) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+            <div class="vb-form-row">
+                <div class="vb-form-group">
+                    <label for="week_start" class="vb-label"><?= __('admin.settings.week_start_label') ?></label>
+                    <select id="week_start" name="week_start" class="vb-select">
+                        <?php
+                        $currentWeekStart = $settings['week_start'] ?? '1';
+                        $weekDays = [
+                            '1' => __('booking.days.1'),
+                            '0' => __('booking.days.0'),
+                            '6' => __('booking.days.6'),
+                        ];
+                        foreach ($weekDays as $wv => $wl):
+                        ?>
+                        <option value="<?= $wv ?>" <?= $currentWeekStart === $wv ? 'selected' : '' ?>><?= e($wl) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="vb-form-group">
+                    <!-- Reserved for future regional field -->
                 </div>
             </div>
 

@@ -137,8 +137,16 @@ return [
         'regional_section_desc'  => 'These settings apply system-wide and are inherited by new businesses.',
         'timezone'               => 'Timezone',
         'timezone_hint'          => 'Default timezone for new businesses. Auto-detected from your browser.',
+        'locale'                 => 'Default language',
+        'locale_hint'            => 'System-wide language. New businesses inherit this default.',
+        'currency'               => 'Default currency',
+        'currency_hint'          => 'Default currency for new businesses.',
         'date_format'            => 'Date notation',
         'number_format'          => 'Number notation',
+        'time_format'            => 'Time format',
+        'time_format_12h'        => '12-hour (2:30 PM)',
+        'time_format_24h'        => '24-hour (14:30)',
+        'week_start'             => 'Week starts on',
 
         // Step 5: First Business
         'step5_title'            => 'Create Your First Business',

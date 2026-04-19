@@ -68,11 +68,12 @@ final class TenantsController
             return $this->forbidden($request);
         }
 
-        $defaultTimezone = $this->resolveSystemDefaults()['timezone'];
+        $defaults = $this->resolveSystemDefaults();
 
         return $this->render('admin.tenants.create', __('admin.tenants.title'), [
             'documentTitle'   => __('admin.tenants.create'),
-            'defaultTimezone' => $defaultTimezone,
+            'defaultTimezone' => $defaults['timezone'],
+            'defaultCurrency' => $defaults['currency'],
             'flash'           => FormState::getToast(),
         ]);
     }
@@ -138,7 +139,7 @@ final class TenantsController
                 'email'           => $email,
                 'booking_pattern' => $pattern,
                 'timezone'        => trim($request->string('timezone')) ?: $this->resolveSystemDefaults()['timezone'],
-                'currency'        => trim($request->string('currency')) ?: 'EUR',
+                'currency'        => trim($request->string('currency')) ?: $this->resolveSystemDefaults()['currency'],
                 'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                 'create_owner'    => $createOwner ? '1' : '0',
                 'owner_name'      => $ownerName,
@@ -163,8 +164,8 @@ final class TenantsController
                     'slug'            => $slug,
                     'email'           => $email,
                     'booking_pattern' => $pattern,
-                    'timezone'        => trim($request->string('timezone')) ?: $this->resolveSystemDefaults()['timezone'],
-                    'currency'        => trim($request->string('currency')) ?: 'EUR',
+                'timezone'        => trim($request->string('timezone')) ?: $this->resolveSystemDefaults()['timezone'],
+                    'currency'        => trim($request->string('currency')) ?: $this->resolveSystemDefaults()['currency'],
                     'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                 ]);
 
@@ -252,7 +253,7 @@ final class TenantsController
                     'email'           => $email,
                     'booking_pattern' => $pattern,
                     'timezone'        => trim($request->string('timezone')) ?: $this->resolveSystemDefaults()['timezone'],
-                    'currency'        => trim($request->string('currency')) ?: 'EUR',
+                    'currency'        => trim($request->string('currency')) ?: $this->resolveSystemDefaults()['currency'],
                     'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                     'create_owner'    => '1',
                     'owner_name'      => $ownerName,
@@ -405,22 +406,23 @@ final class TenantsController
      * Priority for timezone: settings.timezone (admin General save)
      * → settings.default_timezone (install wizard seed) → UTC.
      *
-     * date_format and number_format: read from settings table
-     * or NULL (inherit from locale config).
+     * All other regional settings: read from settings table or fall back to sensible defaults.
      *
-     * @return array{timezone: string, date_format: string|null, number_format: string|null}
+     * @return array{timezone: string, currency: string, locale: string, date_format: string|null, number_format: string|null}
      */
     private function resolveSystemDefaults(): array
     {
         $defaults = [
             'timezone'      => 'UTC',
+            'currency'      => 'EUR',
+            'locale'        => 'en',
             'date_format'   => null,
             'number_format' => null,
         ];
 
         try {
             $rows = Database::query(
-                "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('timezone', 'default_timezone', 'date_format', 'number_format')"
+                "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('timezone', 'default_timezone', 'default_currency', 'default_locale', 'date_format', 'number_format')"
             );
             $installTz = null;
             foreach ($rows as $row) {
@@ -430,6 +432,8 @@ final class TenantsController
                 match ($row['key']) {
                     'timezone'         => $defaults['timezone'] = $row['value'],
                     'default_timezone' => $installTz = $row['value'],
+                    'default_currency' => $defaults['currency'] = $row['value'],
+                    'default_locale'   => $defaults['locale'] = $row['value'],
                     'date_format'      => $defaults['date_format'] = $row['value'],
                     'number_format'    => $defaults['number_format'] = $row['value'],
                     default            => null,

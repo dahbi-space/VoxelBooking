@@ -23,6 +23,8 @@ final class LocaleTest extends TestCase
         $this->basePath = dirname(__DIR__, 3);
         Locale::reset();
         Locale::init($this->basePath);
+        // Prevent DB-backed system defaults from leaking into unit tests
+        Locale::setSystemDefaults([]);
     }
 
     protected function tearDown(): void

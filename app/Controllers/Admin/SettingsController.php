@@ -38,11 +38,18 @@ final class SettingsController
 
     public function general(Request $request): Response
     {
-        $settings = $this->loadSettings(['app_name', 'brand_url', 'timezone', 'date_format', 'number_format', 'enable_applications']);
+        $settings = $this->loadSettings([
+            'app_name', 'brand_url', 'timezone',
+            'default_locale', 'default_currency',
+            'date_format', 'number_format', 'time_format', 'week_start',
+            'enable_applications',
+        ]);
 
         return $this->render('admin.settings.general', 'General', [
-            'settings' => $settings,
-            'flash'    => FormState::getToast(),
+            'settings'        => $settings,
+            'flash'           => FormState::getToast(),
+            'localeOptions'   => \App\Engine\Locale::localeOptions(),
+            'currencyOptions' => get_supported_currencies(),
         ]);
     }
 
@@ -68,7 +75,10 @@ final class SettingsController
         }
 
         // Audit log: track what changed
-        $oldSettings = $this->loadSettings(['app_name', 'brand_url', 'timezone', 'date_format', 'number_format', 'enable_applications']);
+        $oldSettings = $this->loadSettings([
+            'app_name', 'brand_url', 'timezone', 'default_locale', 'default_currency',
+            'date_format', 'number_format', 'time_format', 'week_start', 'enable_applications',
+        ]);
         $changes = [];
 
         try {
@@ -98,6 +108,42 @@ final class SettingsController
                 $this->saveSetting('number_format', $numberFormat);
                 if ($numberFormat !== ($oldSettings['number_format'] ?? '')) {
                     $changes['number_format'] = ['old' => $oldSettings['number_format'] ?? '', 'new' => $numberFormat];
+                }
+            }
+
+            // Regional: locale
+            $locale = trim($request->string('default_locale'));
+            if ($locale !== '') {
+                $this->saveSetting('default_locale', $locale);
+                if ($locale !== ($oldSettings['default_locale'] ?? '')) {
+                    $changes['default_locale'] = ['old' => $oldSettings['default_locale'] ?? '', 'new' => $locale];
+                }
+            }
+
+            // Regional: currency
+            $currency = strtoupper(trim($request->string('default_currency')));
+            if ($currency !== '') {
+                $this->saveSetting('default_currency', $currency);
+                if ($currency !== ($oldSettings['default_currency'] ?? '')) {
+                    $changes['default_currency'] = ['old' => $oldSettings['default_currency'] ?? '', 'new' => $currency];
+                }
+            }
+
+            // Regional: time format
+            $timeFormat = trim($request->string('time_format'));
+            if (in_array($timeFormat, ['12h', '24h'], true)) {
+                $this->saveSetting('time_format', $timeFormat);
+                if ($timeFormat !== ($oldSettings['time_format'] ?? '')) {
+                    $changes['time_format'] = ['old' => $oldSettings['time_format'] ?? '', 'new' => $timeFormat];
+                }
+            }
+
+            // Regional: week start
+            $weekStart = trim($request->string('week_start'));
+            if ($weekStart !== '' && in_array($weekStart, ['0', '1', '6'], true)) {
+                $this->saveSetting('week_start', $weekStart);
+                if ($weekStart !== ($oldSettings['week_start'] ?? '')) {
+                    $changes['week_start'] = ['old' => $oldSettings['week_start'] ?? '', 'new' => $weekStart];
                 }
             }
 

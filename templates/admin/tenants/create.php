@@ -13,7 +13,7 @@
  * (all registered in admin/app.js)
  *
  * Variables: $user, $version, $csrfToken, $flash, $pageTitle,
- *            $activePage, $documentTitle, $defaultTimezone
+ *            $activePage, $documentTitle, $defaultTimezone, $defaultCurrency
  *
  * Old input and field errors are read from session via helpers:
  *   old(), has_error(), field_error(), error_class()
@@ -164,7 +164,7 @@ ob_start();
 
     <!-- ── Section 3: Regional ── -->
     <?php $selectedTz = old('timezone', $defaultTimezone); ?>
-    <?php $selectedCurrency = old('currency', 'EUR'); ?>
+    <?php $selectedCurrency = old('currency', $defaultCurrency ?? 'EUR'); ?>
     <div class="vb-settings-section">
         <div class="vb-card">
             <div class="vb-card-header">
