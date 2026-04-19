@@ -386,6 +386,15 @@ final class WizardController
         }
 
         if (!empty($errors)) {
+            // Preserve submitted regional values so the form re-renders with them
+            $_SESSION['install']['timezone']      = $request->string('timezone', 'UTC');
+            $_SESSION['install']['locale']        = $request->string('locale', 'en');
+            $_SESSION['install']['default_currency'] = $request->string('default_currency', 'EUR');
+            $_SESSION['install']['date_format']   = $request->string('date_format', 'Y-m-d');
+            $_SESSION['install']['number_format'] = $request->string('number_format', 'period');
+            $_SESSION['install']['time_format']   = $request->string('time_format', '24h');
+            $_SESSION['install']['week_start']    = $request->string('week_start', '1');
+
             return View::response('install.wizard', [
                 'step' => 4,
                 'checks' => [],

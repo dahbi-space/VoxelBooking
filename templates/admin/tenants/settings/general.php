@@ -146,14 +146,30 @@ ob_start();
             <div class="vb-form-grid vb-form-grid-2">
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-timezone"><?= __('admin.tenant_settings.field_timezone') ?></label>
-                    <input type="text" class="vb-input" id="ts-timezone" name="timezone"
-                           value="<?= e(old('timezone', $tenant['timezone'] ?? 'UTC')) ?>" maxlength="100">
+                    <select class="vb-input" id="ts-timezone" name="timezone">
+                        <?php
+                        $currentTz = old('timezone', $tenant['timezone'] ?? 'UTC');
+                        foreach ($timezones as $tz):
+                        ?>
+                        <option value="<?= htmlspecialchars($tz, ENT_QUOTES, 'UTF-8') ?>" <?= $tz === $currentTz ? 'selected' : '' ?>>
+                            <?= htmlspecialchars(format_timezone($tz), ENT_QUOTES, 'UTF-8') ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-currency"><?= __('admin.tenant_settings.field_currency') ?></label>
-                    <input type="text" class="vb-input vb-input-narrow" id="ts-currency" name="currency"
-                           value="<?= e(old('currency', $tenant['currency'] ?? 'EUR')) ?>" maxlength="3">
+                    <select class="vb-input" id="ts-currency" name="currency">
+                        <?php
+                        $currentCurrency = old('currency', $tenant['currency'] ?? 'EUR');
+                        foreach ($currencyOptions as $code => $label):
+                        ?>
+                        <option value="<?= $code ?>" <?= $code === $currentCurrency ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
 
                 <div class="vb-settings-field">

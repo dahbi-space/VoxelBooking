@@ -43,7 +43,9 @@ final class TenantSettingsController
         }
 
         return $this->render('admin.tenants.settings.general', $tenantId, $tenant, 'general', [
-            'localeOptions' => \App\Engine\Locale::localeOptions(),
+            'localeOptions'   => \App\Engine\Locale::localeOptions(),
+            'timezones'       => get_supported_timezones(),
+            'currencyOptions' => get_supported_currencies(),
         ]);
     }
 
@@ -65,8 +67,17 @@ final class TenantSettingsController
         $slugRaw  = trim($request->string('slug'));
         $slug     = $slugRaw !== '' ? $slugRaw : null;
         $timezone   = trim($request->string('timezone')) ?: 'UTC';
+        if (!in_array($timezone, get_supported_timezones(), true)) {
+            $timezone = $tenant['timezone'] ?? 'UTC';
+        }
         $locale     = trim($request->string('locale')) ?: 'en';
-        $currency   = trim($request->string('currency')) ?: 'EUR';
+        if (!\App\Engine\Locale::isSupported($locale)) {
+            $locale = $tenant['locale'] ?? 'en';
+        }
+        $currency   = strtoupper(trim($request->string('currency'))) ?: 'EUR';
+        if (!array_key_exists($currency, get_supported_currencies())) {
+            $currency = $tenant['currency'] ?? 'EUR';
+        }
         $weekStartRaw = $request->string('week_start');
         $weekStart  = $weekStartRaw !== '' ? max(0, min(6, (int) $weekStartRaw)) : null;
         $timeFormat = trim($request->string('time_format')) ?: null;
