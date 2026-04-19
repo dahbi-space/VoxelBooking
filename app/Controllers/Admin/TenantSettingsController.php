@@ -79,7 +79,9 @@ final class TenantSettingsController
             $currency = $tenant['currency'] ?? 'EUR';
         }
         $weekStartRaw = $request->string('week_start');
-        $weekStart  = $weekStartRaw !== '' ? max(0, min(6, (int) $weekStartRaw)) : null;
+        $weekStart  = ($weekStartRaw !== '' && in_array($weekStartRaw, ['0', '1', '6'], true))
+            ? (int) $weekStartRaw
+            : null;
         $timeFormat = trim($request->string('time_format')) ?: null;
         if ($timeFormat !== null && !in_array($timeFormat, ['12h', '24h'], true)) {
             $timeFormat = null;

@@ -7,11 +7,14 @@
  * Slug is editable inside the booking URL card for contextual clarity.
  * No inline styles — all layout via design system classes.
  *
- * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash, $localeOptions
+ * Variables: $tenant, $tenantId, $csrfToken, $activeTab, $flash,
+ *            $localeOptions, $timezones, $currencyOptions
  */
-$tenant        = $tenant ?? [];
-$tenantId      = $tenantId ?? '';
-$localeOptions = $localeOptions ?? ['en' => 'English'];
+$tenant          = $tenant ?? [];
+$tenantId        = $tenantId ?? '';
+$localeOptions   = $localeOptions ?? ['en' => 'English'];
+$timezones       = $timezones ?? get_supported_timezones();
+$currencyOptions = $currencyOptions ?? get_supported_currencies();
 
 $baseUrl = (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'https')
     . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/book/';
