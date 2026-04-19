@@ -434,6 +434,7 @@ final class WizardController
         $this->setSetting('operator_email', $request->string('email'));
         $defaultName = $_ENV['APP_NAME'] ?? 'VoxelBooking';
         $this->setSetting('app_name', $request->string('app_name', $defaultName) ?: $defaultName);
+        $this->setSetting('timezone', $timezone);
         $this->setSetting('default_timezone', $timezone);
         $this->setSetting('default_locale', $locale);
         $this->setSetting('default_currency', $defaultCurrency);
