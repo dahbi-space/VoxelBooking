@@ -362,6 +362,100 @@ final class TenantOwnerCreationTest extends TestCase
         $this->assertEmpty($rows, 'No tenant should be created when owner email is taken');
     }
 
+    /**
+     * Admin-created tenant inherits locale and currency from operator settings.
+     *
+     * Regression: commit 73f5d61 omitted locale from Tenant::create(),
+     * causing all admin-created tenants to land on the DB default 'en'
+     * regardless of operator settings.
+     */
+    public function testCreatedTenantInheritsOperatorLocaleAndCurrency(): void
+    {
+        // Read operator defaults from settings table
+        $rows = Database::query(
+            "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('default_locale', 'default_currency')"
+        );
+        $operatorDefaults = [];
+        foreach ($rows as $row) {
+            $operatorDefaults[$row['key']] = $row['value'];
+        }
+        $expectedLocale = $operatorDefaults['default_locale'] ?? 'en';
+        $expectedCurrency = $operatorDefaults['default_currency'] ?? 'EUR';
+
+        $slug = 'test-inherit-' . substr(bin2hex(random_bytes(4)), 0, 8);
+        $res = $this->postForm('/admin/tenants/create', [
+            'name'            => 'Inherit Test',
+            'slug'            => $slug,
+            'email'           => 'inherit@test.test',
+            'booking_pattern' => 'timeslot',
+            'timezone'        => 'UTC',
+            'currency'        => '', // empty → should inherit operator default
+            'brand_color'     => '#2563EB',
+        ]);
+
+        $this->assertRedirect($res, '/admin/tenants');
+
+        $tenants = Database::query(
+            'SELECT `id`, `locale`, `currency` FROM `tenants` WHERE `slug` = ?',
+            [$slug]
+        );
+        $this->assertCount(1, $tenants);
+        $this->cleanupIds[] = ['tenants', $tenants[0]['id']];
+
+        $this->assertSame(
+            $expectedLocale,
+            $tenants[0]['locale'],
+            'Tenant locale must inherit from operator default_locale setting'
+        );
+        $this->assertSame(
+            $expectedCurrency,
+            $tenants[0]['currency'],
+            'Tenant currency must inherit from operator default_currency setting'
+        );
+    }
+
+    /**
+     * A tampered POST with a locale field cannot override the operator default.
+     *
+     * The create form has no locale selector, so locale always comes from
+     * resolveSystemDefaults(). A crafted POST with locale=xx must be ignored.
+     */
+    public function testTamperedLocalePostIsIgnored(): void
+    {
+        // Read operator default
+        $rows = Database::query(
+            "SELECT `value` FROM `settings` WHERE `key` = 'default_locale'"
+        );
+        $expectedLocale = $rows[0]['value'] ?? 'en';
+
+        $slug = 'test-tamper-' . substr(bin2hex(random_bytes(4)), 0, 8);
+        $res = $this->postForm('/admin/tenants/create', [
+            'name'            => 'Tamper Test',
+            'slug'            => $slug,
+            'email'           => 'tamper@test.test',
+            'booking_pattern' => 'timeslot',
+            'timezone'        => 'UTC',
+            'currency'        => 'EUR',
+            'brand_color'     => '#2563EB',
+            'locale'          => 'xx', // tampered — not in registry
+        ]);
+
+        $this->assertRedirect($res, '/admin/tenants');
+
+        $tenants = Database::query(
+            'SELECT `id`, `locale` FROM `tenants` WHERE `slug` = ?',
+            [$slug]
+        );
+        $this->assertCount(1, $tenants);
+        $this->cleanupIds[] = ['tenants', $tenants[0]['id']];
+
+        $this->assertSame(
+            $expectedLocale,
+            $tenants[0]['locale'],
+            'Tampered locale POST must be ignored; tenant must use operator default'
+        );
+    }
+
     // ════════════════════════════════════════════════════════════════
     // Helpers
     // ════════════════════════════════════════════════════════════════
