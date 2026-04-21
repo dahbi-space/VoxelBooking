@@ -128,7 +128,10 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
         body {
             font-family: var(--vb-font-sans);
             font-feature-settings: 'cv02' 1, 'cv03' 1, 'cv04' 1, 'cv11' 1;
-            background: var(--vb-admin-bg-base);
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(79, 70, 229, 0.03) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(99, 102, 241, 0.025) 0%, transparent 50%),
+                var(--vb-admin-bg-base);
             color: var(--vb-admin-text-primary);
             min-height: 100vh;
             display: flex;
@@ -144,6 +147,10 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
 
         [data-theme="dark"] body {
             font-weight: 350;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(129, 140, 248, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(99, 102, 241, 0.04) 0%, transparent 50%),
+                var(--vb-admin-bg-base);
         }
 
         /* ── Reduced motion ── */
@@ -168,6 +175,24 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
         /* ── Layout ── */
         .wizard { width: 100%; max-width: 560px; }
 
+        /* ── Entrance Animations ── */
+        .wizard-header {
+            animation: wizard-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .steps {
+            animation: wizard-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+        }
+
+        .card {
+            animation: wizard-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.14s both;
+        }
+
+        @keyframes wizard-rise {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* ── Hero Logo (Visual Design §2 — hero variant) ── */
         .vb-hero-logo {
             display: flex;
@@ -182,7 +207,7 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
             height: 56px;
             color: var(--vb-admin-accent);
             filter: drop-shadow(0 12px 24px var(--vb-admin-accent-glow));
-            animation: voxel-float 4s ease-in-out infinite;
+            animation: voxel-float 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
 
         .voxel-top   { fill: currentColor; opacity: 1; }
@@ -190,14 +215,14 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
         .voxel-right { fill: currentColor; opacity: 0.4; }
 
         .vb-hero-text {
-            font-size: 1.75rem;
+            font-size: 1.875rem;
             font-weight: 700;
-            letter-spacing: -0.03em;
+            letter-spacing: -0.04em;
         }
 
         @keyframes voxel-float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-6px); }
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-5px) scale(1.015); }
         }
 
         .wizard-header {
@@ -206,16 +231,18 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
         }
 
         .wizard-subtitle {
-            color: var(--vb-admin-text-secondary);
-            font-size: var(--vb-text-md);
-            margin-top: 0.25rem;
+            color: var(--vb-admin-text-tertiary);
+            font-size: var(--vb-text-base);
+            margin-top: 0.375rem;
+            letter-spacing: 0;
         }
 
-        /* ── Step Indicator ── */
+        /* ── Step Indicator (dots + connecting track) ── */
         .steps {
             display: flex;
             justify-content: center;
-            gap: 0.5rem;
+            align-items: center;
+            gap: 0;
             margin-bottom: 2rem;
         }
 
@@ -224,26 +251,45 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
             height: 10px;
             border-radius: 50%;
             background: var(--vb-admin-border-subtle);
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            z-index: 1;
         }
 
         .step-dot.active {
             background: var(--vb-admin-accent);
-            transform: scale(1.2);
+            transform: scale(1.3);
+            box-shadow: 0 0 0 4px var(--vb-admin-accent-dim);
         }
 
         .step-dot.done { background: var(--vb-admin-success); }
 
-        /* ── Card (shadow-based containment, no border — Visual Design §3) ── */
+        .step-track {
+            width: 28px;
+            height: 2px;
+            background: var(--vb-admin-border-subtle);
+            transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .step-track.done {
+            background: var(--vb-admin-success);
+        }
+
+        /* ── Card (layered shadows + inner highlight for tactile depth) ── */
         .card {
             background: var(--vb-admin-bg-surface);
             border-radius: var(--vb-radius);
             padding: 2rem;
-            box-shadow: var(--vb-admin-shadow-lg);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.7),
+                0 0 0 1px rgba(0, 0, 0, 0.03),
+                0 2px 4px rgba(0, 0, 0, 0.02),
+                0 8px 16px -4px rgba(0, 0, 0, 0.04),
+                0 24px 48px -12px rgba(0, 0, 0, 0.06);
         }
 
         [data-theme="dark"] .card {
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
             border: 1px solid var(--vb-admin-border-subtle);
         }
 
@@ -292,6 +338,11 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
             color: var(--vb-admin-text-primary);
         }
 
+        .form-required {
+            color: var(--vb-admin-error);
+            font-weight: 400;
+        }
+
         .form-input {
             width: 100%;
             padding: 0.5625rem 0.75rem;
@@ -308,6 +359,7 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
         .form-input:focus {
             border-color: var(--vb-admin-accent);
             box-shadow: 0 0 0 3px var(--vb-admin-accent-dim);
+            transition: border-color 0.15s, box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .form-input.error { border-color: var(--vb-admin-error); }
@@ -339,7 +391,7 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
             background-position: left 0.5rem center;
         }
 
-        /* ── Buttons ── */
+        /* ── Buttons (tactile depth via inner glow + accent shadow) ── */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -351,20 +403,43 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
             border: none;
             border-radius: var(--vb-radius-sm);
             cursor: pointer;
-            transition: background-color 0.15s, opacity 0.15s, transform 0.15s;
+            transition: background-color 0.15s, opacity 0.15s, transform 0.1s, box-shadow 0.15s;
             text-decoration: none;
             gap: 0.5rem;
             min-height: 40px;
+            position: relative;
         }
 
-        .btn:active:not(:disabled) { transform: scale(0.98); }
+        .btn:active:not(:disabled) { transform: scale(0.97); transition-duration: 80ms; }
 
         .btn-primary {
             background: var(--vb-admin-accent);
             color: #FFFFFF;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+                0 1px 3px rgba(0, 0, 0, 0.08),
+                0 2px 8px var(--vb-admin-accent-glow);
         }
 
-        .btn-primary:hover:not(:disabled) { background: var(--vb-admin-accent-hover); }
+        .btn-primary:hover:not(:disabled) {
+            background: var(--vb-admin-accent-hover);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+                0 2px 4px rgba(0, 0, 0, 0.1),
+                0 4px 12px var(--vb-admin-accent-glow);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            box-shadow:
+                inset 0 2px 3px rgba(0, 0, 0, 0.15),
+                0 1px 2px rgba(0, 0, 0, 0.05);
+            transform: scale(0.97);
+            transition-duration: 80ms;
+        }
+
         .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .btn-ghost {
@@ -412,6 +487,86 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
             border: none;
             border-top: 1px solid var(--vb-admin-border-subtle);
             margin: 1.5rem 0;
+        }
+
+        /* ── Reconnect Option Cards (Step 2b) ── */
+        .reconnect-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .reconnect-option {
+            border: 1px solid var(--vb-admin-border-subtle);
+            border-radius: var(--vb-radius);
+            padding: 1.25rem;
+            transition: border-color 0.15s, background-color 0.15s;
+        }
+
+        .reconnect-option:hover {
+            border-color: var(--vb-admin-accent);
+            background: var(--vb-admin-bg-hover);
+        }
+
+        .reconnect-option-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .reconnect-option-header svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .reconnect-option-header strong {
+            font-size: 1rem;
+        }
+
+        .reconnect-option-body {
+            margin-left: 2rem;
+        }
+
+        .reconnect-option-desc {
+            font-size: var(--vb-text-sm);
+            color: var(--vb-admin-text-tertiary);
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .reconnect-option-danger {
+            border-color: var(--vb-admin-border-subtle);
+        }
+
+        .reconnect-option-danger:hover {
+            border-color: var(--vb-admin-error);
+            background: var(--vb-admin-error-bg);
+        }
+
+        .reconnect-danger-text {
+            color: var(--vb-admin-error);
+        }
+
+        .reconnect-confirm {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .reconnect-confirm input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--vb-admin-error);
+            cursor: pointer;
+        }
+
+        .reconnect-confirm label {
+            font-size: var(--vb-text-sm);
+            color: var(--vb-admin-text-secondary);
+            cursor: pointer;
         }
 
         /* Button loading state */
@@ -830,6 +985,9 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
                 <div class="step-dot <?= $i === $displayStep ? 'active' : ($i < $displayStep ? 'done' : '') ?>"
                      role="listitem"
                      aria-label="<?= htmlspecialchars($stepTitles[$i] ?? '', ENT_QUOTES, 'UTF-8') ?><?= $i === $displayStep ? ' (' . __('install.wizard.step_current') . ')' : ($i < $displayStep ? ' (' . __('install.wizard.step_done') . ')' : '') ?>"></div>
+                <?php if ($i < 5): ?>
+                    <div class="step-track <?= $i < $displayStep ? 'done' : '' ?>" aria-hidden="true"></div>
+                <?php endif; ?>
             <?php endfor; ?>
         </div>
         <?php endif; ?>
@@ -925,26 +1083,26 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="db_host"><?= __('install.wizard.db_host') ?></label>
+                        <label class="form-label" for="db_host"><?= __('install.wizard.db_host') ?> <span class="form-required">*</span></label>
                         <input type="text" id="db_host" name="db_host" class="form-input <?= isset($errors['db_host']) ? 'error' : '' ?>" value="<?= $dbHost ?>" required>
                         <?php if (isset($errors['db_host'])): ?>
                             <div class="form-error"><?= htmlspecialchars($errors['db_host'], ENT_QUOTES, 'UTF-8') ?></div>
                         <?php endif; ?>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="db_port"><?= __('install.wizard.db_port') ?></label>
+                        <label class="form-label" for="db_port"><?= __('install.wizard.db_port') ?> <span class="form-required">*</span></label>
                         <input type="text" id="db_port" name="db_port" class="form-input <?= isset($errors['db_port']) ? 'error' : '' ?>" value="<?= $dbPort ?>" required>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="db_database"><?= __('install.wizard.db_name') ?></label>
+                    <label class="form-label" for="db_database"><?= __('install.wizard.db_name') ?> <span class="form-required">*</span></label>
                     <input type="text" id="db_database" name="db_database" class="form-input <?= isset($errors['db_database']) ? 'error' : '' ?>" value="<?= $dbDatabase ?>" required>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="db_username"><?= __('install.wizard.db_username') ?></label>
+                        <label class="form-label" for="db_username"><?= __('install.wizard.db_username') ?> <span class="form-required">*</span></label>
                         <input type="text" id="db_username" name="db_username" class="form-input" value="<?= $dbUsername ?>" required>
                     </div>
                     <div class="form-group">
@@ -990,14 +1148,14 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
                 <div id="smtp-fields">
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label" for="mail_host"><?= __('install.wizard.mail_host') ?></label>
+                            <label class="form-label" for="mail_host"><?= __('install.wizard.mail_host') ?> <span class="form-required">*</span></label>
                             <input type="text" id="mail_host" name="mail_host" class="form-input <?= isset($errors['mail_host']) ? 'error' : '' ?>" placeholder="smtp.example.com" value="<?= htmlspecialchars($mf['mail_host'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                             <?php if (isset($errors['mail_host'])): ?>
                                 <div class="form-error"><?= htmlspecialchars($errors['mail_host'], ENT_QUOTES, 'UTF-8') ?></div>
                             <?php endif; ?>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="mail_port"><?= __('install.wizard.mail_port') ?></label>
+                            <label class="form-label" for="mail_port"><?= __('install.wizard.mail_port') ?> <span class="form-required">*</span></label>
                             <input type="text" id="mail_port" name="mail_port" class="form-input <?= isset($errors['mail_port']) ? 'error' : '' ?>" value="<?= htmlspecialchars($mf['mail_port'] ?? '587', ENT_QUOTES, 'UTF-8') ?>">
                             <?php if (isset($errors['mail_port'])): ?>
                                 <div class="form-error"><?= htmlspecialchars($errors['mail_port'], ENT_QUOTES, 'UTF-8') ?></div>
@@ -1028,14 +1186,14 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="mail_from_address"><?= __('install.wizard.mail_from_address') ?></label>
+                        <label class="form-label" for="mail_from_address"><?= __('install.wizard.mail_from_address') ?> <span class="form-required">*</span></label>
                         <input type="email" id="mail_from_address" name="mail_from_address" class="form-input <?= isset($errors['mail_from_address']) ? 'error' : '' ?>" placeholder="noreply@example.com" value="<?= htmlspecialchars($mf['mail_from_address'] ?? 'noreply@' . ($_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? 'example.com'), ENT_QUOTES, 'UTF-8') ?>">
                         <?php if (isset($errors['mail_from_address'])): ?>
                             <div class="form-error"><?= htmlspecialchars($errors['mail_from_address'], ENT_QUOTES, 'UTF-8') ?></div>
                         <?php endif; ?>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="mail_from_name"><?= __('install.wizard.mail_from_name') ?></label>
+                        <label class="form-label" for="mail_from_name"><?= __('install.wizard.mail_from_name') ?> <span class="form-required">*</span></label>
                         <input type="text" id="mail_from_name" name="mail_from_name" class="form-input <?= isset($errors['mail_from_name']) ? 'error' : '' ?>" value="<?= htmlspecialchars($mf['mail_from_name'] ?? __('install.wizard.mail_from_name_default'), ENT_QUOTES, 'UTF-8') ?>">
                         <?php if (isset($errors['mail_from_name'])): ?>
                             <div class="form-error"><?= htmlspecialchars($errors['mail_from_name'], ENT_QUOTES, 'UTF-8') ?></div>
@@ -1080,7 +1238,7 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
                 </div>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="reconnect-options">
                 <!-- Option 1: Use existing data -->
                 <form method="POST" action="/install/step/2" id="vb-form-reconnect-keep">
                     <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
@@ -1089,14 +1247,13 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
                     <input type="hidden" name="<?= $key ?>" value="<?= htmlspecialchars($val, ENT_QUOTES, 'UTF-8') ?>">
                     <?php endforeach; ?>
 
-                    <div style="border: 1px solid var(--vb-admin-border-subtle); border-radius: 0.75rem; padding: 1.25rem; cursor: pointer; transition: border-color 0.15s, background 0.15s;" onmouseover="this.style.borderColor='var(--vb-admin-accent)'; this.style.background='var(--vb-admin-bg-hover)'" onmouseout="this.style.borderColor='var(--vb-admin-border-subtle)'; this.style.background='transparent'">
-                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-                            <!-- Lucide Check-circle icon -->
-                            <svg style="width: 1.25rem; height: 1.25rem; color: var(--vb-admin-accent); flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                            <strong style="font-size: 1rem;"><?= __('install.wizard.reconnect_keep_title') ?></strong>
+                    <div class="reconnect-option">
+                        <div class="reconnect-option-header">
+                            <svg style="color: var(--vb-admin-accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            <strong><?= __('install.wizard.reconnect_keep_title') ?></strong>
                         </div>
-                        <p class="card-desc" style="margin: 0 0 0.75rem 2rem; font-size: 0.85rem;"><?= __('install.wizard.reconnect_keep_desc') ?></p>
-                        <div style="margin-left: 2rem;">
+                        <div class="reconnect-option-body">
+                            <p class="reconnect-option-desc"><?= __('install.wizard.reconnect_keep_desc') ?></p>
                             <button type="submit" class="btn btn-primary" style="width: auto; padding: 0.5rem 1.5rem;"><?= __('install.wizard.reconnect_keep_btn') ?></button>
                         </div>
                     </div>
@@ -1110,18 +1267,19 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
                     <input type="hidden" name="<?= $key ?>" value="<?= htmlspecialchars($val, ENT_QUOTES, 'UTF-8') ?>">
                     <?php endforeach; ?>
 
-                    <div style="border: 1px solid var(--vb-admin-border-subtle); border-radius: 0.75rem; padding: 1.25rem;">
-                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-                            <!-- Lucide Trash-2 icon -->
-                            <svg style="width: 1.25rem; height: 1.25rem; color: #ef4444; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                            <strong style="font-size: 1rem; color: #ef4444;"><?= __('install.wizard.reconnect_refresh_title') ?></strong>
+                    <div class="reconnect-option reconnect-option-danger">
+                        <div class="reconnect-option-header">
+                            <svg class="reconnect-danger-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                            <strong class="reconnect-danger-text"><?= __('install.wizard.reconnect_refresh_title') ?></strong>
                         </div>
-                        <p class="card-desc" style="margin: 0 0 0.75rem 2rem; font-size: 0.85rem;"><?= __('install.wizard.reconnect_refresh_desc') ?></p>
-                        <div style="margin-left: 2rem;">
-                            <label class="form-label" for="confirm_refresh" style="font-size: 0.8rem; color: #ef4444;"><?= __('install.wizard.reconnect_refresh_confirm_label') ?></label>
-                            <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.25rem;">
-                                <input type="text" id="confirm_refresh" name="confirm_refresh" class="form-input" style="max-width: 200px; font-size: 0.85rem;" placeholder="REFRESH" autocomplete="off">
-                                <button type="submit" class="btn" id="btn-refresh" disabled style="width: auto; padding: 0.5rem 1.5rem; background: #ef4444; color: #fff; opacity: 0.5; cursor: not-allowed;"><?= __('install.wizard.reconnect_refresh_btn') ?></button>
+                        <div class="reconnect-option-body">
+                            <p class="reconnect-option-desc"><?= __('install.wizard.reconnect_refresh_desc') ?></p>
+                            <div class="reconnect-confirm">
+                                <input type="checkbox" id="confirm_refresh" name="confirm_refresh" value="1">
+                                <label for="confirm_refresh"><?= __('install.wizard.reconnect_refresh_confirm_label') ?></label>
+                            </div>
+                            <div style="margin-top: 0.75rem;">
+                                <button type="submit" class="btn" id="btn-refresh" disabled style="width: auto; padding: 0.5rem 1.5rem; background: var(--vb-admin-error); color: #fff; opacity: 0.5; cursor: not-allowed;"><?= __('install.wizard.reconnect_refresh_btn') ?></button>
                             </div>
                         </div>
                     </div>
@@ -1132,14 +1290,13 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
 
             <script>
             (function() {
-                const input = document.getElementById('confirm_refresh');
+                const checkbox = document.getElementById('confirm_refresh');
                 const btn = document.getElementById('btn-refresh');
-                if (!input || !btn) return;
-                input.addEventListener('input', function() {
-                    const match = this.value.trim() === 'REFRESH';
-                    btn.disabled = !match;
-                    btn.style.opacity = match ? '1' : '0.5';
-                    btn.style.cursor = match ? 'pointer' : 'not-allowed';
+                if (!checkbox || !btn) return;
+                checkbox.addEventListener('change', function() {
+                    btn.disabled = !this.checked;
+                    btn.style.opacity = this.checked ? '1' : '0.5';
+                    btn.style.cursor = this.checked ? 'pointer' : 'not-allowed';
                 });
             })();
             </script>
@@ -1157,38 +1314,22 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
             <form method="POST" action="/install/step/4" id="vb-form-account">
                 <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
-                <!-- ── Branding Section ── -->
+                <!-- ── Identity ── -->
                 <div class="form-group">
-                    <label class="form-label" for="app_name"><?= __('install.wizard.app_name') ?></label>
-                    <input type="text" id="app_name" name="app_name" class="form-input" value="<?= htmlspecialchars($_ENV['APP_NAME'] ?? 'VoxelBooking', ENT_QUOTES, 'UTF-8') ?>" placeholder="VoxelBooking">
-                    <div class="form-hint"><?= __('install.wizard.app_name_hint') ?></div>
-                </div>
-
-                <!-- ── Login Credentials Section ── -->
-                <hr class="section-divider">
-                <div class="card-header">
-                    <svg class="card-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    <div class="card-header-content">
-                        <h3 class="card-title"><?= __('install.wizard.login_section_title') ?></h3>
-                        <p class="card-desc"><?= __('install.wizard.login_section_desc') ?></p>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="name"><?= __('install.wizard.op_name') ?></label>
+                    <label class="form-label" for="name"><?= __('install.wizard.op_name') ?> <span class="form-required">*</span></label>
                     <input type="text" id="name" name="name" class="form-input <?= isset($errors['name']) ? 'error' : '' ?>" value="<?= htmlspecialchars($session['op_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= __('install.wizard.op_name_placeholder') ?>" required autocomplete="name">
                     <?php if (isset($errors['name'])): ?><div class="form-error"><?= htmlspecialchars($errors['name'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="email"><?= __('install.wizard.op_email') ?></label>
+                    <label class="form-label" for="email"><?= __('install.wizard.op_email') ?> <span class="form-required">*</span></label>
                     <input type="email" id="email" name="email" class="form-input <?= isset($errors['email']) ? 'error' : '' ?>" required autocomplete="email">
                     <?php if (isset($errors['email'])): ?><div class="form-error"><?= htmlspecialchars($errors['email'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                     <div class="form-hint"><?= __('install.wizard.op_email_hint') ?></div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="password"><?= __('install.wizard.op_password') ?></label>
+                    <label class="form-label" for="password"><?= __('install.wizard.op_password') ?> <span class="form-required">*</span></label>
                     <div class="password-field">
                         <input type="password" id="password" name="password" class="form-input <?= isset($errors['password']) ? 'error' : '' ?>" required minlength="8" autocomplete="new-password">
                         <button type="button" id="btn-toggle-password" class="btn-icon" title="<?= __('install.wizard.op_password_show') ?>">
@@ -1205,19 +1346,26 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="password_confirmation"><?= __('install.wizard.op_password_confirm') ?></label>
+                    <label class="form-label" for="password_confirmation"><?= __('install.wizard.op_password_confirm') ?> <span class="form-required">*</span></label>
                     <input type="password" id="password_confirmation" name="password_confirmation" class="form-input <?= isset($errors['password_confirmation']) ? 'error' : '' ?>" required autocomplete="new-password">
                     <?php if (isset($errors['password_confirmation'])): ?><div class="form-error"><?= htmlspecialchars($errors['password_confirmation'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                 </div>
 
-                <!-- ── Regional Defaults Section ── -->
+                <!-- ── Application Settings ── -->
                 <hr class="section-divider">
                 <div class="card-header">
-                    <svg class="card-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                    <!-- Lucide Settings icon -->
+                    <svg class="card-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                     <div class="card-header-content">
                         <h3 class="card-title"><?= __('install.wizard.regional_section_title') ?></h3>
                         <p class="card-desc"><?= __('install.wizard.regional_section_desc') ?></p>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="app_name"><?= __('install.wizard.app_name') ?></label>
+                    <input type="text" id="app_name" name="app_name" class="form-input" value="<?= htmlspecialchars($_ENV['APP_NAME'] ?? 'VoxelBooking', ENT_QUOTES, 'UTF-8') ?>" placeholder="VoxelBooking">
+                    <div class="form-hint"><?= __('install.wizard.app_name_hint') ?></div>
                 </div>
 
                 <div class="form-group">
@@ -1347,7 +1495,7 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
                 <input type="hidden" name="_csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
                 <div class="form-group">
-                    <label class="form-label" for="tenant_name"><?= __('install.wizard.tenant_name') ?></label>
+                    <label class="form-label" for="tenant_name"><?= __('install.wizard.tenant_name') ?> <span class="form-required">*</span></label>
                     <input type="text" id="tenant_name" name="name" class="form-input <?= isset($errors['name']) ? 'error' : '' ?>" required placeholder="e.g. Salon Bella">
                     <?php if (isset($errors['name'])): ?><div class="form-error"><?= htmlspecialchars($errors['name'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
                 </div>
@@ -1395,7 +1543,7 @@ $displayStep = is_numeric($step) ? (int) $step : (str_starts_with((string) $step
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="tenant_email"><?= __('install.wizard.tenant_email') ?></label>
+                    <label class="form-label" for="tenant_email"><?= __('install.wizard.tenant_email') ?> <span class="form-required">*</span></label>
                     <input type="email" id="tenant_email" name="email" class="form-input" required value="<?= htmlspecialchars($session['operator_email'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                 </div>
 

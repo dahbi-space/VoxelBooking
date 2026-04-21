@@ -17,8 +17,8 @@ use PHPUnit\Framework\TestCase;
  * Covers:
  * - Existing DB → reconnect choice screen rendered
  * - keep path → login redirect with data preserved
- * - refresh path without REFRESH confirmation → blocked
- * - refresh path with REFRESH confirmation → DB recreated
+ * - refresh path without checkbox confirmation → blocked
+ * - refresh path with checkbox confirmation → DB recreated
  */
 final class InstallReconnectTest extends TestCase
 {
@@ -179,11 +179,11 @@ final class InstallReconnectTest extends TestCase
         $this->assertNotEmpty($installed[0]['value'] ?? '');
     }
 
-    public function testReconnectRefreshBlockedWithWrongConfirmation(): void
+    public function testReconnectRefreshBlockedWithEmptyConfirmation(): void
     {
         $_POST = array_merge($this->makeDbPostData(), [
             '_reconnect_action' => 'refresh',
-            'confirm_refresh' => 'wrong',
+            'confirm_refresh' => '',  // checkbox unchecked sends empty
         ]);
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $_SERVER['REQUEST_URI'] = '/install/step/2';
@@ -217,10 +217,10 @@ final class InstallReconnectTest extends TestCase
         $envBackup = is_file($envPath) ? file_get_contents($envPath) : null;
 
         // Submit the REAL destructive refresh: installed_at is present,
-        // _reconnect_action=refresh, confirm_refresh=REFRESH.
+        // _reconnect_action=refresh, confirm_refresh=1 (checkbox checked).
         $_POST = array_merge($this->makeDbPostData(), [
             '_reconnect_action' => 'refresh',
-            'confirm_refresh'  => 'REFRESH',
+            'confirm_refresh'  => '1',
         ]);
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $_SERVER['REQUEST_URI'] = '/install/step/2';

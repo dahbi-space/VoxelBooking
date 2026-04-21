@@ -18,7 +18,7 @@ return [
         'reconnected_keep'    => 'Reconnected to existing database. Your data is intact.',
         'db_refreshed'        => 'Database refreshed. MySQL :version. :count table(s) created.',
         'passwords_mismatch'  => 'Passwords do not match.',
-        'refresh_confirm_required' => 'Type REFRESH to confirm the destructive action.',
+        'refresh_confirm_required' => 'Please confirm that you understand this will erase all existing data.',
     ],
 
     // ── Database Errors ──
@@ -111,7 +111,7 @@ return [
         'reconnect_keep_btn'               => 'Use existing data',
         'reconnect_refresh_title'          => 'Fresh install',
         'reconnect_refresh_desc'           => 'Delete all tables and start from scratch. All existing data (operators, businesses, bookings, settings) will be permanently destroyed.',
-        'reconnect_refresh_confirm_label'  => 'Type REFRESH to confirm:',
+        'reconnect_refresh_confirm_label'  => 'I understand this will permanently erase all existing data',
         'reconnect_refresh_btn'            => 'Delete all data & reinstall',
 
         // Step 4: Operator

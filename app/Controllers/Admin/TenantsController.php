@@ -132,15 +132,16 @@ final class TenantsController
             }
         }
 
+        $sysDefaults = $this->resolveSystemDefaults();
+
         if (!empty($errors)) {
             FormState::flash([
                 'name'            => $name,
                 'slug'            => $slug,
                 'email'           => $email,
                 'booking_pattern' => $pattern,
-                'timezone'        => trim($request->string('timezone')) ?: $this->resolveSystemDefaults()['timezone'],
-                'currency'        => trim($request->string('currency')) ?: $this->resolveSystemDefaults()['currency'],
-                    'locale'          => $this->resolveSystemDefaults()['locale'],
+                'timezone'        => trim($request->string('timezone')) ?: $sysDefaults['timezone'],
+                'currency'        => trim($request->string('currency')) ?: $sysDefaults['currency'],
                 'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                 'create_owner'    => $createOwner ? '1' : '0',
                 'owner_name'      => $ownerName,
@@ -158,16 +159,20 @@ final class TenantsController
             Database::transaction(function () use (
                 $name, $slug, $email, $pattern, $request,
                 $createOwner, $ownerName, $ownerEmail, $ownerPass,
-                &$tenantId, &$ownerId
+                &$tenantId, &$ownerId, $sysDefaults
             ) {
                 $tenantId = Tenant::create([
                     'name'            => $name,
                     'slug'            => $slug,
                     'email'           => $email,
                     'booking_pattern' => $pattern,
-                'timezone'        => trim($request->string('timezone')) ?: $this->resolveSystemDefaults()['timezone'],
-                    'currency'        => trim($request->string('currency')) ?: $this->resolveSystemDefaults()['currency'],
-                        'locale'          => $this->resolveSystemDefaults()['locale'],
+                    'timezone'        => trim($request->string('timezone')) ?: $sysDefaults['timezone'],
+                    'currency'        => trim($request->string('currency')) ?: $sysDefaults['currency'],
+                    'locale'          => $sysDefaults['locale'],
+                    'date_format'     => $sysDefaults['date_format'],
+                    'number_format'   => $sysDefaults['number_format'],
+                    'time_format'     => $sysDefaults['time_format'],
+                    'week_start'      => $sysDefaults['week_start'],
                     'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                 ]);
 
@@ -254,9 +259,8 @@ final class TenantsController
                     'slug'            => $slug,
                     'email'           => $email,
                     'booking_pattern' => $pattern,
-                    'timezone'        => trim($request->string('timezone')) ?: $this->resolveSystemDefaults()['timezone'],
-                    'currency'        => trim($request->string('currency')) ?: $this->resolveSystemDefaults()['currency'],
-                    'locale'          => $this->resolveSystemDefaults()['locale'],
+                    'timezone'        => trim($request->string('timezone')) ?: $sysDefaults['timezone'],
+                    'currency'        => trim($request->string('currency')) ?: $sysDefaults['currency'],
                     'brand_color'     => trim($request->string('brand_color')) ?: '#2563EB',
                     'create_owner'    => '1',
                     'owner_name'      => $ownerName,
@@ -411,7 +415,7 @@ final class TenantsController
      *
      * All other regional settings: read from settings table or fall back to sensible defaults.
      *
-     * @return array{timezone: string, currency: string, locale: string, date_format: string|null, number_format: string|null}
+     * @return array{timezone: string, currency: string, locale: string, date_format: string, number_format: string, time_format: string, week_start: string}
      */
     private function resolveSystemDefaults(): array
     {
@@ -419,13 +423,15 @@ final class TenantsController
             'timezone'      => 'UTC',
             'currency'      => 'EUR',
             'locale'        => 'en',
-            'date_format'   => null,
-            'number_format' => null,
+            'date_format'   => 'Y-m-d',
+            'number_format' => 'period',
+            'time_format'   => '24h',
+            'week_start'    => '1',
         ];
 
         try {
             $rows = Database::query(
-                "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('timezone', 'default_timezone', 'default_currency', 'default_locale', 'date_format', 'number_format')"
+                "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('timezone', 'default_timezone', 'default_currency', 'default_locale', 'date_format', 'number_format', 'time_format', 'week_start')"
             );
             $installTz = null;
             foreach ($rows as $row) {
@@ -439,6 +445,8 @@ final class TenantsController
                     'default_locale'   => $defaults['locale'] = $row['value'],
                     'date_format'      => $defaults['date_format'] = $row['value'],
                     'number_format'    => $defaults['number_format'] = $row['value'],
+                    'time_format'      => $defaults['time_format'] = $row['value'],
+                    'week_start'       => $defaults['week_start'] = $row['value'],
                     default            => null,
                 };
             }

@@ -195,9 +195,8 @@ ob_start();
                     <label class="vb-label" for="ts-week-start"><?= __('admin.tenant_settings.field_week_start') ?></label>
                     <select class="vb-input" id="ts-week-start" name="week_start">
                         <?php
-                        $currentWeekStart = old('week_start', $tenant['week_start'] ?? '');
+                        $currentWeekStart = old('week_start', $tenant['week_start'] ?? '1');
                         $weekDays = [
-                            '' => __('admin.tenant_settings.field_week_start_auto'),
                             '1' => __('booking.days.1'),
                             '0' => __('booking.days.0'),
                             '6' => __('booking.days.6'),
@@ -207,16 +206,14 @@ ob_start();
                         <option value="<?= $wv ?>" <?= (string) $currentWeekStart === (string) $wv ? 'selected' : '' ?>><?= e($wl) ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_week_start_hint') ?></span>
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-time-format"><?= __('admin.tenant_settings.field_time_format') ?></label>
                     <select class="vb-input" id="ts-time-format" name="time_format">
                         <?php
-                        $currentTimeFormat = old('time_format', $tenant['time_format'] ?? '');
+                        $currentTimeFormat = old('time_format', $tenant['time_format'] ?? '24h');
                         $timeFormats = [
-                            ''    => __('admin.tenant_settings.field_time_format_auto'),
                             '12h' => __('admin.tenant_settings.field_time_format_12h'),
                             '24h' => __('admin.tenant_settings.field_time_format_24h'),
                         ];
@@ -225,42 +222,38 @@ ob_start();
                         <option value="<?= $tv ?>" <?= $currentTimeFormat === $tv ? 'selected' : '' ?>><?= e($tl) ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_time_format_hint') ?></span>
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-date-format"><?= __('admin.tenant_settings.field_date_format') ?></label>
                     <select class="vb-input" id="ts-date-format" name="date_format">
                         <?php
-                        $currentDateFormat = old('date_format', $tenant['date_format'] ?? '');
+                        $currentDateFormat = old('date_format', $tenant['date_format'] ?? 'Y-m-d');
                         $dateFormats = [
-                            ''       => __('admin.tenant_settings.field_date_format_auto'),
-                            'Y-m-d'  => '2026-04-19',
-                            'd/m/Y'  => '19/04/2026',
-                            'm/d/Y'  => '04/19/2026',
-                            'd-m-Y'  => '19-04-2026',
-                            'd.m.Y'  => '19.04.2026',
+                            'Y-m-d'  => '2026-04-21',
+                            'd/m/Y'  => '21/04/2026',
+                            'm/d/Y'  => '04/21/2026',
+                            'd-m-Y'  => '21-04-2026',
+                            'd.m.Y'  => '21.04.2026',
                         ];
                         foreach ($dateFormats as $dv => $dl):
                         ?>
                         <option value="<?= $dv ?>" <?= $currentDateFormat === $dv ? 'selected' : '' ?>><?= e($dl) ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_date_format_hint') ?></span>
                 </div>
 
                 <div class="vb-settings-field">
                     <label class="vb-label" for="ts-number-format"><?= __('admin.tenant_settings.field_number_format') ?></label>
                     <select class="vb-input" id="ts-number-format" name="number_format">
                         <?php
-                        $currentNumberFormat = old('number_format', $tenant['number_format'] ?? '');
-                        $numberFormats = ['' => __('admin.tenant_settings.field_number_format_auto')] + \App\Engine\Locale::numberFormatPresets();
+                        $currentNumberFormat = old('number_format', $tenant['number_format'] ?? 'period');
+                        $numberFormats = \App\Engine\Locale::numberFormatPresets();
                         foreach ($numberFormats as $nv => $nl):
                         ?>
                         <option value="<?= $nv ?>" <?= $currentNumberFormat === $nv ? 'selected' : '' ?>><?= e($nl) ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <span class="vb-settings-hint"><?= __('admin.tenant_settings.field_number_format_hint') ?></span>
                 </div>
             </div>
         </div>

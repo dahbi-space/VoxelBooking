@@ -79,20 +79,20 @@ final class TenantSettingsController
             $currency = $tenant['currency'] ?? 'EUR';
         }
         $weekStartRaw = $request->string('week_start');
-        $weekStart  = ($weekStartRaw !== '' && in_array($weekStartRaw, ['0', '1', '6'], true))
+        $weekStart  = in_array($weekStartRaw, ['0', '1', '6'], true)
             ? (int) $weekStartRaw
-            : null;
-        $timeFormat = trim($request->string('time_format')) ?: null;
-        if ($timeFormat !== null && !in_array($timeFormat, ['12h', '24h'], true)) {
-            $timeFormat = null;
+            : (int) ($tenant['week_start'] ?? 1);
+        $timeFormat = trim($request->string('time_format'));
+        if (!in_array($timeFormat, ['12h', '24h'], true)) {
+            $timeFormat = $tenant['time_format'] ?? '24h';
         }
-        $dateFormat = trim($request->string('date_format')) ?: null;
-        if ($dateFormat !== null && !in_array($dateFormat, ['Y-m-d', 'd/m/Y', 'm/d/Y', 'd-m-Y', 'd.m.Y'], true)) {
-            $dateFormat = null;
+        $dateFormat = trim($request->string('date_format'));
+        if (!in_array($dateFormat, ['Y-m-d', 'd/m/Y', 'm/d/Y', 'd-m-Y', 'd.m.Y'], true)) {
+            $dateFormat = $tenant['date_format'] ?? 'Y-m-d';
         }
-        $numberFormat = trim($request->string('number_format')) ?: null;
-        if ($numberFormat !== null && !in_array($numberFormat, ['period', 'comma', 'space'], true)) {
-            $numberFormat = null;
+        $numberFormat = trim($request->string('number_format'));
+        if (!in_array($numberFormat, ['period', 'comma', 'space'], true)) {
+            $numberFormat = $tenant['number_format'] ?? 'period';
         }
 
         $errors = [];

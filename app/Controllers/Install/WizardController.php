@@ -204,8 +204,8 @@ final class WizardController
         }
 
         if ($hasInstalledAt && $reconnectAction === 'refresh') {
-            // Server-side guard: require typed confirmation before destructive action
-            if ($confirmRefresh !== 'REFRESH') {
+            // Server-side guard: require checkbox confirmation before destructive action
+            if (empty($confirmRefresh)) {
                 return View::response('install.wizard', [
                     'step' => '2-reconnect',
                     'checks' => [],
@@ -501,8 +501,8 @@ final class WizardController
         $brandColor = $request->string('brand_color', '#2563EB');
 
         Database::execute(
-            "INSERT INTO `tenants` (`id`, `slug`, `name`, `email`, `booking_pattern`, `brand_color`, `brand_color_text`, `timezone`, `currency`, `locale`)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO `tenants` (`id`, `slug`, `name`, `email`, `booking_pattern`, `brand_color`, `brand_color_text`, `timezone`, `currency`, `locale`, `date_format`, `number_format`, `time_format`, `week_start`)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $tenantId,
                 $slug,
@@ -514,6 +514,10 @@ final class WizardController
                 $_SESSION['install']['timezone'] ?? 'UTC',
                 $_SESSION['install']['default_currency'] ?? 'EUR',
                 $_SESSION['install']['default_locale'] ?? 'en',
+                $_SESSION['install']['date_format'] ?? 'Y-m-d',
+                $_SESSION['install']['number_format'] ?? 'period',
+                $_SESSION['install']['time_format'] ?? '24h',
+                $_SESSION['install']['week_start'] ?? '1',
             ]
         );
 
