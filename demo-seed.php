@@ -480,10 +480,14 @@ $pdo->prepare("INSERT INTO auth_emails (email, user_type, user_id) VALUES (?, 'o
 // Tenant
 $tenantId = '01JDEMO0001TENANT00001';
 $pdo->prepare("
-    INSERT INTO tenants (id, name, slug, email, status, timezone, locale, currency, brand_color, booking_pattern,
+    INSERT INTO tenants (id, name, slug, email, status, timezone, locale, currency,
+                         date_format, number_format, time_format, week_start,
+                         brand_color, booking_pattern,
                          require_phone, requires_consent, consent_text, privacy_policy_url,
                          slot_duration_minutes, buffer_minutes, min_advance_hours, max_advance_days)
-    VALUES (?, ?, ?, ?, 'active', 'Europe/Amsterdam', 'en', 'EUR', '#2563EB', 'timeslot',
+    VALUES (?, ?, ?, ?, 'active', 'Europe/Amsterdam', 'en', 'EUR',
+            'd-m-Y', 'period', '24h', 1,
+            '#2563EB', 'timeslot',
             0, 1, 'I agree to the processing of my personal data for this booking.', '#',
             30, 0, 1, 90)
 ")->execute([$tenantId, 'Demo Studio', 'demo', 'hello@demostudio.example']);

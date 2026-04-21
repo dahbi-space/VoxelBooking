@@ -460,6 +460,10 @@ final class WizardController
         $_SESSION['install']['timezone'] = $timezone;
         $_SESSION['install']['default_currency'] = $defaultCurrency;
         $_SESSION['install']['default_locale'] = $locale;
+        $_SESSION['install']['date_format'] = $dateFormat;
+        $_SESSION['install']['number_format'] = $numberFormat;
+        $_SESSION['install']['time_format'] = $timeFormat;
+        $_SESSION['install']['week_start'] = $weekStart;
 
         FormState::toast('success', __('install.flash.operator_created'));
 

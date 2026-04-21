@@ -113,6 +113,7 @@ final class Tenant
         // Optional fields (non-null values only)
         $optionalFields = [
             'phone', 'timezone', 'locale', 'currency', 'brand_color',
+            'date_format', 'number_format', 'time_format', 'week_start',
             'notification_email', 'privacy_policy_url', 'consent_text',
         ];
 
@@ -120,16 +121,6 @@ final class Tenant
             if (isset($data[$field]) && $data[$field] !== '') {
                 $columns[] = $field;
                 $values[] = $data[$field];
-            }
-        }
-
-        // Nullable fields (NULL = inherit from system/locale, non-null = explicit override)
-        $nullableFields = ['date_format', 'number_format'];
-
-        foreach ($nullableFields as $field) {
-            if (array_key_exists($field, $data)) {
-                $columns[] = $field;
-                $values[] = $data[$field]; // may be NULL
             }
         }
 

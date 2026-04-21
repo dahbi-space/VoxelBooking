@@ -166,8 +166,16 @@ final class TenantsController
                     'slug'            => $slug,
                     'email'           => $email,
                     'booking_pattern' => $pattern,
-                    'timezone'        => trim($request->string('timezone')) ?: $sysDefaults['timezone'],
-                    'currency'        => trim($request->string('currency')) ?: $sysDefaults['currency'],
+                    'timezone'        => (function () use ($request, $sysDefaults) {
+                        $tz = trim($request->string('timezone'));
+                        return ($tz !== '' && in_array($tz, get_supported_timezones(), true))
+                            ? $tz : $sysDefaults['timezone'];
+                    })(),
+                    'currency'        => (function () use ($request, $sysDefaults) {
+                        $cur = strtoupper(trim($request->string('currency')));
+                        return ($cur !== '' && array_key_exists($cur, get_supported_currencies()))
+                            ? $cur : $sysDefaults['currency'];
+                    })(),
                     'locale'          => $sysDefaults['locale'],
                     'date_format'     => $sysDefaults['date_format'],
                     'number_format'   => $sysDefaults['number_format'],
