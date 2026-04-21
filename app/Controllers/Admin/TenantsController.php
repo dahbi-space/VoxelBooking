@@ -442,12 +442,16 @@ final class TenantsController
                 "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('timezone', 'default_timezone', 'default_currency', 'default_locale', 'date_format', 'number_format', 'time_format', 'week_start')"
             );
             $installTz = null;
+            $settingsHadTimezone = false;
             foreach ($rows as $row) {
                 if ($row['value'] === '' || $row['value'] === null) {
                     continue;
                 }
                 match ($row['key']) {
-                    'timezone'         => $defaults['timezone'] = $row['value'],
+                    'timezone'         => (function () use (&$defaults, &$settingsHadTimezone, $row) {
+                        $defaults['timezone'] = $row['value'];
+                        $settingsHadTimezone = true;
+                    })(),
                     'default_timezone' => $installTz = $row['value'],
                     'default_currency' => $defaults['currency'] = $row['value'],
                     'default_locale'   => $defaults['locale'] = $row['value'],
@@ -458,8 +462,8 @@ final class TenantsController
                     default            => null,
                 };
             }
-            // Fall back to install-time timezone if admin hasn't set one explicitly
-            if ($defaults['timezone'] === 'UTC' && $installTz !== null) {
+            // Fall back to install-time timezone only if no settings.timezone row was found
+            if (!$settingsHadTimezone && $installTz !== null) {
                 $defaults['timezone'] = $installTz;
             }
             return $defaults;

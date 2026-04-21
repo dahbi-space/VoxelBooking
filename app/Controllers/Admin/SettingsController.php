@@ -92,19 +92,19 @@ final class SettingsController
                     $changes['brand_url'] = ['old' => $oldSettings['brand_url'] ?? '', 'new' => $brandUrl];
                 }
             }
-            if ($timezone !== '') {
+            if ($timezone !== '' && in_array($timezone, get_supported_timezones(), true)) {
                 $this->saveSetting('timezone', $timezone);
                 if ($timezone !== ($oldSettings['timezone'] ?? '')) {
                     $changes['timezone'] = ['old' => $oldSettings['timezone'] ?? '', 'new' => $timezone];
                 }
             }
-            if ($dateFormat !== '') {
+            if ($dateFormat !== '' && in_array($dateFormat, ['Y-m-d', 'd/m/Y', 'm/d/Y', 'd-m-Y', 'd.m.Y'], true)) {
                 $this->saveSetting('date_format', $dateFormat);
                 if ($dateFormat !== ($oldSettings['date_format'] ?? '')) {
                     $changes['date_format'] = ['old' => $oldSettings['date_format'] ?? '', 'new' => $dateFormat];
                 }
             }
-            if ($numberFormat !== '') {
+            if ($numberFormat !== '' && in_array($numberFormat, ['period', 'comma', 'space'], true)) {
                 $this->saveSetting('number_format', $numberFormat);
                 if ($numberFormat !== ($oldSettings['number_format'] ?? '')) {
                     $changes['number_format'] = ['old' => $oldSettings['number_format'] ?? '', 'new' => $numberFormat];

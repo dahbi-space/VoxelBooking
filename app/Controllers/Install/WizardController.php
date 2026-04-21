@@ -421,12 +421,21 @@ final class WizardController
 
         // Store global settings
         $timezone = $request->string('timezone', 'UTC') ?: 'UTC';
+        if (!in_array($timezone, get_supported_timezones(), true)) {
+            $timezone = 'UTC';
+        }
         $locale = $request->string('locale', 'en') ?: 'en';
         if (!Locale::isSupported($locale)) {
             $locale = 'en';
         }
         $dateFormat = $request->string('date_format', 'Y-m-d') ?: 'Y-m-d';
+        if (!in_array($dateFormat, ['Y-m-d', 'd/m/Y', 'm/d/Y', 'd-m-Y', 'd.m.Y'], true)) {
+            $dateFormat = 'Y-m-d';
+        }
         $numberFormat = $request->string('number_format', 'period') ?: 'period';
+        if (!in_array($numberFormat, ['period', 'comma', 'space'], true)) {
+            $numberFormat = 'period';
+        }
         $timeFormat = $request->string('time_format', '24h') ?: '24h';
         if (!in_array($timeFormat, ['12h', '24h'], true)) {
             $timeFormat = '24h';

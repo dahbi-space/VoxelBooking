@@ -456,6 +456,183 @@ final class TenantOwnerCreationTest extends TestCase
         );
     }
 
+    /**
+     * Admin-created tenants persist all 7 regional fields from operator defaults.
+     *
+     * No regional column should be NULL after admin creation.
+     */
+    public function testCreatedTenantPersistsAllSevenRegionalFields(): void
+    {
+        // Read operator defaults
+        $rows = Database::query(
+            "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('default_locale', 'default_currency', 'timezone', 'default_timezone', 'date_format', 'number_format', 'time_format', 'week_start')"
+        );
+        $settings = [];
+        foreach ($rows as $row) {
+            $settings[$row['key']] = $row['value'];
+        }
+
+        $slug = 'test-regional-' . substr(bin2hex(random_bytes(4)), 0, 8);
+        $res = $this->postForm('/admin/tenants/create', [
+            'name'            => 'Regional Test',
+            'slug'            => $slug,
+            'email'           => 'regional@test.test',
+            'booking_pattern' => 'timeslot',
+            'timezone'        => '',
+            'currency'        => '',
+            'brand_color'     => '#2563EB',
+        ]);
+
+        $this->assertRedirect($res, '/admin/tenants');
+
+        $tenants = Database::query(
+            'SELECT * FROM `tenants` WHERE `slug` = ?',
+            [$slug]
+        );
+        $this->assertCount(1, $tenants);
+        $tenant = $tenants[0];
+        $this->cleanupIds[] = ['tenants', $tenant['id']];
+
+        // All 7 regional fields must be non-null and match operator defaults
+        $expectedTz = $settings['timezone'] ?? $settings['default_timezone'] ?? 'UTC';
+        $expectedLocale = $settings['default_locale'] ?? 'en';
+        $expectedCurrency = $settings['default_currency'] ?? 'EUR';
+        $expectedDateFormat = $settings['date_format'] ?? 'Y-m-d';
+        $expectedNumberFormat = $settings['number_format'] ?? 'period';
+        $expectedTimeFormat = $settings['time_format'] ?? '24h';
+        $expectedWeekStart = $settings['week_start'] ?? '1';
+
+        $this->assertSame($expectedTz, $tenant['timezone'], 'timezone must match operator default');
+        $this->assertSame($expectedLocale, $tenant['locale'], 'locale must match operator default');
+        $this->assertSame($expectedCurrency, $tenant['currency'], 'currency must match operator default');
+        $this->assertSame($expectedDateFormat, $tenant['date_format'], 'date_format must match operator default');
+        $this->assertSame($expectedNumberFormat, $tenant['number_format'], 'number_format must match operator default');
+        $this->assertSame($expectedTimeFormat, $tenant['time_format'], 'time_format must match operator default');
+        $this->assertSame((string) $expectedWeekStart, (string) $tenant['week_start'], 'week_start must match operator default');
+    }
+
+    /**
+     * A tampered timezone POST falls back to the operator default.
+     */
+    public function testTamperedTimezonePostIsRejected(): void
+    {
+        $slug = 'test-tz-tamper-' . substr(bin2hex(random_bytes(4)), 0, 8);
+        $res = $this->postForm('/admin/tenants/create', [
+            'name'            => 'TZ Tamper Test',
+            'slug'            => $slug,
+            'email'           => 'tztamper@test.test',
+            'booking_pattern' => 'timeslot',
+            'timezone'        => 'Invalid/Fake_Zone',
+            'currency'        => 'EUR',
+            'brand_color'     => '#2563EB',
+        ]);
+
+        $this->assertRedirect($res, '/admin/tenants');
+
+        $tenants = Database::query(
+            'SELECT `id`, `timezone` FROM `tenants` WHERE `slug` = ?',
+            [$slug]
+        );
+        $this->assertCount(1, $tenants);
+        $this->cleanupIds[] = ['tenants', $tenants[0]['id']];
+
+        $this->assertNotSame(
+            'Invalid/Fake_Zone',
+            $tenants[0]['timezone'],
+            'Tampered timezone must not be persisted'
+        );
+    }
+
+    /**
+     * A tampered currency POST falls back to the operator default.
+     */
+    public function testTamperedCurrencyPostIsRejected(): void
+    {
+        $slug = 'test-cur-tamper-' . substr(bin2hex(random_bytes(4)), 0, 8);
+        $res = $this->postForm('/admin/tenants/create', [
+            'name'            => 'Currency Tamper Test',
+            'slug'            => $slug,
+            'email'           => 'curtamper@test.test',
+            'booking_pattern' => 'timeslot',
+            'timezone'        => 'UTC',
+            'currency'        => 'ZZZ',
+            'brand_color'     => '#2563EB',
+        ]);
+
+        $this->assertRedirect($res, '/admin/tenants');
+
+        $tenants = Database::query(
+            'SELECT `id`, `currency` FROM `tenants` WHERE `slug` = ?',
+            [$slug]
+        );
+        $this->assertCount(1, $tenants);
+        $this->cleanupIds[] = ['tenants', $tenants[0]['id']];
+
+        $this->assertNotSame(
+            'ZZZ',
+            $tenants[0]['currency'],
+            'Tampered currency must not be persisted'
+        );
+    }
+
+    /**
+     * When operator explicitly sets timezone to UTC, new tenants get UTC —
+     * not the legacy install-time default_timezone.
+     */
+    public function testExplicitUtcTimezoneIsHonored(): void
+    {
+        // Save original timezone setting for restoration
+        $origRows = Database::query(
+            "SELECT `key`, `value` FROM `settings` WHERE `key` IN ('timezone', 'default_timezone')"
+        );
+        $origSettings = [];
+        foreach ($origRows as $row) {
+            $origSettings[$row['key']] = $row['value'];
+        }
+
+        // Set timezone=UTC and default_timezone=Europe/Amsterdam
+        Database::execute(
+            "INSERT INTO `settings` (`key`, `value`) VALUES ('timezone', 'UTC') ON DUPLICATE KEY UPDATE `value` = 'UTC'"
+        );
+        Database::execute(
+            "INSERT INTO `settings` (`key`, `value`) VALUES ('default_timezone', 'Europe/Amsterdam') ON DUPLICATE KEY UPDATE `value` = 'Europe/Amsterdam'"
+        );
+
+        $slug = 'test-utc-explicit-' . substr(bin2hex(random_bytes(4)), 0, 8);
+        $res = $this->postForm('/admin/tenants/create', [
+            'name'            => 'UTC Explicit Test',
+            'slug'            => $slug,
+            'email'           => 'utctest@test.test',
+            'booking_pattern' => 'timeslot',
+            'timezone'        => '',
+            'currency'        => 'EUR',
+            'brand_color'     => '#2563EB',
+        ]);
+
+        $this->assertRedirect($res, '/admin/tenants');
+
+        $tenants = Database::query(
+            'SELECT `id`, `timezone` FROM `tenants` WHERE `slug` = ?',
+            [$slug]
+        );
+        $this->assertCount(1, $tenants);
+        $this->cleanupIds[] = ['tenants', $tenants[0]['id']];
+
+        $this->assertSame(
+            'UTC',
+            $tenants[0]['timezone'],
+            'Explicit UTC timezone must not be overridden by default_timezone'
+        );
+
+        // Restore original settings
+        foreach ($origSettings as $key => $value) {
+            Database::execute(
+                "UPDATE `settings` SET `value` = ? WHERE `key` = ?",
+                [$value, $key]
+            );
+        }
+    }
+
     // ════════════════════════════════════════════════════════════════
     // Helpers
     // ════════════════════════════════════════════════════════════════

@@ -87,10 +87,14 @@ $pdo->prepare("INSERT INTO `auth_emails` (`email`, `user_type`, `user_id`) VALUE
 
 $tenantId = '01JDEMO0001TENANT00001';
 $pdo->prepare("
-    INSERT INTO `tenants` (`id`, `name`, `slug`, `email`, `status`, `timezone`, `locale`, `currency`, `brand_color`, `booking_pattern`,
+    INSERT INTO `tenants` (`id`, `name`, `slug`, `email`, `status`, `timezone`, `locale`, `currency`,
+                         `date_format`, `number_format`, `time_format`, `week_start`,
+                         `brand_color`, `booking_pattern`,
                          `require_phone`, `requires_consent`, `consent_text`, `privacy_policy_url`,
                          `slot_duration_minutes`, `buffer_minutes`, `min_advance_hours`, `max_advance_days`)
-    VALUES (?, ?, ?, ?, 'active', 'Europe/Amsterdam', 'en', 'EUR', '#2563EB', 'timeslot',
+    VALUES (?, ?, ?, ?, 'active', 'Europe/Amsterdam', 'en', 'EUR',
+            'd-m-Y', 'period', '24h', 1,
+            '#2563EB', 'timeslot',
             0, 1, 'I agree to the processing of my personal data for this booking.', '#',
             30, 0, 1, 90)
 ")->execute([$tenantId, 'Demo Studio', 'demo', 'hello@demostudio.example']);
@@ -294,10 +298,14 @@ $pdo->prepare("INSERT INTO `auth_emails` (`email`, `user_type`, `user_id`) VALUE
 
 $hotelId = '01JDEMO0002TENANT00001';
 $pdo->prepare("
-    INSERT INTO `tenants` (`id`, `name`, `slug`, `email`, `status`, `timezone`, `locale`, `currency`, `brand_color`, `booking_pattern`,
+    INSERT INTO `tenants` (`id`, `name`, `slug`, `email`, `status`, `timezone`, `locale`, `currency`,
+                         `date_format`, `number_format`, `time_format`, `week_start`,
+                         `brand_color`, `booking_pattern`,
                          `require_phone`, `requires_consent`, `consent_text`, `cancellation_policy`, `confirmation_message`)
     VALUES (?, 'Hotel Marina', 'hotel-marina', 'info@hotelmarina.example', 'active',
-            'Europe/Rome', 'en', 'EUR', '#0EA5E9', 'resource',
+            'Europe/Rome', 'en', 'EUR',
+            'd-m-Y', 'period', '24h', 1,
+            '#0EA5E9', 'resource',
             1, 1, 'I consent to the processing of my personal data for this reservation.',
             'Free cancellation up to 48 hours before check-in.',
             'Your room is reserved. We look forward to welcoming you!')
@@ -380,11 +388,15 @@ $pdo->prepare("INSERT INTO `auth_emails` (`email`, `user_type`, `user_id`) VALUE
 
 $trattoriaId = '01JDEMO0003TENANT00001';
 $pdo->prepare("
-    INSERT INTO `tenants` (`id`, `name`, `slug`, `email`, `status`, `timezone`, `locale`, `currency`, `brand_color`, `booking_pattern`,
+    INSERT INTO `tenants` (`id`, `name`, `slug`, `email`, `status`, `timezone`, `locale`, `currency`,
+                         `date_format`, `number_format`, `time_format`, `week_start`,
+                         `brand_color`, `booking_pattern`,
                          `require_phone`, `requires_consent`, `consent_text`, `cancellation_policy`, `confirmation_message`,
                          `custom_fields`)
     VALUES (?, 'Trattoria Roma', 'trattoria-roma', 'info@trattoriaroma.example', 'active',
-            'Europe/Rome', 'en', 'EUR', '#F97316', 'capacity',
+            'Europe/Rome', 'en', 'EUR',
+            'd-m-Y', 'period', '24h', 1,
+            '#F97316', 'capacity',
             1, 1, 'I agree to the terms and conditions of this reservation.',
             'Cancellations must be made at least 4 hours before your reservation.',
             'Your table is reserved. Buon appetito!',
@@ -472,10 +484,14 @@ $pdo->prepare("INSERT INTO `auth_emails` (`email`, `user_type`, `user_id`) VALUE
 
 $workshopId = '01JDEMO0004TENANT00001';
 $pdo->prepare("
-    INSERT INTO `tenants` (`id`, `name`, `slug`, `email`, `status`, `timezone`, `locale`, `currency`, `brand_color`, `booking_pattern`,
+    INSERT INTO `tenants` (`id`, `name`, `slug`, `email`, `status`, `timezone`, `locale`, `currency`,
+                         `date_format`, `number_format`, `time_format`, `week_start`,
+                         `brand_color`, `booking_pattern`,
                          `require_phone`, `requires_consent`, `consent_text`, `cancellation_policy`, `confirmation_message`)
     VALUES (?, 'Workshop Studio', 'workshop-studio', 'hello@workshopstudio.example', 'active',
-            'Europe/Berlin', 'en', 'EUR', '#8B5CF6', 'event',
+            'Europe/Berlin', 'en', 'EUR',
+            'Y-m-d', 'period', '24h', 1,
+            '#8B5CF6', 'event',
             0, 1, 'I agree to the workshop terms and conditions.',
             'Full refund if cancelled 7 days before the event. 50% refund within 3-7 days. No refund within 3 days.',
             'You are registered! Check your email for event details and materials list.')

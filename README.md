@@ -226,16 +226,16 @@ VoxelBooking is internationalization-ready from its foundation. English ships as
 | Admin panel | Business locale (in business context) → `APP_LOCALE` (.env) → `en` | Session (browser-detected) |
 | Emails | Resolved active locale at send time | Business `timezone` |
 
-### Date & number formatting — 3-tier resolution
+### Date & number formatting
 
-All date/number formatting follows: **business override** (per-business `date_format`/`number_format` columns, NULL = inherit) → **system default** (settings table, set during installation) → **locale config** (`config/locales.php` registry defaults).
+Each business stores explicit values for `date_format`, `number_format`, `time_format`, and `week_start` — seeded from operator defaults at creation, editable per-business. All inputs are validated against whitelists; tampered values are rejected.
 
-| Setting | Business column | System setting key | Locale config key |
-|---------|----------------|-------------------|------------------|
-| Date notation | `tenants.date_format` | `date_format` | `date_format` |
-| Number notation | `tenants.number_format` | `number_format` | `decimal_sep` / `thousands_sep` |
-| Time format | `tenants.time_format` | — | `time_format` |
-| Week start | `tenants.week_start` | — | `week_start` |
+| Setting | Business column | Allowed values |
+|---------|----------------|---------------|
+| Date notation | `tenants.date_format` | `Y-m-d`, `d/m/Y`, `m/d/Y`, `d-m-Y`, `d.m.Y` |
+| Number notation | `tenants.number_format` | `period`, `comma`, `space` |
+| Time format | `tenants.time_format` | `12h`, `24h` |
+| Week start | `tenants.week_start` | `0` (Sun), `1` (Mon), `6` (Sat) |
 
 ### Currency
 
