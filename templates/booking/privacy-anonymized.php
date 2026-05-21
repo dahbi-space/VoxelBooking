@@ -20,6 +20,11 @@ $brandColor = $tenant['brand_color'] ?? '#4F46E5';
     <?php include dirname(__DIR__) . '/partials/admin-head.php'; ?>
     <link rel="stylesheet" href="/assets/css/admin-css.css?v=<?= filemtime(dirname(__DIR__, 2) . '/public/assets/css/admin-css.css') ?>">
     <style>
+        html {
+            overflow-y: auto !important;
+            height: auto !important;
+        }
+
         body {
             background: var(--vb-admin-bg-base);
             min-height: 100vh;
