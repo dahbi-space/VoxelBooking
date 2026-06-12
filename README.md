@@ -2,6 +2,17 @@
 
 Open-source booking infrastructure for small businesses. Four booking patterns: timeslots, resources, capacity, events, in one self-hosted installation. No SaaS dependency, no vendor lock-in, no outbound connections.
 
+## Links
+
+- Website: [voxelbooking.com](https://voxelbooking.com)
+- Documentation: [voxelbooking.com/docs](https://voxelbooking.com/docs)
+- Demo: [voxelbooking.com/demo](https://voxelbooking.com/demo)
+- Support and issues: [github.com/NowSquare/VoxelBooking/issues](https://github.com/NowSquare/VoxelBooking/issues)
+
+## License
+
+VoxelBooking is open source software licensed under the GNU Affero General Public License v3.0. See [LICENSE](LICENSE) for the full terms.
+
 ## Booking patterns
 
 | Pattern | Built for | How it works |
@@ -157,7 +168,7 @@ Your cron token is displayed in Admin → Settings → Advanced. Without this cr
 
 ## Upgrading
 
-1. **Download** the new version ZIP from the project releases.
+1. **Download** the new version ZIP from the [project releases](https://github.com/NowSquare/VoxelBooking/releases).
 2. **Back up** your database and the `public/uploads/` directory before doing anything else.
 3. **Replace all files** from the new ZIP, with two exceptions:
    - **`.env`** — your environment configuration. Never overwrite this.
@@ -481,9 +492,3 @@ Integration tests run at the HTTP level against actual booking flows. Unit tests
 ## Version
 
 The canonical version lives in the root [`VERSION`](VERSION) file. Do not hardcode version strings elsewhere. The installer seeds `settings.version` from this file; the admin UI and diagnostics read it via `Version::get()`. Bump this file when cutting a release.
-
----
-
-## License
-
-VoxelBooking is open source software licensed under the GNU Affero General Public License v3.0. See [LICENSE](LICENSE) for the full terms.
