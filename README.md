@@ -1,6 +1,6 @@
 # VoxelBooking
 
-Self-hosted booking infrastructure for small businesses. Four booking patterns — timeslots, resources, capacity, events — in one installation. No SaaS fees, no vendor lock-in, no outbound connections.
+Open-source booking infrastructure for small businesses. Four booking patterns: timeslots, resources, capacity, events, in one self-hosted installation. No SaaS dependency, no vendor lock-in, no outbound connections.
 
 ## Booking patterns
 
@@ -157,7 +157,7 @@ Your cron token is displayed in Admin → Settings → Advanced. Without this cr
 
 ## Upgrading
 
-1. **Download** the new version ZIP from your purchase account.
+1. **Download** the new version ZIP from the project releases.
 2. **Back up** your database and the `public/uploads/` directory before doing anything else.
 3. **Replace all files** from the new ZIP, with two exceptions:
    - **`.env`** — your environment configuration. Never overwrite this.
@@ -370,7 +370,7 @@ tests/                  PHPUnit test suites
 
 ## For developers
 
-> Everything below this line is for developers extending, modifying, or contributing to VoxelBooking. If you purchased VoxelBooking and want to install it on a production server, everything you need is above.
+> Everything below this line is for developers extending, modifying, or contributing to VoxelBooking. If you want to install VoxelBooking on a production server, everything you need is above.
 
 ---
 
@@ -486,4 +486,4 @@ The canonical version lives in the root [`VERSION`](VERSION) file. Do not hardco
 
 ## License
 
-Proprietary. See [LICENSE](LICENSE).
+VoxelBooking is open source software licensed under the GNU Affero General Public License v3.0. See [LICENSE](LICENSE) for the full terms.

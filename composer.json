@@ -2,7 +2,7 @@
     "name": "voxel/voxelbooking",
     "description": "Self-hosted multi-tenant booking system",
     "type": "project",
-    "license": "proprietary",
+    "license": "AGPL-3.0-only",
     "require": {
         "php": "^8.3",
         "phpmailer/phpmailer": "^6.9",

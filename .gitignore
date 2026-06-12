@@ -28,18 +28,15 @@ Thumbs.db
 # ── Development only ──
 seed.php
 
-# ── AI and docs ──
-.ai/tmp/
-.ai/screenshots/
-.ai/reports/
-.ai/**/*.png
-.ai/**/*.jpg
-.ai/**/*.jpeg
-.ai/**/*.pdf
-.agent/*
-!.agent/AGENTS.md
-!.agent/workflows/
-.superpowers/
+# ── Internal AI / agent workspaces ──
+/.agent/
+/.agents/
+/.superpowers/
+/.ai/*
+!/.ai/
+!/.ai/open-source/
+!/.ai/open-source/**
+!/.ai/README.md
 docs/superpowers/
 
 # ── Test output ──
