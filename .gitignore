@@ -32,6 +32,7 @@ seed.php
 /.agent/
 /.agents/
 /.superpowers/
+CLAUDE.md
 /.ai/*
 !/.ai/
 !/.ai/open-source/
