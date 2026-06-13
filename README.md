@@ -2,6 +2,8 @@
 
 Open-source booking infrastructure for small businesses. Four booking patterns: timeslots, resources, capacity, events, in one self-hosted installation. No SaaS dependency, no vendor lock-in, no outbound connections.
 
+[![VoxelBooking business dashboard](https://voxelbooking.com/screens/desktop/business-dashboard.webp)](https://voxelbooking.com/demo)
+
 ## Links
 
 - Website: [voxelbooking.com](https://voxelbooking.com)
