@@ -1332,7 +1332,20 @@ return [
         'error_partial_commit'    => 'Update failed and was rolled back. :committed files had been written before the error. All have been restored.',
         'error_commit_rolled_back' => 'Update failed and was rolled back. No changes were made. Check file permissions and try again.',
         'errors_partial'          => ':count file(s) could not be written.',
+        'error_migration_failed'  => 'Files updated to v:version, but database migrations failed: :error. The site may be in an inconsistent state — restore your database backup or resolve the migration, then retry.',
         'success'                 => 'Updated to v:version. :count files updated.',
+        // ── Git updates (shown only when the install is a Git checkout) ──
+        'git_title'               => 'Git Updates',
+        'git_desc'                => 'Pull the latest release directly from the repository.',
+        'git_status_label'        => 'Status',
+        'git_branch_label'        => 'Branch',
+        'git_remote_label'        => 'Remote',
+        'git_check'               => 'Check for updates',
+        'git_update_btn'          => 'Update now',
+        'git_confirm'             => 'Pull the latest changes? The app will reset to match the repository. Your database, .env, and uploads are preserved.',
+        'git_success'             => 'Updated to v:version via Git. :count migration(s) applied.',
+        'git_already_current'     => 'Already up to date — no changes pulled.',
+        'git_failed'              => 'Git update failed. Check the audit log for details.',
     ],
 
     // ── Business Applications ──

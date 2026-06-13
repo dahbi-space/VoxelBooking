@@ -289,7 +289,7 @@ VoxelBooking is built with privacy-by-design architecture. The following describ
 
 ### Zero outbound connections by default
 
-VoxelBooking makes no outbound connections unless you configure SMTP. No telemetry, no analytics beacons, no update checks, no CDN dependencies. Every font, icon, and script is bundled.
+VoxelBooking makes no outbound connections unless you configure SMTP or run a Git update from the admin panel. No telemetry, no analytics beacons, no automatic update checks, no CDN dependencies. Every font, icon, and script is bundled.
 
 ### What it stores
 

@@ -8,7 +8,9 @@ use App\Engine\AuditLog;
 use App\Engine\Auth;
 use App\Engine\DemoMode;
 use App\Engine\FormState;
+use App\Engine\GitUpdater;
 use App\Engine\Logger;
+use App\Engine\Migrator;
 use App\Engine\Request;
 use App\Engine\Response;
 use App\Engine\Version;
@@ -41,7 +43,123 @@ final class UpdateController
             return Response::redirect('/admin');
         }
 
-        // Guard: ext-zip is required for this feature
+        // Local-only Git status on initial load — fast, no network fetch.
+        return $this->renderUpdatesPage(false);
+    }
+
+    /**
+     * Re-render the updates page after checking the remote (git fetch).
+     *
+     * Wired to GET /admin/updates/git-status — the "Check for updates" button.
+     * Kept separate from index() so the page loads instantly without a network
+     * round-trip; the operator opts into the remote check.
+     */
+    public function gitStatus(Request $request): Response
+    {
+        if (!Auth::isOperator()) {
+            return Response::redirect('/admin');
+        }
+
+        return $this->renderUpdatesPage(true);
+    }
+
+    /**
+     * Pull the latest changes via Git (operator-only, blocked in demo mode).
+     *
+     * Fetches, hard-resets to the upstream (tracked files only — never touches
+     * .env, storage/, or public/uploads/), then runs schema migrations. Refuses
+     * to run on a dirty or local-ahead tree. CSRF is enforced by the global
+     * CsrfMiddleware on this POST route.
+     */
+    public function gitUpdate(Request $request): Response
+    {
+        if (!Auth::isOperator()) {
+            return Response::redirect('/admin');
+        }
+
+        if (DemoMode::isActive()) {
+            FormState::toast('error', __('admin.updates.demo_blocked'));
+            return Response::redirect('/admin/updates');
+        }
+
+        $projectRoot = dirname(__DIR__, 3);
+        $updater = $this->gitUpdater($projectRoot);
+        $currentVersion = Version::get();
+
+        AuditLog::log('system.update_started', 'system', null, [
+            'method'       => 'git',
+            'from_version' => $currentVersion,
+        ]);
+
+        $result = $updater->update(static function () use ($projectRoot) {
+            // Run schema migrations against the freshly-updated code. Both the
+            // Git and ZIP update paths run this, so the schema never lags the code.
+            return ['count' => (new Migrator($projectRoot . '/app/Migrations'))->migrate()];
+        });
+
+        // The VERSION file may have changed; drop the request-cached value.
+        Version::reset();
+
+        if ($result['ok']) {
+            $migCount = (int) ($result['migrations']['result']['count'] ?? 0);
+
+            AuditLog::log('system.update_completed', 'system', null, [
+                'method'       => 'git',
+                'from_version' => $currentVersion,
+                'to_version'   => $result['to_version'],
+                'from_sha'     => $result['from_sha'],
+                'to_sha'       => $result['to_sha'],
+                'migrations'   => $migCount,
+            ]);
+
+            Logger::info('Git update applied', [
+                'from' => $result['from_sha'],
+                'to'   => $result['to_sha'],
+                'migrations' => $migCount,
+            ]);
+
+            if ($result['state'] === 'up_to_date') {
+                FormState::toast('success', __('admin.updates.git_already_current'));
+            } else {
+                FormState::toast('success', str_replace(
+                    [':version', ':count'],
+                    [(string) $result['to_version'], (string) $migCount],
+                    __('admin.updates.git_success')
+                ));
+            }
+        } else {
+            AuditLog::log('system.update_failed', 'system', null, [
+                'method'          => 'git',
+                'state'           => $result['state'],
+                'from_version'    => $currentVersion,
+                'to_version'      => $result['to_version'],
+                'from_sha'        => $result['from_sha'],
+                'to_sha'          => $result['to_sha'],
+                'migration_error' => $result['migrations']['error'] ?? null,
+                'message'         => $result['message'],
+            ]);
+
+            Logger::error('Git update failed', [
+                'state'   => $result['state'],
+                'message' => $result['message'],
+            ]);
+
+            FormState::toast('error', $result['message'] ?: __('admin.updates.git_failed'));
+        }
+
+        return Response::redirect('/admin/updates');
+    }
+
+    /**
+     * Render the updates page. Shared by index() (local status) and
+     * gitStatus() (status after a remote fetch).
+     */
+    private function renderUpdatesPage(bool $fetchGit): Response
+    {
+        $projectRoot = dirname(__DIR__, 3);
+        $git = $this->gitUpdater($projectRoot)->status($fetchGit);
+
+        // ext-zip is required for the ZIP flow, but Git updates work without it.
         if (!class_exists(\ZipArchive::class)) {
             return View::response('admin.updates', [
                 'pageTitle'       => __('admin.updates.page_title'),
@@ -51,27 +169,29 @@ final class UpdateController
                 'phpVersion'      => PHP_VERSION,
                 'flash'           => ['type' => 'error', 'message' => __('admin.updates.error_ext_zip_missing')],
                 'zipAvailable'    => false,
+                'git'             => $git,
             ]);
         }
 
-        $projectRoot = dirname(__DIR__, 3);
-        $currentVersion = Version::get();
-
-        // Scan dist/ for available packages
-        $packages = $this->scanDistPackages($projectRoot);
-
-        // Read last update timestamp from audit log
-        $lastUpdate = $this->getLastUpdateTimestamp();
-
         return View::response('admin.updates', [
             'pageTitle'       => __('admin.updates.page_title'),
-            'currentVersion'  => $currentVersion,
-            'packages'        => $packages,
-            'lastUpdate'      => $lastUpdate,
+            'currentVersion'  => Version::get(),
+            'packages'        => $this->scanDistPackages($projectRoot),
+            'lastUpdate'      => $this->getLastUpdateTimestamp(),
             'phpVersion'      => PHP_VERSION,
             'flash'           => FormState::getToast(),
             'zipAvailable'    => true,
+            'git'             => $git,
         ]);
+    }
+
+    /**
+     * Build a GitUpdater rooted at the project, with its lock file in the
+     * git-ignored storage/cache/ directory.
+     */
+    private function gitUpdater(string $projectRoot): GitUpdater
+    {
+        return new GitUpdater($projectRoot, $projectRoot . '/storage/cache/.git-update.lock');
     }
 
     /**
@@ -470,6 +590,37 @@ final class UpdateController
         // Reset cached version so the new version is read
         Version::reset();
 
+        // ── Run schema migrations against the freshly-updated code ──
+        // The Git update path does this too; keep ZIP in parity so the database
+        // never lags the new code. A migration failure is a FAILED update — never
+        // report success when the schema step throws.
+        try {
+            $migrationCount = (new Migrator($projectRoot . '/app/Migrations'))->migrate();
+        } catch (\Throwable $e) {
+            AuditLog::log('system.update_failed', 'system', null, [
+                'from_version'  => $currentVersion,
+                'to_version'    => $newVersion,
+                'source'        => $sourceLabel,
+                'reason'        => 'migration_failed',
+                'files_updated' => $committed,
+                'error'         => $e->getMessage(),
+            ]);
+
+            Logger::error('Migrations failed after ZIP update', [
+                'version' => $newVersion,
+                'error'   => $e->getMessage(),
+            ]);
+
+            return [
+                'ok'      => false,
+                'message' => str_replace(
+                    [':version', ':error'],
+                    [$newVersion, $e->getMessage()],
+                    __('admin.updates.error_migration_failed')
+                ),
+            ];
+        }
+
         // Full success
         AuditLog::log('system.update_completed', 'system', null, [
             'from_version'  => $currentVersion,
@@ -477,13 +628,15 @@ final class UpdateController
             'source'        => $sourceLabel,
             'files_updated' => $committed,
             'files_skipped' => $skipped,
+            'migrations'    => $migrationCount,
         ]);
 
         Logger::info('Update applied', [
-            'from'      => $currentVersion,
-            'to'        => $newVersion,
-            'committed' => $committed,
-            'skipped'   => $skipped,
+            'from'       => $currentVersion,
+            'to'         => $newVersion,
+            'committed'  => $committed,
+            'skipped'    => $skipped,
+            'migrations' => $migrationCount,
         ]);
 
         return [

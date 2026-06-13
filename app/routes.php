@@ -104,6 +104,8 @@ return function (Router $router): void {
             $router->get('/admin/updates', \App\Controllers\Admin\UpdateController::class, 'index');
             $router->post('/admin/updates/upload', \App\Controllers\Admin\UpdateController::class, 'upload');
             $router->post('/admin/updates/apply', \App\Controllers\Admin\UpdateController::class, 'applyLocal');
+            $router->get('/admin/updates/git-status', \App\Controllers\Admin\UpdateController::class, 'gitStatus');
+            $router->post('/admin/updates/git-update', \App\Controllers\Admin\UpdateController::class, 'gitUpdate');
 
             // Tenant management — operator-only enforced in controller, NOT in OPERATOR_ONLY_PREFIXES
             // (because /admin/tenants/{tenant_id}/... context routes will be business-user-accessible)

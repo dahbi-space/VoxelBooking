@@ -76,6 +76,73 @@ ob_start();
         </div>
     </div>
 
+    <?php
+    // Git updates — only shown when this install is a Git checkout. The ZIP
+    // flow below remains the fallback for shared hosting (no git / no exec).
+    $git = $git ?? [];
+    if (!empty($git['is_repo'])):
+        $gitBadge = match ($git['state'] ?? '') {
+            'update_available' => 'vb-badge-success',
+            'up_to_date'       => 'vb-badge-neutral',
+            'dirty', 'ahead'   => 'vb-badge-warning',
+            default            => 'vb-badge-muted',
+        };
+    ?>
+    <!-- Git Updates -->
+    <div class="vb-card vb-fade-in-up stagger-2">
+        <div class="vb-card-header">
+            <div class="vb-card-title-row">
+                <i data-lucide="git-branch" class="vb-card-icon"></i>
+                <div>
+                    <div class="vb-card-title"><?= __('admin.updates.git_title') ?></div>
+                    <div class="vb-card-desc"><?= __('admin.updates.git_desc') ?></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="vb-info-row">
+            <span class="vb-info-label"><?= __('admin.updates.git_status_label') ?></span>
+            <span class="vb-info-value">
+                <span class="vb-badge <?= $gitBadge ?>"><?= View::e($git['message'] ?? '') ?></span>
+            </span>
+        </div>
+        <div class="vb-info-row">
+            <span class="vb-info-label"><?= __('admin.updates.git_branch_label') ?></span>
+            <span class="vb-info-value">
+                <code><?= View::e($git['branch'] ?? '—') ?></code>
+                <?php if (!empty($git['short_sha'])): ?>
+                    <span class="vb-text-tertiary">@ <?= View::e($git['short_sha']) ?></span>
+                <?php endif; ?>
+            </span>
+        </div>
+        <?php if (!empty($git['fetch_error'])): ?>
+        <div class="vb-info-row">
+            <span class="vb-info-label"><?= __('admin.updates.git_remote_label') ?></span>
+            <span class="vb-info-value vb-text-tertiary"><?= View::e($git['fetch_error']) ?></span>
+        </div>
+        <?php endif; ?>
+
+        <div class="vb-form-actions">
+            <a href="/admin/updates/git-status" class="vb-btn vb-btn-secondary">
+                <i data-lucide="refresh-cw"></i>
+                <?= __('admin.updates.git_check') ?>
+            </a>
+            <?php if (!empty($git['can_update'])): ?>
+            <form method="post" action="/admin/updates/git-update" class="vb-inline-form"
+                  onsubmit="return confirm('<?= View::e(__('admin.updates.git_confirm')) ?>');">
+                <input type="hidden" name="_csrf_token" value="<?= View::e($csrfToken) ?>">
+                <button type="submit"
+                        class="vb-btn vb-btn-primary"
+                        <?php if (\App\Engine\DemoMode::isActive()): ?>onclick="event.preventDefault(); showDemoToast()"<?php endif; ?>>
+                    <i data-lucide="download"></i>
+                    <?= __('admin.updates.git_update_btn') ?>
+                </button>
+            </form>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <?php if ($zipAvailable ?? true): ?>
 
     <!-- Upload Update -->
