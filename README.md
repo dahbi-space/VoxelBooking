@@ -28,20 +28,20 @@ Each business is assigned one pattern at creation. All four share the same booki
 
 ## Before you install
 
-### What's in the ZIP
+### What you get
 
-The distribution ZIP is self-contained. No build tools are required on your server.
+Everything VoxelBooking needs to run ships in the repository. Clone it and it runs as-is. There is no build step, no `composer install`, and no Node.js on your server.
 
 | Included | Notes |
 |----------|-------|
 | PHP source + framework | Custom micro-framework — no Laravel or Symfony |
-| `vendor/` | All Composer dependencies, pre-installed |
+| `vendor/` | All Composer dependencies, committed and ready |
 | `public/assets/` | Pre-built CSS and JS — no Node.js required |
 | Migration files | Run automatically by the installer |
 | English translations | 12 additional locales are registry-ready |
 | Demo SQLite database | For demo mode (optional) |
 
-You do not need Composer, Node.js, or npm on your production server.
+Your production server needs only PHP and MySQL — never Composer, Node.js, or npm.
 
 ### Server requirements
 
@@ -59,59 +59,49 @@ Most shared hosting providers include all of these by default. The installer's s
 
 ## Installation
 
-### Shared hosting (Apache, cPanel, Plesk)
+Three steps: get the files, point your web server at the `public/` directory, and open your domain. The first visit launches a five-step setup wizard that writes your configuration and runs the database migrations for you. Nothing to compile, no config file to edit by hand.
 
-1. **Upload and extract** the ZIP into your web root — typically `public_html/` — not into a subdirectory inside it.
+### Step 1 — Get the files
 
-2. **Create a MySQL database** in your hosting control panel. Note the database name, username, and password — the installer will ask for them.
+Clone the repository onto your server (a VPS, or any shared host with SSH and Git):
 
-3. **Navigate to your domain** in a browser. The root `.htaccess` rewrites all traffic into `public/` and blocks direct access to all application directories. You should see the installer immediately.
+```bash
+git clone https://github.com/NowSquare/VoxelBooking.git
+```
 
-4. **Complete the five-step wizard:**
+The clone includes `vendor/` and the pre-built `public/assets/`, so it runs immediately — no `composer install`, no `npm install`.
 
-   | Step | What happens |
-   |------|-------------|
-   | System check | Verifies PHP version, required extensions, and directory write permissions |
-   | Database | Connects to MySQL, runs all migrations, and seeds initial settings |
-   | Email | Configures SMTP transport for booking confirmations and admin notifications |
-   | Operator account | Creates the super-admin login for your installation |
-   | First business | Sets up your first booking page — pattern, name, slug, timezone |
+**No SSH or Git on your host?** Download the latest [release archive](https://github.com/NowSquare/VoxelBooking/releases), extract it, and upload the contents with FTP/SFTP or your control panel's file manager. The result is identical.
 
-   The installer creates and writes your `.env` configuration file automatically. No manual file editing is required.
+### Step 2 — Point your web server at `public/`
 
-5. **After the wizard**, you are redirected to the admin panel. Your first booking page is live at `yourdomain.com/book/your-business-slug`.
+The document root is the `public/` directory. How you set it depends on your host.
 
-> The installer disables itself after successful completion. Navigating to the install URL again after setup will redirect to the admin panel.
+**Shared hosting (cPanel, Plesk, DirectAdmin).** Put the files in your web root (typically `public_html/`). The repository's root `.htaccess` rewrites every request into `public/` and blocks direct access to the application directories, so it works even when you cannot change the document root. Create a MySQL database in your control panel and note the name, user, and password — the wizard asks for them.
 
----
-
-### VPS / dedicated server — Apache
-
-Point Apache's `DocumentRoot` directly to the `public/` directory:
+**VPS / dedicated server — Apache.** Point `DocumentRoot` at the `public/` directory:
 
 ```apache
 <VirtualHost *:80>
     ServerName yourdomain.com
-    DocumentRoot /var/www/voxelbooking/public
+    DocumentRoot /var/www/VoxelBooking/public
 
-    <Directory /var/www/voxelbooking/public>
+    <Directory /var/www/VoxelBooking/public>
         AllowOverride All
         Require all granted
     </Directory>
 </VirtualHost>
 ```
 
-Enable the site, reload Apache, then navigate to your domain and complete the wizard.
+Enable the site and reload Apache.
 
----
-
-### VPS / dedicated server — Nginx
+**VPS / dedicated server — Nginx.**
 
 ```nginx
 server {
     listen 80;
     server_name yourdomain.com;
-    root /var/www/voxelbooking/public;
+    root /var/www/VoxelBooking/public;
     index index.php;
 
     location / {
@@ -131,9 +121,25 @@ server {
 }
 ```
 
-Adjust the `fastcgi_pass` socket path to match your PHP-FPM version (e.g., `php8.3-fpm.sock`). Reload Nginx, then navigate to your domain and complete the wizard.
+Match the `fastcgi_pass` socket to your PHP-FPM version, then reload Nginx.
 
-> **HTTPS:** For production servers, obtain a TLS certificate via [Let's Encrypt / Certbot](https://certbot.eff.org/) and update the server block to listen on port 443. Certbot can modify the Nginx config automatically with `certbot --nginx`.
+> **HTTPS:** On a production server, get a free TLS certificate with [Let's Encrypt / Certbot](https://certbot.eff.org/). `certbot --nginx` adds the certificate and HTTPS redirect for you.
+
+### Step 3 — Open your domain and run the installer
+
+Visit your domain. With no configuration yet, VoxelBooking sends you straight to the installer — there is no special URL to remember. The five-step wizard takes about a minute:
+
+| Step | What happens |
+|------|-------------|
+| System check | Verifies your PHP version, required extensions, and writable directories |
+| Database | Connects to MySQL, runs every migration, and seeds initial settings |
+| Email | Configures SMTP for booking confirmations and admin notifications |
+| Operator account | Creates the super-admin login for your installation |
+| First business | Creates your first booking page — pattern, name, slug, timezone |
+
+The wizard writes your `.env` automatically; you never edit it by hand. When it finishes you land in the admin panel, and your first booking page is live at `yourdomain.com/book/your-business-slug`.
+
+> The installer locks itself once setup is complete. Re-opening the install URL on a configured site returns 404, so it can never run twice.
 
 ---
 
@@ -168,12 +174,12 @@ Your cron token is displayed in Admin → Settings → Advanced. Without this cr
 
 ## Upgrading
 
-1. **Download** the new version ZIP from the [project releases](https://github.com/NowSquare/VoxelBooking/releases).
-2. **Back up** your database and the `public/uploads/` directory before doing anything else.
-3. **Replace all files** from the new ZIP, with two exceptions:
-   - **`.env`** — your environment configuration. Never overwrite this.
-   - **`public/uploads/`** — your uploaded logos and cover images.
-4. **Run any migrations** described in the release upgrade notes. Each release ships an `UPGRADE.md` with the exact steps required for that version — read it before replacing files.
+Updates run from **Admin → Updates**, on two paths.
+
+- **Git updates (recommended for Git installs).** When the install is a Git checkout, the Updates page shows a **Git Updates** card. It reports your branch and whether a new version is available, then applies it in one click: it pulls the latest release and runs any pending database migrations together. It refuses to run if you have local changes or are ahead of the repository, and it never touches your `.env`, database, or uploads.
+- **Release archive (for shared hosting without Git).** Download the latest [release archive](https://github.com/NowSquare/VoxelBooking/releases) and upload it from the same Updates page, or drop it in `/dist/`. VoxelBooking stages every file, applies it, and runs migrations — your `.env`, `storage/`, and `public/uploads/` are preserved.
+
+Back up your database and `public/uploads/` before any update, and test on a staging copy first — AGPL-3.0 places no limit on the number of installations. The full guide, including the shell `git fetch --tags` / `git checkout <tag>` workflow for pinning a specific version, is in the [Updating documentation](https://voxelbooking.com/docs/getting-started/updating).
 
 ---
 
@@ -221,7 +227,7 @@ The next request reconnects to your MySQL database.
 
 ## Troubleshooting
 
-**Blank page or HTTP 500 after upload**
+**Blank page or HTTP 500 on first load**
 Enable PHP error output temporarily (add `php_flag display_errors on` to `.htaccess` or set in `php.ini`), reload, read the error, then remove it. The most common causes are a missing PHP extension or incorrect file permissions on `storage/`.
 
 **The installer does not appear — I see a default server page**
@@ -234,7 +240,7 @@ The MySQL user lacks sufficient privileges. The installation user needs `CREATE`
 `mod_rewrite` is enabled but rules are not being applied. Set `AllowOverride All` in your virtual host or `httpd.conf`. On Nginx, confirm the `try_files $uri $uri/ /index.php` rule is in place and Nginx has been reloaded.
 
 **Booking page loads but the booking widget is blank**
-The `public/assets/` directory is missing or empty. Re-upload from the ZIP — the pre-built assets must be present at `public/assets/booking.js` and `public/assets/booking.css`.
+The `public/assets/` directory is missing or empty. Re-clone or re-extract — the pre-built assets must be present at `public/assets/js/booking.js` and `public/assets/css/booking-css.css`.
 
 **Emails are not being delivered**
 Go to Admin → Settings → Email → Send Test Email. The result tells you whether the SMTP connection succeeds. Port 587 with STARTTLS is the most widely supported configuration. Check that your SMTP host, port, encryption type, username, and password are all correct. If your host blocks outbound SMTP on port 25, switch to 587 or 465.
@@ -431,7 +437,7 @@ Then rerun the installer or your local migration bootstrap against the clean dat
 
 ### Demo database (SQLite)
 
-`storage/demo/demo.db` is committed to the repository and included in the distribution ZIP. To activate demo mode locally:
+`storage/demo/demo.db` is committed to the repository, so demo mode works on any clone (the release archive omits it). To activate demo mode locally:
 
 ```bash
 touch .demo                # Activates demo mode — remove with `rm .demo`
@@ -467,6 +473,17 @@ Before committing any CSS changes, run the token audit to confirm no hardcoded v
 ```bash
 python3 scripts/audit-css-tokens.py
 ```
+
+### Building a release archive (optional)
+
+You no longer need a ZIP to install or update VoxelBooking — cloning the repository is the simplest path, and updates run from the admin panel. A packaged archive is still handy for offline installs, mirroring, or distribution. Build one with:
+
+```bash
+./scripts/build-dist.sh            # uses the version in VERSION
+./scripts/build-dist.sh 1.2.0      # set and stamp a specific version
+```
+
+The script builds production assets, copies the working tree (excluding runtime data, dev tooling, and user content), verifies every critical file is present, and writes `dist/voxelbooking-v{version}.zip`. That archive is exactly what the **Admin → Updates** page accepts, or what you extract for a fresh install.
 
 ### Testing
 
