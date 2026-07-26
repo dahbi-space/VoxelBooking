@@ -98,8 +98,8 @@ $coverUrl  = $cover !== '' ? $scheme . '://' . $host . '/' . ltrim($cover, '/') 
 $e = static fn (mixed $v): string => PerkaView::e($v);
 
 // Presentation-only (uses fields already present on $tenant; no new read).
-// Logo is opt-in and gracefully falls back to initials via onerror + an
-// initials-only avatar when logo_path is empty — never a broken image.
+// Logo is opt-in; falls back to name initials when absent or missing on disk
+// (checked server-side via $hasFile below) — never a broken image, no JS.
 $logo = trim((string) ($tenant['logo_path'] ?? ''));
 $initials = '';
 foreach (preg_split('/\s+/', $name) ?: [] as $w) {
@@ -127,6 +127,17 @@ $initialsOf = static function (string $n): string {
         }
     }
     return $out !== '' ? $out : '·';
+};
+
+// Server-side avatar existence check — guarantees "never a broken image"
+// without JS (the page CSP forbids inline scripts / onerror handlers).
+$publicRoot = rtrim((string) ($_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+if ($publicRoot === '' || !is_dir($publicRoot)) {
+    $publicRoot = dirname(__DIR__, 6) . '/public';
+}
+$hasFile = static function (string $rel) use ($publicRoot): bool {
+    $rel = ltrim($rel, '/');
+    return $rel !== '' && is_file($publicRoot . '/' . $rel);
 };
 
 // JSON-LD LocalBusiness (only well-formed fields).
@@ -261,6 +272,33 @@ $jsonLd = array_filter([
         .pk-teammate .pk-avatar { width: 72px; height: 72px; margin-top: 0; font-size: 1.4rem; }
         .pk-teammate-name { font-weight: 600; line-height: 1.25; }
         .pk-teammate-title { color: var(--pk-muted); font-size: .9rem; line-height: 1.2; }
+        /* Team member is an anchor trigger (#modal-id) — CSS :target modal, no JS */
+        .pk-teammate { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .5rem;
+                       text-decoration: none; color: inherit; cursor: pointer; padding: .25rem; }
+        .pk-teammate:hover .pk-avatar { transform: scale(1.04); transition: transform .15s; }
+        .pk-teammate:focus-visible { outline: 2px solid var(--pk-accent); outline-offset: 2px; border-radius: var(--pk-radius-sm); }
+
+        /* Team detail modal — opened via :target (CSP forbids inline JS) */
+        .pk-modal { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: 1rem; }
+        .pk-modal:target { display: flex; }
+        .pk-modal-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, .5); animation: pkFade .18s ease; }
+        .pk-modal-card { position: relative; z-index: 1; width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto;
+                         background: var(--pk-surface); border: 1px solid var(--pk-border); border-radius: var(--pk-radius);
+                         box-shadow: var(--pk-shadow); padding: 1.6rem 1.4rem 1.4rem; animation: pkPop .18s ease; }
+        @keyframes pkFade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pkPop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .pk-modal-close { position: absolute; top: .6rem; right: .6rem; width: 34px; height: 34px; border: 0; border-radius: 50%;
+                          background: var(--pk-surface-2); color: var(--pk-text); font-size: 1.1rem; line-height: 1; cursor: pointer; }
+        .pk-modal-close:hover { background: var(--pk-border); }
+        .pk-modal-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .35rem; }
+        .pk-modal-head .pk-avatar { width: 96px; height: 96px; margin-top: 0; font-size: 1.9rem; }
+        .pk-modal-name { font-size: 1.35rem; font-weight: 700; line-height: 1.2; }
+        .pk-modal-title { color: var(--pk-muted); }
+        .pk-modal-bio { margin-top: 1rem; white-space: pre-line; color: var(--pk-text); }
+        .pk-modal-subtitle { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700;
+                             color: var(--pk-muted); margin: 1.35rem 0 .5rem; }
+        .pk-modal-book { margin-top: 1.35rem; width: 100%; }
+        .pk-modal-close { text-decoration: none; display: flex; align-items: center; justify-content: center; }
 
         .pk-socials { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
         .pk-socials a { display: inline-block; padding: .4rem .85rem; border: 1px solid var(--pk-border);
@@ -283,17 +321,15 @@ $jsonLd = array_filter([
 </head>
 <body>
     <header class="pk-hero">
-        <?php if ($coverUrl !== ''): ?>
-        <img class="pk-hero-img" src="/<?= $e(ltrim($cover, '/')) ?>" alt="<?= $e($name) ?>"
-             onerror="this.style.display='none'">
+        <?php if ($hasFile($cover)): ?>
+        <img class="pk-hero-img" src="/<?= $e(ltrim($cover, '/')) ?>" alt="<?= $e($name) ?>">
         <?php endif; ?>
     </header>
 
     <main class="pk-wrap">
         <div class="pk-header">
-            <?php if ($logo !== ''): ?>
-            <span class="pk-avatar"><img src="/<?= $e(ltrim($logo, '/')) ?>" alt="<?= $e($name) ?>"
-                  onerror="this.parentNode.textContent='<?= $e($initials) ?>'"></span>
+            <?php if ($hasFile($logo)): ?>
+            <span class="pk-avatar"><img src="/<?= $e(ltrim($logo, '/')) ?>" alt="<?= $e($name) ?>"></span>
             <?php else: ?>
             <span class="pk-avatar"><?= $e($initials) ?></span>
             <?php endif; ?>
@@ -347,23 +383,23 @@ $jsonLd = array_filter([
         <?php endif; ?>
 
         <?php if ($team !== []): ?>
-        <section class="pk-card">
+        <section class="pk-card" id="team">
             <div class="pk-section-title">Team</div>
             <div class="pk-team">
                 <?php foreach ($team as $member): ?>
                     <?php
+                    $mId   = (string) ($member['id'] ?? '');
                     $mName = trim((string) ($member['name'] ?? ''));
-                    if ($mName === '') {
+                    if ($mId === '' || $mName === '') {
                         continue;
                     }
                     $mTitle  = trim((string) ($member['title'] ?? ''));
                     $mAvatar = trim((string) ($member['avatar_path'] ?? ''));
                     $mInit   = $initialsOf($mName);
                     ?>
-                    <div class="pk-teammate">
-                        <?php if ($mAvatar !== ''): ?>
-                        <span class="pk-avatar"><img src="/<?= $e(ltrim($mAvatar, '/')) ?>" alt="<?= $e($mName) ?>"
-                              onerror="this.parentNode.textContent='<?= $e($mInit) ?>'"></span>
+                    <a class="pk-teammate" href="#modal-<?= $e($mId) ?>" aria-haspopup="dialog">
+                        <?php if ($hasFile($mAvatar)): ?>
+                        <span class="pk-avatar"><img src="/<?= $e(ltrim($mAvatar, '/')) ?>" alt="<?= $e($mName) ?>"></span>
                         <?php else: ?>
                         <span class="pk-avatar"><?= $e($mInit) ?></span>
                         <?php endif; ?>
@@ -371,10 +407,77 @@ $jsonLd = array_filter([
                         <?php if ($mTitle !== ''): ?>
                         <div class="pk-teammate-title"><?= $e($mTitle) ?></div>
                         <?php endif; ?>
-                    </div>
+                    </a>
                 <?php endforeach; ?>
             </div>
         </section>
+
+        <?php /* One hidden modal per member (server-rendered, escaped) */ ?>
+        <?php foreach ($team as $member): ?>
+            <?php
+            $mId   = (string) ($member['id'] ?? '');
+            $mName = trim((string) ($member['name'] ?? ''));
+            if ($mId === '' || $mName === '') {
+                continue;
+            }
+            $mTitle    = trim((string) ($member['title'] ?? ''));
+            $mAvatar   = trim((string) ($member['avatar_path'] ?? ''));
+            $mBio      = trim((string) ($member['bio'] ?? ''));
+            $mInit     = $initialsOf($mName);
+            $mServices = is_array($member['services'] ?? null) ? $member['services'] : [];
+            $mFirst    = (preg_split('/\s+/', $mName) ?: [$mName])[0];
+            ?>
+            <div class="pk-modal" id="modal-<?= $e($mId) ?>" role="dialog" aria-modal="true"
+                 aria-labelledby="modal-<?= $e($mId) ?>-name">
+                <a class="pk-modal-backdrop" href="#team" aria-label="Close"></a>
+                <div class="pk-modal-card">
+                    <a class="pk-modal-close" href="#team" aria-label="Close">&times;</a>
+                    <div class="pk-modal-head">
+                        <?php if ($hasFile($mAvatar)): ?>
+                        <span class="pk-avatar"><img src="/<?= $e(ltrim($mAvatar, '/')) ?>" alt="<?= $e($mName) ?>"></span>
+                        <?php else: ?>
+                        <span class="pk-avatar"><?= $e($mInit) ?></span>
+                        <?php endif; ?>
+                        <div class="pk-modal-name" id="modal-<?= $e($mId) ?>-name"><?= $e($mName) ?></div>
+                        <?php if ($mTitle !== ''): ?>
+                        <div class="pk-modal-title"><?= $e($mTitle) ?></div>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if ($mBio !== ''): ?>
+                    <div class="pk-modal-bio"><?= $e($mBio) ?></div>
+                    <?php endif; ?>
+
+                    <?php if ($mServices !== []): ?>
+                    <div class="pk-modal-subtitle">Services</div>
+                    <ul class="pk-services">
+                        <?php foreach ($mServices as $svc): ?>
+                            <?php
+                            $sName = trim((string) ($svc['name'] ?? ''));
+                            if ($sName === '') {
+                                continue;
+                            }
+                            $sMeta = array_filter(
+                                [$fmtDuration((int) ($svc['duration_minutes'] ?? 0)), $fmtPrice($svc)],
+                                static fn ($v) => $v !== ''
+                            );
+                            ?>
+                            <li class="pk-service">
+                                <span class="pk-service-name"><?= $e($sName) ?></span>
+                                <?php if ($sMeta !== []): ?>
+                                <span class="pk-service-meta"><?= $e(implode(' · ', $sMeta)) ?></span>
+                                <?php endif; ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <?php endif; ?>
+
+                    <?php if ($showCta): ?>
+                    <a class="pk-cta pk-modal-book" href="<?= $e($bookUrl) ?>">Book with <?= $e($mFirst) ?></a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
         <?php endif; ?>
 
         <?php if ($hours !== []): ?>
@@ -441,5 +544,6 @@ $jsonLd = array_filter([
         <a class="pk-cta" href="<?= $e($bookUrl) ?>">Book now</a>
     </div>
     <?php endif; ?>
+
 </body>
 </html>

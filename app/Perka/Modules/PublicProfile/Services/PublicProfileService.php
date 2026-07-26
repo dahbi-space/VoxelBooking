@@ -70,25 +70,55 @@ final class PublicProfileService
     }
 
     /**
-     * Read a tenant's active staff for read-only public display ("Team").
+     * Read a tenant's active staff for read-only public display ("Team"),
+     * each enriched with their public bio and the services they can perform.
      *
-     * Pure read over the existing core `staff` table, mirroring the field
-     * selection of the core public staff endpoint (BookingApiController::staff):
-     * only the public-safe fields are selected — name, title and avatar_path.
-     * Private columns (email, phone, bio) are never selected or exposed. No
-     * booking or availability logic is invoked.
+     * Pure reads over the existing core `staff` and `service_staff` tables. The
+     * roster mirrors the core public staff endpoint (name, title, avatar_path),
+     * plus `bio` (shown in the detail modal) and a `services` list per member
+     * (name, duration, price via the service_staff junction). Private columns
+     * email/phone are never selected. No booking or availability logic runs.
      *
-     * @return list<array<string, mixed>>
+     * @return list<array<string, mixed>> Each member includes a `services` list.
      */
     public function getTeam(string $tenantId): array
     {
-        return Database::query(
-            'SELECT `id`, `name`, `title`, `avatar_path`
+        $members = Database::query(
+            'SELECT `id`, `name`, `title`, `avatar_path`, `bio`
              FROM `staff`
              WHERE `tenant_id` = ? AND `is_active` = 1
              ORDER BY `sort_order` ASC, `name` ASC',
             [$tenantId]
         );
+
+        if ($members === []) {
+            return [];
+        }
+
+        // Services each active staff member can perform, via the service_staff
+        // junction — one grouped read (pure; no booking/availability logic).
+        $rows = Database::query(
+            'SELECT ss.`staff_id`, s.`id`, s.`name`, s.`duration_minutes`, s.`price`, s.`price_label`
+             FROM `services` s
+             INNER JOIN `service_staff` ss ON ss.`service_id` = s.`id`
+             WHERE s.`tenant_id` = ? AND s.`is_active` = 1
+             ORDER BY s.`sort_order` ASC, s.`name` ASC',
+            [$tenantId]
+        );
+
+        $byStaff = [];
+        foreach ($rows as $r) {
+            $sid = (string) $r['staff_id'];
+            unset($r['staff_id']);
+            $byStaff[$sid][] = $r;
+        }
+
+        foreach ($members as &$m) {
+            $m['services'] = $byStaff[(string) $m['id']] ?? [];
+        }
+        unset($m);
+
+        return $members;
     }
 
     /**
