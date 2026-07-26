@@ -290,5 +290,10 @@ return function (Router $router): void {
             $router->get('/api/agent/v1/services', \App\Controllers\AgentApi\ResourceController::class, 'services');
             $router->get('/api/agent/v1/availability', \App\Controllers\AgentApi\ResourceController::class, 'availability');
         });
+
+        // ── Perka routes ──
+        if (file_exists(__DIR__ . '/Perka/Routes.php')) {
+            require __DIR__ . '/Perka/Routes.php';
+        }
     });
 };

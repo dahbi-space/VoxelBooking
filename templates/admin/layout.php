@@ -269,6 +269,11 @@ $operatorInitials = mb_strtoupper(mb_substr($operatorName, 0, 1));
                 </a>
             </div>
             <?php endif; ?>
+
+            <!-- Perka admin menu items -->
+            <?php if (file_exists(__DIR__ . '/../../app/Perka/menu.php')): ?>
+                <?php require __DIR__ . '/../../app/Perka/menu.php'; ?>
+            <?php endif; ?>
         </nav>
 
         <div class="vb-sidebar-footer">
