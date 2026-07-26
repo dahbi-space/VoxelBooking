@@ -35,6 +35,7 @@ final class PublicProfileController
             'profile'  => $data['profile'],
             'services' => $data['services'],
             'hours'    => $data['hours'],
+            'team'     => $data['team'],
             'slug'     => $slug,
         ]);
     }

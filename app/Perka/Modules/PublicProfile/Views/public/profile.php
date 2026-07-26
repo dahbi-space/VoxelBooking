@@ -114,6 +114,21 @@ if ($initials === '') {
     $initials = '·';
 }
 
+// Team (read-only staff). Reuses the hero avatar/initials treatment per member.
+$team = is_array($team ?? null) ? $team : [];
+$initialsOf = static function (string $n): string {
+    $out = '';
+    foreach (preg_split('/\s+/', trim($n)) ?: [] as $w) {
+        if ($w !== '') {
+            $out .= mb_strtoupper(mb_substr($w, 0, 1));
+        }
+        if (mb_strlen($out) >= 2) {
+            break;
+        }
+    }
+    return $out !== '' ? $out : '·';
+};
+
 // JSON-LD LocalBusiness (only well-formed fields).
 $jsonLd = array_filter([
     '@context'    => 'https://schema.org',
@@ -240,6 +255,13 @@ $jsonLd = array_filter([
                           display: block; transition: transform .2s; }
         .pk-gallery img:hover { transform: scale(1.02); }
 
+        /* Team — reuses .pk-avatar for the circle/initials; only the grid + cell are new */
+        .pk-team { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 1rem .75rem; }
+        .pk-teammate { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .5rem; }
+        .pk-teammate .pk-avatar { width: 72px; height: 72px; margin-top: 0; font-size: 1.4rem; }
+        .pk-teammate-name { font-weight: 600; line-height: 1.25; }
+        .pk-teammate-title { color: var(--pk-muted); font-size: .9rem; line-height: 1.2; }
+
         .pk-socials { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
         .pk-socials a { display: inline-block; padding: .4rem .85rem; border: 1px solid var(--pk-border);
                         border-radius: 999px; color: var(--pk-accent); text-decoration: none; font-weight: 600;
@@ -321,6 +343,37 @@ $jsonLd = array_filter([
                 <a class="pk-cta" href="<?= $e($bookUrl) ?>">Book now</a>
             </div>
             <?php endif; ?>
+        </section>
+        <?php endif; ?>
+
+        <?php if ($team !== []): ?>
+        <section class="pk-card">
+            <div class="pk-section-title">Team</div>
+            <div class="pk-team">
+                <?php foreach ($team as $member): ?>
+                    <?php
+                    $mName = trim((string) ($member['name'] ?? ''));
+                    if ($mName === '') {
+                        continue;
+                    }
+                    $mTitle  = trim((string) ($member['title'] ?? ''));
+                    $mAvatar = trim((string) ($member['avatar_path'] ?? ''));
+                    $mInit   = $initialsOf($mName);
+                    ?>
+                    <div class="pk-teammate">
+                        <?php if ($mAvatar !== ''): ?>
+                        <span class="pk-avatar"><img src="/<?= $e(ltrim($mAvatar, '/')) ?>" alt="<?= $e($mName) ?>"
+                              onerror="this.parentNode.textContent='<?= $e($mInit) ?>'"></span>
+                        <?php else: ?>
+                        <span class="pk-avatar"><?= $e($mInit) ?></span>
+                        <?php endif; ?>
+                        <div class="pk-teammate-name"><?= $e($mName) ?></div>
+                        <?php if ($mTitle !== ''): ?>
+                        <div class="pk-teammate-title"><?= $e($mTitle) ?></div>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </section>
         <?php endif; ?>
 

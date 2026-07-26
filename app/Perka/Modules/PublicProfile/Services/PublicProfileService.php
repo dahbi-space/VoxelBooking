@@ -65,7 +65,30 @@ final class PublicProfileService
             'profile'  => $this->decode($row),
             'services' => $this->getActiveServices($tenant['id']),
             'hours'    => $this->getOpeningHours($tenant['id']),
+            'team'     => $this->getTeam($tenant['id']),
         ];
+    }
+
+    /**
+     * Read a tenant's active staff for read-only public display ("Team").
+     *
+     * Pure read over the existing core `staff` table, mirroring the field
+     * selection of the core public staff endpoint (BookingApiController::staff):
+     * only the public-safe fields are selected — name, title and avatar_path.
+     * Private columns (email, phone, bio) are never selected or exposed. No
+     * booking or availability logic is invoked.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function getTeam(string $tenantId): array
+    {
+        return Database::query(
+            'SELECT `id`, `name`, `title`, `avatar_path`
+             FROM `staff`
+             WHERE `tenant_id` = ? AND `is_active` = 1
+             ORDER BY `sort_order` ASC, `name` ASC',
+            [$tenantId]
+        );
     }
 
     /**
