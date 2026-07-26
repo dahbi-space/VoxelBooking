@@ -31,9 +31,10 @@ final class PublicProfileController
         }
 
         return PerkaView::response('PublicProfile', 'public/profile', [
-            'tenant'  => $data['tenant'],
-            'profile' => $data['profile'],
-            'slug'    => $slug,
+            'tenant'   => $data['tenant'],
+            'profile'  => $data['profile'],
+            'services' => $data['services'],
+            'slug'     => $slug,
         ]);
     }
 }

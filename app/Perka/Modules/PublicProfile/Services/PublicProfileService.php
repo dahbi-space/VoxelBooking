@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Perka\Modules\PublicProfile\Services;
 
+use App\Engine\Database;
 use App\Models\Tenant;
 use App\Perka\Modules\PublicProfile\Models\BusinessProfile;
 
@@ -60,9 +61,30 @@ final class PublicProfileService
         }
 
         return [
-            'tenant'  => $tenant,
-            'profile' => $this->decode($row),
+            'tenant'   => $tenant,
+            'profile'  => $this->decode($row),
+            'services' => $this->getActiveServices($tenant['id']),
         ];
+    }
+
+    /**
+     * Read a tenant's active, bookable services for read-only public display.
+     *
+     * Pure read over the existing core `services` table — no booking or
+     * availability logic is invoked. Mirrors the field selection and ordering
+     * of the core public services endpoint (BookingApiController::services).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function getActiveServices(string $tenantId): array
+    {
+        return Database::query(
+            'SELECT `id`, `name`, `duration_minutes`, `price`, `price_label`
+             FROM `services`
+             WHERE `tenant_id` = ? AND `is_active` = 1
+             ORDER BY `sort_order` ASC, `name` ASC',
+            [$tenantId]
+        );
     }
 
     /**

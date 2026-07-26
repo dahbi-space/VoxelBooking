@@ -28,6 +28,38 @@ $about    = trim((string) ($profile['about'] ?? ''));
 $gallery  = is_array($profile['gallery'] ?? null) ? $profile['gallery'] : [];
 $socials  = is_array($profile['socials'] ?? null) ? $profile['socials'] : [];
 
+// Read-only booking CTA + services (no booking/availability logic invoked).
+$services = is_array($services ?? null) ? $services : [];
+$currency = (string) ($tenant['currency'] ?? 'EUR');
+// Gate the CTA on tenant status: a paused/archived tenant's /book/{slug} would 404,
+// so don't emit a button that won't work.
+$showCta  = (string) ($tenant['status'] ?? '') === 'active';
+$bookUrl  = '/book/' . rawurlencode($slug);
+
+$fmtDuration = static function (int $min): string {
+    if ($min <= 0) {
+        return '';
+    }
+    $h = intdiv($min, 60);
+    $m = $min % 60;
+    if ($h > 0 && $m > 0) {
+        return "{$h}h {$m}m";
+    }
+    return $h > 0 ? "{$h}h" : "{$m} min";
+};
+$fmtPrice = static function (array $svc) use ($currency): string {
+    $label = trim((string) ($svc['price_label'] ?? ''));
+    if ($label !== '') {
+        return $label;
+    }
+    $price = $svc['price'] ?? null;
+    if ($price === null || $price === '') {
+        return '';
+    }
+    $num = preg_replace('/\.00$/', '', number_format((float) $price, 2));
+    return $num . ' ' . $currency;
+};
+
 $seoTitle = trim((string) ($profile['seo_title'] ?? '')) !== ''
     ? (string) $profile['seo_title']
     : $name;
@@ -91,10 +123,22 @@ $jsonLd = array_filter([
         .pk-socials { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
         .pk-socials a { color: #2563EB; text-decoration: none; }
         .pk-socials a:hover { text-decoration: underline; }
+        .pk-cta { display: inline-block; background: #2563EB; color: #fff; text-decoration: none;
+                  font-weight: 600; padding: .7rem 1.5rem; border-radius: 8px; }
+        .pk-cta:hover { background: #1d4ed8; }
+        .pk-cta-hero { margin: 0 0 1.75rem; }
+        .pk-cta-services { margin-top: 1.25rem; }
+        .pk-services { list-style: none; padding: 0; margin: 0; border-top: 1px solid #eaeaea; }
+        .pk-service { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+                      padding: .75rem 0; border-bottom: 1px solid #eaeaea; }
+        .pk-service-name { font-weight: 600; }
+        .pk-service-meta { color: #666; white-space: nowrap; }
         @media (prefers-color-scheme: dark) {
             body { color: #ececec; background: #111; }
             .pk-headline { color: #b5b5b5; }
             .pk-hero { background: #1c1c1e; }
+            .pk-services, .pk-service { border-color: #2a2a2a; }
+            .pk-service-meta { color: #aaa; }
         }
     </style>
 </head>
@@ -111,8 +155,42 @@ $jsonLd = array_filter([
         <p class="pk-headline"><?= $e($headline) ?></p>
         <?php endif; ?>
 
+        <?php if ($showCta): ?>
+        <div class="pk-cta-hero">
+            <a class="pk-cta" href="<?= $e($bookUrl) ?>">Book now</a>
+        </div>
+        <?php endif; ?>
+
         <?php if ($about !== ''): ?>
         <div class="pk-about"><?= $e($about) ?></div>
+        <?php endif; ?>
+
+        <?php if ($services !== []): ?>
+        <div class="pk-section-title">Services</div>
+        <ul class="pk-services">
+            <?php foreach ($services as $svc): ?>
+                <?php
+                $svcName = trim((string) ($svc['name'] ?? ''));
+                if ($svcName === '') {
+                    continue;
+                }
+                $duration = $fmtDuration((int) ($svc['duration_minutes'] ?? 0));
+                $price    = $fmtPrice($svc);
+                $meta = array_filter([$duration, $price], static fn ($v) => $v !== '');
+                ?>
+                <li class="pk-service">
+                    <span class="pk-service-name"><?= $e($svcName) ?></span>
+                    <?php if ($meta !== []): ?>
+                    <span class="pk-service-meta"><?= $e(implode(' · ', $meta)) ?></span>
+                    <?php endif; ?>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+        <?php if ($showCta): ?>
+        <div class="pk-cta-services">
+            <a class="pk-cta" href="<?= $e($bookUrl) ?>">Book now</a>
+        </div>
+        <?php endif; ?>
         <?php endif; ?>
 
         <?php if ($gallery !== []): ?>
