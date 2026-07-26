@@ -60,6 +60,28 @@ $fmtPrice = static function (array $svc) use ($currency): string {
     return $num . ' ' . $currency;
 };
 
+// Read-only opening hours (grouped by weekday 0=Mon..6=Sun; pure read).
+$hours      = is_array($hours ?? null) ? $hours : [];
+$timeFormat = (string) ($tenant['time_format'] ?? '24h');
+$timezone   = (string) ($tenant['timezone'] ?? 'UTC');
+$dayNames   = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+// Today's weekday in the tenant's timezone, as 0=Mon..6=Sun (null if tz invalid).
+$todayDow = null;
+try {
+    $todayDow = (int) (new DateTime('now', new DateTimeZone($timezone)))->format('N') - 1;
+} catch (\Throwable) {
+    $todayDow = null;
+}
+
+$fmtTime = static function (string $t) use ($timeFormat): string {
+    $dt = DateTime::createFromFormat('H:i:s', $t) ?: DateTime::createFromFormat('H:i', $t);
+    if ($dt === false) {
+        return $t;
+    }
+    return $timeFormat === '12h' ? $dt->format('g:i A') : $dt->format('H:i');
+};
+
 $seoTitle = trim((string) ($profile['seo_title'] ?? '')) !== ''
     ? (string) $profile['seo_title']
     : $name;
@@ -133,12 +155,21 @@ $jsonLd = array_filter([
                       padding: .75rem 0; border-bottom: 1px solid #eaeaea; }
         .pk-service-name { font-weight: 600; }
         .pk-service-meta { color: #666; white-space: nowrap; }
+        .pk-hours { list-style: none; padding: 0; margin: 0; }
+        .pk-hours-row { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: .4rem 0; }
+        .pk-day { color: #444; }
+        .pk-times { color: #666; white-space: nowrap; }
+        .pk-hours-row.pk-today { font-weight: 700; }
+        .pk-hours-row.pk-today .pk-day, .pk-hours-row.pk-today .pk-times { color: #1a1a1a; }
         @media (prefers-color-scheme: dark) {
             body { color: #ececec; background: #111; }
             .pk-headline { color: #b5b5b5; }
             .pk-hero { background: #1c1c1e; }
             .pk-services, .pk-service { border-color: #2a2a2a; }
             .pk-service-meta { color: #aaa; }
+            .pk-day { color: #cfcfcf; }
+            .pk-times { color: #aaa; }
+            .pk-hours-row.pk-today .pk-day, .pk-hours-row.pk-today .pk-times { color: #ececec; }
         }
     </style>
 </head>
@@ -191,6 +222,30 @@ $jsonLd = array_filter([
             <a class="pk-cta" href="<?= $e($bookUrl) ?>">Book now</a>
         </div>
         <?php endif; ?>
+        <?php endif; ?>
+
+        <?php if ($hours !== []): ?>
+        <div class="pk-section-title">Opening hours</div>
+        <ul class="pk-hours">
+            <?php for ($d = 0; $d <= 6; $d++): ?>
+                <?php
+                $ranges  = $hours[$d] ?? [];
+                $isToday = ($todayDow === $d);
+                $label   = 'Closed';
+                if ($ranges !== []) {
+                    $parts = [];
+                    foreach ($ranges as $r) {
+                        $parts[] = $fmtTime((string) $r['start_time']) . '–' . $fmtTime((string) $r['end_time']);
+                    }
+                    $label = implode(', ', $parts);
+                }
+                ?>
+                <li class="pk-hours-row<?= $isToday ? ' pk-today' : '' ?>">
+                    <span class="pk-day"><?= $e($dayNames[$d]) ?><?= $isToday ? ' (today)' : '' ?></span>
+                    <span class="pk-times"><?= $e($label) ?></span>
+                </li>
+            <?php endfor; ?>
+        </ul>
         <?php endif; ?>
 
         <?php if ($gallery !== []): ?>

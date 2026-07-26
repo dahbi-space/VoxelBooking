@@ -64,7 +64,46 @@ final class PublicProfileService
             'tenant'   => $tenant,
             'profile'  => $this->decode($row),
             'services' => $this->getActiveServices($tenant['id']),
+            'hours'    => $this->getOpeningHours($tenant['id']),
         ];
+    }
+
+    /**
+     * Read a tenant's weekly opening hours for read-only public display.
+     *
+     * Pure read over the existing core `availability` table — the tenant-level
+     * default rows (staff_id IS NULL, is_available = 1). This is the exact query
+     * the core availability admin screen uses (AvailabilityController::index);
+     * no availability/slot calculation is invoked. Rows are grouped by weekday.
+     *
+     * day_of_week is 0=Mon..6=Sun (ISO). Multiple rows per day are split shifts.
+     * A day with no rows is closed (absent from the returned map). Tenants with
+     * no such rows (e.g. non-timeslot patterns) yield an empty array, and the
+     * section is hidden by the view.
+     *
+     * @return array<int, list<array{start_time: string, end_time: string}>>
+     *         Map of day_of_week (0-6) => ordered list of {start_time, end_time}.
+     */
+    public function getOpeningHours(string $tenantId): array
+    {
+        $rows = Database::query(
+            'SELECT `day_of_week`, `start_time`, `end_time`
+             FROM `availability`
+             WHERE `tenant_id` = ? AND `staff_id` IS NULL AND `is_available` = 1
+             ORDER BY `day_of_week` ASC, `start_time` ASC',
+            [$tenantId]
+        );
+
+        $byDay = [];
+        foreach ($rows as $row) {
+            $day = (int) $row['day_of_week'];
+            $byDay[$day][] = [
+                'start_time' => (string) $row['start_time'],
+                'end_time'   => (string) $row['end_time'],
+            ];
+        }
+
+        return $byDay;
     }
 
     /**
