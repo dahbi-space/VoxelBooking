@@ -61,11 +61,67 @@ final class PublicProfileService
         }
 
         return [
-            'tenant'   => $tenant,
-            'profile'  => $this->decode($row),
-            'services' => $this->getActiveServices($tenant['id']),
-            'hours'    => $this->getOpeningHours($tenant['id']),
-            'team'     => $this->getTeam($tenant['id']),
+            'tenant'    => $tenant,
+            'profile'   => $this->decode($row),
+            'services'  => $this->getActiveServices($tenant['id']),
+            'hours'     => $this->getOpeningHours($tenant['id']),
+            'team'      => $this->getTeam($tenant['id']),
+            'reviews'   => $this->getPublishedReviews($tenant['id']),
+            'aggregate' => $this->getReviewAggregate($tenant['id']),
+        ];
+    }
+
+    /**
+     * Read a tenant's most recent PUBLISHED reviews for read-only public display.
+     *
+     * Pure read over the Perka-owned `perka_reviews` table — no booking or
+     * availability logic. Ordered by manual `sort_order`, then most recent
+     * `reviewed_at` (falling back to `created_at`). Capped at $limit for the
+     * profile section; the (future) dedicated /reviews page can pass a higher
+     * cap or 0 for all. Private data is never selected — there is none.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function getPublishedReviews(string $tenantId, int $limit = 4): array
+    {
+        $sql = 'SELECT `id`, `rating`, `body`, `reviewer_name`, `reviewed_at`, `created_at`
+                FROM `perka_reviews`
+                WHERE `tenant_id` = ? AND `is_published` = 1
+                ORDER BY `sort_order` ASC, `reviewed_at` DESC, `created_at` DESC';
+
+        // A non-positive limit means "all" (used by the dedicated page later).
+        if ($limit > 0) {
+            $sql .= ' LIMIT ' . $limit;
+        }
+
+        return Database::query($sql, [$tenantId]);
+    }
+
+    /**
+     * Aggregate rating for a tenant's PUBLISHED reviews.
+     *
+     * Pure read over `perka_reviews`. Returns the published review count and the
+     * average rating rounded to one decimal. When there are no published
+     * reviews, `count` is 0 and `average` is null — the view hides the whole
+     * section on that signal.
+     *
+     * @return array{count: int, average: float|null}
+     */
+    public function getReviewAggregate(string $tenantId): array
+    {
+        $rows = Database::query(
+            'SELECT COUNT(*) AS cnt, AVG(`rating`) AS avg_rating
+             FROM `perka_reviews`
+             WHERE `tenant_id` = ? AND `is_published` = 1',
+            [$tenantId]
+        );
+
+        $count = (int) ($rows[0]['cnt'] ?? 0);
+        $avg   = $rows[0]['avg_rating'] ?? null;
+
+        return [
+            'count'   => $count,
+            'average' => ($count > 0 && $avg !== null) ? round((float) $avg, 1) : null,
         ];
     }
 

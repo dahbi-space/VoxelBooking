@@ -140,6 +140,37 @@ $hasFile = static function (string $rel) use ($publicRoot): bool {
     return $rel !== '' && is_file($publicRoot . '/' . $rel);
 };
 
+// Read-only reviews + aggregate (pure reads over perka_reviews; no logic).
+$reviews   = is_array($reviews ?? null) ? $reviews : [];
+$aggregate = is_array($aggregate ?? null) ? $aggregate : ['count' => 0, 'average' => null];
+$dateFormat = trim((string) ($tenant['date_format'] ?? '')) ?: 'M j, Y';
+
+// Unicode star bar (CSP-safe: no icon fonts, no JS). $filled filled ★, the
+// remainder to 5 empty ☆. Clamped to 0..5.
+$stars = static function (int $filled): string {
+    $filled = max(0, min(5, $filled));
+    return str_repeat('★', $filled) . str_repeat('☆', 5 - $filled);
+};
+
+// Format a review's display date from reviewed_at, falling back to created_at.
+$fmtReviewDate = static function (array $r) use ($dateFormat): string {
+    $raw = trim((string) ($r['reviewed_at'] ?? '')) ?: trim((string) ($r['created_at'] ?? ''));
+    if ($raw === '') {
+        return '';
+    }
+    try {
+        return (new DateTime($raw))->format($dateFormat);
+    } catch (\Throwable) {
+        return '';
+    }
+};
+
+// "View all" points at the dedicated reviews page (a separate increment). Shown
+// only when there are more published reviews than the 4 rendered here, so it is
+// never a dead link on small rosters.
+$reviewsUrl   = '/business/' . rawurlencode($slug) . '/reviews';
+$showViewAll  = (int) $aggregate['count'] > count($reviews);
+
 // JSON-LD LocalBusiness (only well-formed fields).
 $jsonLd = array_filter([
     '@context'    => 'https://schema.org',
@@ -260,6 +291,22 @@ $jsonLd = array_filter([
         .pk-times { color: var(--pk-muted); white-space: nowrap; }
         .pk-hours-row.pk-today { background: var(--pk-accent-soft); font-weight: 700; }
         .pk-hours-row.pk-today .pk-day, .pk-hours-row.pk-today .pk-times { color: var(--pk-text); }
+
+        /* Reviews — Unicode star bar (CSP-safe), aggregate header, review list */
+        .pk-reviews-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: .5rem .75rem; margin-bottom: 1rem; }
+        .pk-stars { color: #f5a623; letter-spacing: .06em; font-size: 1.05rem; line-height: 1; white-space: nowrap; }
+        .pk-rating-num { font-weight: 700; color: var(--pk-text); }
+        .pk-rating-count { color: var(--pk-muted); }
+        .pk-reviews { list-style: none; padding: 0; margin: 0; }
+        .pk-review { padding: 1rem 0; border-top: 1px solid var(--pk-border); }
+        .pk-review:first-child { border-top: 0; }
+        .pk-review .pk-stars { font-size: .95rem; }
+        .pk-review-body { margin: .5rem 0 .55rem; color: var(--pk-text); white-space: pre-line; line-height: 1.5; }
+        .pk-review-meta { color: var(--pk-muted); font-size: .9rem; }
+        .pk-review-author { font-weight: 600; color: var(--pk-text); }
+        .pk-reviews-all { margin-top: 1.1rem; }
+        .pk-reviews-all a { color: var(--pk-accent); font-weight: 600; text-decoration: none; }
+        .pk-reviews-all a:hover { text-decoration: underline; }
 
         .pk-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(clamp(140px, 22vw, 190px), 1fr)); gap: .6rem; }
         .pk-gallery img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--pk-radius-sm);
@@ -503,6 +550,47 @@ $jsonLd = array_filter([
                     </li>
                 <?php endfor; ?>
             </ul>
+        </section>
+        <?php endif; ?>
+
+        <?php if ($reviews !== []): ?>
+        <section class="pk-card" id="reviews">
+            <div class="pk-section-title">Reviews</div>
+
+            <?php if ($aggregate['average'] !== null): ?>
+            <div class="pk-reviews-head">
+                <span class="pk-stars" aria-hidden="true"><?= $e($stars((int) floor((float) $aggregate['average']))) ?></span>
+                <span class="pk-rating-num"><?= $e(number_format((float) $aggregate['average'], 1)) ?></span>
+                <span class="pk-rating-count">based on <?= (int) $aggregate['count'] ?> review<?= (int) $aggregate['count'] === 1 ? '' : 's' ?></span>
+            </div>
+            <?php endif; ?>
+
+            <ul class="pk-reviews">
+                <?php foreach ($reviews as $review): ?>
+                    <?php
+                    $rBody = trim((string) ($review['body'] ?? ''));
+                    if ($rBody === '') {
+                        continue;
+                    }
+                    $rRating = max(1, min(5, (int) ($review['rating'] ?? 0)));
+                    $rName   = trim((string) ($review['reviewer_name'] ?? '')) ?: 'Anonymous';
+                    $rDate   = $fmtReviewDate($review);
+                    ?>
+                    <li class="pk-review">
+                        <span class="pk-stars" aria-label="<?= $rRating ?> out of 5 stars"><?= $e($stars($rRating)) ?></span>
+                        <p class="pk-review-body"><?= $e($rBody) ?></p>
+                        <div class="pk-review-meta">
+                            <span class="pk-review-author"><?= $e($rName) ?></span><?php if ($rDate !== ''): ?> · <?= $e($rDate) ?><?php endif; ?>
+                        </div>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+
+            <?php if ($showViewAll): ?>
+            <div class="pk-reviews-all">
+                <a href="<?= $e($reviewsUrl) ?>">View all <?= (int) $aggregate['count'] ?> reviews →</a>
+            </div>
+            <?php endif; ?>
         </section>
         <?php endif; ?>
 

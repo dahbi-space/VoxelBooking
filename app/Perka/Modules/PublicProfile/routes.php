@@ -30,4 +30,12 @@ $router->group([\App\Middleware\AuthMiddleware::class], function (\App\Engine\Ro
     $router->post('/admin/tenants/{tenant_id}/profile', $admin, 'save');
     $router->post('/admin/tenants/{tenant_id}/profile/publish', $admin, 'publish');
     $router->post('/admin/tenants/{tenant_id}/profile/unpublish', $admin, 'unpublish');
+
+    // Reviews curation (owner/operator only — same guard as the profile editor).
+    $reviews = \App\Perka\Modules\PublicProfile\Controllers\Admin\ReviewsController::class;
+    $router->get('/admin/tenants/{tenant_id}/profile/reviews', $reviews, 'index');
+    $router->post('/admin/tenants/{tenant_id}/profile/reviews', $reviews, 'store');
+    $router->post('/admin/tenants/{tenant_id}/profile/reviews/{id}', $reviews, 'update');
+    $router->post('/admin/tenants/{tenant_id}/profile/reviews/{id}/publish', $reviews, 'togglePublish');
+    $router->post('/admin/tenants/{tenant_id}/profile/reviews/{id}/delete', $reviews, 'destroy');
 });
