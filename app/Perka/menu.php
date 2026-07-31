@@ -41,6 +41,11 @@ if ($inTenantContext && $canManage && $sidebarTenantId !== null && $sidebarTenan
         <i data-lucide="globe"></i>
         Business Profile
     </a>
+    <a href="/admin/tenants/<?= htmlspecialchars($sidebarTenantId, ENT_QUOTES, 'UTF-8') ?>/whatsapp"
+       class="vb-sidebar-link <?= $activePage === 'perka-whatsapp' ? 'active' : '' ?>">
+        <i data-lucide="message-circle"></i>
+        WhatsApp Automation
+    </a>
 </div>
 <?php
 endif;
