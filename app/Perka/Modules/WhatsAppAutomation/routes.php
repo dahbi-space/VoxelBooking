@@ -26,6 +26,20 @@ $router->group([\App\Perka\Modules\WhatsAppAutomation\Middleware\N8nApiKeyMiddle
         \App\Perka\Modules\WhatsAppAutomation\Controllers\Api\WhatsAppProfileController::class,
         'show'
     );
+
+    // Read-only bookable slots for a date. Resolves instance → active tenant,
+    // then calls the existing TimeSlotCalculator (no BookingService/write path).
+    //
+    // Path is `/slots`, NOT `/availability`: the core per-tenant booking API
+    // already defines the variable route `/api/{slug}/availability`, and
+    // FastRoute rejects a static route shadowed by it ({slug} matches the
+    // literal "whatsapp"), which would break the whole router. "slots" is not a
+    // core `/api/{slug}/*` sub-route, so it is collision-free.
+    $router->get(
+        '/api/whatsapp/slots',
+        \App\Perka\Modules\WhatsAppAutomation\Controllers\Api\WhatsAppAvailabilityController::class,
+        'show'
+    );
 });
 
 // ── Admin (reuse core AuthMiddleware) ──

@@ -24,4 +24,12 @@ final class WhatsAppAutomationServiceTest extends TestCase
         $this->assertNull($service->getByInstance(''),
             'A blank instance must resolve to null (uniform 404) without touching the DB.');
     }
+
+    public function testEmptyInstanceAvailabilityReturnsNullWithoutQuerying(): void
+    {
+        $service = new WhatsAppAutomationService();
+
+        $this->assertNull($service->getAvailabilityByInstance('', '2026-08-05'),
+            'A blank instance must resolve to null (uniform 404) without touching the DB.');
+    }
 }
